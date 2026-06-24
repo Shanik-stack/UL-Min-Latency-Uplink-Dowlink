@@ -1,0 +1,63 @@
+Downlink optimizer summary
+Method: monte_carlo_precoder_net_train_test
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\config_downlink_example.yaml
+Test seed: 3
+Train seeds: [0, 1, 2]
+Training active user-cases per user: [360, 396, 432]
+Training dataset total cases: 720
+Objective mode: precoder_net_forward_pass
+Allocation mode: greedy
+Weight strategy: remaining_bits
+Precoder parameterization: shared_user_block_context_to_precoder_mlp
+Training objective: lagrangian_sum_finite_blocklength_rate_with_fixed_min_bits_objective
+
+Training summary
+Train minimum required bits per active user-case: 1
+Final epoch avg sum rate: 20.489349
+Final epoch avg user rate: 12.386069
+Final epoch avg lagrangian: -12.386069
+Final epoch avg rate violation: 0.000000
+Final epoch avg power violation: 0.000003
+Final epoch per-user rates: [12.125458014011382, 11.860584824976295, 13.172164062658945]
+Final epoch per-user lagrangian: [-12.125458014011382, -11.860584824976295, -13.172164062658945]
+Final epoch per-user rate violation: [0.0, 0.0, 0.0]
+Final epoch per-user power violation: [2.8080410427517363e-06, 2.572030732125947e-06, 2.4548283329716434e-06]
+Final feasible training-case fraction: 1.000000
+Global active user-case uses by n_kl over all epochs: {'5': 3276, '6': 315, '7': 315, '8': 477, '9': 720, '10': 909, '11': 405, '12': 405, '13': 567, '14': 810, '15': 1053, '16': 405, '17': 405, '18': 585, '19': 855, '20': 1098, '21': 450, '22': 450, '23': 630, '24': 900, '25': 1170, '26': 450, '27': 450, '28': 666, '29': 990, '30': 1260, '31': 540, '32': 540, '33': 756, '34': 1080, '35': 1404, '36': 540, '37': 540, '38': 756, '39': 1080, '40': 1404, '41': 540, '42': 540, '43': 756, '44': 1080, '45': 1404, '46': 540, '47': 540, '48': 684, '49': 900, '50': 1224, '51': 360, '52': 360, '53': 504, '54': 720, '55': 936, '56': 360, '57': 360, '58': 432, '59': 540, '60': 756, '61': 180, '62': 180, '63': 252, '64': 360, '65': 468, '66': 180, '67': 180, '68': 252, '69': 360, '70': 468, '71': 180, '72': 180, '73': 252, '74': 360, '75': 468, '76': 180, '77': 180, '78': 180, '79': 180, '80': 288}
+Per-user active user-case uses by n_kl over all epochs: [{'5': 1872, '6': 180, '7': 180, '8': 252, '9': 360, '10': 468, '11': 180, '12': 180, '13': 252, '14': 360, '15': 468, '16': 180, '17': 180, '18': 252, '19': 360, '20': 468, '21': 180, '22': 180, '23': 252, '24': 360, '25': 468, '26': 180, '27': 180, '28': 252, '29': 360, '30': 468, '31': 180, '32': 180, '33': 252, '34': 360, '35': 468, '36': 180, '37': 180, '38': 252, '39': 360, '40': 468, '41': 180, '42': 180, '43': 252, '44': 360, '45': 468, '46': 180, '47': 180, '48': 180, '49': 180, '50': 288}, {'5': 936, '6': 90, '7': 90, '8': 162, '9': 270, '10': 324, '11': 180, '12': 180, '13': 252, '14': 360, '15': 468, '16': 180, '17': 180, '18': 252, '19': 360, '20': 468, '21': 180, '22': 180, '23': 252, '24': 360, '25': 468, '26': 180, '27': 180, '28': 252, '29': 360, '30': 468, '31': 180, '32': 180, '33': 252, '34': 360, '35': 468, '36': 180, '37': 180, '38': 252, '39': 360, '40': 468, '41': 180, '42': 180, '43': 252, '44': 360, '45': 468, '46': 180, '47': 180, '48': 252, '49': 360, '50': 468, '51': 180, '52': 180, '53': 252, '54': 360, '55': 468, '56': 180, '57': 180, '58': 180, '59': 180, '60': 288}, {'5': 468, '6': 45, '7': 45, '8': 63, '9': 90, '10': 117, '11': 45, '12': 45, '13': 63, '14': 90, '15': 117, '16': 45, '17': 45, '18': 81, '19': 135, '20': 162, '21': 90, '22': 90, '23': 126, '24': 180, '25': 234, '26': 90, '27': 90, '28': 162, '29': 270, '30': 324, '31': 180, '32': 180, '33': 252, '34': 360, '35': 468, '36': 180, '37': 180, '38': 252, '39': 360, '40': 468, '41': 180, '42': 180, '43': 252, '44': 360, '45': 468, '46': 180, '47': 180, '48': 252, '49': 360, '50': 468, '51': 180, '52': 180, '53': 252, '54': 360, '55': 468, '56': 180, '57': 180, '58': 252, '59': 360, '60': 468, '61': 180, '62': 180, '63': 252, '64': 360, '65': 468, '66': 180, '67': 180, '68': 252, '69': 360, '70': 468, '71': 180, '72': 180, '73': 252, '74': 360, '75': 468, '76': 180, '77': 180, '78': 180, '79': 180, '80': 288}]
+Per-user active user-cases by final n_kl: [{'5': 72, '8': 36, '13': 36, '18': 36, '23': 36, '28': 36, '33': 36, '38': 36, '43': 36}, {'5': 36, '8': 36, '13': 36, '18': 36, '23': 36, '28': 36, '33': 36, '38': 36, '43': 36, '48': 36, '53': 36}, {'5': 18, '8': 9, '13': 9, '18': 18, '23': 18, '28': 36, '33': 36, '38': 36, '43': 36, '48': 36, '53': 36, '58': 36, '63': 36, '68': 36, '73': 36}]
+
+Latency summary
+Initial total latency: 0.076800
+Final total latency: 0.079800
+Total latency reduction (%): -3.9062
+Initial avg latency: 0.025600
+Final avg latency: 0.026600
+Initial min/max latency: 0.019800 / 0.033333
+Final min/max latency: 0.018600 / 0.034000
+
+Asynchronality summary
+Initial asynchronality sum: 0.027067
+Final asynchronality sum: 0.030800
+Asynchronality reduction (%): -13.7931
+
+Link quality summary
+Initial avg SNR (dB): 8.0000
+Final avg SNR (dB): 8.0367
+Initial avg SINR (dB): -3.5566
+Final avg SINR (dB): -2.8353
+
+Per-user details
+User 0 | init_lat=0.019800 | final_lat=0.018600 | lat_red=6.0606% | init_sinr=-2.4552 dB | final_sinr=-3.0076 dB | blocks=6 | total_n=279 | served_bits=200 | skipped_blocks=0
+User 1 | init_lat=0.023667 | final_lat=0.027200 | lat_red=-14.9296% | init_sinr=-4.2412 dB | final_sinr=-2.6106 dB | blocks=7 | total_n=408 | served_bits=400 | skipped_blocks=0
+User 2 | init_lat=0.033333 | final_lat=0.034000 | lat_red=-2.0000% | init_sinr=-3.9735 dB | final_sinr=-2.8877 dB | blocks=7 | total_n=510 | served_bits=600 | skipped_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.003867 | final_diff=0.008600
+Users 0-2 | initial_diff=0.013533 | final_diff=0.015400
+Users 1-2 | initial_diff=0.009667 | final_diff=0.006800
+
+Terminology
+- training case: one (seed, block, active-mask) item
+- active user-case: one active user inside one training case
+- training use: one active user-case consumed once in one epoch at its current n_kl

@@ -1,0 +1,59 @@
+Uplink optimizer summary
+Method: monte_carlo_shared_beam_train_test
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\config_raw_T_exp1.yaml
+Test seed: 3
+Train seeds: [0, 1, 2]
+Training scenario counts per user: [12, 12, 12]
+Training dataset total scenarios: 36
+Precoder parameterization: shared_user_channel_noise_epsilon_to_shared_beam_mlp
+Training objective: average_shared_beam_fbl_rate_over_candidate_n_grid
+Initial schedule source: random_precoder_baseline
+
+Training summary
+Final avg loss: -13.880388
+Best avg loss: -13.880388
+Final avg user rate: 13.880388
+Best avg user rate: 13.880388
+Per-user final loss: [-18.17178702354431, -13.004086891810099, -10.465290705362955]
+Per-user final rate: [18.171787126196755, 13.004086809025871, 10.465290466944376]
+Train-eval initial blocks per user: [1, 1, 1]
+Train-eval final blocks per user: [1, 1, 1]
+Train-eval initial total n per user: [29, 37, 43]
+Train-eval final total n per user: [22, 28, 34]
+Train-eval total latency reduction (%): 22.9358
+
+Testing summary
+
+Latency summary
+Initial total latency: 0.006800
+Final total latency: 0.005600
+Total latency reduction (%): 17.6471
+Initial avg latency: 0.002267
+Final avg latency: 0.001867
+Initial min/max latency: 0.002000 / 0.002533
+Final min/max latency: 0.001533 / 0.002267
+
+Asynchronality summary
+Initial asynchronality sum: 0.001067
+Final asynchronality sum: 0.001467
+Asynchronality reduction (%): -37.5000
+
+Link quality summary
+Initial avg SNR (dB): 10.9899
+Final avg SNR (dB): 10.8949
+Initial avg SINR (dB): -3.2572
+Final avg SINR (dB): -3.2115
+
+Per-user details
+User 0 | init_lat=0.002000 | final_lat=0.001533 | lat_red=23.3333% | init_snr=14.9051 dB | final_snr=13.5382 dB | init_sinr=-1.6708 dB | final_sinr=-3.4364 dB | blocks=1 | total_n=23 | served_bits=400
+User 1 | init_lat=0.002267 | final_lat=0.001800 | lat_red=20.5882% | init_snr=10.0000 dB | final_snr=11.0239 dB | init_sinr=-4.7182 dB | final_sinr=-3.0166 dB | blocks=1 | total_n=27 | served_bits=400
+User 2 | init_lat=0.002533 | final_lat=0.002267 | lat_red=10.5263% | init_snr=8.0645 dB | final_snr=8.1224 dB | init_sinr=-3.3826 dB | final_sinr=-3.1815 dB | blocks=1 | total_n=34 | served_bits=400
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.000267 | final_diff=0.000267
+Users 0-2 | initial_diff=0.000533 | final_diff=0.000733
+Users 1-2 | initial_diff=0.000267 | final_diff=0.000467
+
+Terminology
+- training scenario: one (seed, user, block) item that reuses one beam across its n_kl grid
+- initial schedule: the random-precoder baseline used for the before-optimization uplink latency

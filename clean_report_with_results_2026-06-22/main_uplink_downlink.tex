@@ -1,0 +1,1070 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsfonts,mathtools}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\newcommand{\Kset}{\mathcal{K}}
+\newcommand{\Aset}{\mathcal{A}}
+\newcommand{\Nset}{\mathcal{N}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\F}{\mathbf{F}}
+\newcommand{\Hc}{\mathbf{H}}
+\newcommand{\I}{\mathbf{I}}
+\newcommand{\A}{\mathbf{A}}
+\newcommand{\Sig}{\mathbf{\Sigma}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\argmax}{\operatorname*{arg\,max}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\floor}[1]{\left\lfloor #1 \right\rfloor}
+\newcommand{\UL}{\mathrm{UL}}
+\newcommand{\DL}{\mathrm{DL}}
+\emergencystretch=1em
+
+\title{Finite-Blocklength Latency Minimization:\\Uplink and Downlink }
+\author{}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document rewrites the project around the final algorithms only. The uplink part keeps the final user-wise finite-blocklength abstraction of the UL RSMA work and solves latency minimization through dynamic sub-block creation plus an inner alternating solver for blocklength and precoder design. The downlink part uses the final interference-coupled scheduler in which the active users' precoders are converged block by block before any bits are allocated. Both parts share one notation layer so that variables, constraints, and latency definitions remain consistent throughout the report. Earlier exploratory branches are intentionally omitted.
+\end{abstract}
+
+\section{Introduction}
+The full project eventually converged to two final formulations:
+\begin{enumerate}
+    \item an uplink formulation in which each user is represented by an effective finite-blocklength channel and its payload is split across as many sub-blocks as needed, and
+    \item a downlink formulation in which all active users share each scheduling block and therefore must be optimized jointly through interference-aware precoder updates.
+\end{enumerate}
+
+The purpose of this cleaned report is to present those two final formulations side by side with the same notation and the same design logic. In both directions, user $k$ has a payload of $B_k$ bits, a reliability target $\varepsilon_k$, a coherence-limited blocklength cap $T_k$, a symbol rate $f_{s,k}$, and a power budget $P_k$. The central design task is to determine how much data each user sends in each scheduled block, how many channel uses are spent in that block, and what precoder is used, so that total latency is minimized under finite-blocklength feasibility.
+
+The normal-approximation rate model follows \cite{polyanskiy2010}. The uplink section keeps only the final cleaned outcome of the UL RSMA development rather than the earlier derivation branches \cite{zhang2023}. The downlink section mirrors that style and records only the final greedy baseline and simple weighted variants that were retained in code.
+
+\section{Common Notation and Optimization Template}
+\subsection{Common Variables}
+The symbols shared by both link directions are listed in Table~\ref{tab:common-notation}. Every variable that appears later is either in this table or defined at first use.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Common notation used in both uplink and downlink sections}
+\label{tab:common-notation}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.28\textwidth} X}
+\toprule
+Symbol & Definition \\
+\midrule
+$m \in \{\UL,\DL\}$ & Link direction indicator. \\
+$\Kset = \{1,2,\dots,K\}$ & User set. \\
+$k \in \Kset$ & User index. \\
+$\ell$ & Scheduled-block index. In the uplink section it is a user-local sub-block index; in the downlink section it is the common scheduler block index. \\
+$L_k$ & Number of scheduled blocks experienced by user $k$ before its payload is fully served. This quantity is not fixed beforehand. \\
+$B_k$ & Total payload of user $k$ in bits. \\
+$B_{k,\ell}$ & Bits assigned to user $k$ in scheduled block $\ell$. \\
+$B_{k,\mathrm{rem}}^{(\ell)}$ & Remaining unsent bits of user $k$ when scheduled block $\ell$ begins. \\
+$n_{k,\ell}$ & Blocklength assigned to user $k$ in scheduled block $\ell$, measured in channel uses. \\
+$T_k$ & Maximum blocklength available to user $k$ in one coherence-limited block. \\
+$f_{s,k}$ & Symbol rate of user $k$ in symbols per second. \\
+$\tau_k$ & Total latency of user $k$, defined by $\tau_k = \sum_{\ell=1}^{L_k} n_{k,\ell}/f_{s,k}$. \\
+$\varepsilon_k$ & Target packet error probability of user $k$. \\
+$d_k$ & Number of transmitted spatial streams of user $k$. \\
+$P_k$ & User-specific transmit or precoder power budget. \\
+$\Hc_{k,\ell}^{(m)}$ & Mode-specific channel matrix of user $k$ in scheduled block $\ell$. \\
+$\F_{k,\ell}^{(m)}$ & Mode-specific precoder of user $k$ in scheduled block $\ell$. \\
+$C_{k,\ell}^{(m)}$ & Shannon-capacity term in bits per channel use. \\
+$V_{k,\ell}^{(m)}$ & Channel-dispersion term in bits$^2$ per channel use. \\
+$R_{k,\ell}^{(m)}$ & Finite-blocklength rate in bits per channel use. \\
+$Q^{-1}(\cdot)$ & Inverse Gaussian $Q$-function. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Mode-specific variables}
+\label{tab:mode-notation}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.28\textwidth} X}
+\toprule
+Symbol & Definition \\
+\midrule
+$N_r$ & Number of base-station receive antennas in the uplink model. \\
+$N_{t,k}$ & Number of uplink transmit antennas of user $k$. \\
+$N_b$ & Number of base-station transmit antennas in the downlink model. \\
+$N_{r,k}$ & Number of downlink receive antennas of user $k$. \\
+$\mathbf{S}_{k,\ell}$ & Desired-signal covariance of user $k$ in downlink block $\ell$. \\
+$\Aset_\ell$ & Active-user set in downlink block $\ell$, defined by $\Aset_\ell = \{k \in \Kset : B_{k,\mathrm{rem}}^{(\ell)} > 0\}$. \\
+$\Sig_{k,\ell}$ & Downlink interference-plus-noise covariance seen by user $k$ in block $\ell$. \\
+$\A_{k,\ell}^{(\DL)}$ & Whitened downlink effective signal matrix used in the rate calculation. \\
+$\Nset_k$ & Candidate blocklength grid used by the downlink allocator, $\Nset_k = \{n_{\min}, n_{\min}+\Delta n,\dots,T_k\}$. \\
+$n_{\min}$ & Minimum blocklength considered by the downlink blocklength search. \\
+$\Delta n$ & Downlink blocklength-search step size. \\
+$\gamma_{k,\ell}^{\mathrm{iso}}$ & Effective isolated CNR of user $k$ in downlink block $\ell$. \\
+$q_{k,\ell}$ & Raw priority score used by the simple weighted downlink precoder updates. \\
+$w_k^{(\ell)}$ & Max-normalized user weight of user $k$ in downlink block $\ell$. \\
+$\beta$ & Network-coupling coefficient used by the simple weighted downlink precoder updates. \\
+$\epsilon_{\mathrm{pc}}$ & Precoder-convergence tolerance used by the downlink sweep routine. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Shared Latency Objective}
+For either link direction, the total latency of user $k$ is
+\begin{equation}
+\tau_k
+:=
+\frac{1}{f_{s,k}} \sum_{\ell=1}^{L_k} n_{k,\ell},
+\label{eq:latency-common}
+\end{equation}
+and the network objective is to reduce the aggregate latency
+\begin{equation}
+\sum_{k \in \Kset} \tau_k.
+\label{eq:network-latency-common}
+\end{equation}
+
+The payload-conservation constraint is shared:
+\begin{equation}
+\sum_{\ell=1}^{L_k} B_{k,\ell} = B_k,
+\qquad
+\forall k \in \Kset.
+\label{eq:payload-common}
+\end{equation}
+
+The finite-blocklength rate model is also shared at template level:
+\begin{equation}
+R_{k,\ell}^{(m)}
+=
+C_{k,\ell}^{(m)}
+-
+\sqrt{\frac{V_{k,\ell}^{(m)}}{n_{k,\ell}}}\,
+Q^{-1}(\varepsilon_k),
+\qquad
+m \in \{\UL,\DL\},
+\label{eq:fbl-template}
+\end{equation}
+and feasibility requires
+\begin{equation}
+\frac{B_{k,\ell}}{n_{k,\ell}} \le R_{k,\ell}^{(m)}.
+\label{eq:fbl-feasibility-common}
+\end{equation}
+
+The two parts of the report differ only in how $C_{k,\ell}^{(m)}$ and $V_{k,\ell}^{(m)}$ are generated, and in how the unknown block sequence is constructed.
+
+\clearpage
+\section{Uplink Formulation and Final Algorithm}
+\subsection{Effective Uplink Physical-Layer Model}
+The final cleaned uplink formulation intentionally works with an effective user-wise channel rather than repeating the earlier exploratory derivations. For uplink block $\ell$ of user $k$, let
+\[
+\Hc_{k,\ell}^{(\UL)} \in \C^{N_r \times N_{t,k}},
+\qquad
+\F_{k,\ell}^{(\UL)} \in \C^{N_{t,k} \times d_k},
+\]
+where $N_r$ is the number of base-station receive antennas and $N_{t,k}$ is the number of transmit antennas of user $k$.
+
+Using the effective AWGN MIMO model retained by the final algorithm, define
+\begin{align}
+\A_{k,\ell}^{(\UL)}
+&=
+\sigma^{-2}
+\Hc_{k,\ell}^{(\UL)}
+\F_{k,\ell}^{(\UL)}
+\bigl(\F_{k,\ell}^{(\UL)}\bigr)^H
+\bigl(\Hc_{k,\ell}^{(\UL)}\bigr)^H,
+\label{eq:ul-a}
+\\
+C_{k,\ell}^{(\UL)}
+&=
+\log_2 \det\!\bigl(\I + \A_{k,\ell}^{(\UL)}\bigr),
+\label{eq:ul-capacity}
+\\
+V_{k,\ell}^{(\UL)}
+&=
+(\log_2 e)^2
+\tr\!\Big[
+\A_{k,\ell}^{(\UL)}
+\bigl(\A_{k,\ell}^{(\UL)} + 2\I\bigr)
+\bigl(\A_{k,\ell}^{(\UL)} + \I\bigr)^{-2}
+\Big].
+\label{eq:ul-dispersion}
+\end{align}
+
+Substituting \eqref{eq:ul-capacity} and \eqref{eq:ul-dispersion} into \eqref{eq:fbl-template} gives the uplink finite-blocklength rate
+\begin{equation}
+R_{k,\ell}^{(\UL)}
+=
+C_{k,\ell}^{(\UL)}
+-
+\sqrt{\frac{V_{k,\ell}^{(\UL)}}{n_{k,\ell}}}\,
+Q^{-1}(\varepsilon_k).
+\label{eq:ul-rate}
+\end{equation}
+
+This abstraction is deliberately broad: any underlying UL RSMA processing chain may be used as long as it produces the effective pair $(\Hc_{k,\ell}^{(\UL)}, \F_{k,\ell}^{(\UL)})$ and therefore the rate \eqref{eq:ul-rate}.
+
+\subsection{Uplink Latency Minimization with Unknown Sub-Block Count}
+For the uplink design, user $k$ may need multiple successive sub-blocks before all $B_k$ bits are delivered. The final cleaned problem is
+\begin{subequations}
+\begin{align}
+\min_{\{L_k,B_{k,\ell},n_{k,\ell},\F_{k,\ell}^{(\UL)}\}}
+\quad
+&
+\sum_{k \in \Kset}\frac{1}{f_{s,k}}\sum_{\ell=1}^{L_k} n_{k,\ell}
+\label{prob:ul-main-obj}
+\\
+\text{s.t.}\quad
+&
+\frac{B_{k,\ell}}{n_{k,\ell}}
+\le
+R_{k,\ell}^{(\UL)},
+\qquad
+\forall k,\ \forall \ell \in \{1,\dots,L_k\},
+\label{prob:ul-rate}
+\\
+&
+\sum_{\ell=1}^{L_k} B_{k,\ell} = B_k,
+\qquad
+\forall k,
+\label{prob:ul-payload}
+\\
+&
+1 \le n_{k,\ell} \le T_k,
+\qquad
+\forall k,\ \forall \ell \in \{1,\dots,L_k\},
+\label{prob:ul-blocklength}
+\\
+&
+B_{k,\ell} \in \mathbb{Z}_{\ge 0},
+\qquad
+L_k \in \mathbb{Z}_{\ge 1},
+\label{prob:ul-integrality}
+\\
+&
+\norm{\F_{k,\ell}^{(\UL)}}_F^2 \le P_k,
+\qquad
+\forall k,\ \forall \ell \in \{1,\dots,L_k\}.
+\label{prob:ul-power}
+\end{align}
+\end{subequations}
+
+The difficult feature of \eqref{prob:ul-main-obj}--\eqref{prob:ul-power} is that the number of sub-blocks $L_k$ is itself unknown. The final algorithm resolves that difficulty by constructing the sub-block sequence greedily from the remaining bits.
+
+\subsection{Uplink Greedy Dynamic Sub-Block Construction}
+For a candidate payload $B$ sent by user $k$ inside one coherence-limited block, define the single-block design operator
+\begin{equation}
+\mathrm{AO}_k^{(\UL)}(B,T_k,\varepsilon_k)
+:=
+\bigl(n_k^\star(B), \F_k^\star(B)\bigr),
+\label{eq:ul-ao-operator}
+\end{equation}
+where the pair is obtained from
+\begin{subequations}
+\begin{align}
+\min_{n,\F}\quad
+& n
+\label{prob:ul-single-obj}
+\\
+\text{s.t.}\quad
+&
+\frac{B}{n}
+\le
+R_{k,\ell}^{(\UL)}(n,\Hc_{k,\ell}^{(\UL)},\F,\varepsilon_k),
+\label{prob:ul-single-rate}
+\\
+&
+1 \le n \le T_k,
+\label{prob:ul-single-n}
+\\
+&
+\norm{\F}_F^2 \le P_k.
+\label{prob:ul-single-power}
+\end{align}
+\end{subequations}
+
+For a fixed $(n,\F)$, the maximum integer payload that still satisfies the finite-blocklength constraint is
+\begin{equation}
+B_{k,\ell}^{\max,(\UL)}(n,\F)
+:=
+\floor{
+n\,R_{k,\ell}^{(\UL)}(n,\Hc_{k,\ell}^{(\UL)},\F,\varepsilon_k)
+}.
+\label{eq:ul-bmax}
+\end{equation}
+
+The outer loop starts from $B_{k,\mathrm{rem}}^{(1)} = B_k$ and repeatedly creates one sub-block at a time.
+
+\begin{algorithm}[ht]
+\caption{Greedy Uplink Sub-Block Construction for User $k$}
+\label{alg:ul-greedy}
+\begin{algorithmic}[1]
+\Require Payload $B_k$, coherence limit $T_k$, reliability target $\varepsilon_k$
+\Ensure $\{(n_{k,\ell},\F_{k,\ell}^{(\UL)},B_{k,\ell})\}_{\ell=1}^{L_k}$
+\State $\ell \gets 1$
+\State $B_{k,\mathrm{rem}}^{(1)} \gets B_k$
+\While{$B_{k,\mathrm{rem}}^{(\ell)} > 0$}
+    \State $(n_{k,\ell},\F_{k,\ell}^{(\UL)}) \gets \mathrm{AO}_k^{(\UL)}(B_{k,\mathrm{rem}}^{(\ell)},T_k,\varepsilon_k)$
+    \State $B_{k,\ell} \gets \min\!\left\{B_{k,\mathrm{rem}}^{(\ell)},\,
+    B_{k,\ell}^{\max,(\UL)}(n_{k,\ell},\F_{k,\ell}^{(\UL)})\right\}$
+    \State $B_{k,\mathrm{rem}}^{(\ell+1)} \gets B_{k,\mathrm{rem}}^{(\ell)} - B_{k,\ell}$
+    \State $\ell \gets \ell + 1$
+\EndWhile
+\State $L_k \gets \ell - 1$
+\end{algorithmic}
+\end{algorithm}
+
+Algorithm~\ref{alg:ul-greedy} is the final cleaned uplink logic. It first tries to fit all remaining bits into one block. If that is impossible within the coherence limit, it uses the best feasible block for the current channel state, transmits the largest feasible bit count, and forwards the leftover payload to the next sub-block. Hence $L_k$ is an output, not an input.
+
+\subsection{Uplink Alternating Optimization for One Sub-Block}
+The single-block problem \eqref{prob:ul-single-obj}--\eqref{prob:ul-single-power} is nonconvex in $(n,\F)$ jointly. The final algorithm therefore alternates between a blocklength update and a precoder update.
+
+For a fixed precoder $\F_{k,\ell}^{(\UL),(i)}$, the next blocklength is chosen as the smallest feasible integer:
+\begin{equation}
+n_{k,\ell}^{(i+1)}
+:=
+\min \left\{
+n \in \{1,\dots,T_k\}
+:
+\frac{B}{n}
+\le
+R_{k,\ell}^{(\UL)}(n,\Hc_{k,\ell}^{(\UL)},\F_{k,\ell}^{(\UL),(i)},\varepsilon_k)
+\right\}.
+\label{eq:ul-n-update}
+\end{equation}
+If the set in \eqref{eq:ul-n-update} is empty, the fallback is
+\begin{equation}
+n_{k,\ell}^{(i+1)} = T_k.
+\label{eq:ul-n-fallback}
+\end{equation}
+
+For that updated blocklength, the precoder step is
+\begin{subequations}
+\begin{align}
+\F_{k,\ell}^{(\UL),(i+1)}
+:=
+\argmax_{\F}\quad
+&
+R_{k,\ell}^{(\UL)}(n_{k,\ell}^{(i+1)},\Hc_{k,\ell}^{(\UL)},\F,\varepsilon_k)
+\label{prob:ul-precoder}
+\\
+\text{s.t.}\quad
+&
+\norm{\F}_F^2 \le P_k.
+\label{prob:ul-precoder-power}
+\end{align}
+\end{subequations}
+
+The final inner routine is therefore:
+
+\begin{algorithm}[ht]
+\caption{Alternating Optimization for $\mathrm{AO}_k^{(\UL)}(B,T_k,\varepsilon_k)$}
+\label{alg:ul-ao}
+\begin{algorithmic}[1]
+\Require Target payload $B$, coherence limit $T_k$, reliability target $\varepsilon_k$
+\Ensure $(n_{k,\ell}^\star,\F_{k,\ell}^{(\UL),\star})$
+\State Initialize $\F_{k,\ell}^{(\UL),(0)}$ and $n_{k,\ell}^{(0)}$
+\For{$i=0,1,\dots,I_{\max}-1$}
+    \State Update $n_{k,\ell}^{(i+1)}$ using \eqref{eq:ul-n-update}, with fallback \eqref{eq:ul-n-fallback}
+    \State Update $\F_{k,\ell}^{(\UL),(i+1)}$ by solving \eqref{prob:ul-precoder}--\eqref{prob:ul-precoder-power}
+\EndFor
+\State $(n_{k,\ell}^\star,\F_{k,\ell}^{(\UL),\star}) \gets (n_{k,\ell}^{(I_{\max})},\F_{k,\ell}^{(\UL),(I_{\max})})$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Uplink Primal-Dual Precoder Update}
+The final uplink writeup also retained the constrained primal-dual view of the precoder step. Let
+\begin{equation}
+\F_{k,\ell}^{(\UL)} = f_{\theta_{k,\ell}}(\Hc_{k,\ell}^{(\UL)}),
+\label{eq:ul-parameterization}
+\end{equation}
+where $f_{\theta_{k,\ell}}(\cdot)$ is a trainable mapping and $\theta_{k,\ell}$ is its parameter vector.
+
+For a fixed blocklength $n_{k,\ell}$ and target payload $B_{k,\ell}$, define the finite-blocklength residual
+\begin{equation}
+c_{1,k,\ell}^{(\UL)}(\theta_{k,\ell})
+:=
+\frac{B_{k,\ell}}{n_{k,\ell}}
+-
+R_{k,\ell}^{(\UL)}
+\bigl(
+n_{k,\ell},
+\Hc_{k,\ell}^{(\UL)},
+f_{\theta_{k,\ell}}(\Hc_{k,\ell}^{(\UL)}),
+\varepsilon_k
+\bigr),
+\label{eq:ul-residual-rate}
+\end{equation}
+and the power residual
+\begin{equation}
+c_{2,k,\ell}^{(\UL)}(\theta_{k,\ell})
+:=
+\norm{f_{\theta_{k,\ell}}(\Hc_{k,\ell}^{(\UL)})}_F^2 - P_k.
+\label{eq:ul-residual-power}
+\end{equation}
+
+With nonnegative multipliers $\lambda_{1,k,\ell}$ and $\lambda_{2,k,\ell}$, the Lagrangian is
+\begin{equation}
+\mathcal{L}_{k,\ell}^{(\UL)}
+=
+-R_{k,\ell}^{(\UL)}
++ \lambda_{1,k,\ell} c_{1,k,\ell}^{(\UL)}
++ \lambda_{2,k,\ell} c_{2,k,\ell}^{(\UL)}.
+\label{eq:ul-lagrangian}
+\end{equation}
+
+The primal step is
+\begin{equation}
+\theta_{k,\ell}^{(t+1)}
+=
+\theta_{k,\ell}^{(t)}
+- \eta_{\theta}^{(t)}
+\nabla_{\theta_{k,\ell}}
+\mathcal{L}_{k,\ell}^{(\UL)},
+\label{eq:ul-theta-update}
+\end{equation}
+and the dual steps are
+\begin{align}
+\lambda_{1,k,\ell}^{(t+1)}
+&=
+\left[
+\lambda_{1,k,\ell}^{(t)}
++ \eta_{\lambda_1}^{(t)} c_{1,k,\ell}^{(\UL)}\!\left(\theta_{k,\ell}^{(t+1)}\right)
+\right]_+,
+\label{eq:ul-lambda1}
+\\
+\lambda_{2,k,\ell}^{(t+1)}
+&=
+\left[
+\lambda_{2,k,\ell}^{(t)}
++ \eta_{\lambda_2}^{(t)} c_{2,k,\ell}^{(\UL)}\!\left(\theta_{k,\ell}^{(t+1)}\right)
+\right]_+,
+\label{eq:ul-lambda2}
+\end{align}
+where $[x]_+ = \max\{x,0\}$. This is the final clean statement of the uplink precoder update: increase the finite-blocklength rate while enforcing rate feasibility and power feasibility through dual feedback.
+
+\subsection{Uplink Results}
+This section retains the final uplink experiment figures already exported by the project. The purpose of these figures is to illustrate what the cleaned formulation does after the greedy split rule and inner solver have converged.
+
+\subsubsection{Representative Four-User Uplink Experiment}
+Figure~\ref{fig:ul-k4-config} summarizes the four-user setup. The users have heterogeneous payload, power, and coherence budgets, so the final algorithm does not assign the same number of sub-blocks to everyone.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.82\textwidth]{figures/k4/user_config_reverse_summary.png}
+\caption{Configuration summary for the representative four-user uplink experiment.}
+\label{fig:ul-k4-config}
+\end{figure}
+
+Figure~\ref{fig:ul-k4-user-summaries} shows the resulting sub-block schedules. Users 0 and 1 are served in fewer blocks, while users 2 and 3 are split across more blocks because their remaining payload cannot be placed efficiently in one coherence-limited transmission. That is exactly the behavior encoded by Algorithm~\ref{alg:ul-greedy}.
+
+\begin{figure}[p]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/testing_user0_summary.png}
+    \caption{User 0}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/testing_user1_summary.png}
+    \caption{User 1}
+\end{subfigure}
+
+\vspace{1em}
+
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/testing_user2_summary.png}
+    \caption{User 2}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/testing_user3_summary.png}
+    \caption{User 3}
+\end{subfigure}
+\caption{Per-user uplink outcomes in the four-user experiment. Each panel reports the final blocklength trajectory and the achieved finite-blocklength operating point across the generated sub-blocks.}
+\label{fig:ul-k4-user-summaries}
+\end{figure}
+
+The network-level effect is shown in Figure~\ref{fig:ul-k4-latency}. The optimized schedule shifts the latency distribution toward smaller values, while Figure~\ref{fig:ul-k4-async} shows that the same schedule also compresses the spread in user finishing times.
+
+\begin{figure}[p]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/test_latency_comparison.png}
+    \caption{Per-user latency before and after optimization}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/test_latency_histogram.png}
+    \caption{Latency histogram and empirical CDF}
+\end{subfigure}
+\caption{Latency reduction in the four-user uplink experiment.}
+\label{fig:ul-k4-latency}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\begin{subfigure}[t]{0.9\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/test_async_distribution.png}
+    \caption{Global asynchronality distribution}
+\end{subfigure}
+
+\vspace{1em}
+
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/test_initial_async_heatmap.png}
+    \caption{Initial pairwise asynchronality}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/test_final_async_heatmap.png}
+    \caption{Final pairwise asynchronality}
+\end{subfigure}
+\caption{Asynchronality behavior in the four-user uplink experiment.}
+\label{fig:ul-k4-async}
+\end{figure}
+
+\clearpage
+\subsubsection{Hundred-User Uplink Experiment}
+Figure~\ref{fig:ul-k100-config} shows the heterogeneous hundred-user setup used to stress the same dynamic splitting logic at larger scale.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/k100/user_config_reverse_summary.png}
+\caption{Configuration summary for the hundred-user uplink experiment.}
+\label{fig:ul-k100-config}
+\end{figure}
+
+Figures~\ref{fig:ul-k100-latency} and \ref{fig:ul-k100-async} show that the latency reduction and synchronization improvement remain visible when the user population is scaled up. The cleaned final interpretation is unchanged: the algorithm keeps generating only as many user-specific sub-blocks as the remaining payload actually requires.
+
+\begin{figure}[p]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k100/test_latency_comparison.png}
+    \caption{Per-user latency before and after optimization}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k100/test_latency_histogram.png}
+    \caption{Latency histogram and empirical CDF}
+\end{subfigure}
+\caption{Latency reduction in the hundred-user uplink experiment.}
+\label{fig:ul-k100-latency}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\begin{subfigure}[t]{0.9\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k100/test_async_distribution.png}
+    \caption{Global asynchronality distribution}
+\end{subfigure}
+
+\vspace{1em}
+
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k100/test_initial_async_heatmap.png}
+    \caption{Initial pairwise asynchronality}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k100/test_final_async_heatmap.png}
+    \caption{Final pairwise asynchronality}
+\end{subfigure}
+\caption{Asynchronality behavior in the hundred-user uplink experiment.}
+\label{fig:ul-k100-async}
+\end{figure}
+
+\clearpage
+\section{Downlink Formulation and Final Algorithm}
+\subsection{Interference-Coupled Downlink Physical-Layer Model}
+The downlink part keeps the final standalone precoder-scheduling formulation used in code. The base station transmits with $N_b$ antennas, user $k$ receives with $N_{r,k}$ antennas, and
+\[
+\Hc_{k,\ell}^{(\DL)} \in \C^{N_{r,k} \times N_b},
+\qquad
+\F_{k,\ell}^{(\DL)} \in \C^{N_b \times d_k}.
+\]
+
+To stay aligned with the implemented rate calculation, the downlink interaction is written directly in matrix form. Define the desired-signal covariance
+\begin{equation}
+\mathbf{S}_{k,\ell}
+=
+\Hc_{k,\ell}^{(\DL)}
+\F_{k,\ell}^{(\DL)}
+\bigl(\F_{k,\ell}^{(\DL)}\bigr)^H
+\bigl(\Hc_{k,\ell}^{(\DL)}\bigr)^H,
+\label{eq:dl-s}
+\end{equation}
+and the interference-plus-noise covariance
+\begin{equation}
+\Sig_{k,\ell}
+=
+\sigma_k^2 \I
++
+\sum_{j \in \Aset_\ell \setminus \{k\}}
+\Hc_{k,\ell}^{(\DL)}
+\F_{j,\ell}^{(\DL)}
+\bigl(\F_{j,\ell}^{(\DL)}\bigr)^H
+\bigl(\Hc_{k,\ell}^{(\DL)}\bigr)^H.
+\label{eq:dl-sigma}
+\end{equation}
+Here $\sigma_k^2$ is the user-specific noise variance. In the implementation it is calibrated once from an isolated desired-signal power measurement and a target SNR setting, so the exported `snr\_db' values act only as noise-calibration hyperparameters. The corresponding matrix-valued effective SINR object is
+\begin{equation}
+\A_{k,\ell}^{(\DL)}
+:=
+\Sig_{k,\ell}^{-1/2}
+\mathbf{S}_{k,\ell}
+\Sig_{k,\ell}^{-1/2}.
+\label{eq:dl-a}
+\end{equation}
+In the actual implementation, \eqref{eq:dl-a} is evaluated numerically through a Cholesky factor of $\Sig_{k,\ell}$.
+
+The capacity and dispersion terms are therefore
+\begin{align}
+C_{k,\ell}^{(\DL)}
+&=
+\log_2 \det\!\bigl(\I + \A_{k,\ell}^{(\DL)}\bigr),
+\label{eq:dl-capacity}
+\\
+V_{k,\ell}^{(\DL)}
+&=
+(\log_2 e)^2
+\tr\!\Big[
+\A_{k,\ell}^{(\DL)}
+\bigl(\A_{k,\ell}^{(\DL)} + 2\I\bigr)
+\bigl(\A_{k,\ell}^{(\DL)} + \I\bigr)^{-2}
+\Big],
+\label{eq:dl-dispersion}
+\end{align}
+which yields the downlink finite-blocklength rate
+\begin{equation}
+R_{k,\ell}^{(\DL)}
+=
+C_{k,\ell}^{(\DL)}
+-
+\sqrt{\frac{V_{k,\ell}^{(\DL)}}{n_{k,\ell}}}\,
+Q^{-1}(\varepsilon_k).
+\label{eq:dl-rate}
+\end{equation}
+
+\subsection{Downlink Latency Minimization Problem}
+The final downlink problem uses the same latency and payload definitions as the uplink part, but its rate constraints are now coupled by \eqref{eq:dl-sigma}--\eqref{eq:dl-a}. The clean formulation is
+\begin{subequations}
+\begin{align}
+\min_{\{L_k,B_{k,\ell},n_{k,\ell},\F_{k,\ell}^{(\DL)}\}}
+\quad
+&
+\sum_{k \in \Kset}\frac{1}{f_{s,k}}\sum_{\ell=1}^{L_k} n_{k,\ell}
+\label{prob:dl-main-obj}
+\\
+\text{s.t.}\quad
+&
+\frac{B_{k,\ell}}{n_{k,\ell}}
+\le
+R_{k,\ell}^{(\DL)}\!\left(
+n_{k,\ell},
+\{\F_{j,\ell}^{(\DL)}\}_{j \in \Aset_\ell},
+\varepsilon_k
+\right),
+\qquad
+\forall k,\ \forall \ell \le L_k,
+\label{prob:dl-rate}
+\\
+&
+\sum_{\ell=1}^{L_k} B_{k,\ell} = B_k,
+\qquad
+\forall k,
+\label{prob:dl-payload}
+\\
+&
+1 \le n_{k,\ell} \le T_k,
+\qquad
+\forall k,\ \forall \ell \le L_k,
+\label{prob:dl-n}
+\\
+&
+B_{k,\ell} \in \mathbb{Z}_{\ge 0},
+\qquad
+L_k \in \mathbb{Z}_{\ge 1},
+\label{prob:dl-int}
+\\
+&
+\norm{\F_{k,\ell}^{(\DL)}}_F^2 \le P_k,
+\qquad
+\forall k,\ \forall \ell \le L_k.
+\label{prob:dl-power}
+\end{align}
+\end{subequations}
+
+The key difference from the uplink part is that \eqref{prob:dl-rate} cannot be solved user by user. The precoder of one active user changes the interference covariance and therefore the effective matrix \eqref{eq:dl-a} of every other active user in the same block. The final implementation therefore solves the problem causally, one common scheduling block at a time.
+
+\subsection{Per-Block Precoder Convergence}
+At downlink block $\ell$, the active-user set is
+\begin{equation}
+\Aset_\ell = \{k \in \Kset : B_{k,\mathrm{rem}}^{(\ell)} > 0\}.
+\label{eq:active-set}
+\end{equation}
+
+The exported code keeps three final downlink methods: the baseline `greedy\_safe\_sweep', `simple\_weight\_inverse\_cnr', and `simple\_weight\_remaining\_bits'. At the precoder-update level, these reduce to one greedy objective and one shared simple weighted objective.
+
+\paragraph{Greedy sweep.}
+When the baseline greedy sweep is used, each user update solves
+\begin{subequations}
+\begin{align}
+\max_{\F_{k,\ell}^{(\DL)}}\quad
+&
+R_{k,\ell}^{(\DL)}\!\left(
+T_k,
+\{\F_{j,\ell}^{(\DL)}\}_{j \in \Aset_\ell},
+\varepsilon_k
+\right)
+\label{prob:dl-greedy-precoder}
+\\
+\text{s.t.}\quad
+&
+\norm{\F_{k,\ell}^{(\DL)}}_F^2 \le P_k.
+\label{prob:dl-greedy-precoder-power}
+\end{align}
+\end{subequations}
+
+\paragraph{Simple weighted variants.}
+For both simple weighted variants, namely the inverse-CNR scheduler and the remaining-bits scheduler, the update becomes
+\begin{subequations}
+\begin{align}
+\max_{\F_{k,\ell}^{(\DL)}}\quad
+&
+R_{k,\ell}^{(\DL)}
++
+\beta
+\sum_{j \in \Aset_\ell \setminus \{k\}}
+w_j^{(\ell)} R_{j,\ell}^{(\DL)}
+\label{prob:dl-simple-weighted-precoder}
+\\
+\text{s.t.}\quad
+&
+\norm{\F_{k,\ell}^{(\DL)}}_F^2 \le P_k,
+\label{prob:dl-simple-weighted-precoder-power}
+\end{align}
+\end{subequations}
+where the omitted arguments of $R_{j,\ell}^{(\DL)}$ are the current blocklength caps $T_j$, the current joint precoder collection in block $\ell$, and the reliability target $\varepsilon_j$.
+
+The two simple weighted variants differ only in how the raw priority score $q_{k,\ell}$ is chosen:
+\begin{equation}
+q_{k,\ell}
+=
+\begin{cases}
+\bigl(\gamma_{k,\ell}^{\mathrm{iso}}\bigr)^{-1},
+&
+\text{for `simple\_weight\_inverse\_cnr'},
+\\[1mm]
+B_{k,\mathrm{rem}}^{(\ell)},
+&
+\text{for `simple\_weight\_remaining\_bits'}.
+\end{cases}
+\label{eq:dl-raw-priority}
+\end{equation}
+The isolated CNR used in \eqref{eq:dl-raw-priority} is
+\begin{equation}
+\gamma_{k,\ell}^{\mathrm{iso}}
+:=
+\frac{
+\frac{1}{N_{r,k}}
+\norm{\Hc_{k,\ell}^{(\DL)}\F_{k,\ell}^{(\DL)}}_F^2
+}{
+\sigma_k^2
+}.
+\label{eq:dl-iso-cnr}
+\end{equation}
+After that raw score is computed, the normalized weight is
+\begin{equation}
+w_k^{(\ell)}
+=
+\frac{q_{k,\ell}}{\max_{j \in \Aset_\ell} q_{j,\ell}},
+\qquad
+k \in \Aset_\ell.
+\label{eq:dl-weight-normalization}
+\end{equation}
+Hence the active user with the largest raw priority always gets weight $1$, and every other user is scaled relative to that block-wise maximum. This keeps the ordering induced by $q_{k,\ell}$ without introducing any additional shaping parameters. Therefore `simple\_weight\_inverse\_cnr' favors users whose current isolated block quality is weaker, while `simple\_weight\_remaining\_bits' favors users carrying larger unsent payloads.
+
+Within one block, active users are updated sequentially. If sweep index $s$ denotes one pass across the active-user set, the stopping metric is
+\begin{equation}
+\delta_\ell^{(s)}
+:=
+\max_{k \in \Aset_\ell}
+\frac{
+\norm{\F_{k,\ell}^{(\DL),(s+1)} - \F_{k,\ell}^{(\DL),(s)}}_F
+}{
+\max\!\left\{\norm{\F_{k,\ell}^{(\DL),(s)}}_F,\,10^{-12}\right\}
+}.
+\label{eq:delta}
+\end{equation}
+Precoder updates stop when $\delta_\ell^{(s)} \le \epsilon_{\mathrm{pc}}$ or when the prescribed maximum number of sweeps is reached.
+
+\subsection{Bit and Blocklength Allocation After Precoder Convergence}
+Once the precoders of the current block have converged, the final implementation allocates bits only after that convergence step. This is important: the scheduler does not alternate bits and precoders inside one block. All three retained downlink methods then use the same greedy blocklength rule.
+
+\paragraph{Greedy blocklength shrink rule.}
+For user $k$ in block $\ell$, first evaluate the rate at the full coherence limit:
+\begin{equation}
+R_{k,\ell}^{(\DL)}(T_k).
+\label{eq:dl-rate-at-T}
+\end{equation}
+The largest feasible integer payload at that blocklength is
+\begin{equation}
+B_{k,\ell}^{\max,(\DL)}(T_k)
+:=
+\floor{
+T_k R_{k,\ell}^{(\DL)}(T_k)
+}.
+\label{eq:dl-bmax-T}
+\end{equation}
+The transmitted payload is
+\begin{equation}
+B_{k,\ell}
+=
+\min\!\left\{
+B_{k,\mathrm{rem}}^{(\ell)},
+B_{k,\ell}^{\max,(\DL)}(T_k)
+\right\}.
+\label{eq:dl-bused}
+\end{equation}
+If $B_{k,\mathrm{rem}}^{(\ell)} \le B_{k,\ell}^{\max,(\DL)}(T_k)$, the algorithm shrinks $n_{k,\ell}$ downward over the discrete set $\Nset_k$ and keeps the smallest candidate that still satisfies
+\begin{equation}
+\frac{B_{k,\ell}}{n_{k,\ell}}
+\le
+R_{k,\ell}^{(\DL)}(n_{k,\ell}).
+\label{eq:dl-greedy-shrink}
+\end{equation}
+This is exactly the causal `send as many bits as possible, then shorten the block if feasible' rule implemented by `greedy\_safe\_sweep', `simple\_weight\_inverse\_cnr', and `simple\_weight\_remaining\_bits'.
+
+\subsection{Causal Downlink Sweep Scheduler}
+The final causal routine used by all three public downlink methods is summarized below.
+
+\begin{algorithm}[ht]
+\caption{Downlink Sweep Scheduler}
+\label{alg:dl-sweep}
+\begin{algorithmic}[1]
+\Require $\{B_k,T_k,f_{s,k},P_k,\varepsilon_k\}_{k=1}^K$, blocklength grid $\{\Nset_k\}_{k=1}^K$
+\Ensure $\{(n_{k,\ell},\F_{k,\ell}^{(\DL)},B_{k,\ell})\}$ for all scheduled blocks
+\State $\ell \gets 1$, $B_{k,\mathrm{rem}}^{(1)} \gets B_k$ for all $k$
+\While{$\exists k$ such that $B_{k,\mathrm{rem}}^{(\ell)} > 0$}
+    \State $\Aset_\ell \gets \{k : B_{k,\mathrm{rem}}^{(\ell)} > 0\}$
+    \State Initialize the new block precoders from the previous block whenever available
+    \Repeat
+        \For{$k \in \Aset_\ell$}
+            \State Update $\F_{k,\ell}^{(\DL)}$ with \eqref{prob:dl-greedy-precoder} or \eqref{prob:dl-simple-weighted-precoder}
+        \EndFor
+        \State Compute $\delta_\ell^{(s)}$ from \eqref{eq:delta}
+        \State Identify users with $B_{k,\ell}^{\max,(\DL)}(T_k) \le 0$
+        \State Set the precoders of such users to zero and re-optimize the remaining transmit users if needed
+    \Until{$\delta_\ell^{(s)} \le \epsilon_{\mathrm{pc}}$ or the sweep limit is reached}
+    \For{$k \in \Aset_\ell$}
+        \State Choose $(B_{k,\ell},n_{k,\ell})$ with the greedy rule \eqref{eq:dl-bused}--\eqref{eq:dl-greedy-shrink}
+        \State $B_{k,\mathrm{rem}}^{(\ell+1)} \gets B_{k,\mathrm{rem}}^{(\ell)} - B_{k,\ell}$
+    \EndFor
+    \State $\ell \gets \ell + 1$
+\EndWhile
+\end{algorithmic}
+\end{algorithm}
+
+Algorithm~\ref{alg:dl-sweep} is the final cleaned downlink interpretation. Each common block is first turned into a stable interference environment through precoder convergence, and only then is the per-user payload allocated. If a user is still infeasible in that block after convergence, its precoder is zeroed for that block and the remaining users are re-optimized. The three retained methods differ only in whether the per-user precoder update uses \eqref{prob:dl-greedy-precoder} or \eqref{prob:dl-simple-weighted-precoder}, and in the choice of $q_{k,\ell}$ inside \eqref{eq:dl-raw-priority}.
+
+\subsection{Downlink Results}
+The figures in this section come from three exported four-user downlink runs that share the same system setup: $K=4$, $N_b=16$, $N_{r,k}=4$, blocklength caps $T = [50,60,80,100]$, payloads $B = [200,400,600,1000]$, per-user power budgets $P_k = 30$, and target SNR settings of $8$ dB for all users. The initial baseline is generated by the same allocator operating on random precoders before the sweep-based updates.
+
+\subsubsection{Greedy Sweep}
+This baseline uses the user-wise objective \eqref{prob:dl-greedy-precoder} and the common greedy blocklength rule \eqref{eq:dl-bused}--\eqref{eq:dl-greedy-shrink}. It provides the reference point for the two simple weighted variants.
+
+\begin{table}[ht]
+\centering
+\caption{Summary of the four-user downlink greedy sweep experiment}
+\label{tab:dl-greedy-summary}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{lccc}
+\toprule
+Metric & Initial & Final & Change \\
+\midrule
+Total latency (s) & 0.209267 & 0.131667 & $-37.0819\%$ \\
+Average latency (s) & 0.052317 & 0.032917 & $-37.0819\%$ \\
+Latency range (s) & 0.038467 / 0.075733 & 0.024867 / 0.045000 & -- \\
+Asynchronality sum (s) & 0.123000 & 0.064733 & $-47.3713\%$ \\
+Average SNR (dB) & 8.0000 & 8.9858 & $+0.9858$ \\
+Average SINR (dB) & -4.5185 & -3.5955 & $+0.9230$ \\
+Blocks per user & -- & $(8,8,7,7)$ & -- \\
+Total symbols per user & -- & $(373,431,496,675)$ & -- \\
+Skipped blocks per user & -- & $(2,0,0,0)$ & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/downlink/greedy/latency_comparison.png}
+\caption{Per-user initial and final latency for the downlink greedy sweep experiment.}
+\label{fig:dl-greedy-latency}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/downlink/greedy/optimization_history.png}
+\caption{Optimization history of the downlink greedy sweep scheduler.}
+\label{fig:dl-greedy-history}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/downlink/greedy/per_user_schedule_details.png}
+\caption{Per-user schedule details for the downlink greedy sweep experiment.}
+\label{fig:dl-greedy-schedule}
+\end{figure}
+
+\clearpage
+\subsubsection{Simple Weight Inverse CNR}
+This variant keeps the same greedy bit allocation, but replaces the block precoder objective by \eqref{prob:dl-simple-weighted-precoder} with the inverse-CNR score in \eqref{eq:dl-raw-priority}. Users with weaker current isolated CNR therefore receive larger coupling weights during the block-level precoder update.
+
+\begin{table}[ht]
+\centering
+\caption{Summary of the four-user downlink `simple\_weight\_inverse\_cnr' experiment}
+\label{tab:dl-inverse-cnr-summary}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{lccc}
+\toprule
+Metric & Initial & Final & Change \\
+\midrule
+Total latency (s) & 0.209267 & 0.121133 & $-42.1153\%$ \\
+Average latency (s) & 0.052317 & 0.030283 & $-42.1153\%$ \\
+Latency range (s) & 0.038467 / 0.075733 & 0.023733 / 0.041467 & -- \\
+Asynchronality sum (s) & 0.123000 & 0.056200 & $-54.3089\%$ \\
+Average SNR (dB) & 8.0000 & 8.9998 & $+0.9998$ \\
+Average SINR (dB) & -4.5185 & -3.3165 & $+1.2020$ \\
+Blocks per user & -- & $(8,7,6,7)$ & -- \\
+Total symbols per user & -- & $(356,397,442,622)$ & -- \\
+Skipped blocks per user & -- & $(2,0,0,0)$ & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/downlink/inverse_cnr/latency_comparison.png}
+\caption{Per-user initial and final latency for the `simple\_weight\_inverse\_cnr' experiment.}
+\label{fig:dl-inverse-cnr-latency}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/downlink/inverse_cnr/optimization_history.png}
+\caption{Optimization history of the `simple\_weight\_inverse\_cnr' scheduler.}
+\label{fig:dl-inverse-cnr-history}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/downlink/inverse_cnr/per_user_schedule_details.png}
+\caption{Per-user schedule details for the `simple\_weight\_inverse\_cnr' experiment.}
+\label{fig:dl-inverse-cnr-schedule}
+\end{figure}
+
+\clearpage
+\subsubsection{Simple Weight Remaining Bits}
+This variant also keeps the same greedy bit allocation, but uses the remaining-bits score in \eqref{eq:dl-raw-priority}. The downlink precoder sweep therefore places larger coupling weight on users whose unsent payload is still larger at the current block.
+
+\begin{table}[ht]
+\centering
+\caption{Summary of the four-user downlink `simple\_weight\_remaining\_bits' experiment}
+\label{tab:dl-remaining-bits-summary}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{lccc}
+\toprule
+Metric & Initial & Final & Change \\
+\midrule
+Total latency (s) & 0.209267 & 0.122133 & $-41.6375\%$ \\
+Average latency (s) & 0.052317 & 0.030533 & $-41.6375\%$ \\
+Latency range (s) & 0.038467 / 0.075733 & 0.023667 / 0.041200 & -- \\
+Asynchronality sum (s) & 0.123000 & 0.055600 & $-54.7967\%$ \\
+Average SNR (dB) & 8.0000 & 9.0031 & $+1.0031$ \\
+Average SINR (dB) & -4.5185 & -3.3205 & $+1.1980$ \\
+Blocks per user & -- & $(8,7,6,7)$ & -- \\
+Total symbols per user & -- & $(355,407,452,618)$ & -- \\
+Skipped blocks per user & -- & $(2,0,0,0)$ & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/downlink/remaining_bits/latency_comparison.png}
+\caption{Per-user initial and final latency for the `simple\_weight\_remaining\_bits' experiment.}
+\label{fig:dl-remaining-bits-latency}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/downlink/remaining_bits/optimization_history.png}
+\caption{Optimization history of the `simple\_weight\_remaining\_bits' scheduler.}
+\label{fig:dl-remaining-bits-history}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/downlink/remaining_bits/per_user_schedule_details.png}
+\caption{Per-user schedule details for the `simple\_weight\_remaining\_bits' experiment.}
+\label{fig:dl-remaining-bits-schedule}
+\end{figure}
+
+Across these three runs, `simple\_weight\_inverse\_cnr' gives the lowest final total latency, while `simple\_weight\_remaining\_bits' gives the smallest final asynchronality sum. Both simple weighted variants outperform the greedy baseline on total latency, average latency, and final average SINR.
+
+\clearpage
+\section{Conclusion}
+The report is now organized around the final uplink scheduler and the three retained downlink sweep variants.
+
+The uplink part is a user-wise dynamic sub-block construction problem under finite-blocklength and power constraints. Its output is the number of sub-blocks, the transmitted bits per sub-block, the chosen blocklengths, and the corresponding precoders.
+
+The downlink part keeps the same payload and latency conventions, but replaces the user-wise abstraction with a common-block scheduler where active users' precoders are converged first and bits are allocated second. The greedy baseline and the two simple weighted variants all share that same causal schedule, and differ only in the local precoder objective used inside each block.
+
+This separation makes the project much easier to read. The notation is consistent across both directions, every optimization variable is defined, and only the final formulations and algorithms remain.
+
+\begin{thebibliography}{9}
+
+\bibitem{polyanskiy2010}
+Y. Polyanskiy, H. V. Poor, and S. Verdu, ``Channel coding rate in the finite blocklength regime,'' \emph{IEEE Transactions on Information Theory}, vol. 56, no. 5, pp. 2307--2359, May 2010.
+
+\bibitem{zhang2023}
+Y. Zhang, W. Cheng, J. Wang, and W. Zhang, ``Performance analysis and blocklength minimization of uplink RSMA for short packet transmissions in URLLC,'' in \emph{Proc. IEEE Global Communications Conference (GLOBECOM)}, 2023, pp. 6765--6770.
+
+\end{thebibliography}
+
+\end{document}

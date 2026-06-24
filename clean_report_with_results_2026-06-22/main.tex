@@ -1,0 +1,618 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsfonts,mathtools}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\newcommand{\Kset}{\mathcal{K}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\F}{\mathbf{F}}
+\newcommand{\Hc}{\mathbf{H}}
+\newcommand{\I}{\mathbf{I}}
+\newcommand{\A}{\mathbf{A}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\argmax}{\operatorname*{arg\,max}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\floor}[1]{\left\lfloor #1 \right\rfloor}
+
+\title{Latency Minimization for Uplink RSMA with Dynamic Sub-Block Allocation}
+\author{}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report presents a cleaned and self-contained formulation of the final algorithmic outcome of the project. The objective is to transmit the payload of each uplink user with minimum latency when the number of required sub-blocks is not known in advance. For each user, the method jointly determines the number of sub-blocks, the bits carried by each sub-block, the blocklength used in each sub-block, and the corresponding precoder, subject to finite-blocklength reliability and power constraints. The final method consists of four layers: an effective finite-blocklength rate model, a global latency minimization problem with unknown sub-block count, a greedy outer loop that constructs sub-blocks dynamically, and an inner alternating-optimization routine with a primal-dual precoder update.
+\end{abstract}
+
+\section{Introduction}
+The final version of the work can be summarized as follows. Each user $k \in \Kset$ has a total payload of $B_k$ information bits that must be delivered to the base station. A single transmission block is no longer assumed to be known beforehand. Instead, the payload may be split across multiple sequential sub-blocks, where the number of such sub-blocks, denoted by $L_k$, is itself part of the solution. The design goal is to minimize uplink latency while ensuring that every transmitted sub-block satisfies a finite-blocklength decoding constraint and a transmit-power constraint.
+
+Earlier exploratory material considered several intermediate formulations. Those derivations are intentionally omitted here. The cleaned report focuses only on the final formulation that survived the development process:
+\begin{enumerate}
+    \item represent each user sub-block by an effective finite-blocklength rate,
+    \item optimize latency with $L_k$ unknown,
+    \item construct sub-blocks greedily from the remaining bits, and
+    \item solve the per-sub-block design by alternating between blocklength search and precoder optimization.
+\end{enumerate}
+
+\section{Notation and Effective Physical-Layer Model}
+\subsection{Indices, Sets, and Variables}
+The user set is
+\[
+\Kset = \{1,2,\dots,K\},
+\]
+where $K$ is the number of uplink users.
+
+The most important symbols are summarized in Table~\ref{tab:notation}. Every symbol used later in the report is defined either in the table or at first use.
+
+\begin{table}[ht]
+\centering
+\caption{Main notation}
+\label{tab:notation}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.24\textwidth} X}
+\toprule
+Symbol & Definition \\
+\midrule
+$k \in \Kset$ & User index. \\
+$\ell \in \{1,\dots,L_k\}$ & Sub-block index for user $k$. \\
+$K$ & Number of users. \\
+$L_k$ & Number of sub-blocks used by user $k$; this is unknown a priori and is determined by the algorithm. \\
+$B_k$ & Total payload of user $k$ in bits. \\
+$B_{k,\ell}$ & Bits assigned to sub-block $\ell$ of user $k$. \\
+$B^{\mathrm{tx}}_{k,\ell}$ & Bits actually transmitted in sub-block $\ell$ by the greedy algorithm. \\
+$B^{(\ell)}_{k,\mathrm{rem}}$ & Remaining unsent bits of user $k$ when iteration $\ell$ begins. \\
+$n_{k,\ell}$ & Blocklength of user $k$ in sub-block $\ell$, measured in channel uses or symbols. \\
+$T_k$ & Maximum available blocklength in one coherence sub-block for user $k$. \\
+$f_{s,k}$ & Symbol rate of user $k$ in symbols per second. \\
+$\tau_k$ & Total latency of user $k$, defined by $\tau_k = \sum_{\ell=1}^{L_k} n_{k,\ell}/f_{s,k}$. \\
+$\varepsilon_k$ & Target decoding error probability of user $k$. \\
+$P_{k,\ell}$ & Power budget for user $k$ in sub-block $\ell$. \\
+$N_r$ & Number of receive antennas at the base station. \\
+$N_t$ & Number of transmit antennas per user when a common transmit dimension is assumed. \\
+$d_k$ & Number of transmitted spatial streams of user $k$. \\
+$\Hc_{k,\ell} \in \C^{N_r \times N_t}$ & Effective channel matrix of user $k$ in sub-block $\ell$. \\
+$\F_{k,\ell} \in \C^{N_t \times d_k}$ & Precoder of user $k$ in sub-block $\ell$. \\
+$\sigma^2$ & Noise variance used in the effective AWGN model. \\
+$C_{k,\ell}(\cdot)$ & Effective Shannon capacity in bits per channel use. \\
+$V_{k,\ell}(\cdot)$ & Channel dispersion in bits$^2$ per channel use. \\
+$R_{k,\ell}^*(\cdot)$ & Normal-approximation finite-blocklength rate in bits per channel use. \\
+$Q^{-1}(\cdot)$ & Inverse Gaussian $Q$-function. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Effective Per-Sub-Block Model}
+The cleaned formulation is intentionally written at the level of an \emph{effective} user-specific channel. This keeps the final algorithm independent of the exploratory derivations that appeared earlier in the project. Any uplink access architecture, including RSMA, may be used in the background as long as it yields an effective channel matrix $\Hc_{k,\ell}$ and an achievable finite-blocklength rate model for each user and each sub-block.
+
+For the AWGN MIMO subproblem used in the final algorithm, define
+\begin{align}
+\A_{k,\ell}(\Hc_{k,\ell},\F_{k,\ell})
+&=
+\sigma^{-2}\Hc_{k,\ell}\F_{k,\ell}\F_{k,\ell}^H\Hc_{k,\ell}^H,
+\\
+C_{k,\ell}(\Hc_{k,\ell},\F_{k,\ell})
+&=
+\log_2\det\!\bigl(\I + \A_{k,\ell}(\Hc_{k,\ell},\F_{k,\ell})\bigr),
+\\
+V_{k,\ell}(\Hc_{k,\ell},\F_{k,\ell})
+&=
+(\log_2 e)^2
+\tr\!\Big[
+\A_{k,\ell}(\A_{k,\ell}+2\I)(\A_{k,\ell}+\I)^{-2}
+\Big].
+\label{eq:capacity-dispersion}
+\end{align}
+In \eqref{eq:capacity-dispersion}, the dependence of the last line on $(\Hc_{k,\ell},\F_{k,\ell})$ is omitted inside the trace only to keep the notation compact.
+
+Using the normal approximation for finite blocklength \cite{polyanskiy2010}, the achievable rate of sub-block $(k,\ell)$ is
+\begin{equation}
+R_{k,\ell}^*(n_{k,\ell},\Hc_{k,\ell},\F_{k,\ell},\varepsilon_k)
+=
+C_{k,\ell}(\Hc_{k,\ell},\F_{k,\ell})
+-
+\sqrt{\frac{V_{k,\ell}(\Hc_{k,\ell},\F_{k,\ell})}{n_{k,\ell}}}\,
+Q^{-1}(\varepsilon_k).
+\label{eq:fbl-rate}
+\end{equation}
+The finite-blocklength decoding constraint for a sub-block that carries $B_{k,\ell}$ bits is therefore
+\begin{equation}
+\frac{B_{k,\ell}}{n_{k,\ell}}
+\le
+R_{k,\ell}^*(n_{k,\ell},\Hc_{k,\ell},\F_{k,\ell},\varepsilon_k).
+\label{eq:fbl-feasibility}
+\end{equation}
+
+\section{Latency Minimization with Unknown Number of Sub-Blocks}
+\subsection{Design Objective}
+The final optimization problem chooses, for every user $k$, the number of sub-blocks $L_k$, the bit allocation $\{B_{k,\ell}\}_{\ell=1}^{L_k}$, the blocklengths $\{n_{k,\ell}\}_{\ell=1}^{L_k}$, and the precoders $\{\F_{k,\ell}\}_{\ell=1}^{L_k}$ so as to minimize the total uplink latency
+\begin{equation}
+\sum_{k \in \Kset}\tau_k
+=
+\sum_{k \in \Kset}\frac{1}{f_{s,k}}\sum_{\ell=1}^{L_k} n_{k,\ell}.
+\label{eq:total-latency}
+\end{equation}
+
+\subsection{Optimization Problem}
+The cleaned final problem is
+\begin{subequations}
+\begin{align}
+\min_{\{L_k,B_{k,\ell},n_{k,\ell},\F_{k,\ell}\}}
+\quad
+&
+\sum_{k \in \Kset}\frac{1}{f_{s,k}}\sum_{\ell=1}^{L_k} n_{k,\ell}
+\label{prob:main-obj}
+\\
+\text{s.t.}\quad
+&
+\frac{B_{k,\ell}}{n_{k,\ell}}
+\le
+R_{k,\ell}^*(n_{k,\ell},\Hc_{k,\ell},\F_{k,\ell},\varepsilon_k),
+\nonumber\\
+&\hspace{4.7cm}
+\forall k \in \Kset,\ \forall \ell \in \{1,\dots,L_k\},
+\label{prob:fbl}
+\\
+&
+\sum_{\ell=1}^{L_k} B_{k,\ell} = B_k,
+\qquad
+\forall k \in \Kset,
+\label{prob:payload}
+\\
+&
+1 \le n_{k,\ell} \le T_k,
+\qquad
+\forall k \in \Kset,\ \forall \ell \in \{1,\dots,L_k\},
+\label{prob:blocklength}
+\\
+&
+B_{k,\ell} \in \mathbb{Z}_{\ge 0},
+\qquad
+L_k \in \mathbb{Z}_{\ge 1},
+\label{prob:integrality}
+\\
+&
+\norm{\F_{k,\ell}}_F^2 \le P_{k,\ell},
+\qquad
+\forall k \in \Kset,\ \forall \ell \in \{1,\dots,L_k\}.
+\label{prob:power}
+\end{align}
+\end{subequations}
+
+Problem \eqref{prob:main-obj}--\eqref{prob:power} is difficult because:
+\begin{enumerate}
+    \item the number of sub-blocks $L_k$ is not known in advance,
+    \item the rate constraint couples $B_{k,\ell}$, $n_{k,\ell}$, and $\F_{k,\ell}$ nonlinearly, and
+    \item the finite-blocklength rate in \eqref{eq:fbl-rate} is nonconvex in the joint design variables.
+\end{enumerate}
+The final algorithm handles these difficulties by constructing the sub-blocks sequentially.
+
+\section{Greedy Dynamic Construction of Sub-Blocks}
+\subsection{Two Core Building Blocks}
+For each user $k$ and a candidate payload $B$ to be sent in a single coherence sub-block, define the per-sub-block design operator
+\begin{equation}
+\mathrm{AO}_k(B,T_k,\varepsilon_k)
+=
+(n_k^\star(B),\F_k^\star(B)),
+\label{eq:ao-operator}
+\end{equation}
+where $(n_k^\star(B),\F_k^\star(B))$ is obtained by solving the minimum-blocklength design problem
+\begin{subequations}
+\begin{align}
+\min_{n,\F}\quad & n
+\label{prob:single-block-obj}
+\\
+\text{s.t.}\quad
+&
+\frac{B}{n}
+\le
+R_{k,\ell}^*(n,\Hc_{k,\ell},\F,\varepsilon_k),
+\label{prob:single-block-rate}
+\\
+&
+1 \le n \le T_k,
+\label{prob:single-block-n}
+\\
+&
+\norm{\F}_F^2 \le P_{k,\ell}.
+\label{prob:single-block-p}
+\end{align}
+\end{subequations}
+
+The second building block is the maximum number of bits that can be carried by a fixed pair $(n,\F)$:
+\begin{equation}
+B_{k,\ell}^\star(n,\Hc_{k,\ell},\F,\varepsilon_k)
+=
+\floor{
+n\,
+R_{k,\ell}^*(n,\Hc_{k,\ell},\F,\varepsilon_k)
+}.
+\label{eq:b-star}
+\end{equation}
+
+Equation \eqref{eq:b-star} is the largest integer payload that satisfies the finite-blocklength constraint in \eqref{eq:fbl-feasibility} for the given blocklength and precoder.
+
+\subsection{Greedy Outer Algorithm}
+The sequential construction starts from the total remaining payload of a user and creates one sub-block at a time.
+
+\begin{algorithm}[ht]
+\caption{Greedy Dynamic Sub-Block Construction for User $k$}
+\label{alg:greedy}
+\begin{algorithmic}[1]
+\Require Total payload $B_k$, coherence blocklength $T_k$, error target $\varepsilon_k$
+\Ensure $\{(n_{k,\ell}^\star,\F_{k,\ell}^\star,B_{k,\ell}^{\mathrm{tx}})\}_{\ell=1}^{L_k}$
+\State $\ell \gets 1$
+\State $B_{k,\mathrm{rem}}^{(1)} \gets B_k$
+\While{$B_{k,\mathrm{rem}}^{(\ell)} > 0$}
+    \State $(n_{k,\ell}^\star,\F_{k,\ell}^\star) \gets \mathrm{AO}_k(B_{k,\mathrm{rem}}^{(\ell)},T_k,\varepsilon_k)$
+    \State $B_{k,\ell}^{\mathrm{tx}} \gets \min\!\left\{B_{k,\mathrm{rem}}^{(\ell)},\,
+    B_{k,\ell}^\star(n_{k,\ell}^\star,\Hc_{k,\ell},\F_{k,\ell}^\star,\varepsilon_k)\right\}$
+    \State $B_{k,\mathrm{rem}}^{(\ell+1)} \gets B_{k,\mathrm{rem}}^{(\ell)} - B_{k,\ell}^{\mathrm{tx}}$
+    \State $\ell \gets \ell + 1$
+\EndWhile
+\State $L_k \gets \ell - 1$
+\end{algorithmic}
+\end{algorithm}
+
+The logic of Algorithm~\ref{alg:greedy} is simple:
+\begin{enumerate}
+    \item First, try to send all remaining bits in one sub-block using the smallest feasible blocklength.
+    \item If that is impossible, the inner routine returns the best feasible design within the coherence limit $T_k$.
+    \item The quantity $B_{k,\ell}^{\mathrm{tx}}$ then becomes the maximum payload that can actually be carried by the selected sub-block.
+    \item The leftover bits are passed to the next sub-block, and the process repeats.
+\end{enumerate}
+
+Hence $L_k$ is no longer a simulation input. It is the output of the loop termination condition
+\[
+B_{k,\mathrm{rem}}^{(L_k+1)} = 0.
+\]
+The algorithm is well-defined whenever each serviceable user can transmit at least one bit in a coherence sub-block under its power budget; otherwise the user-side problem is infeasible.
+
+\section{Alternating Optimization for the Single-Sub-Block Problem}
+\subsection{Why Alternating Optimization is Used}
+The subproblem \eqref{prob:single-block-obj}--\eqref{prob:single-block-p} is nonconvex in $(n,\F)$ jointly. The final method therefore alternates between:
+\begin{enumerate}
+    \item updating the blocklength $n$ for a fixed precoder, and
+    \item updating the precoder $\F$ for a fixed blocklength.
+\end{enumerate}
+
+\subsection{Blocklength Update for Fixed Precoder}
+Suppose the current precoder at inner iteration $i$ is $\F^{(i)}_{k,\ell}$. The next blocklength is chosen as the smallest feasible integer
+\begin{equation}
+n_{k,\ell}^{(i+1)}
+=
+\min
+\left\{
+n \in \{1,\dots,T_k\} :
+\frac{B}{n}
+\le
+R_{k,\ell}^*(n,\Hc_{k,\ell},\F_{k,\ell}^{(i)},\varepsilon_k)
+\right\}.
+\label{eq:blocklength-update}
+\end{equation}
+If the feasible set in \eqref{eq:blocklength-update} is empty, then the target payload $B$ cannot be placed into a single sub-block under the coherence limit. In that case the algorithm uses
+\begin{equation}
+n_{k,\ell}^{(i+1)} = T_k.
+\label{eq:blocklength-fallback}
+\end{equation}
+
+\subsection{Precoder Update for Fixed Blocklength}
+For a fixed blocklength $n_{k,\ell}^{(i+1)}$, the precoder step maximizes the finite-blocklength rate. Equivalently, it makes the payload constraint as easy to satisfy as possible:
+\begin{subequations}
+\begin{align}
+\F_{k,\ell}^{(i+1)}
+=
+\argmax_{\F}\quad
+&
+R_{k,\ell}^*(n_{k,\ell}^{(i+1)},\Hc_{k,\ell},\F,\varepsilon_k)
+\label{prob:precoder-obj}
+\\
+\text{s.t.}\quad
+&
+\norm{\F}_F^2 \le P_{k,\ell}.
+\label{prob:precoder-power}
+\end{align}
+\end{subequations}
+Because \eqref{prob:precoder-obj}--\eqref{prob:precoder-power} is still nonconvex, the final implementation parameterizes the precoder and solves the update numerically.
+
+\subsection{Inner Alternating-Optimization Routine}
+\begin{algorithm}[ht]
+\caption{Alternating Optimization for $\mathrm{AO}_k(B,T_k,\varepsilon_k)$}
+\label{alg:ao}
+\begin{algorithmic}[1]
+\Require Target payload $B$, coherence blocklength $T_k$, error target $\varepsilon_k$
+\Ensure $(n_{k,\ell}^\star,\F_{k,\ell}^\star)$
+\State Initialize $\F_{k,\ell}^{(0)}$ and $n_{k,\ell}^{(0)}$
+\For{$i=0,1,\dots,I_{\max}-1$}
+    \State Update $n_{k,\ell}^{(i+1)}$ using \eqref{eq:blocklength-update}, with fallback \eqref{eq:blocklength-fallback}
+    \State Update $\F_{k,\ell}^{(i+1)}$ by solving \eqref{prob:precoder-obj}--\eqref{prob:precoder-power}
+\EndFor
+\State $(n_{k,\ell}^\star,\F_{k,\ell}^\star) \gets (n_{k,\ell}^{(I_{\max})},\F_{k,\ell}^{(I_{\max})})$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Neural Primal-Dual Update for the Precoder Step}
+\subsection{Parameterized Precoder}
+The final formulation represents the precoder by a trainable mapping
+\begin{equation}
+\F_{k,\ell} = f_{\theta_{k,\ell}}(\Hc_{k,\ell}),
+\label{eq:nn-precoder}
+\end{equation}
+where $f_{\theta_{k,\ell}}(\cdot)$ may be any neural architecture that outputs a complex precoder matrix and $\theta_{k,\ell}$ denotes its trainable parameters.
+
+\subsection{Constraint Residuals}
+For a fixed blocklength $n_{k,\ell}$, define the finite-blocklength rate residual
+\begin{equation}
+c_{1,k,\ell}(\theta_{k,\ell})
+=
+\frac{B_{k,\ell}}{n_{k,\ell}}
+-
+R_{k,\ell}^*(n_{k,\ell},\Hc_{k,\ell},f_{\theta_{k,\ell}}(\Hc_{k,\ell}),\varepsilon_k),
+\label{eq:c1}
+\end{equation}
+and the power residual
+\begin{equation}
+c_{2,k,\ell}(\theta_{k,\ell})
+=
+\norm{f_{\theta_{k,\ell}}(\Hc_{k,\ell})}_F^2 - P_{k,\ell}.
+\label{eq:c2}
+\end{equation}
+The finite-blocklength constraint is satisfied when $c_{1,k,\ell}(\theta_{k,\ell}) \le 0$, and the power constraint is satisfied when $c_{2,k,\ell}(\theta_{k,\ell}) \le 0$.
+
+\subsection{Lagrangian}
+Introduce nonnegative dual variables $\lambda_{1,k,\ell} \ge 0$ and $\lambda_{2,k,\ell} \ge 0$. The clean Lagrangian for the fixed-blocklength precoder subproblem is
+\begin{equation}
+\mathcal{L}_{k,\ell}(\theta_{k,\ell},\lambda_{1,k,\ell},\lambda_{2,k,\ell})
+=
+-R_{k,\ell}^*(n_{k,\ell},\Hc_{k,\ell},f_{\theta_{k,\ell}}(\Hc_{k,\ell}),\varepsilon_k)
++ \lambda_{1,k,\ell} c_{1,k,\ell}(\theta_{k,\ell})
++ \lambda_{2,k,\ell} c_{2,k,\ell}(\theta_{k,\ell}).
+\label{eq:lagrangian}
+\end{equation}
+Minimizing \eqref{eq:lagrangian} in $\theta_{k,\ell}$ while ascending in the dual variables encourages the precoder to increase the achievable rate while satisfying both constraints.
+
+\subsection{Primal-Dual Iterations}
+Let $t$ denote the primal-dual iteration index. The parameter update is
+\begin{equation}
+\theta_{k,\ell}^{(t+1)}
+=
+\theta_{k,\ell}^{(t)}
+-
+\eta_\theta^{(t)}
+\nabla_{\theta_{k,\ell}}
+\mathcal{L}_{k,\ell}
+\bigl(
+\theta_{k,\ell}^{(t)},
+\lambda_{1,k,\ell}^{(t)},
+\lambda_{2,k,\ell}^{(t)}
+\bigr),
+\label{eq:theta-update}
+\end{equation}
+where $\eta_\theta^{(t)} > 0$ is the primal step size.
+
+The dual variables are updated by projected ascent:
+\begin{align}
+\lambda_{1,k,\ell}^{(t+1)}
+&=
+\left[
+\lambda_{1,k,\ell}^{(t)}
++
+\eta_{\lambda_1}^{(t)} c_{1,k,\ell}\!\left(\theta_{k,\ell}^{(t+1)}\right)
+\right]_+,
+\label{eq:lambda1-update}
+\\
+\lambda_{2,k,\ell}^{(t+1)}
+&=
+\left[
+\lambda_{2,k,\ell}^{(t)}
++
+\eta_{\lambda_2}^{(t)} c_{2,k,\ell}\!\left(\theta_{k,\ell}^{(t+1)}\right)
+\right]_+,
+\label{eq:lambda2-update}
+\end{align}
+where
+\begin{equation}
+[x]_+ = \max\{x,0\}.
+\label{eq:projection}
+\end{equation}
+The step sizes $\eta_{\lambda_1}^{(t)} > 0$ and $\eta_{\lambda_2}^{(t)} > 0$ are dual learning rates.
+
+\section{Interpretation of the Final Algorithm}
+The cleaned final procedure can be read in a straightforward way.
+
+For each user, the algorithm first asks whether all remaining bits can fit into one coherence-limited sub-block. If the answer is yes, it chooses the smallest feasible blocklength and the matching precoder. If the answer is no, it uses the full coherence block, optimizes the precoder for that block, transmits as many bits as that block can support, and forwards the rest to the next sub-block. Repeating this logic generates the required number of sub-blocks automatically.
+
+This interpretation explains why the number of sub-blocks $L_k$ should not be fixed beforehand. It is a consequence of the payload size, the coherence constraint $T_k$, the power budget $P_{k,\ell}$, the effective channel $\Hc_{k,\ell}$, and the reliability target $\varepsilon_k$. In the final formulation, the unknown quantity $L_k$ is therefore an output of the transmission design rather than a prescribed simulation parameter.
+
+\clearpage
+\section{Results}
+This section collects the final experiment figures corresponding to the dynamic sub-block allocation algorithm described above. The first experiment is a representative four-user case that makes the behavior of the greedy splitting procedure easy to inspect. The second experiment scales the same procedure to one hundred users and shows that the latency reduction and synchronization improvement remain visible at larger system size.
+
+\subsection{Representative Four-User Experiment}
+The four-user experiment is used to visualize how the final algorithm reacts to heterogeneous payload, power, and coherence constraints. Figure~\ref{fig:k4-config} summarizes the user configuration. Users with lighter payloads or more favorable resource budgets can be served in fewer sub-blocks, while heavier users may need multiple sequential sub-blocks before the remaining payload becomes small enough to fit into a shorter final block.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.82\textwidth]{figures/k4/user_config_reverse_summary.png}
+\caption{Configuration summary for the representative four-user experiment. The figure shows the per-user SNR, power budget, payload size, coherence blocklength, initial modulation choice, and measured link quality used by the final algorithm.}
+\label{fig:k4-config}
+\end{figure}
+
+Figure~\ref{fig:k4-user-summaries} shows the selected sub-blocklengths and corresponding finite-blocklength operating points for the four users. Users 0 and 1 terminate after one sub-block, whereas users 2 and 3 are split across multiple sub-blocks. This is consistent with the role of the outer greedy loop: once a full payload cannot be placed efficiently in a single coherence-limited block, the algorithm transmits the largest feasible portion and forwards the remainder to the next block.
+
+\begin{figure}[p]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/testing_user0_summary.png}
+    \caption{User 0}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/testing_user1_summary.png}
+    \caption{User 1}
+\end{subfigure}
+
+\vspace{1em}
+
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/testing_user2_summary.png}
+    \caption{User 2}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/testing_user3_summary.png}
+    \caption{User 3}
+\end{subfigure}
+\caption{Per-user outcomes in the representative four-user experiment. Each panel reports the chosen sub-blocklength trajectory and the corresponding finite-blocklength rate across the sub-blocks created by the greedy outer loop.}
+\label{fig:k4-user-summaries}
+\end{figure}
+
+The system-level effect is shown in Figure~\ref{fig:k4-latency}. The left panel compares initial and final latency user by user, while the right panel shows the latency histogram and empirical cumulative distribution. The final latency values move leftward relative to the initial ones, indicating that the optimized schedule consistently shortens transmission time across the user set.
+
+\begin{figure}[p]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/test_latency_comparison.png}
+    \caption{Per-user latency before and after optimization}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/test_latency_histogram.png}
+    \caption{Latency histogram and empirical CDF}
+\end{subfigure}
+\caption{Latency reduction for the representative four-user experiment.}
+\label{fig:k4-latency}
+\end{figure}
+
+Figure~\ref{fig:k4-async} focuses on synchronization. The asynchronality distribution becomes more concentrated near smaller values after optimization, and the pairwise heatmaps show that the off-diagonal latency gaps are compressed. This illustrates the intended effect of the method: users still finish at different times, but the spread in finishing times is reduced.
+
+\begin{figure}[p]
+\centering
+\begin{subfigure}[t]{0.9\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/test_async_distribution.png}
+    \caption{Global asynchronality distribution}
+\end{subfigure}
+
+\vspace{1em}
+
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/test_initial_async_heatmap.png}
+    \caption{Initial pairwise asynchronality}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k4/test_final_async_heatmap.png}
+    \caption{Final pairwise asynchronality}
+\end{subfigure}
+\caption{Asynchronality behavior in the representative four-user experiment.}
+\label{fig:k4-async}
+\end{figure}
+
+\clearpage
+\subsection{Large-Scale Hundred-User Experiment}
+The hundred-user experiment evaluates the same algorithm under significantly more heterogeneous system conditions. Figure~\ref{fig:k100-config} summarizes the resulting spread of SNR, power budget, payload size, coherence blocklength, and initial modulation level across users.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/k100/user_config_reverse_summary.png}
+\caption{Configuration summary for the hundred-user experiment. The figure highlights the heterogeneity of user conditions that the final algorithm must handle.}
+\label{fig:k100-config}
+\end{figure}
+
+Figure~\ref{fig:k100-latency} shows the latency outcome at system scale. The per-user comparison confirms that the optimized schedule reduces latency for a broad range of users, and the histogram/CDF view shows a clear concentration of the final latency distribution at smaller values than the initial distribution.
+
+\begin{figure}[p]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k100/test_latency_comparison.png}
+    \caption{Per-user latency before and after optimization}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k100/test_latency_histogram.png}
+    \caption{Latency histogram and empirical CDF}
+\end{subfigure}
+\caption{Latency reduction for the hundred-user experiment.}
+\label{fig:k100-latency}
+\end{figure}
+
+Figure~\ref{fig:k100-async} shows the corresponding synchronization effect. The post-optimization distribution of pairwise latency differences is more concentrated near zero, and the final heatmap has visibly fewer bright structures than the initial one. Hence the same dynamic block construction that reduces total latency also improves global synchronization across a much larger user population.
+
+\begin{figure}[p]
+\centering
+\begin{subfigure}[t]{0.9\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k100/test_async_distribution.png}
+    \caption{Global asynchronality distribution}
+\end{subfigure}
+
+\vspace{1em}
+
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k100/test_initial_async_heatmap.png}
+    \caption{Initial pairwise asynchronality}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/k100/test_final_async_heatmap.png}
+    \caption{Final pairwise asynchronality}
+\end{subfigure}
+\caption{Asynchronality behavior in the hundred-user experiment.}
+\label{fig:k100-async}
+\end{figure}
+
+\clearpage
+\section{Conclusion}
+The final report reduces the project to one coherent optimization pipeline. The central problem is latency minimization with unknown sub-block count under finite-blocklength and power constraints. The solution is a greedy dynamic sub-block construction, supported by an alternating-optimization subroutine and a primal-dual neural precoder update. This cleaned formulation preserves the final algorithmic content of the project while removing the exploratory branches that were no longer needed.
+
+\begin{thebibliography}{9}
+
+\bibitem{polyanskiy2010}
+Y. Polyanskiy, H. V. Poor, and S. Verdu, ``Channel coding rate in the finite blocklength regime,'' \emph{IEEE Transactions on Information Theory}, vol. 56, no. 5, pp. 2307--2359, May 2010.
+
+\bibitem{zhang2023}
+Y. Zhang, W. Cheng, J. Wang, and W. Zhang, ``Performance analysis and blocklength minimization of uplink RSMA for short packet transmissions in URLLC,'' in \emph{Proc. IEEE Global Communications Conference (GLOBECOM)}, 2023, pp. 6765--6770.
+
+\bibitem{rimoldi1996}
+B. Rimoldi and R. Urbanke, ``A rate-splitting approach to the Gaussian multiple-access channel,'' \emph{IEEE Transactions on Information Theory}, vol. 42, no. 2, pp. 364--375, Mar. 1996.
+
+\bibitem{yang2019}
+Z. Yang, M. Chen, W. Saad, W. Xu, and M. Shikh-Bahaei, ``Sum-rate maximization of uplink rate splitting multiple access communication,'' in \emph{Proc. IEEE Global Communications Conference (GLOBECOM)}, 2019, pp. 1--6.
+
+\end{thebibliography}
+
+\end{document}

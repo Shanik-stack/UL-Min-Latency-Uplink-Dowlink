@@ -1,0 +1,42 @@
+Downlink optimizer summary
+Method: greedy_safe_sweep
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\config_downlink_example.yaml
+Seed: 3
+Objective mode: user_rate
+Allocation mode: greedy
+Weight strategy: remaining_bits
+Precoder parameterization: shared_user_channel_to_precoder_mlp
+
+Latency summary
+Initial total latency: 0.215733
+Final total latency: 0.027533
+Total latency reduction (%): 87.2373
+Initial avg latency: 0.053933
+Final avg latency: 0.006883
+Initial min/max latency: 0.040733 / 0.075933
+Final min/max latency: 0.002600 / 0.011667
+
+Asynchronality summary
+Initial asynchronality sum: 0.120533
+Final asynchronality sum: 0.030067
+Asynchronality reduction (%): 75.0553
+
+Link quality summary
+Initial avg SNR (dB): 8.0000
+Final avg SNR (dB): 14.1309
+Initial avg SINR (dB): -4.8585
+Final avg SINR (dB): 3.0455
+
+Per-user details
+User 0 | init_lat=0.040733 | final_lat=0.002600 | lat_red=93.6170% | init_sinr=-4.1636 dB | final_sinr=4.0337 dB | blocks=1 | total_n=39 | served_bits=200 | skipped_blocks=0
+User 1 | init_lat=0.042067 | final_lat=0.005200 | lat_red=87.6387% | init_sinr=-5.7687 dB | final_sinr=2.5478 dB | blocks=2 | total_n=78 | served_bits=400 | skipped_blocks=0
+User 2 | init_lat=0.057000 | final_lat=0.008067 | lat_red=85.8480% | init_sinr=-5.2259 dB | final_sinr=1.9494 dB | blocks=2 | total_n=121 | served_bits=600 | skipped_blocks=0
+User 3 | init_lat=0.075933 | final_lat=0.011667 | lat_red=84.6356% | init_sinr=-4.2760 dB | final_sinr=3.6511 dB | blocks=2 | total_n=175 | served_bits=1000 | skipped_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.001333 | final_diff=0.002600
+Users 0-2 | initial_diff=0.016267 | final_diff=0.005467
+Users 0-3 | initial_diff=0.035200 | final_diff=0.009067
+Users 1-2 | initial_diff=0.014933 | final_diff=0.002867
+Users 1-3 | initial_diff=0.033867 | final_diff=0.006467
+Users 2-3 | initial_diff=0.018933 | final_diff=0.003600

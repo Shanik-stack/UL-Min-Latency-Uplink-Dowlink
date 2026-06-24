@@ -1,0 +1,308 @@
+{
+    "method_name": "converge_in_each_sweep_baseline",
+    "cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Uplink\\config_raw_T_exp1.yaml",
+    "seed": 3,
+    "train_seeds": [],
+    "training_dataset_sizes": [],
+    "training_sample_counts_per_user": [],
+    "training_dataset_summary": {},
+    "post_training_summary": {},
+    "precoder_net_training_losses": [],
+    "precoder_net_training_history": {},
+    "precoder_parameterization": "independent_block_precoders_online_convergence",
+    "training_objective": "unknown",
+    "user_model_specs": [],
+    "initial_latency": [
+        0.002,
+        0.002266666666666667,
+        0.002533333333333333
+    ],
+    "final_latency": [
+        0.0016666666666666668,
+        0.0019333333333333333,
+        0.002533333333333333
+    ],
+    "initial_n": [
+        30.0,
+        34.0,
+        38.0
+    ],
+    "final_n": [
+        25,
+        29,
+        38
+    ],
+    "initial_n_kl": [
+        [
+            30.0
+        ],
+        [
+            34.0
+        ],
+        [
+            38.0
+        ]
+    ],
+    "final_n_kl": [
+        [
+            25
+        ],
+        [
+            29
+        ],
+        [
+            38
+        ]
+    ],
+    "initial_B_kl": [
+        [
+            400
+        ],
+        [
+            400
+        ],
+        [
+            400
+        ]
+    ],
+    "initial_R_fbl": [
+        [
+            13.399952969884236
+        ],
+        [
+            11.771214940650964
+        ],
+        [
+            10.541706863628656
+        ]
+    ],
+    "final_R_fbl": [
+        [
+            16.674881836225524
+        ],
+        [
+            13.98988090163931
+        ],
+        [
+            10.738204510529721
+        ]
+    ],
+    "initial_snr_db": [
+        14.905090413154225,
+        9.999977117449493,
+        8.064548134908238
+    ],
+    "final_snr_db": [
+        13.301431317815418,
+        11.338264997892153,
+        7.74954033793834
+    ],
+    "initial_sinr_db": [
+        -1.6707725032777958,
+        -4.7181753199121825,
+        -3.382642000028188
+    ],
+    "final_sinr_db": [
+        -3.605659721491163,
+        -2.4655054735674824,
+        -3.5967051649167017
+    ],
+    "initial_bits_per_symbol": [
+        13.333333333333334,
+        11.764705882352942,
+        10.526315789473685
+    ],
+    "initial_bits_per_symbol_by_block": [
+        [
+            13.333333333333334
+        ],
+        [
+            11.764705882352942
+        ],
+        [
+            10.526315789473685
+        ]
+    ],
+    "final_bits_per_symbol": [
+        [
+            16.0
+        ],
+        [
+            13.793103448275861
+        ],
+        [
+            10.526315789473685
+        ]
+    ],
+    "B_kl": [
+        [
+            400
+        ],
+        [
+            400
+        ],
+        [
+            400
+        ]
+    ],
+    "n_kl": [
+        [
+            25
+        ],
+        [
+            29
+        ],
+        [
+            38
+        ]
+    ],
+    "R_fbl": [
+        [
+            16.67488199720875
+        ],
+        [
+            13.98988093663697
+        ],
+        [
+            10.738204417198725
+        ]
+    ],
+    "blocks_per_user": [
+        1,
+        1,
+        1
+    ],
+    "initial_schedule_source": "random_precoder_baseline",
+    "summary_metrics": {
+        "initial_total_latency": 0.0068000000000000005,
+        "final_total_latency": 0.006133333333333333,
+        "initial_avg_latency": 0.002266666666666667,
+        "final_avg_latency": 0.0020444444444444442,
+        "initial_max_latency": 0.002533333333333333,
+        "final_max_latency": 0.002533333333333333,
+        "initial_min_latency": 0.002,
+        "final_min_latency": 0.0016666666666666668,
+        "latency_reduction_per_user_percent": [
+            16.666666666666664,
+            14.705882352941183,
+            0.0
+        ],
+        "total_latency_reduction_percent": 9.803921568627468,
+        "initial_asynchronality_matrix": [
+            [
+                0.0,
+                0.0002666666666666668,
+                0.0005333333333333331
+            ],
+            [
+                0.0002666666666666668,
+                0.0,
+                0.00026666666666666635
+            ],
+            [
+                0.0005333333333333331,
+                0.00026666666666666635,
+                0.0
+            ]
+        ],
+        "final_asynchronality_matrix": [
+            [
+                0.0,
+                0.00026666666666666657,
+                0.0008666666666666664
+            ],
+            [
+                0.00026666666666666657,
+                0.0,
+                0.0005999999999999998
+            ],
+            [
+                0.0008666666666666664,
+                0.0005999999999999998,
+                0.0
+            ]
+        ],
+        "initial_asynchronality_pairs": [
+            {
+                "user_i": 0,
+                "user_j": 1,
+                "abs_latency_diff": 0.0002666666666666668
+            },
+            {
+                "user_i": 0,
+                "user_j": 2,
+                "abs_latency_diff": 0.0005333333333333331
+            },
+            {
+                "user_i": 1,
+                "user_j": 2,
+                "abs_latency_diff": 0.00026666666666666635
+            }
+        ],
+        "final_asynchronality_pairs": [
+            {
+                "user_i": 0,
+                "user_j": 1,
+                "abs_latency_diff": 0.00026666666666666657
+            },
+            {
+                "user_i": 0,
+                "user_j": 2,
+                "abs_latency_diff": 0.0008666666666666664
+            },
+            {
+                "user_i": 1,
+                "user_j": 2,
+                "abs_latency_diff": 0.0005999999999999998
+            }
+        ],
+        "initial_asynchronality_sum": 0.0010666666666666663,
+        "final_asynchronality_sum": 0.0017333333333333328,
+        "asynchronality_reduction_percent": -62.500000000000014,
+        "initial_avg_snr_db": 10.989871888503984,
+        "final_avg_snr_db": 10.79641221788197,
+        "initial_avg_sinr_db": -3.2571966077393886,
+        "final_avg_sinr_db": -3.2226234533251152,
+        "per_user_summary": [
+            {
+                "user": 0,
+                "initial_latency": 0.002,
+                "final_latency": 0.0016666666666666668,
+                "latency_reduction_percent": 16.666666666666664,
+                "initial_snr_db": 14.905090413154225,
+                "final_snr_db": 13.301431317815418,
+                "initial_sinr_db": -1.6707725032777958,
+                "final_sinr_db": -3.605659721491163,
+                "blocks": 1,
+                "total_n": 25,
+                "served_bits": 400
+            },
+            {
+                "user": 1,
+                "initial_latency": 0.002266666666666667,
+                "final_latency": 0.0019333333333333333,
+                "latency_reduction_percent": 14.705882352941183,
+                "initial_snr_db": 9.999977117449493,
+                "final_snr_db": 11.338264997892153,
+                "initial_sinr_db": -4.7181753199121825,
+                "final_sinr_db": -2.4655054735674824,
+                "blocks": 1,
+                "total_n": 29,
+                "served_bits": 400
+            },
+            {
+                "user": 2,
+                "initial_latency": 0.002533333333333333,
+                "final_latency": 0.002533333333333333,
+                "latency_reduction_percent": 0.0,
+                "initial_snr_db": 8.064548134908238,
+                "final_snr_db": 7.74954033793834,
+                "initial_sinr_db": -3.382642000028188,
+                "final_sinr_db": -3.5967051649167017,
+                "blocks": 1,
+                "total_n": 38,
+                "served_bits": 400
+            }
+        ]
+    }
+}

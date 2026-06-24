@@ -1,0 +1,58 @@
+test:
+  K: 3
+  Nb: 16
+  Nr:
+    - 4
+    - 4
+    - 4
+  T:
+    - 50
+    - 60
+    - 80
+  B:
+    - 200
+    - 400
+    - 600
+  P:
+    - 30
+    - 30
+    - 30
+  snr_db:
+    - 8
+    - 8
+    - 8
+  fs:
+    - 15000.0
+    - 15000.0
+    - 15000.0
+  epsilon:
+    - 1.0e-10
+    - 1.0e-10
+    - 1.0e-10
+  initial_bits_per_symbol:
+    - 4
+    - 4
+    - 4
+simulation:
+  max_precoder_sweeps: 500
+  print_every_sweep: 5
+  step_lr: 0.001
+  user_update_steps: 1
+  user_update_lr: 0.001
+  precoder_tol: 1.0e-6
+  max_total_blocks: 256
+  precoder_net_train_blocks_per_seed: 3
+  precoder_net_train_n_kl_coarse_step: 5
+  precoder_net_train_min_bits_required: 1
+  precoder_net_train_max_reduction_rounds_per_epoch: 1
+  precoder_net_train_curriculum_warmup_epochs: 8
+  precoder_net_train_curriculum_interval_epochs: 5
+  precoder_net_train_enumerate_all_masks_up_to_k: 3
+  safe_sweep_objective_mode: weighted_sum_rate
+  queue_weight_power: 1.0
+  queue_weight_min: 0.25
+  network_weight_beta: 0.15
+  utility_latency_penalty: 0.5
+  n_kl_range:
+    min: 5
+    step: 1

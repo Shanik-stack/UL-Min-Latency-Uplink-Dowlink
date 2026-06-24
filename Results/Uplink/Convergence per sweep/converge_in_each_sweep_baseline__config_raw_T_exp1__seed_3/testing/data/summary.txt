@@ -1,0 +1,47 @@
+Uplink optimizer summary
+Method: converge_in_each_sweep_baseline
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\config_raw_T_exp1.yaml
+Test seed: 3
+Train seeds: []
+Training sample counts per user: []
+Training dataset total examples: 0
+Precoder parameterization: independent_block_precoders_online_convergence
+Training objective: unknown
+Initial schedule source: random_precoder_baseline
+
+Testing summary
+Initial latency source: random_precoder_baseline
+
+Latency summary
+Initial total latency: 0.006800
+Final total latency: 0.006133
+Total latency reduction (%): 9.8039
+Initial avg latency: 0.002267
+Final avg latency: 0.002044
+Initial min/max latency: 0.002000 / 0.002533
+Final min/max latency: 0.001667 / 0.002533
+
+Asynchronality summary
+Initial asynchronality sum: 0.001067
+Final asynchronality sum: 0.001733
+Asynchronality reduction (%): -62.5000
+
+Link quality summary
+Initial avg SNR (dB): 10.9899
+Final avg SNR (dB): 10.7964
+Initial avg SINR (dB): -3.2572
+Final avg SINR (dB): -3.2226
+
+Per-user details
+User 0 | init_lat=0.002000 | final_lat=0.001667 | lat_red=16.6667% | init_snr=14.9051 dB | final_snr=13.3014 dB | init_sinr=-1.6708 dB | final_sinr=-3.6057 dB | blocks=1 | total_n=25 | served_bits=400
+User 1 | init_lat=0.002267 | final_lat=0.001933 | lat_red=14.7059% | init_snr=10.0000 dB | final_snr=11.3383 dB | init_sinr=-4.7182 dB | final_sinr=-2.4655 dB | blocks=1 | total_n=29 | served_bits=400
+User 2 | init_lat=0.002533 | final_lat=0.002533 | lat_red=0.0000% | init_snr=8.0645 dB | final_snr=7.7495 dB | init_sinr=-3.3826 dB | final_sinr=-3.5967 dB | blocks=1 | total_n=38 | served_bits=400
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.000267 | final_diff=0.000267
+Users 0-2 | initial_diff=0.000533 | final_diff=0.000867
+Users 1-2 | initial_diff=0.000267 | final_diff=0.000600
+
+Terminology
+- training sample: one (seed, user, block, n_kl) item used for one user-net update
+- initial schedule: the random-precoder baseline used for the before-optimization uplink latency

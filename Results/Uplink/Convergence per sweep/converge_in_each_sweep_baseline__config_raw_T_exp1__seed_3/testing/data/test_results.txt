@@ -1,0 +1,51 @@
+
+|| ---------------- USER 0 ---------------- ||
+R-fsbl_kl:    Initial [13.39995297] ->      Final [16.67488184]
+n_kl:   Initial [30] ->   Final [25]
+N_k:     Initial 30 ->  Final 25
+B^tx_kl:    Initial [400]->   Final  [400] 
+Bits per Symbol:    Initial avg 13.333333333333334, per block [13.333333333333334]->   Final [16.] 
+SNR_dB: Initial 14.9051 -> Final 13.3014
+SINR_dB: Initial -1.6708 -> Final -3.6057
+
+|| ---------------- USER 1 ---------------- ||
+R-fsbl_kl:    Initial [11.77121494] ->      Final [13.9898809]
+n_kl:   Initial [34] ->   Final [29]
+N_k:     Initial 34 ->  Final 29
+B^tx_kl:    Initial [400]->   Final  [400] 
+Bits per Symbol:    Initial avg 11.764705882352942, per block [11.764705882352942]->   Final [13.79310345] 
+SNR_dB: Initial 10.0000 -> Final 11.3383
+SINR_dB: Initial -4.7182 -> Final -2.4655
+
+|| ---------------- USER 2 ---------------- ||
+R-fsbl_kl:    Initial [10.54170686] ->      Final [10.73820451]
+n_kl:   Initial [38] ->   Final [38]
+N_k:     Initial 38 ->  Final 38
+B^tx_kl:    Initial [400]->   Final  [400] 
+Bits per Symbol:    Initial avg 10.526315789473685, per block [10.526315789473685]->   Final [10.52631579] 
+SNR_dB: Initial 8.0645 -> Final 7.7495
+SINR_dB: Initial -3.3826 -> Final -3.5967
+
+Initial Latency per user:
+[0.002, 0.002266666666666667, 0.002533333333333333]
+
+Final Latency per user:
+[0.0016666666666666668, 0.0019333333333333333, 0.002533333333333333]
+Latency reduction per user (%): [16.66666667 14.70588235  0.        ]%
+ Total Latency Reduction(total_initial_latency/total_final_latency) (%): 9.803921568627468%
+
+Initial Asynchronality:
+User 0 - User 1: 0.0002666666666666668
+User 0 - User 2: 0.0005333333333333331
+User 1 - User 2: 0.00026666666666666635
+
+Initial Sum of Asynchronality: 0.0010666666666666663
+
+Final Asynchronality:
+User 0 - User 1: 0.00026666666666666657
+User 0 - User 2: 0.0008666666666666664
+User 1 - User 2: 0.0005999999999999998
+
+Final Sum of Asynchronality: 0.0017333333333333328
+
+Asynchronality Reduction (%): -62.500000000000014%
