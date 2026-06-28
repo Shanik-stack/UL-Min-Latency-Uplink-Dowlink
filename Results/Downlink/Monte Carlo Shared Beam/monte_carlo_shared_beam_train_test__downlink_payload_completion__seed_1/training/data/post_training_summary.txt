@@ -1,0 +1,10 @@
+Downlink shared-beam post-training summary
+Epochs requested: 1
+Final avg loss: -4.234821
+Best avg loss: -4.234821
+Final avg sum rate: 4.234821
+Best avg sum rate: 4.234821
+Final avg user rate: 2.528828
+Best avg user rate: 2.528828
+Per-user final rate: [1.9359432031710944, 2.4694878206108557, 3.1810519985026784]
+Per-user best rate: [1.9359432031710944, 2.4694878206108557, 3.1810519985026784]

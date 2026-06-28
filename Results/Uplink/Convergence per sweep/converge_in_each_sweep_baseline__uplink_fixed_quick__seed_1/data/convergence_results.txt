@@ -1,0 +1,60 @@
+
+|| ---------------- USER 0 ---------------- ||
+R-fsbl_kl:    Initial [14.50017924 14.84208701] ->      Final [18.96032961 17.93362708]
+n_kl:   Initial [7, 7] ->   Final [6, 6]
+N_k:     Initial 14 ->  Final 12
+B^tx_kl:    Initial [100, 100]->   Final  [100, 100] 
+Bits per Symbol:    Initial avg 14.285714285714286, per block [14.285714285714286, 14.285714285714286]->   Final [16.66666667 16.66666667] 
+SNR_dB: Initial 14.7784 -> Final 14.2388
+SINR_dB: Initial -2.2124 -> Final -2.7737
+Target bits per block: [100, 100]
+Initial unserved bits per block: [0, 0]
+Final unserved bits per block: [0, 0]
+
+|| ---------------- USER 1 ---------------- ||
+R-fsbl_kl:    Initial [11.56238904 11.49872744] ->      Final [15.05454558 15.01290725]
+n_kl:   Initial [9, 9] ->   Final [8, 7]
+N_k:     Initial 18 ->  Final 15
+B^tx_kl:    Initial [100, 100]->   Final  [100, 100] 
+Bits per Symbol:    Initial avg 11.11111111111111, per block [11.11111111111111, 11.11111111111111]->   Final [12.5        14.28571429] 
+SNR_dB: Initial 11.4086 -> Final 11.7848
+SINR_dB: Initial -3.1578 -> Final -2.5969
+Target bits per block: [100, 100]
+Initial unserved bits per block: [0, 0]
+Final unserved bits per block: [0, 0]
+
+|| ---------------- USER 2 ---------------- ||
+R-fsbl_kl:    Initial [9.03030716 9.74257008] ->      Final [11.49788629 11.22910724]
+n_kl:   Initial [12, 11] ->   Final [10, 10]
+N_k:     Initial 23 ->  Final 20
+B^tx_kl:    Initial [100, 100]->   Final  [100, 100] 
+Bits per Symbol:    Initial avg 8.695652173913043, per block [8.333333333333334, 9.090909090909092]->   Final [10. 10.] 
+SNR_dB: Initial 7.1693 -> Final 7.1427
+SINR_dB: Initial -4.2903 -> Final -4.2863
+Target bits per block: [100, 100]
+Initial unserved bits per block: [0, 0]
+Final unserved bits per block: [0, 0]
+
+Initial Latency per user:
+[0.0009333333333333333, 0.0012, 0.0015333333333333334]
+
+Final Latency per user:
+[0.0008, 0.001, 0.0013333333333333333]
+Latency reduction per user (%): [14.28571429 16.66666667 13.04347826]%
+ Total Latency Reduction(total_initial_latency/total_final_latency) (%): 14.54545454545455%
+
+Initial Asynchronality:
+User 0 - User 1: 0.00026666666666666657
+User 0 - User 2: 0.0006000000000000001
+User 1 - User 2: 0.0003333333333333335
+
+Initial Sum of Asynchronality: 0.0012000000000000001
+
+Final Asynchronality:
+User 0 - User 1: 0.00019999999999999998
+User 0 - User 2: 0.0005333333333333333
+User 1 - User 2: 0.00033333333333333327
+
+Final Sum of Asynchronality: 0.0010666666666666665
+
+Asynchronality Reduction (%): 11.111111111111132%

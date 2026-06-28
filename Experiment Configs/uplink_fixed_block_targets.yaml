@@ -13,9 +13,9 @@ test:
     - 100
     - 100
   B:
-    - 2400
-    - 2400
-    - 2400
+    - 400
+    - 400
+    - 400
   P:
     - 20
     - 20
@@ -53,6 +53,9 @@ simulation:
   feasibility_tol: 1.0e-5
   convergence_max_precoder_sweeps: 10000
   convergence_min_precoder_sweeps_before_stop: 1
+  reduced_n_kl_max_precoder_sweeps: 10
+  reduced_n_kl_min_precoder_sweeps_before_stop: 1
+  print_every_reduced_n_kl: 10
   convergence_precoder_tol: 1.0e-4
   convergence_feasibility_tol: 1.0e-5
   uplink_rate_model: snr

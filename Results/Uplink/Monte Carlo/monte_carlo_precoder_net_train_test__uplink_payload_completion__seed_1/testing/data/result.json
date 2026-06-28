@@ -1,0 +1,1542 @@
+{
+    "method_name": "monte_carlo_precoder_net_train_test",
+    "cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\uplink_payload_completion.yaml",
+    "seed": 1,
+    "train_seeds": [
+        0
+    ],
+    "training_dataset_sizes": [
+        4,
+        4,
+        4
+    ],
+    "training_channel_episode_counts_per_user": [
+        4,
+        4,
+        4
+    ],
+    "training_sample_counts_per_user": [
+        4,
+        4,
+        4
+    ],
+    "training_dataset_summary": {
+        "total_channel_episodes": 12,
+        "num_users": 3,
+        "scenario_modes": [
+            "payload_completion"
+        ],
+        "episodes_by_seed": {
+            "0": 12
+        },
+        "global_episodes_by_block": {
+            "0": 3,
+            "1": 3,
+            "2": 3,
+            "3": 3
+        },
+        "global_episodes_by_target_bits": {
+            "1": 12
+        },
+        "per_user": [
+            {
+                "user": 0,
+                "total_channel_episodes": 4,
+                "episodes_by_target_bits": {
+                    "1": 4
+                },
+                "episodes_by_seed": {
+                    "0": 4
+                },
+                "episodes_by_block": {
+                    "0": 1,
+                    "1": 1,
+                    "2": 1,
+                    "3": 1
+                }
+            },
+            {
+                "user": 1,
+                "total_channel_episodes": 4,
+                "episodes_by_target_bits": {
+                    "1": 4
+                },
+                "episodes_by_seed": {
+                    "0": 4
+                },
+                "episodes_by_block": {
+                    "0": 1,
+                    "1": 1,
+                    "2": 1,
+                    "3": 1
+                }
+            },
+            {
+                "user": 2,
+                "total_channel_episodes": 4,
+                "episodes_by_target_bits": {
+                    "1": 4
+                },
+                "episodes_by_seed": {
+                    "0": 4
+                },
+                "episodes_by_block": {
+                    "0": 1,
+                    "1": 1,
+                    "2": 1,
+                    "3": 1
+                }
+            }
+        ]
+    },
+    "post_training_summary": {
+        "train_eval_seed": 0,
+        "epochs_requested": 1,
+        "train_target_bits_summary": {
+            "1": 12
+        },
+        "train_target_bits_per_user": [
+            {
+                "1": 4
+            },
+            {
+                "1": 4
+            },
+            {
+                "1": 4
+            }
+        ],
+        "train_target_bits_mode": "minimum_required_bits_fallback",
+        "cumulative_rollout_queries_by_n_kl": {
+            "global_rollout_queries_by_n_kl_over_all_epochs": {
+                "80": 1,
+                "84": 1,
+                "85": 1,
+                "90": 3,
+                "94": 2,
+                "95": 7,
+                "98": 1,
+                "99": 4,
+                "100": 12
+            },
+            "per_user_rollout_queries_by_n_kl_over_all_epochs": [
+                {
+                    "95": 2,
+                    "98": 1,
+                    "99": 2,
+                    "100": 4
+                },
+                {
+                    "90": 1,
+                    "94": 1,
+                    "95": 2,
+                    "99": 1,
+                    "100": 4
+                },
+                {
+                    "80": 1,
+                    "84": 1,
+                    "85": 1,
+                    "90": 2,
+                    "94": 1,
+                    "95": 3,
+                    "99": 1,
+                    "100": 4
+                }
+            ]
+        },
+        "cumulative_frontier_rollout_queries_by_n_kl": {
+            "global_frontier_rollout_queries_by_n_kl_over_all_epochs": {
+                "80": 1,
+                "85": 1,
+                "90": 2,
+                "95": 5,
+                "98": 1,
+                "99": 1,
+                "100": 8
+            },
+            "per_user_frontier_rollout_queries_by_n_kl_over_all_epochs": [
+                {
+                    "95": 1,
+                    "98": 1,
+                    "99": 1,
+                    "100": 3
+                },
+                {
+                    "90": 1,
+                    "95": 2,
+                    "100": 3
+                },
+                {
+                    "80": 1,
+                    "85": 1,
+                    "90": 1,
+                    "95": 2,
+                    "100": 2
+                }
+            ]
+        },
+        "final_epoch_rollout_query_summary": {
+            "total_rollout_queries": 32,
+            "global_rollout_queries_by_n_kl": {
+                "80": 1,
+                "84": 1,
+                "85": 1,
+                "90": 3,
+                "94": 2,
+                "95": 7,
+                "98": 1,
+                "99": 4,
+                "100": 12
+            },
+            "global_frontier_rollout_queries_by_n_kl": {
+                "80": 1,
+                "85": 1,
+                "90": 2,
+                "95": 5,
+                "98": 1,
+                "99": 1,
+                "100": 8
+            },
+            "global_rollout_queries_by_feasibility": {
+                "feasible": 13,
+                "infeasible": 19,
+                "frontier": 19
+            },
+            "per_user": [
+                {
+                    "user": 0,
+                    "total_rollout_queries": 9,
+                    "rollout_queries_by_n_kl": {
+                        "95": 2,
+                        "98": 1,
+                        "99": 2,
+                        "100": 4
+                    },
+                    "frontier_rollout_queries_by_n_kl": {
+                        "95": 1,
+                        "98": 1,
+                        "99": 1,
+                        "100": 3
+                    },
+                    "feasible_rollout_queries": 3,
+                    "infeasible_rollout_queries": 6,
+                    "frontier_rollout_queries": 6
+                },
+                {
+                    "user": 1,
+                    "total_rollout_queries": 9,
+                    "rollout_queries_by_n_kl": {
+                        "90": 1,
+                        "94": 1,
+                        "95": 2,
+                        "99": 1,
+                        "100": 4
+                    },
+                    "frontier_rollout_queries_by_n_kl": {
+                        "90": 1,
+                        "95": 2,
+                        "100": 3
+                    },
+                    "feasible_rollout_queries": 3,
+                    "infeasible_rollout_queries": 6,
+                    "frontier_rollout_queries": 6
+                },
+                {
+                    "user": 2,
+                    "total_rollout_queries": 14,
+                    "rollout_queries_by_n_kl": {
+                        "80": 1,
+                        "84": 1,
+                        "85": 1,
+                        "90": 2,
+                        "94": 1,
+                        "95": 3,
+                        "99": 1,
+                        "100": 4
+                    },
+                    "frontier_rollout_queries_by_n_kl": {
+                        "80": 1,
+                        "85": 1,
+                        "90": 1,
+                        "95": 2,
+                        "100": 2
+                    },
+                    "feasible_rollout_queries": 7,
+                    "infeasible_rollout_queries": 7,
+                    "frontier_rollout_queries": 7
+                }
+            ]
+        },
+        "per_user_num_epochs": [
+            1,
+            1,
+            1
+        ],
+        "per_user_final_lagrangian": [
+            -18.575338271356397,
+            -15.71132795272335,
+            -13.262782809378086
+        ],
+        "per_user_best_lagrangian": [
+            -18.575338271356397,
+            -15.71132795272335,
+            -13.262782809378086
+        ],
+        "per_user_final_rate": [
+            18.575338271356397,
+            15.71132795272335,
+            13.262782809378086
+        ],
+        "per_user_final_rate_violation": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "per_user_final_power_violation": [
+            4.61455314390121e-07,
+            2.399567634828629e-06,
+            0.0
+        ],
+        "final_avg_lagrangian": -15.849816344485944,
+        "best_avg_lagrangian": -15.849816344485944,
+        "final_avg_user_rate": 15.849816344485944,
+        "best_avg_user_rate": 15.849816344485944,
+        "final_avg_rate_violation": 0.0,
+        "best_avg_rate_violation": 0.0,
+        "final_avg_power_violation": 9.5367431640625e-07,
+        "best_avg_power_violation": 9.5367431640625e-07,
+        "per_user_final_loss": [
+            -18.575338271356397,
+            -15.71132795272335,
+            -13.262782809378086
+        ],
+        "per_user_best_loss": [
+            -18.575338271356397,
+            -15.71132795272335,
+            -13.262782809378086
+        ],
+        "train_eval_initial_latency": [
+            0.0084,
+            0.011,
+            0.012466666666666666
+        ],
+        "train_eval_final_latency": [
+            0.007666666666666666,
+            0.009,
+            0.010866666666666667
+        ],
+        "train_eval_initial_total_latency": 0.03186666666666667,
+        "train_eval_final_total_latency": 0.027533333333333333,
+        "train_eval_total_latency_reduction_percent": 13.59832635983264,
+        "train_eval_initial_blocks_per_user": [
+            2,
+            2,
+            2
+        ],
+        "train_eval_initial_total_n_per_user": [
+            126,
+            165,
+            187
+        ],
+        "train_eval_initial_served_bits_per_user": [
+            2400,
+            2400,
+            2400
+        ],
+        "train_eval_initial_selected_n_kl_summary": {
+            "global_selected_examples_by_n_kl": {
+                "26": 1,
+                "65": 1,
+                "87": 1,
+                "100": 3
+            },
+            "per_user": [
+                {
+                    "user": 0,
+                    "selected_examples_by_n_kl": {
+                        "26": 1,
+                        "100": 1
+                    }
+                },
+                {
+                    "user": 1,
+                    "selected_examples_by_n_kl": {
+                        "65": 1,
+                        "100": 1
+                    }
+                },
+                {
+                    "user": 2,
+                    "selected_examples_by_n_kl": {
+                        "87": 1,
+                        "100": 1
+                    }
+                }
+            ]
+        },
+        "train_eval_blocks_per_user": [
+            2,
+            2,
+            2
+        ],
+        "train_eval_total_n_per_user": [
+            115,
+            135,
+            163
+        ],
+        "train_eval_served_bits_per_user": [
+            2400,
+            2400,
+            2400
+        ],
+        "train_eval_initial_skipped_blocks_per_user": [
+            0,
+            0,
+            0
+        ],
+        "train_eval_skipped_blocks_per_user": [
+            0,
+            0,
+            0
+        ],
+        "train_eval_selected_n_kl_summary": {
+            "global_selected_examples_by_n_kl": {
+                "15": 1,
+                "35": 1,
+                "63": 1,
+                "100": 3
+            },
+            "per_user": [
+                {
+                    "user": 0,
+                    "selected_examples_by_n_kl": {
+                        "15": 1,
+                        "100": 1
+                    }
+                },
+                {
+                    "user": 1,
+                    "selected_examples_by_n_kl": {
+                        "35": 1,
+                        "100": 1
+                    }
+                },
+                {
+                    "user": 2,
+                    "selected_examples_by_n_kl": {
+                        "63": 1,
+                        "100": 1
+                    }
+                }
+            ]
+        }
+    },
+    "precoder_net_training_losses": [
+        [
+            -18.575338271356397
+        ],
+        [
+            -15.71132795272335
+        ],
+        [
+            -13.262782809378086
+        ]
+    ],
+    "precoder_net_training_history": {
+        "per_user_lagrangian": [
+            [
+                -18.575338271356397
+            ],
+            [
+                -15.71132795272335
+            ],
+            [
+                -13.262782809378086
+            ]
+        ],
+        "per_user_rate": [
+            [
+                18.575338271356397
+            ],
+            [
+                15.71132795272335
+            ],
+            [
+                13.262782809378086
+            ]
+        ],
+        "avg_rate_violation": [
+            [
+                0.0
+            ],
+            [
+                0.0
+            ],
+            [
+                0.0
+            ]
+        ],
+        "avg_power_violation": [
+            [
+                4.61455314390121e-07
+            ],
+            [
+                2.399567634828629e-06
+            ],
+            [
+                0.0
+            ]
+        ],
+        "avg_lagrangian": [
+            -15.849816344485944
+        ],
+        "avg_user_rate": [
+            15.849816344485944
+        ],
+        "avg_rate_violation_over_users": [
+            0.0
+        ],
+        "avg_power_violation_over_users": [
+            9.5367431640625e-07
+        ],
+        "dataset_summary": {
+            "total_channel_episodes": 12,
+            "num_users": 3,
+            "scenario_modes": [
+                "payload_completion"
+            ],
+            "episodes_by_seed": {
+                "0": 12
+            },
+            "global_episodes_by_block": {
+                "0": 3,
+                "1": 3,
+                "2": 3,
+                "3": 3
+            },
+            "global_episodes_by_target_bits": {
+                "1": 12
+            },
+            "per_user": [
+                {
+                    "user": 0,
+                    "total_channel_episodes": 4,
+                    "episodes_by_target_bits": {
+                        "1": 4
+                    },
+                    "episodes_by_seed": {
+                        "0": 4
+                    },
+                    "episodes_by_block": {
+                        "0": 1,
+                        "1": 1,
+                        "2": 1,
+                        "3": 1
+                    }
+                },
+                {
+                    "user": 1,
+                    "total_channel_episodes": 4,
+                    "episodes_by_target_bits": {
+                        "1": 4
+                    },
+                    "episodes_by_seed": {
+                        "0": 4
+                    },
+                    "episodes_by_block": {
+                        "0": 1,
+                        "1": 1,
+                        "2": 1,
+                        "3": 1
+                    }
+                },
+                {
+                    "user": 2,
+                    "total_channel_episodes": 4,
+                    "episodes_by_target_bits": {
+                        "1": 4
+                    },
+                    "episodes_by_seed": {
+                        "0": 4
+                    },
+                    "episodes_by_block": {
+                        "0": 1,
+                        "1": 1,
+                        "2": 1,
+                        "3": 1
+                    }
+                }
+            ]
+        },
+        "rollout_query_summaries_per_user": [
+            [
+                {
+                    "user": 0,
+                    "total_rollout_queries": 9,
+                    "rollout_queries_by_n_kl": {
+                        "95": 2,
+                        "98": 1,
+                        "99": 2,
+                        "100": 4
+                    },
+                    "frontier_rollout_queries_by_n_kl": {
+                        "95": 1,
+                        "98": 1,
+                        "99": 1,
+                        "100": 3
+                    },
+                    "feasible_rollout_queries": 3,
+                    "infeasible_rollout_queries": 6,
+                    "frontier_rollout_queries": 6,
+                    "epoch": 1
+                }
+            ],
+            [
+                {
+                    "user": 0,
+                    "total_rollout_queries": 9,
+                    "rollout_queries_by_n_kl": {
+                        "90": 1,
+                        "94": 1,
+                        "95": 2,
+                        "99": 1,
+                        "100": 4
+                    },
+                    "frontier_rollout_queries_by_n_kl": {
+                        "90": 1,
+                        "95": 2,
+                        "100": 3
+                    },
+                    "feasible_rollout_queries": 3,
+                    "infeasible_rollout_queries": 6,
+                    "frontier_rollout_queries": 6,
+                    "epoch": 1
+                }
+            ],
+            [
+                {
+                    "user": 0,
+                    "total_rollout_queries": 14,
+                    "rollout_queries_by_n_kl": {
+                        "80": 1,
+                        "84": 1,
+                        "85": 1,
+                        "90": 2,
+                        "94": 1,
+                        "95": 3,
+                        "99": 1,
+                        "100": 4
+                    },
+                    "frontier_rollout_queries_by_n_kl": {
+                        "80": 1,
+                        "85": 1,
+                        "90": 1,
+                        "95": 2,
+                        "100": 2
+                    },
+                    "feasible_rollout_queries": 7,
+                    "infeasible_rollout_queries": 7,
+                    "frontier_rollout_queries": 7,
+                    "epoch": 1
+                }
+            ]
+        ],
+        "training_objective": "rollout_lagrangian_user_finite_blocklength_rate_with_fixed_min_bits_objective",
+        "cumulative_rollout_queries_by_n_kl": {
+            "global_rollout_queries_by_n_kl_over_all_epochs": {
+                "80": 1,
+                "84": 1,
+                "85": 1,
+                "90": 3,
+                "94": 2,
+                "95": 7,
+                "98": 1,
+                "99": 4,
+                "100": 12
+            },
+            "per_user_rollout_queries_by_n_kl_over_all_epochs": [
+                {
+                    "95": 2,
+                    "98": 1,
+                    "99": 2,
+                    "100": 4
+                },
+                {
+                    "90": 1,
+                    "94": 1,
+                    "95": 2,
+                    "99": 1,
+                    "100": 4
+                },
+                {
+                    "80": 1,
+                    "84": 1,
+                    "85": 1,
+                    "90": 2,
+                    "94": 1,
+                    "95": 3,
+                    "99": 1,
+                    "100": 4
+                }
+            ]
+        },
+        "cumulative_frontier_rollout_queries_by_n_kl": {
+            "global_frontier_rollout_queries_by_n_kl_over_all_epochs": {
+                "80": 1,
+                "85": 1,
+                "90": 2,
+                "95": 5,
+                "98": 1,
+                "99": 1,
+                "100": 8
+            },
+            "per_user_frontier_rollout_queries_by_n_kl_over_all_epochs": [
+                {
+                    "95": 1,
+                    "98": 1,
+                    "99": 1,
+                    "100": 3
+                },
+                {
+                    "90": 1,
+                    "95": 2,
+                    "100": 3
+                },
+                {
+                    "80": 1,
+                    "85": 1,
+                    "90": 1,
+                    "95": 2,
+                    "100": 2
+                }
+            ]
+        },
+        "final_epoch_rollout_query_summary": {
+            "total_rollout_queries": 32,
+            "global_rollout_queries_by_n_kl": {
+                "80": 1,
+                "84": 1,
+                "85": 1,
+                "90": 3,
+                "94": 2,
+                "95": 7,
+                "98": 1,
+                "99": 4,
+                "100": 12
+            },
+            "global_frontier_rollout_queries_by_n_kl": {
+                "80": 1,
+                "85": 1,
+                "90": 2,
+                "95": 5,
+                "98": 1,
+                "99": 1,
+                "100": 8
+            },
+            "global_rollout_queries_by_feasibility": {
+                "feasible": 13,
+                "infeasible": 19,
+                "frontier": 19
+            },
+            "per_user": [
+                {
+                    "user": 0,
+                    "total_rollout_queries": 9,
+                    "rollout_queries_by_n_kl": {
+                        "95": 2,
+                        "98": 1,
+                        "99": 2,
+                        "100": 4
+                    },
+                    "frontier_rollout_queries_by_n_kl": {
+                        "95": 1,
+                        "98": 1,
+                        "99": 1,
+                        "100": 3
+                    },
+                    "feasible_rollout_queries": 3,
+                    "infeasible_rollout_queries": 6,
+                    "frontier_rollout_queries": 6
+                },
+                {
+                    "user": 1,
+                    "total_rollout_queries": 9,
+                    "rollout_queries_by_n_kl": {
+                        "90": 1,
+                        "94": 1,
+                        "95": 2,
+                        "99": 1,
+                        "100": 4
+                    },
+                    "frontier_rollout_queries_by_n_kl": {
+                        "90": 1,
+                        "95": 2,
+                        "100": 3
+                    },
+                    "feasible_rollout_queries": 3,
+                    "infeasible_rollout_queries": 6,
+                    "frontier_rollout_queries": 6
+                },
+                {
+                    "user": 2,
+                    "total_rollout_queries": 14,
+                    "rollout_queries_by_n_kl": {
+                        "80": 1,
+                        "84": 1,
+                        "85": 1,
+                        "90": 2,
+                        "94": 1,
+                        "95": 3,
+                        "99": 1,
+                        "100": 4
+                    },
+                    "frontier_rollout_queries_by_n_kl": {
+                        "80": 1,
+                        "85": 1,
+                        "90": 1,
+                        "95": 2,
+                        "100": 2
+                    },
+                    "feasible_rollout_queries": 7,
+                    "infeasible_rollout_queries": 7,
+                    "frontier_rollout_queries": 7
+                }
+            ]
+        }
+    },
+    "precoder_parameterization": "shared_user_channel_n_sigma_epsilon_to_precoder_mlp",
+    "training_objective": "rollout_lagrangian_user_finite_blocklength_rate_with_fixed_min_bits_objective",
+    "user_model_specs": [
+        {
+            "Nr": 16,
+            "Nt": 4,
+            "dk": 4,
+            "uses_blocklength_input": true,
+            "input_mode": "channel_sigma_epsilon_n"
+        },
+        {
+            "Nr": 16,
+            "Nt": 4,
+            "dk": 4,
+            "uses_blocklength_input": true,
+            "input_mode": "channel_sigma_epsilon_n"
+        },
+        {
+            "Nr": 16,
+            "Nt": 4,
+            "dk": 4,
+            "uses_blocklength_input": true,
+            "input_mode": "channel_sigma_epsilon_n"
+        }
+    ],
+    "initial_latency": [
+        0.008333333333333333,
+        0.0104,
+        0.012666666666666666
+    ],
+    "final_latency": [
+        0.007466666666666667,
+        0.008866666666666667,
+        0.012466666666666666
+    ],
+    "initial_n": [
+        125.0,
+        156.0,
+        190.0
+    ],
+    "final_n": [
+        112,
+        133,
+        187
+    ],
+    "initial_n_kl": [
+        [
+            100.0,
+            25.0
+        ],
+        [
+            100.0,
+            56.0
+        ],
+        [
+            100.0,
+            90.0
+        ]
+    ],
+    "final_n_kl": [
+        [
+            100,
+            12
+        ],
+        [
+            100,
+            33
+        ],
+        [
+            100,
+            87
+        ]
+    ],
+    "initial_B_kl": [
+        [
+            1956,
+            444
+        ],
+        [
+            1571,
+            829
+        ],
+        [
+            1208,
+            1192
+        ]
+    ],
+    "initial_R_fbl": [
+        [
+            19.5618218604385,
+            18.09352539331501
+        ],
+        [
+            15.710057329250361,
+            15.017475920906326
+        ],
+        [
+            12.08126724199876,
+            13.305973365435673
+        ]
+    ],
+    "final_R_fbl": [
+        [
+            22.078517526141628,
+            17.40760242723881
+        ],
+        [
+            18.506586751046925,
+            17.21179442996307
+        ],
+        [
+            12.896701652838674,
+            12.906260390424857
+        ]
+    ],
+    "initial_snr_db": [
+        14.335152081951595,
+        10.544114562479992,
+        7.48476221394591
+    ],
+    "final_snr_db": [
+        14.61799019061017,
+        10.88392510301842,
+        7.38155829804346
+    ],
+    "initial_sinr_db": [
+        -2.3784265160148497,
+        -3.9174707350811424,
+        -3.398242080094928
+    ],
+    "final_sinr_db": [
+        -1.8921339144618088,
+        -3.8616794317624614,
+        -3.9411297169839594
+    ],
+    "initial_bits_per_symbol": [
+        19.2,
+        15.384615384615385,
+        12.631578947368421
+    ],
+    "initial_bits_per_symbol_by_block": [
+        [
+            19.56,
+            17.76
+        ],
+        [
+            15.71,
+            14.803571428571429
+        ],
+        [
+            12.08,
+            13.244444444444444
+        ]
+    ],
+    "final_bits_per_symbol": [
+        [
+            22.07,
+            16.083333333333332
+        ],
+        [
+            18.5,
+            16.666666666666668
+        ],
+        [
+            12.89,
+            12.770114942528735
+        ]
+    ],
+    "B_kl": [
+        [
+            2207,
+            193
+        ],
+        [
+            1850,
+            550
+        ],
+        [
+            1289,
+            1111
+        ]
+    ],
+    "n_kl": [
+        [
+            100,
+            12
+        ],
+        [
+            100,
+            33
+        ],
+        [
+            100,
+            87
+        ]
+    ],
+    "R_fbl": [
+        [
+            22.078517589804562,
+            17.407602692222916
+        ],
+        [
+            18.506586821100377,
+            17.21179436075648
+        ],
+        [
+            12.896701549899065,
+            12.90626051027844
+        ]
+    ],
+    "blocks_per_user": [
+        2,
+        2,
+        2
+    ],
+    "initial_schedule_source": "random_precoder_baseline",
+    "scenario_mode": "payload_completion",
+    "scenario_block_targets": [],
+    "initial_interference_diag": {
+        "blocks_per_user": [
+            2,
+            2,
+            2
+        ],
+        "signal": [
+            [
+                29.6807232761016,
+                21.857382664330608
+            ],
+            [
+                18.468382256408407,
+                22.628270622131392
+            ],
+            [
+                26.25419486435045,
+                19.86893053548582
+            ]
+        ],
+        "total_interference": [
+            [
+                44.72257712075886,
+                42.49720115761721
+            ],
+            [
+                55.93491814045205,
+                41.72631319981643
+            ],
+            [
+                48.149105532510006,
+                44.485653286462
+            ]
+        ],
+        "noise": [
+            [
+                0.9255714587463294,
+                0.973814598643796
+            ],
+            [
+                1.7541842435734782,
+                1.8715418817047311
+            ],
+            [
+                4.233170617589135,
+                3.997638062962743
+            ]
+        ],
+        "sinr_db": [
+            [
+                -1.869486880327376,
+                -2.9860163248940297
+            ],
+            [
+                -4.946649266394132,
+                -2.8481375943044505
+            ],
+            [
+                -2.999856614095819,
+                -3.8741760337208375
+            ]
+        ],
+        "pairwise_block": [
+            [
+                [
+                    NaN,
+                    18.468382256408407,
+                    26.25419486435045
+                ],
+                [
+                    29.6807232761016,
+                    NaN,
+                    26.25419486435045
+                ],
+                [
+                    29.6807232761016,
+                    18.468382256408407,
+                    NaN
+                ]
+            ],
+            [
+                [
+                    NaN,
+                    22.628270622131392,
+                    19.86893053548582
+                ],
+                [
+                    21.857382664330608,
+                    NaN,
+                    19.86893053548582
+                ],
+                [
+                    21.857382664330608,
+                    22.628270622131392,
+                    NaN
+                ]
+            ]
+        ],
+        "avg_pairwise_power": [
+            [
+                NaN,
+                20.5483264392699,
+                23.061562699918134
+            ],
+            [
+                25.7690529702161,
+                NaN,
+                23.061562699918134
+            ],
+            [
+                25.7690529702161,
+                20.5483264392699,
+                NaN
+            ]
+        ],
+        "avg_pairwise_inr_db": [
+            [
+                NaN,
+                13.343554743401945,
+                13.871101667528627
+            ],
+            [
+                11.55317330139184,
+                NaN,
+                11.069207102454532
+            ],
+            [
+                7.951511169344211,
+                6.999758681200538,
+                NaN
+            ]
+        ],
+        "avg_pairwise_share": [
+            [
+                NaN,
+                0.4711850189228086,
+                0.5288149810771914
+            ],
+            [
+                0.527723286232841,
+                NaN,
+                0.47227671376715896
+            ],
+            [
+                0.5563581812864501,
+                0.44364181871354996,
+                NaN
+            ]
+        ],
+        "worst_block": 0
+    },
+    "final_interference_diag": {
+        "blocks_per_user": [
+            2,
+            2,
+            2
+        ],
+        "signal": [
+            [
+                25.73554928149498,
+                33.414867228316304
+            ],
+            [
+                22.536958214670058,
+                21.787262668036405
+            ],
+            [
+                26.082354451340144,
+                18.998305596393315
+            ]
+        ],
+        "total_interference": [
+            [
+                48.6193126660102,
+                40.78556826442972
+            ],
+            [
+                51.81790373283512,
+                52.41317282470962
+            ],
+            [
+                48.272507496165034,
+                55.20212989635271
+            ]
+        ],
+        "noise": [
+            [
+                0.9255714587463294,
+                1.1169131285871243
+            ],
+            [
+                1.7541842435734782,
+                1.8619837681877776
+            ],
+            [
+                4.233170617589135,
+                4.005069315464243
+            ]
+        ],
+        "sinr_db": [
+            [
+                -2.8446537506164242,
+                -0.9830000207771588
+            ],
+            [
+                -3.7604327388763403,
+                -3.9639841583240774
+            ],
+            [
+                -3.038594792435694,
+                -4.936596481102887
+            ]
+        ],
+        "pairwise_block": [
+            [
+                [
+                    NaN,
+                    22.536958214670058,
+                    26.082354451340144
+                ],
+                [
+                    25.73554928149498,
+                    NaN,
+                    26.082354451340144
+                ],
+                [
+                    25.73554928149498,
+                    22.536958214670058,
+                    NaN
+                ]
+            ],
+            [
+                [
+                    NaN,
+                    21.787262668036405,
+                    18.998305596393315
+                ],
+                [
+                    33.414867228316304,
+                    NaN,
+                    18.998305596393315
+                ],
+                [
+                    33.414867228316304,
+                    21.787262668036405,
+                    NaN
+                ]
+            ]
+        ],
+        "avg_pairwise_power": [
+            [
+                NaN,
+                22.16211044135323,
+                22.54033002386673
+            ],
+            [
+                29.57520825490564,
+                NaN,
+                22.54033002386673
+            ],
+            [
+                29.57520825490564,
+                22.16211044135323,
+                NaN
+            ]
+        ],
+        "avg_pairwise_inr_db": [
+            [
+                NaN,
+                13.409981559457695,
+                13.540064300296459
+            ],
+            [
+                12.124112532126558,
+                NaN,
+                10.9815746328098
+            ],
+            [
+                8.58014785338947,
+                7.309363118021239,
+                NaN
+            ]
+        ],
+        "avg_pairwise_share": [
+            [
+                NaN,
+                0.4957695868662051,
+                0.5042304131337948
+            ],
+            [
+                0.5674930976766324,
+                NaN,
+                0.4325069023233677
+            ],
+            [
+                0.5716416892134811,
+                0.4283583107865189,
+                NaN
+            ]
+        ],
+        "worst_block": 0
+    },
+    "skipped_blocks_per_user": [
+        0,
+        0,
+        0
+    ],
+    "initial_skipped_blocks_per_user": [
+        0,
+        0,
+        0
+    ],
+    "summary_metrics": {
+        "initial_total_latency": 0.0314,
+        "final_total_latency": 0.0288,
+        "initial_avg_latency": 0.010466666666666666,
+        "final_avg_latency": 0.0096,
+        "initial_max_latency": 0.012666666666666666,
+        "final_max_latency": 0.012466666666666666,
+        "initial_min_latency": 0.008333333333333333,
+        "final_min_latency": 0.007466666666666667,
+        "latency_reduction_per_user_percent": [
+            10.4,
+            14.74358974358974,
+            1.5789473684210569
+        ],
+        "total_latency_reduction_percent": 8.28025477707006,
+        "initial_asynchronality_matrix": [
+            [
+                0.0,
+                0.0020666666666666663,
+                0.004333333333333333
+            ],
+            [
+                0.0020666666666666663,
+                0.0,
+                0.002266666666666667
+            ],
+            [
+                0.004333333333333333,
+                0.002266666666666667,
+                0.0
+            ]
+        ],
+        "final_asynchronality_matrix": [
+            [
+                0.0,
+                0.0014000000000000002,
+                0.004999999999999999
+            ],
+            [
+                0.0014000000000000002,
+                0.0,
+                0.003599999999999999
+            ],
+            [
+                0.004999999999999999,
+                0.003599999999999999,
+                0.0
+            ]
+        ],
+        "initial_asynchronality_pairs": [
+            {
+                "user_i": 0,
+                "user_j": 1,
+                "abs_latency_diff": 0.0020666666666666663
+            },
+            {
+                "user_i": 0,
+                "user_j": 2,
+                "abs_latency_diff": 0.004333333333333333
+            },
+            {
+                "user_i": 1,
+                "user_j": 2,
+                "abs_latency_diff": 0.002266666666666667
+            }
+        ],
+        "final_asynchronality_pairs": [
+            {
+                "user_i": 0,
+                "user_j": 1,
+                "abs_latency_diff": 0.0014000000000000002
+            },
+            {
+                "user_i": 0,
+                "user_j": 2,
+                "abs_latency_diff": 0.004999999999999999
+            },
+            {
+                "user_i": 1,
+                "user_j": 2,
+                "abs_latency_diff": 0.003599999999999999
+            }
+        ],
+        "initial_asynchronality_sum": 0.008666666666666666,
+        "final_asynchronality_sum": 0.009999999999999998,
+        "asynchronality_reduction_percent": -15.38461538461537,
+        "initial_avg_snr_db": 10.788009619459165,
+        "final_avg_snr_db": 10.961157863890683,
+        "initial_avg_sinr_db": -3.23137977706364,
+        "final_avg_sinr_db": -3.2316476877360762,
+        "scenario_mode": "payload_completion",
+        "target_bits_per_user": [
+            0,
+            0,
+            0
+        ],
+        "initial_unserved_bits_per_user": [
+            0,
+            0,
+            0
+        ],
+        "unserved_bits_per_user": [
+            0,
+            0,
+            0
+        ],
+        "partially_served_blocks_per_user": [
+            0,
+            0,
+            0
+        ],
+        "zero_service_blocks_per_user": [
+            0,
+            0,
+            0
+        ],
+        "skipped_blocks_per_user": [
+            0,
+            0,
+            0
+        ],
+        "per_user_summary": [
+            {
+                "user": 0,
+                "initial_latency": 0.008333333333333333,
+                "final_latency": 0.007466666666666667,
+                "latency_reduction_percent": 10.4,
+                "initial_snr_db": 14.335152081951595,
+                "final_snr_db": 14.61799019061017,
+                "initial_sinr_db": -2.3784265160148497,
+                "final_sinr_db": -1.8921339144618088,
+                "blocks": 2,
+                "total_n": 112,
+                "target_bits": 0,
+                "initial_served_bits": 2400,
+                "served_bits": 2400,
+                "initial_unserved_bits": 0,
+                "unserved_bits": 0,
+                "partially_served_blocks": 0,
+                "zero_service_blocks": 0,
+                "skipped_blocks": 0
+            },
+            {
+                "user": 1,
+                "initial_latency": 0.0104,
+                "final_latency": 0.008866666666666667,
+                "latency_reduction_percent": 14.74358974358974,
+                "initial_snr_db": 10.544114562479992,
+                "final_snr_db": 10.88392510301842,
+                "initial_sinr_db": -3.9174707350811424,
+                "final_sinr_db": -3.8616794317624614,
+                "blocks": 2,
+                "total_n": 133,
+                "target_bits": 0,
+                "initial_served_bits": 2400,
+                "served_bits": 2400,
+                "initial_unserved_bits": 0,
+                "unserved_bits": 0,
+                "partially_served_blocks": 0,
+                "zero_service_blocks": 0,
+                "skipped_blocks": 0
+            },
+            {
+                "user": 2,
+                "initial_latency": 0.012666666666666666,
+                "final_latency": 0.012466666666666666,
+                "latency_reduction_percent": 1.5789473684210569,
+                "initial_snr_db": 7.48476221394591,
+                "final_snr_db": 7.38155829804346,
+                "initial_sinr_db": -3.398242080094928,
+                "final_sinr_db": -3.9411297169839594,
+                "blocks": 2,
+                "total_n": 187,
+                "target_bits": 0,
+                "initial_served_bits": 2400,
+                "served_bits": 2400,
+                "initial_unserved_bits": 0,
+                "unserved_bits": 0,
+                "partially_served_blocks": 0,
+                "zero_service_blocks": 0,
+                "skipped_blocks": 0
+            }
+        ]
+    },
+    "experiment_scenario_mode": "payload_completion",
+    "experiment_scenario": {
+        "mode": "payload_completion",
+        "seed": 1,
+        "termination_rule": "until_payload_drained",
+        "skip_infeasible_blocks": true,
+        "skip_block_adds_full_T_latency": true,
+        "track_skipped_blocks": true,
+        "per_user_total_target_bits": [
+            2400,
+            2400,
+            2400
+        ],
+        "total_target_bits": 7200,
+        "payload_bits_per_user": [
+            2400,
+            2400,
+            2400
+        ]
+    }
+}

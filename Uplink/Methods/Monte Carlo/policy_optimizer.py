@@ -1303,68 +1303,56 @@ def evaluate_blocklength_precoder_net(
 
             print(f"\n--- PRECODER NET User {k}, Block {ell}, B_rem={B_rem} ---")
 
-            B_try = int(B_rem)
-            B_used = None
             S_block = []
 
-            for attempt in range(12):
-                F_T = infer_precoder_numpy_with_blocklength_and_sigma(
-                    user_models[k],
-                    H_kl,
-                    n_kl=T_ref,
-                    sigma2=sigma2,
-                    epsilon=epsilon,
-                    Nt=int(uplinksystem.NT[k]),
-                    dk=int(uplinksystem.dk[k]),
-                    P=P,
-                    device=DEVICE,
-                )
-                snapshot_candidate = copy.deepcopy(snapshot_full)
-                snapshot_candidate[k][ell] = F_T
-                cov_T = build_uplink_rate_covariance(
-                    uplinksystem,
-                    sim_cfg,
-                    k,
-                    ell,
-                    F_override=snapshot_candidate,
-                )
-                R_T = _compute_r_fbl_np(H_kl, F_T, sigma2, epsilon, T_ref, cov_T)
-                rate_violation = (B_try / float(T_ref)) - R_T
+            F_T = infer_precoder_numpy_with_blocklength_and_sigma(
+                user_models[k],
+                H_kl,
+                n_kl=T_ref,
+                sigma2=sigma2,
+                epsilon=epsilon,
+                Nt=int(uplinksystem.NT[k]),
+                dk=int(uplinksystem.dk[k]),
+                P=P,
+                device=DEVICE,
+            )
+            snapshot_candidate = copy.deepcopy(snapshot_full)
+            snapshot_candidate[k][ell] = F_T
+            cov_T = build_uplink_rate_covariance(
+                uplinksystem,
+                sim_cfg,
+                k,
+                ell,
+                F_override=snapshot_candidate,
+            )
+            R_T = _compute_r_fbl_np(H_kl, F_T, sigma2, epsilon, T_ref, cov_T)
+            B_max = max(int(np.floor(float(T_ref) * float(R_T))), 0)
+            B_used = int(min(B_rem, B_max))
 
-                print(
-                    f"Attempt {attempt + 1}: n=T={T_ref}, B={B_try}, "
-                    f"R_fbl={R_T}, rate_violation={max(0.0, rate_violation)}"
-                )
+            print(
+                f"n=T={T_ref}, requested_bits={B_rem}, feasible_bits={B_max}, "
+                f"served_bits={B_used}, R_fbl={R_T}"
+            )
 
-                if rate_violation <= 0.0:
-                    B_used = int(B_try)
-                    S_block.append(
-                        {
-                            "n_kl": int(T_ref),
-                            "n": int(T_ref),
-                            "B_l": int(B_used),
-                            "Bits per sub-block length B/n_kl": float(B_used) / float(T_ref),
-                            "F": torch.tensor(F_T, dtype=torch.complex64),
-                            "R_fbl": float(R_T),
-                            "F_power": float(np.linalg.norm(F_T, "fro") ** 2),
-                            "lambda_rate": 0.0,
-                            "lambda_power": 0.0,
-                            "loss_curve": [],
-                            "method": method_name,
-                        }
-                    )
-                    break
-
-                B_new = int(np.floor(T_ref * R_T))
-                B_new = max(0, min(B_new, B_try))
-                if B_new == B_try:
-                    B_used = 0
-                    break
-                B_try = B_new
-
-            if B_used is None or B_used <= 0:
+            if B_used <= 0:
                 print(f">>> STOP precoder-net user {k} at block {ell}: no feasible T-point.")
                 break
+
+            S_block.append(
+                {
+                    "n_kl": int(T_ref),
+                    "n": int(T_ref),
+                    "B_l": int(B_used),
+                    "Bits per sub-block length B/n_kl": float(B_used) / float(T_ref),
+                    "F": torch.tensor(F_T, dtype=torch.complex64),
+                    "R_fbl": float(R_T),
+                    "F_power": float(np.linalg.norm(F_T, "fro") ** 2),
+                    "lambda_rate": 0.0,
+                    "lambda_power": 0.0,
+                    "loss_curve": [],
+                    "method": method_name,
+                }
+            )
 
             best_n = int(T_ref)
             best_R = float(S_block[-1]["R_fbl"])
@@ -1372,6 +1360,9 @@ def evaluate_blocklength_precoder_net(
 
             n_kl = int(T_ref) - int(n_kl_step)
             while n_kl >= int(n_kl_min):
+                if int(B_used) < int(B_rem):
+                    print(f"Not reducing n_kl since this block only served a partial payload (n_kl = {n_kl})")
+                    break
                 F_n = infer_precoder_numpy_with_blocklength_and_sigma(
                     user_models[k],
                     H_kl,

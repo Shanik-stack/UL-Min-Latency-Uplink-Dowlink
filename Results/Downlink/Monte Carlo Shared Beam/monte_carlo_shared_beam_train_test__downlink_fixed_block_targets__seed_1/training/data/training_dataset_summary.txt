@@ -1,0 +1,17 @@
+Downlink shared-beam training dataset summary
+Total training cases: 21
+Total n-level evaluations: 324
+Total active-user n evaluations: 540
+Training cases by seed: {'0': 21}
+Training cases by block: {'0': 7, '1': 7, '2': 7}
+Training cases by active user count: {'1': 9, '2': 9, '3': 3}
+Training cases by active mask: {'001': 3, '010': 3, '011': 3, '100': 3, '101': 3, '110': 3, '111': 3}
+Active user-cases per user: [12, 12, 12]
+Global active-user n evaluations by n_kl: {'1': 21, '2': 21, '3': 27, '4': 27, '5': 30, '10': 30, '15': 36, '20': 36, '25': 36, '30': 36, '35': 36, '40': 36, '45': 36, '50': 36, '55': 24, '60': 24, '65': 12, '70': 12, '75': 12, '80': 12}
+Per-user active-user n evaluations by n_kl:
+[{'1': 12, '2': 12, '3': 12, '4': 12, '5': 12, '10': 12, '15': 12, '20': 12, '25': 12, '30': 12, '35': 12, '40': 12, '45': 12, '50': 12}, {'1': 6, '2': 6, '3': 12, '4': 12, '5': 12, '10': 12, '15': 12, '20': 12, '25': 12, '30': 12, '35': 12, '40': 12, '45': 12, '50': 12, '55': 12, '60': 12}, {'1': 3, '2': 3, '3': 3, '4': 3, '5': 6, '10': 6, '15': 12, '20': 12, '25': 12, '30': 12, '35': 12, '40': 12, '45': 12, '50': 12, '55': 12, '60': 12, '65': 12, '70': 12, '75': 12, '80': 12}]
+
+Terminology
+- training case: one (seed, block, active-mask) item
+- n-level evaluation: one candidate joint n_kl vector reused with the same predicted beams
+- active-user n evaluation: one active user counted once at one candidate n_kl inside one training case

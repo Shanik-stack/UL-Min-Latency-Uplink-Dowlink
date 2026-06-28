@@ -115,6 +115,28 @@ def _build_precoder_snapshot_from_models(
     return snapshot
 
 
+def _refresh_block_precoders_from_models(
+    system: DownlinkSystem,
+    working_F: List[List[np.ndarray]],
+    user_models: list[torch.nn.Module],
+    active_users: List[int],
+    block: int,
+) -> None:
+    l = int(block)
+    for k in active_users:
+        k_int = int(k)
+        if l >= len(working_F[k_int]):
+            raise ValueError(f"User {k_int} has no precoder slot for block {l}.")
+        working_F[k_int][l] = infer_precoder_numpy(
+            user_models[k_int],
+            np.asarray(system.H[k_int][l], dtype=np.complex64),
+            nb=int(system.Nb[k_int]),
+            dk=int(system.dk[k_int]),
+            power_limit=float(system.P[k_int]),
+            device=DEVICE,
+        )
+
+
 def _copy_model_state(model: torch.nn.Module) -> dict[str, torch.Tensor]:
     return {key: value.detach().cpu().clone() for key, value in model.state_dict().items()}
 
@@ -145,6 +167,17 @@ def _q_inv(epsilon: float) -> torch.Tensor:
     p = torch.tensor(1.0 - float(epsilon), dtype=torch.float64, device=DEVICE)
     p = torch.clamp(p, 1e-12, 1.0 - 1e-12)
     return normal.icdf(p).to(dtype=torch.float32)
+
+
+def _resolve_user_n_kl(
+    system: DownlinkSystem,
+    user: int,
+    n_kl_overrides: dict[int, int] | None = None,
+) -> int:
+    k = int(user)
+    if n_kl_overrides is None:
+        return int(system.T[k])
+    return int(n_kl_overrides.get(k, int(system.T[k])))
 
 
 def _block_rate_torch_with_override(
@@ -212,25 +245,30 @@ def _evaluate_update_objective_numpy(
     objective_mode: str,
     user_weights: dict[int, float],
     network_weight_beta: float,
+    n_kl_overrides: dict[int, int] | None = None,
 ) -> float:
     if objective_mode == "user_rate":
-        return float(system.compute_block_rate(int(focus_user), int(block), int(system.T[int(focus_user)]), F_override=working_F))
+        n_focus = _resolve_user_n_kl(system, int(focus_user), n_kl_overrides)
+        return float(system.compute_block_rate(int(focus_user), int(block), n_focus, F_override=working_F))
 
     if objective_mode == "blended_network_rate":
-        self_rate = float(system.compute_block_rate(int(focus_user), int(block), int(system.T[int(focus_user)]), F_override=working_F))
+        n_focus = _resolve_user_n_kl(system, int(focus_user), n_kl_overrides)
+        self_rate = float(system.compute_block_rate(int(focus_user), int(block), n_focus, F_override=working_F))
         others_total = 0.0
         for k in active_users:
             if int(k) == int(focus_user):
                 continue
+            n_k = _resolve_user_n_kl(system, int(k), n_kl_overrides)
             others_total += float(user_weights.get(int(k), 1.0)) * float(
-                system.compute_block_rate(int(k), int(block), int(system.T[int(k)]), F_override=working_F)
+                system.compute_block_rate(int(k), int(block), n_k, F_override=working_F)
             )
         return self_rate + float(network_weight_beta) * others_total
 
     total = 0.0
     for k in active_users:
+        n_k = _resolve_user_n_kl(system, int(k), n_kl_overrides)
         total += float(user_weights.get(int(k), 1.0)) * float(
-            system.compute_block_rate(int(k), int(block), int(system.T[int(k)]), F_override=working_F)
+            system.compute_block_rate(int(k), int(block), n_k, F_override=working_F)
         )
     return total
 
@@ -351,10 +389,11 @@ def _optimize_user_block_precoder(
     objective_mode: str,
     precoder_model: torch.nn.Module,
     model_optimizer: torch.optim.Optimizer,
+    n_kl_overrides: dict[int, int] | None = None,
 ) -> np.ndarray:
     k = int(user)
     l = int(block)
-    n_kl = int(system.T[k])
+    n_kl = _resolve_user_n_kl(system, k, n_kl_overrides)
     steps = max(1, int(sim_params.get("user_update_steps", 1)))
     network_weight_beta = float(sim_params.get("network_weight_beta", 0.15))
     H_kl = torch.tensor(system.H[k][l], dtype=torch.complex64, device=DEVICE)
@@ -372,6 +411,7 @@ def _optimize_user_block_precoder(
         objective_mode,
         user_weights,
         network_weight_beta,
+        n_kl_overrides,
     )
 
     for _ in range(steps):
@@ -386,11 +426,12 @@ def _optimize_user_block_precoder(
         if objective_mode in {"weighted_sum_rate", "blended_network_rate"}:
             objective = torch.tensor(0.0, dtype=torch.float32, device=DEVICE)
             for j in active_users:
+                n_j = _resolve_user_n_kl(system, int(j), n_kl_overrides)
                 rate_j = _block_rate_torch_with_override(
                     system,
                     int(j),
                     l,
-                    int(system.T[int(j)]),
+                    n_j,
                     working_F,
                     override_user=k,
                     override_precoder=F_candidate,
@@ -434,6 +475,7 @@ def _optimize_user_block_precoder(
             objective_mode,
             user_weights,
             network_weight_beta,
+            n_kl_overrides,
         )
         if objective_np > best_objective:
             best_beam = beam_np
@@ -570,18 +612,23 @@ def _evaluate_block_candidate(
     working_F: List[List[np.ndarray]],
     active_users: List[int],
     block: int,
+    n_kl_overrides: dict[int, int] | None = None,
 ) -> dict[str, Any]:
     rates = []
     max_bits = []
+    n_values = []
     for k in active_users:
-        rate = float(system.compute_block_rate(int(k), int(block), int(system.T[int(k)]), F_override=working_F))
-        bits = max(_rate_to_max_bits(int(system.T[int(k)]), rate), 0)
+        n_k = _resolve_user_n_kl(system, int(k), n_kl_overrides)
+        rate = float(system.compute_block_rate(int(k), int(block), n_k, F_override=working_F))
+        bits = max(_rate_to_max_bits(n_k, rate), 0)
         rates.append(rate)
         max_bits.append(int(bits))
+        n_values.append(int(n_k))
 
     feasible_count = int(sum(bits > 0 for bits in max_bits))
     return {
         "user_ids": [int(k) for k in active_users],
+        "user_n_kl": n_values,
         "user_rates": rates,
         "user_max_bits": max_bits,
         "feasible_count": feasible_count,
@@ -589,6 +636,202 @@ def _evaluate_block_candidate(
         "min_rate": float(min(rates)) if len(rates) > 0 else 0.0,
         "sum_rate": float(sum(rates)),
     }
+
+
+def _copy_active_model_optimizer_states(
+    user_models: list[torch.nn.Module],
+    model_optimizers: list[torch.optim.Optimizer],
+    active_users: List[int],
+) -> tuple[dict[int, dict[str, torch.Tensor]], dict[int, dict[str, Any]]]:
+    model_states = {
+        int(k): _copy_model_state(user_models[int(k)])
+        for k in active_users
+    }
+    optimizer_states = {
+        int(k): copy.deepcopy(model_optimizers[int(k)].state_dict())
+        for k in active_users
+    }
+    return model_states, optimizer_states
+
+
+def _restore_active_model_optimizer_states(
+    user_models: list[torch.nn.Module],
+    model_optimizers: list[torch.optim.Optimizer],
+    active_users: List[int],
+    model_states: dict[int, dict[str, torch.Tensor]],
+    optimizer_states: dict[int, dict[str, Any]],
+) -> None:
+    for k in active_users:
+        user_models[int(k)].load_state_dict(model_states[int(k)])
+        model_optimizers[int(k)].load_state_dict(optimizer_states[int(k)])
+
+
+def _all_committed_bits_feasible(
+    system: DownlinkSystem,
+    working_F: List[List[np.ndarray]],
+    active_users: List[int],
+    block: int,
+    committed_bits: dict[int, int],
+    n_kl_targets: dict[int, int],
+    feasibility_tol: float = 1e-6,
+) -> tuple[bool, dict[int, float]]:
+    user_rates: dict[int, float] = {}
+    for k in active_users:
+        k_int = int(k)
+        B_used = int(committed_bits.get(k_int, 0))
+        n_k = _resolve_user_n_kl(system, k_int, n_kl_targets)
+        rate_k = float(system.compute_block_rate(k_int, int(block), n_k, F_override=working_F))
+        user_rates[k_int] = rate_k
+        if B_used <= 0:
+            continue
+        required_rate = float(B_used) / float(max(n_k, 1))
+        if float(rate_k) + float(feasibility_tol) < float(required_rate):
+            return False, user_rates
+    return True, user_rates
+
+
+def _reduce_blocklengths_with_reoptimization(
+    system: DownlinkSystem,
+    working_F: List[List[np.ndarray]],
+    user_models: list[torch.nn.Module],
+    model_optimizers: list[torch.optim.Optimizer],
+    active_users: List[int],
+    block: int,
+    requested_bits: dict[int, int],
+    sim_params: dict[str, Any],
+    *,
+    objective_mode: str,
+    user_weights: dict[int, float],
+    verbose: bool,
+) -> tuple[dict[int, dict[str, Any]], list[dict[str, float]]]:
+    n_min = int(sim_params["n_kl_min"])
+    n_step = int(sim_params["n_kl_step"])
+
+    current_n_targets = {
+        int(k): int(system.T[int(k)])
+        for k in active_users
+    }
+    committed_bits: dict[int, int] = {}
+    current_rates: dict[int, float] = {}
+    plans: dict[int, dict[str, Any]] = {}
+    refinement_history: list[dict[str, float]] = []
+
+    for k in active_users:
+        k_int = int(k)
+        T_k = int(system.T[k_int])
+        R_T = float(system.compute_block_rate(k_int, int(block), T_k, F_override=working_F))
+        B_max = max(_rate_to_max_bits(T_k, R_T), 0)
+        B_used = int(min(int(requested_bits.get(k_int, 0)), B_max))
+        committed_bits[k_int] = int(B_used)
+        current_rates[k_int] = float(R_T)
+        plans[k_int] = {
+            "B_used": int(B_used),
+            "n_used": int(T_k),
+            "R_used": float(R_T if B_used > 0 else 0.0),
+        }
+
+    full_service_users = []
+    for k in active_users:
+        k_int = int(k)
+        requested_k = int(requested_bits.get(k_int, 0))
+        B_used = int(committed_bits.get(k_int, 0))
+        if requested_k <= 0 or B_used <= 0:
+            continue
+        if B_used < requested_k:
+            if verbose:
+                print(
+                    f"  user={k_int:02d} block={block:02d} serves partial bits at n=T; "
+                    "not reducing n_kl."
+                )
+            continue
+        full_service_users.append(int(k_int))
+
+    sweep_idx = 0
+    while len(full_service_users) > 0:
+        progress_this_sweep = False
+        start_offset = int(sweep_idx % max(len(full_service_users), 1))
+        ordered_users = full_service_users[start_offset:] + full_service_users[:start_offset]
+        if verbose:
+            print(
+                f"  block={block:02d} n_kl reduction sweep {sweep_idx + 1} "
+                f"over users {ordered_users}"
+            )
+
+        for k_int in ordered_users:
+            current_n = int(current_n_targets.get(k_int, int(system.T[k_int])))
+            candidate = int(current_n - int(n_step))
+            if candidate < int(n_min):
+                continue
+
+            candidate_targets = dict(current_n_targets)
+            candidate_targets[k_int] = int(candidate)
+            beam_checkpoint = _clone_precoders(working_F)
+            model_states, optimizer_states = _copy_active_model_optimizer_states(
+                user_models,
+                model_optimizers,
+                active_users,
+            )
+            candidate_history = optimize_precoders_for_block(
+                system,
+                working_F,
+                user_models,
+                model_optimizers,
+                active_users,
+                block,
+                sim_params,
+                verbose=verbose,
+                objective_mode=objective_mode,
+                user_weights=user_weights,
+                n_kl_overrides=candidate_targets,
+            )
+            feasible, candidate_rates = _all_committed_bits_feasible(
+                system,
+                working_F,
+                active_users,
+                block,
+                committed_bits,
+                candidate_targets,
+            )
+            if not feasible:
+                working_F[:] = beam_checkpoint
+                _restore_active_model_optimizer_states(
+                    user_models,
+                    model_optimizers,
+                    active_users,
+                    model_states,
+                    optimizer_states,
+                )
+                if verbose:
+                    print(
+                        f"  user={k_int:02d} block={block:02d} candidate n_kl={int(candidate):4d} "
+                        "became infeasible after re-optimization; keeping previous n_kl for this sweep."
+                    )
+                continue
+
+            current_n_targets = candidate_targets
+            current_rates = candidate_rates
+            refinement_history.extend(candidate_history)
+            plans[k_int]["n_used"] = int(candidate)
+            plans[k_int]["R_used"] = float(candidate_rates.get(k_int, current_rates.get(k_int, 0.0)))
+            progress_this_sweep = True
+            if verbose:
+                print(
+                    f"  user={k_int:02d} block={block:02d} accepted smaller n_kl={int(candidate):4d} "
+                    "after fresh re-optimization."
+                )
+
+        if not progress_this_sweep:
+            break
+        sweep_idx += 1
+
+    for k in active_users:
+        k_int = int(k)
+        final_n = int(current_n_targets[k_int])
+        final_rate = float(system.compute_block_rate(k_int, int(block), final_n, F_override=working_F))
+        plans[k_int]["n_used"] = int(final_n)
+        plans[k_int]["R_used"] = float(final_rate if committed_bits.get(k_int, 0) > 0 else 0.0)
+
+    return plans, refinement_history
 
 
 def optimize_precoders_for_block(
@@ -602,6 +845,7 @@ def optimize_precoders_for_block(
     verbose: bool = True,
     objective_mode: str = "user_rate",
     user_weights: dict[int, float] | None = None,
+    n_kl_overrides: dict[int, int] | None = None,
 ) -> list[dict[str, float]]:
     history: list[dict[str, float]] = []
     if len(active_users) == 0:
@@ -633,6 +877,7 @@ def optimize_precoders_for_block(
                 objective_mode,
                 user_models[int(k)],
                 model_optimizers[int(k)],
+                n_kl_overrides,
             )
             working_F[k][block] = np.array(beam_k, copy=True)
 
@@ -641,7 +886,8 @@ def optimize_precoders_for_block(
         user_interference_db = []
         user_signal_db = []
         for k in active_users:
-            rate = float(system.compute_block_rate(int(k), int(block), int(system.T[int(k)]), F_override=working_F))
+            n_k = _resolve_user_n_kl(system, int(k), n_kl_overrides)
+            rate = float(system.compute_block_rate(int(k), int(block), n_k, F_override=working_F))
             signal_power, interference_power, _, sinr_db = _compute_user_link_budget(system, working_F, int(k), int(block))
             user_rates.append(rate)
             user_sinr_db.append(float(sinr_db))
@@ -658,6 +904,7 @@ def optimize_precoders_for_block(
                 "sweep": sweep_idx + 1,
                 "active_users": int(len(active_users)),
                 "user_ids": [int(k) for k in active_users],
+                "user_n_kl": [_resolve_user_n_kl(system, int(k), n_kl_overrides) for k in active_users],
                 "user_rates": user_rates,
                 "user_sinr_db": user_sinr_db,
                 "user_interference_db": user_interference_db,
@@ -867,7 +1114,7 @@ def estimate_initial_latency_from_random_precoders(
     n_plan: List[List[int]] = [[] for _ in range(baseline_system.K)]
     B_plan: List[List[int]] = [[] for _ in range(baseline_system.K)]
     R_plan: List[List[float]] = [[] for _ in range(baseline_system.K)]
-    working_F = _build_precoder_snapshot_from_models(baseline_system, baseline_models)
+    working_F = baseline_system.clone_precoders()
     max_blocks = int(sim_params.get("max_total_blocks", 256))
     block = 0
 
@@ -881,7 +1128,13 @@ def estimate_initial_latency_from_random_precoders(
         active_users = [k for k in range(baseline_system.K) if int(remaining[k]) > 0]
         for k in active_users:
             _ensure_user_block(baseline_system, working_F, k, block, use_previous_as_template=False)
-        working_F = _build_precoder_snapshot_from_models(baseline_system, baseline_models)
+        _refresh_block_precoders_from_models(
+            baseline_system,
+            working_F,
+            baseline_models,
+            active_users,
+            block,
+        )
         queue_weights = _build_user_weights(
             baseline_system,
             working_F,
@@ -936,14 +1189,20 @@ def _estimate_initial_latency_from_random_precoders_fixed_block_targets(
     n_plan: List[List[int]] = [[] for _ in range(baseline_system.K)]
     B_plan: List[List[int]] = [[] for _ in range(baseline_system.K)]
     R_plan: List[List[float]] = [[] for _ in range(baseline_system.K)]
-    working_F = _build_precoder_snapshot_from_models(baseline_system, baseline_models)
+    working_F = baseline_system.clone_precoders()
     skipped_blocks_per_user = [0 for _ in range(baseline_system.K)]
 
     for block in range(num_blocks):
         active_users = [k for k in range(baseline_system.K) if int(block_targets[k, block]) > 0]
         for k in active_users:
             _ensure_user_block(baseline_system, working_F, k, block, use_previous_as_template=False)
-        working_F = _build_precoder_snapshot_from_models(baseline_system, baseline_models)
+        _refresh_block_precoders_from_models(
+            baseline_system,
+            working_F,
+            baseline_models,
+            active_users,
+            block,
+        )
 
         for k in active_users:
             target_bits = int(block_targets[k, block])
@@ -1003,7 +1262,7 @@ def _run_safe_sweep(
     n_plan: List[List[int]] = [[] for _ in range(system.K)]
     B_plan: List[List[int]] = [[] for _ in range(system.K)]
     R_plan: List[List[float]] = [[] for _ in range(system.K)]
-    working_F: List[List[np.ndarray]] = _build_precoder_snapshot_from_models(system, user_models)
+    working_F: List[List[np.ndarray]] = system.clone_precoders()
     sweep_history: list[dict[str, float]] = []
     outer_history: list[dict[str, float]] = []
     rate_points: list[dict[str, float]] = []
@@ -1019,7 +1278,13 @@ def _run_safe_sweep(
         active_users = [k for k in range(system.K) if int(remaining[k]) > 0]
         for k in active_users:
             _ensure_user_block(system, working_F, k, block)
-        working_F = _build_precoder_snapshot_from_models(system, user_models)
+        _refresh_block_precoders_from_models(
+            system,
+            working_F,
+            user_models,
+            active_users,
+            block,
+        )
         queue_weights = _build_user_weights(
             system,
             working_F,
@@ -1085,6 +1350,24 @@ def _run_safe_sweep(
                     f"  block={block:02d} skipping users {infeasible_users}; "
                     "re-optimizing remaining transmitters."
                 )
+        final_plans: dict[int, dict[str, Any]] = {}
+        if len(transmit_users) > 0:
+            transmit_weights = {int(k): float(queue_weights.get(int(k), 1.0)) for k in transmit_users}
+            requested_bits_block = {int(k): int(remaining[int(k)]) for k in transmit_users}
+            final_plans, refinement_history = _reduce_blocklengths_with_reoptimization(
+                system,
+                working_F,
+                user_models,
+                model_optimizers,
+                transmit_users,
+                block,
+                requested_bits_block,
+                sim_params,
+                objective_mode=objective_mode,
+                user_weights=transmit_weights,
+                verbose=verbose,
+            )
+            block_history.extend(refinement_history)
         sweep_history.extend(block_history)
 
         block_bits = 0
@@ -1116,16 +1399,10 @@ def _run_safe_sweep(
                     )
                 continue
 
-            B_used, n_used, R_used = _allocate_bits_for_user_block(
-                system,
-                working_F,
-                k,
-                block,
-                int(remaining[k]),
-                sim_params,
-                allocation_mode=allocation_mode,
-                queue_weight=queue_weight,
-            )
+            plan = final_plans.get(int(k), {"B_used": 0, "n_used": int(system.T[k]), "R_used": 0.0})
+            B_used = int(plan["B_used"])
+            n_used = int(plan["n_used"])
+            R_used = float(plan["R_used"])
             B_plan[k].append(int(B_used))
             n_plan[k].append(int(n_used))
             R_plan[k].append(float(R_used))
@@ -1233,7 +1510,7 @@ def _run_safe_sweep_fixed_block_targets(
     n_plan: List[List[int]] = [[] for _ in range(system.K)]
     B_plan: List[List[int]] = [[] for _ in range(system.K)]
     R_plan: List[List[float]] = [[] for _ in range(system.K)]
-    working_F: List[List[np.ndarray]] = _build_precoder_snapshot_from_models(system, user_models)
+    working_F: List[List[np.ndarray]] = system.clone_precoders()
     sweep_history: list[dict[str, float]] = []
     outer_history: list[dict[str, float]] = []
     rate_points: list[dict[str, float]] = []
@@ -1243,7 +1520,13 @@ def _run_safe_sweep_fixed_block_targets(
         active_users = [k for k in range(system.K) if int(block_targets[k, block]) > 0]
         for k in active_users:
             _ensure_user_block(system, working_F, k, block)
-        working_F = _build_precoder_snapshot_from_models(system, user_models)
+        _refresh_block_precoders_from_models(
+            system,
+            working_F,
+            user_models,
+            active_users,
+            block,
+        )
         queue_weights = {int(k): 1.0 for k in active_users}
         if verbose:
             print(
@@ -1297,6 +1580,27 @@ def _run_safe_sweep_fixed_block_targets(
                     f"  fixed-target block={block:02d} zero-service users {infeasible_users}; "
                     "re-optimizing remaining transmitters."
                 )
+        final_plans: dict[int, dict[str, Any]] = {}
+        if len(transmit_users) > 0:
+            requested_bits_block = {
+                int(k): int(block_targets[int(k), block])
+                for k in transmit_users
+            }
+            uniform_weights = {int(k): 1.0 for k in transmit_users}
+            final_plans, refinement_history = _reduce_blocklengths_with_reoptimization(
+                system,
+                working_F,
+                user_models,
+                model_optimizers,
+                transmit_users,
+                block,
+                requested_bits_block,
+                sim_params,
+                objective_mode=objective_mode,
+                user_weights=uniform_weights,
+                verbose=verbose,
+            )
+            block_history.extend(refinement_history)
         sweep_history.extend(block_history)
 
         block_bits = 0
@@ -1334,14 +1638,10 @@ def _run_safe_sweep_fixed_block_targets(
                     )
                 continue
 
-            B_used, n_used, R_used = _allocate_fixed_target_for_user_block(
-                system,
-                working_F,
-                int(k),
-                int(block),
-                int(target_bits),
-                sim_params,
-            )
+            plan = final_plans.get(int(k), {"B_used": 0, "n_used": int(system.T[k]), "R_used": 0.0})
+            B_used = int(plan["B_used"])
+            n_used = int(plan["n_used"])
+            R_used = float(plan["R_used"])
             B_plan[int(k)].append(int(B_used))
             n_plan[int(k)].append(int(n_used))
             R_plan[int(k)].append(float(R_used))

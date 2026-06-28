@@ -1,0 +1,230 @@
+[
+  {
+    "name": "uplink_conv_payload",
+    "ok": false,
+    "returncode": "TIMEOUT",
+    "elapsed_s": 150.24,
+    "stdout_tail": [],
+    "stderr_tail": []
+  },
+  {
+    "name": "uplink_conv_fixed",
+    "ok": false,
+    "returncode": "TIMEOUT",
+    "elapsed_s": 150.26,
+    "stdout_tail": [
+      "Re-optimizing at n = 30",
+      "R_fbl: 18.188676834106445",
+      "Rate violation: -0.04855343699455261",
+      "Power violation: 0.0",
+      ">>> Feasible. Storing result.",
+      ">>> Not feasible after re-optimization. Stop decreasing n.",
+      "",
+      ">>> Finished OptimizeSubBlocklength-Precoder",
+      "",
+      "Result n_kl: 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, ",
+      "",
+      "Result R_fbl: 17.71279525756836, 17.7933349609375, 17.869001388549805, 17.940242767333984, 18.00750732421875, 18.07111167907715, 18.13141441345215, 18.188676834106445, 18.24314308166504, 18.295021057128906, 18.344541549682617, 18.391857147216797, 18.437131881713867, 18.48051643371582, 18.52210235595703, 18.56206512451172, 18.600475311279297, 18.637405395507812, 18.673009872436523, 18.707332611083984, 18.740427017211914, 18.772403717041016, 18.803308486938477, 18.83319091796875, 18.862146377563477, 18.890161514282227, 18.91731834411621, 18.94365882873535, 18.96921157836914, 18.99404525756836, 19.01814079284668, 19.041584014892578, 19.064390182495117, 19.086572647094727, 19.10818862915039, 19.129228591918945, 19.149728775024414, 19.169700622558594, 19.189197540283203, 19.208209991455078, 19.22677230834961, 19.24490737915039, 19.262622833251953, 19.279937744140625, 19.296838760375977, 19.313379287719727, 19.329565048217773, 19.34539794921875, 19.36088752746582, 19.376060485839844, 19.390918731689453, 19.405481338500977, 19.419748306274414, 19.43373680114746, 19.447431564331055, 19.46088218688965, 19.474071502685547, 19.487009048461914, 19.49972152709961, 19.51218605041504, 19.524415969848633, 19.536447525024414, 19.54826545715332, 19.55986213684082, "
+    ],
+    "stderr_tail": []
+  },
+  {
+    "name": "downlink_conv_payload",
+    "ok": true,
+    "returncode": 0,
+    "elapsed_s": 144.59,
+    "stdout_tail": [
+      "  block=00 n_kl reduction sweep 35 over users [1, 2, 0]",
+      "[Block 00 | Sweep 001] active_users=3 weighted_sum_rate=27.0805 sum_rate=35.5086 max_delta=0.000000e+00",
+      "  user=01 block=00 candidate n_kl=  36 became infeasible after re-optimization; keeping previous n_kl for this sweep.",
+      "[Block 00 | Sweep 001] active_users=3 weighted_sum_rate=27.0816 sum_rate=35.5188 max_delta=0.000000e+00",
+      "  user=02 block=00 candidate n_kl=  45 became infeasible after re-optimization; keeping previous n_kl for this sweep.",
+      "[Block 00 | Sweep 001] active_users=3 weighted_sum_rate=27.0532 sum_rate=35.4361 max_delta=0.000000e+00",
+      "  user=00 block=00 candidate n_kl=  17 became infeasible after re-optimization; keeping previous n_kl for this sweep.",
+      "  user=00 block=00 bits= 200 n_kl=  18 required_rate=11.1111 R_fbl=11.3310 margin=0.2199",
+      "  user=01 block=00 bits= 400 n_kl=  37 required_rate=10.8108 R_fbl=11.0867 margin=0.2759",
+      "  user=02 block=00 bits= 600 n_kl=  46 required_rate=13.0435 R_fbl=13.1269 margin=0.0834",
+      "--- Block 0 allocation complete | allocated_bits=1200 remaining_bits=0 ---",
+      "Saved downlink results to: C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Downlink\\Convergence per sweep\\greedy_safe_sweep_obj_weighted_sum_rate__downlink_payload_completion__seed_1\\testing"
+    ],
+    "stderr_tail": []
+  },
+  {
+    "name": "downlink_conv_fixed",
+    "ok": false,
+    "returncode": "TIMEOUT",
+    "elapsed_s": 150.3,
+    "stdout_tail": [
+      "  user=01 block=00 accepted smaller n_kl=  41 after fresh re-optimization.",
+      "[Block 00 | Sweep 001] active_users=3 weighted_sum_rate=36.9270 sum_rate=36.9270 max_delta=0.000000e+00",
+      "  user=02 block=00 accepted smaller n_kl=  61 after fresh re-optimization.",
+      "  block=00 n_kl reduction sweep 20 over users [1, 2, 0]",
+      "[Block 00 | Sweep 001] active_users=3 weighted_sum_rate=36.8962 sum_rate=36.8962 max_delta=0.000000e+00",
+      "  user=01 block=00 accepted smaller n_kl=  40 after fresh re-optimization.",
+      "[Block 00 | Sweep 001] active_users=3 weighted_sum_rate=36.8793 sum_rate=36.8793 max_delta=0.000000e+00",
+      "  user=02 block=00 accepted smaller n_kl=  60 after fresh re-optimization.",
+      "[Block 00 | Sweep 001] active_users=3 weighted_sum_rate=36.8322 sum_rate=36.8322 max_delta=0.000000e+00",
+      "  user=00 block=00 accepted smaller n_kl=  30 after fresh re-optimization.",
+      "  block=00 n_kl reduction sweep 21 over users [2, 0, 1]",
+      "[Block 00 | Sweep 001] active_users=3 weighted_sum_rate=36.8149 sum_rate=36.8149 max_delta=0.000000e+00"
+    ],
+    "stderr_tail": []
+  },
+  {
+    "name": "uplink_mc_payload",
+    "ok": true,
+    "returncode": 0,
+    "elapsed_s": 99.44,
+    "stdout_tail": [
+      "Precoder-net test n_kl=91: R_fbl=12.954549729040464, rate_violation=-0.7457585202492556",
+      "Precoder-net test n_kl=90: R_fbl=12.942768725134613, rate_violation=-0.5983242806901679",
+      "Precoder-net test n_kl=89: R_fbl=12.93079719699021, rate_violation=-0.4476511295744796",
+      "Precoder-net test n_kl=88: R_fbl=12.918629484394431, rate_violation=-0.2936294843944314",
+      "Precoder-net test n_kl=87: R_fbl=12.90626051027844, rate_violation=-0.1361455677497041",
+      "Precoder-net test n_kl=86: R_fbl=12.893683564606981, rate_violation=0.02492108655581049",
+      ">>> Precoder-net chose n_kl=87, B_used=1111, B_kl=1111, remaining B_rem=0",
+      "logging rfbl:  [19.56182186 18.09352539]",
+      "logging rfbl:  [15.71005733 15.01747592]",
+      "logging rfbl:  [12.08126724 13.30597337]",
+      "Test results saved to: C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Monte Carlo\\monte_carlo_precoder_net_train_test__uplink_payload_completion__seed_1\\testing\\data\\test_results.txt",
+      "Saved uplink precoder-net results to: C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Monte Carlo\\monte_carlo_precoder_net_train_test__uplink_payload_completion__seed_1"
+    ],
+    "stderr_tail": []
+  },
+  {
+    "name": "uplink_mc_fixed",
+    "ok": true,
+    "returncode": 0,
+    "elapsed_s": 197.6,
+    "stdout_tail": [
+      "Initial R_fbl after update system:  [array([19.35800799]), array([14.57663095]), array([12.86442391])]",
+      "Initial R_fbl after update system:  [array([19.35800799]), array([14.57663095]), array([12.86442391])]",
+      "Initial R_fbl after update system:  [array([19.56182209]), array([15.71005721]), array([12.08126734])]",
+      "Initial R_fbl after update system:  [array([19.56182209]), array([15.71005721]), array([12.08126734])]",
+      "logging rfbl:  [17.58580968 17.93796573 18.39800434 16.90422355 19.7423496  16.66809877",
+      " 18.22967018 16.31088401 13.86955929 14.22960443]",
+      "logging rfbl:  [14.18676089 14.10009907 13.50277545 16.30228088 13.92514525 12.82269837",
+      " 14.75940354 14.5505589  13.90971208 12.65901045]",
+      "logging rfbl:  [11.03990723 12.1050533  10.64881915 11.18404943  9.5282942  10.57682503",
+      "  9.28747463 11.06943058 11.08666685 10.02362863]",
+      "Test results saved to: C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Monte Carlo\\monte_carlo_precoder_net_train_test__uplink_fixed_block_targets__seed_1\\testing\\data\\test_results.txt",
+      "Saved uplink precoder-net results to: C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Monte Carlo\\monte_carlo_precoder_net_train_test__uplink_fixed_block_targets__seed_1"
+    ],
+    "stderr_tail": []
+  },
+  {
+    "name": "downlink_mc_payload",
+    "ok": false,
+    "returncode": 1,
+    "elapsed_s": 35.37,
+    "stdout_tail": [],
+    "stderr_tail": [
+      "  File \"C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo\\main.py\", line 404, in <module>",
+      "    main()",
+      "  File \"C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo\\main.py\", line 317, in main",
+      "    result = evaluate_downlink_precoder_net(",
+      "             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "  File \"C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo\\policy_optimizer.py\", line 1943, in evaluate_downlink_precoder_net",
+      "    \"precoder_net_training_history\": {",
+      "                                     ^",
+      "  File \"C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo\\policy_optimizer.py\", line 1947, in <dictcomp>",
+      "    else list(map(float, value))",
+      "         ^^^^^^^^^^^^^^^^^^^^^^^",
+      "TypeError: float() argument must be a string or a real number, not 'dict'"
+    ]
+  },
+  {
+    "name": "downlink_mc_fixed",
+    "ok": false,
+    "returncode": 1,
+    "elapsed_s": 20.57,
+    "stdout_tail": [],
+    "stderr_tail": [
+      "    result = evaluate_downlink_precoder_net(",
+      "             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "  File \"C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo\\policy_optimizer.py\", line 1653, in evaluate_downlink_precoder_net",
+      "    return _evaluate_downlink_precoder_net_fixed_block_targets(",
+      "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "  File \"C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo\\policy_optimizer.py\", line 1619, in _evaluate_downlink_precoder_net_fixed_block_targets",
+      "    \"precoder_net_training_history\": {",
+      "                                     ^",
+      "  File \"C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo\\policy_optimizer.py\", line 1623, in <dictcomp>",
+      "    else list(map(float, value))",
+      "         ^^^^^^^^^^^^^^^^^^^^^^^",
+      "TypeError: float() argument must be a string or a real number, not 'dict'"
+    ]
+  },
+  {
+    "name": "uplink_mc_shared_payload",
+    "ok": true,
+    "returncode": 0,
+    "elapsed_s": 97.37,
+    "stdout_tail": [
+      "================ SHARED-BEAM TRAIN USER 2 ================",
+      "Scenarios: 4 | epochs: 1 | batch_size: 32",
+      "Shared-beam user 2 epoch 1/1: loss=-1.031798e+01 | avg_rate=10.317983",
+      "Initial R_fbl after update system:  [array([19.35800799]), array([14.57663095]), array([12.86442391])]",
+      "Initial R_fbl after update system:  [array([19.35800799]), array([14.57663095]), array([12.86442391])]",
+      "Initial R_fbl after update system:  [array([19.56182209]), array([15.71005721]), array([12.08126734])]",
+      "Initial R_fbl after update system:  [array([19.56182209]), array([15.71005721]), array([12.08126734])]",
+      "logging rfbl:  [19.56182186 18.09352539]",
+      "logging rfbl:  [15.71005733 15.01747592]",
+      "logging rfbl:  [12.08126724 13.30597337]",
+      "Test results saved to: C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Monte Carlo Shared Beam\\monte_carlo_shared_beam_train_test__uplink_payload_completion__seed_1\\testing\\data\\test_results.txt",
+      "Saved uplink shared-beam results to: C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Monte Carlo Shared Beam\\monte_carlo_shared_beam_train_test__uplink_payload_completion__seed_1"
+    ],
+    "stderr_tail": []
+  },
+  {
+    "name": "uplink_mc_shared_fixed",
+    "ok": true,
+    "returncode": 0,
+    "elapsed_s": 93.03,
+    "stdout_tail": [
+      "================ SHARED-BEAM TRAIN USER 2 ================",
+      "Scenarios: 4 | epochs: 1 | batch_size: 32",
+      "Shared-beam user 2 epoch 1/1: loss=-9.419757e+00 | avg_rate=9.419757",
+      "Initial R_fbl after update system:  [array([19.35800799]), array([14.57663095]), array([12.86442391])]",
+      "Initial R_fbl after update system:  [array([19.35800799]), array([14.57663095]), array([12.86442391])]",
+      "Initial R_fbl after update system:  [array([19.56182209]), array([15.71005721]), array([12.08126734])]",
+      "Initial R_fbl after update system:  [array([19.56182209]), array([15.71005721]), array([12.08126734])]",
+      "logging rfbl:  [17.58580968]",
+      "logging rfbl:  [14.18676089]",
+      "logging rfbl:  [11.03990723]",
+      "Test results saved to: C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Monte Carlo Shared Beam\\monte_carlo_shared_beam_train_test__uplink_fixed_block_targets__seed_1\\testing\\data\\test_results.txt",
+      "Saved uplink shared-beam results to: C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Monte Carlo Shared Beam\\monte_carlo_shared_beam_train_test__uplink_fixed_block_targets__seed_1"
+    ],
+    "stderr_tail": []
+  },
+  {
+    "name": "downlink_mc_shared_payload",
+    "ok": true,
+    "returncode": 0,
+    "elapsed_s": 80.25,
+    "stdout_tail": [
+      "Saved downlink shared-beam results to: C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Downlink\\Monte Carlo Shared Beam\\monte_carlo_shared_beam_train_test__downlink_payload_completion__seed_1"
+    ],
+    "stderr_tail": []
+  },
+  {
+    "name": "downlink_mc_shared_fixed",
+    "ok": false,
+    "returncode": 1,
+    "elapsed_s": 28.28,
+    "stdout_tail": [],
+    "stderr_tail": [
+      "  File \"C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo Shared Beam\\main.py\", line 260, in main",
+      "    result = evaluate_shared_beam_precoder_net(",
+      "             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "  File \"C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo Shared Beam\\policy_optimizer.py\", line 743, in evaluate_shared_beam_precoder_net",
+      "    working_F = _predict_shared_beams_for_active_users(",
+      "                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "  File \"C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo Shared Beam\\policy_optimizer.py\", line 634, in _predict_shared_beams_for_active_users",
+      "    _zero_block_precoder(system, working_F, int(k), int(block))",
+      "  File \"C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\optimizer.py\", line 319, in _zero_block_precoder",
+      "    working_F[k][l] = np.zeros((int(system.Nb[k]), int(system.dk[k])), dtype=np.complex128)",
+      "    ~~~~~~~~~~~~^^^",
+      "IndexError: list assignment index out of range"
+    ]
+  }
+]

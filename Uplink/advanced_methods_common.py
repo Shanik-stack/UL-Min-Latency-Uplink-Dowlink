@@ -231,8 +231,6 @@ def estimate_initial_random_precoder_schedule(
                 F_override=random_snapshot,
             )
 
-            B_try = int(remaining_bits[k])
-            B_used = 0
             R_T = _compute_R_fbl_np(
                 H_kl,
                 F_kl,
@@ -241,16 +239,8 @@ def estimate_initial_random_precoder_schedule(
                 T_ref,
                 noise_plus_interference_cov,
             )
-            for _ in range(12):
-                if (B_try / float(max(T_ref, 1))) <= R_T:
-                    B_used = int(B_try)
-                    break
-                B_new = int(np.floor(float(T_ref) * float(R_T)))
-                B_new = max(0, min(B_new, B_try))
-                if B_new == B_try or B_new <= 0:
-                    B_used = 0
-                    break
-                B_try = B_new
+            B_max = max(int(np.floor(float(T_ref) * float(R_T))), 0)
+            B_used = int(min(int(remaining_bits[k]), B_max))
 
             best_n = int(T_ref)
             best_R = float(R_T)

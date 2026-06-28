@@ -1,0 +1,128 @@
+{
+    "train_eval_seed": 0,
+    "epochs_requested": 1,
+    "per_user_num_epochs": [
+        1,
+        1,
+        1
+    ],
+    "per_user_final_loss": [
+        -18.071454524993896,
+        -11.993975639343262,
+        -9.41975736618042
+    ],
+    "per_user_best_loss": [
+        -18.071454524993896,
+        -11.993975639343262,
+        -9.41975736618042
+    ],
+    "per_user_final_rate": [
+        18.07145404815674,
+        11.993975937366486,
+        9.419757097959518
+    ],
+    "per_user_best_rate": [
+        18.07145404815674,
+        11.993975937366486,
+        9.419757097959518
+    ],
+    "final_avg_loss": -13.161729176839193,
+    "best_avg_loss": -13.161729176839193,
+    "final_avg_user_rate": 13.161729027827581,
+    "best_avg_user_rate": 13.161729027827581,
+    "train_eval_initial_latency": [
+        0.0016,
+        0.0020666666666666667,
+        0.0023333333333333335
+    ],
+    "train_eval_final_latency": [
+        0.0014,
+        0.0018,
+        0.0021333333333333334
+    ],
+    "train_eval_initial_blocks_per_user": [
+        1,
+        1,
+        1
+    ],
+    "train_eval_blocks_per_user": [
+        1,
+        1,
+        1
+    ],
+    "train_eval_initial_total_n_per_user": [
+        24,
+        31,
+        35
+    ],
+    "train_eval_total_n_per_user": [
+        21,
+        27,
+        32
+    ],
+    "train_eval_initial_served_bits_per_user": [
+        400,
+        400,
+        400
+    ],
+    "train_eval_served_bits_per_user": [
+        400,
+        400,
+        400
+    ],
+    "train_eval_total_latency_reduction_percent": 11.111111111111116,
+    "train_eval_initial_selected_n_kl_summary": {
+        "global_selected_examples_by_n_kl": {
+            "24": 1,
+            "31": 1,
+            "35": 1
+        },
+        "per_user": [
+            {
+                "user": 0,
+                "selected_examples_by_n_kl": {
+                    "24": 1
+                }
+            },
+            {
+                "user": 1,
+                "selected_examples_by_n_kl": {
+                    "31": 1
+                }
+            },
+            {
+                "user": 2,
+                "selected_examples_by_n_kl": {
+                    "35": 1
+                }
+            }
+        ]
+    },
+    "train_eval_selected_n_kl_summary": {
+        "global_selected_examples_by_n_kl": {
+            "21": 1,
+            "27": 1,
+            "32": 1
+        },
+        "per_user": [
+            {
+                "user": 0,
+                "selected_examples_by_n_kl": {
+                    "21": 1
+                }
+            },
+            {
+                "user": 1,
+                "selected_examples_by_n_kl": {
+                    "27": 1
+                }
+            },
+            {
+                "user": 2,
+                "selected_examples_by_n_kl": {
+                    "32": 1
+                }
+            }
+        ]
+    }
+}

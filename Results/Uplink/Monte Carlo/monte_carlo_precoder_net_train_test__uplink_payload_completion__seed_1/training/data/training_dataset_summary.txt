@@ -1,0 +1,14 @@
+Uplink training dataset summary
+Total training channel episodes: 12
+Training scenario modes: ['payload_completion']
+Training channel episodes by seed: {'0': 12}
+Training channel episodes by block: {'0': 3, '1': 3, '2': 3, '3': 3}
+Training channel episodes by target bits: {'1': 12}
+
+Per-user channel-episode details
+User 0 | channel_episodes=4 | channel_episodes_by_block={'0': 1, '1': 1, '2': 1, '3': 1} | channel_episodes_by_target_bits={'1': 4} | channel_episodes_by_seed={'0': 4}
+User 1 | channel_episodes=4 | channel_episodes_by_block={'0': 1, '1': 1, '2': 1, '3': 1} | channel_episodes_by_target_bits={'1': 4} | channel_episodes_by_seed={'0': 4}
+User 2 | channel_episodes=4 | channel_episodes_by_block={'0': 1, '1': 1, '2': 1, '3': 1} | channel_episodes_by_target_bits={'1': 4} | channel_episodes_by_seed={'0': 4}
+
+Terminology
+- channel episode: one (seed, user, block) channel realization stored in the base dataset

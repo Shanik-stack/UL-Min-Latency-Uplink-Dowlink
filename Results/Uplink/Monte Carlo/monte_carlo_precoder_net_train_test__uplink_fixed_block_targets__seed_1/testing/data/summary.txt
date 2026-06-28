@@ -1,0 +1,72 @@
+Uplink optimizer summary
+Method: monte_carlo_precoder_net_train_test
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\uplink_fixed_block_targets.yaml
+Test seed: 1
+Train seeds: [0]
+Experiment scenario mode: fixed_block_targets
+Training channel-episode counts per user: [4, 4, 4]
+Training dataset total channel episodes: 12
+Precoder parameterization: shared_user_channel_n_sigma_epsilon_to_precoder_mlp
+Training objective: rollout_lagrangian_user_finite_blocklength_rate_with_fixed_target_bits_objective
+Initial schedule source: random_precoder_baseline
+
+Training summary
+Train target-bits mode: fixed_block_targets_actual_bits
+Train target bits summary: {'400': 12}
+Final avg user rate: 15.849816
+Best avg user rate: 15.849816
+Final avg lagrangian: -15.849816
+Best avg lagrangian: -15.849816
+Final avg rate violation: 0.000000
+Final avg power violation: 0.000001
+Per-user final rate: [18.575338271356397, 15.71132795272335, 13.262782809378086]
+Per-user final lagrangian: [-18.575338271356397, -15.71132795272335, -13.262782809378086]
+Per-user final rate violation: [0.0, 0.0, 0.0]
+Per-user final power violation: [4.61455314390121e-07, 2.399567634828629e-06, 0.0]
+Cumulative rollout queries by n_kl: {'80': 1, '84': 1, '85': 1, '90': 3, '94': 2, '95': 7, '98': 1, '99': 4, '100': 12}
+Cumulative frontier rollout queries by n_kl: {'80': 1, '85': 1, '90': 2, '95': 5, '98': 1, '99': 1, '100': 8}
+Train-eval initial blocks per user: [10, 10, 10]
+Train-eval final blocks per user: [10, 10, 10]
+Train-eval initial total n per user: [210, 286, 336]
+Train-eval final total n per user: [197, 251, 309]
+Train-eval total latency reduction (%): 9.0144
+Train-eval initial selected n_kl summary: {'global_selected_examples_by_n_kl': {'20': 4, '21': 4, '22': 1, '24': 1, '25': 1, '26': 2, '29': 2, '30': 5, '31': 2, '32': 2, '33': 1, '34': 2, '35': 2, '40': 1}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'20': 4, '21': 4, '22': 1, '24': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'25': 1, '26': 2, '29': 2, '30': 4, '31': 1}}, {'user': 2, 'selected_examples_by_n_kl': {'30': 1, '31': 1, '32': 2, '33': 1, '34': 2, '35': 2, '40': 1}}]}
+Train-eval final selected n_kl summary: {'global_selected_examples_by_n_kl': {'18': 1, '19': 4, '20': 2, '21': 3, '24': 3, '25': 4, '26': 2, '27': 1, '28': 1, '30': 4, '31': 2, '32': 2, '35': 1}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'18': 1, '19': 4, '20': 2, '21': 3}}, {'user': 1, 'selected_examples_by_n_kl': {'24': 3, '25': 4, '26': 2, '27': 1}}, {'user': 2, 'selected_examples_by_n_kl': {'28': 1, '30': 4, '31': 2, '32': 2, '35': 1}}]}
+
+Testing summary
+Initial latency source: random_precoder_baseline
+
+Latency summary
+Initial total latency: 0.061267
+Final total latency: 0.055800
+Total latency reduction (%): 8.9227
+Initial avg latency: 0.020422
+Final avg latency: 0.018600
+Initial min/max latency: 0.016200 / 0.025667
+Final min/max latency: 0.015133 / 0.024067
+
+Asynchronality summary
+Initial asynchronality sum: 0.018933
+Final asynchronality sum: 0.017867
+Asynchronality reduction (%): 5.6338
+
+Link quality summary
+Initial avg SNR (dB): 10.2461
+Final avg SNR (dB): 10.2699
+Initial avg SINR (dB): -3.2591
+Final avg SINR (dB): -3.2467
+
+Per-user details
+User 0 | init_lat=0.016200 | final_lat=0.015133 | lat_red=6.5844% | init_snr=13.0357 dB | final_snr=13.3885 dB | init_sinr=-3.6410 dB | final_sinr=-3.1533 dB | blocks=10 | total_n=227 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 1 | init_lat=0.019400 | final_lat=0.016600 | lat_red=14.4330% | init_snr=10.9519 dB | final_snr=10.6489 dB | init_sinr=-2.3846 dB | final_sinr=-2.8595 dB | blocks=10 | total_n=249 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 2 | init_lat=0.025667 | final_lat=0.024067 | lat_red=6.2338% | init_snr=6.7506 dB | final_snr=6.7722 dB | init_sinr=-3.7518 dB | final_sinr=-3.7275 dB | blocks=10 | total_n=361 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.003200 | final_diff=0.001467
+Users 0-2 | initial_diff=0.009467 | final_diff=0.008933
+Users 1-2 | initial_diff=0.006267 | final_diff=0.007467
+
+Terminology
+- channel episode: one (seed, user, block) channel realization stored in the base dataset
+- rollout query: one visited (episode, n_kl) state generated online from the current precoder net
+- initial schedule: the random-precoder baseline used for the before-optimization uplink latency

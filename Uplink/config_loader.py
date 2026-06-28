@@ -147,6 +147,19 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
         "convergence_min_precoder_sweeps_before_stop": int(
             sim_cfg.get("convergence_min_precoder_sweeps_before_stop", 1)
         ),
+        "reduced_n_kl_max_precoder_sweeps": int(
+            sim_cfg.get(
+                "reduced_n_kl_max_precoder_sweeps",
+                sim_cfg.get("epochs_per_n_kl", sim_cfg.get("max_precoder_sweeps", 10000)),
+            )
+        ),
+        "reduced_n_kl_min_precoder_sweeps_before_stop": int(
+            sim_cfg.get(
+                "reduced_n_kl_min_precoder_sweeps_before_stop",
+                sim_cfg.get("convergence_min_precoder_sweeps_before_stop", 1),
+            )
+        ),
+        "print_every_reduced_n_kl": int(sim_cfg.get("print_every_reduced_n_kl", 1)),
         "convergence_precoder_tol": float(sim_cfg.get("convergence_precoder_tol", 1e-4)),
         "convergence_feasibility_tol": float(sim_cfg.get("convergence_feasibility_tol", 1e-5)),
         "uplink_rate_model": uplink_rate_model,

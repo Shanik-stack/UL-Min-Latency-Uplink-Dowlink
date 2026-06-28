@@ -1,0 +1,35 @@
+Downlink post-training summary
+Epochs requested: 1
+Train target-bits mode: fixed_block_targets_actual_bits
+Train target bits summary: {'200': 3, '400': 3, '600': 3}
+Final avg sum rate: 2.088873
+Best avg sum rate: 2.088873
+Final avg user rate: 0.696291
+Best avg user rate: 0.696291
+Final avg lagrangian: -0.160365
+Best avg lagrangian: -0.160365
+Final avg rate violation: 5.359264
+Best avg rate violation: 5.359264
+Final avg power violation: 0.000004
+Best avg power violation: 0.000004
+Final feasible rollout-query fraction: 0.000000
+Per-user final lagrangian: [-0.3445684313774109, -0.015762383118271828, -0.12076269586881001]
+Per-user best lagrangian: [-0.3445684313774109, -0.015762383118271828, -0.12076269586881001]
+Per-user final rate: [0.6768804391225179, 0.6203900575637817, 0.7916024923324585]
+Per-user final rate violation: [3.323119640350342, 6.046276251475017, 6.708397547403972]
+Per-user final power violation: [3.1789143880208335e-06, 3.814697265625e-06, 3.814697265625e-06]
+Global active-user rollout queries by n_kl over all epochs:
+{'50': 3, '60': 3, '80': 3}
+Per-user active-user rollout queries by n_kl over all epochs:
+[{'50': 3}, {'60': 3}, {'80': 3}]
+Global active-user frontier rollout queries by n_kl over all epochs:
+{'50': 3, '60': 3, '80': 3}
+Per-user active-user frontier rollout queries by n_kl over all epochs:
+[{'50': 3}, {'60': 3}, {'80': 3}]
+Final epoch rollout query summary:
+{'total_channel_episodes': 3, 'channel_episodes_by_seed': {'0': 3}, 'channel_episodes_by_block': {'0': 1, '1': 1, '2': 1}, 'channel_episodes_by_active_user_count': {'3': 3}, 'channel_episodes_by_active_mask': {'111': 3}, 'channel_episodes_per_user': [3, 3, 3], 'global_active_user_rollout_queries_by_n_kl': {'50': 3, '60': 3, '80': 3}, 'per_user_active_user_rollout_queries_by_n_kl': [{'50': 3}, {'60': 3}, {'80': 3}], 'global_active_user_frontier_rollout_queries_by_n_kl': {'50': 3, '60': 3, '80': 3}, 'per_user_active_user_frontier_rollout_queries_by_n_kl': [{'50': 3}, {'60': 3}, {'80': 3}], 'total_rollout_queries': 3, 'feasible_rollout_queries': 0, 'infeasible_rollout_queries': 3, 'frontier_rollout_queries': 3, 'epoch': 1}
+
+Terminology
+- channel episode: one (seed, block) block realization stored in the base dataset
+- active-user channel episode: one active user inside one stored channel episode
+- rollout query: one visited joint (episode, n_targets) state generated online from the current precoder nets

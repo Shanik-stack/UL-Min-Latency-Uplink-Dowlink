@@ -22,14 +22,14 @@ Asynchronality reduction (%): 10.0000
 
 Link quality summary
 Initial avg SNR (dB): 11.1399
-Final avg SNR (dB): 11.0411
+Final avg SNR (dB): 11.0236
 Initial avg SINR (dB): -3.2041
-Final avg SINR (dB): -3.2101
+Final avg SINR (dB): -3.2133
 
 Per-user details
-User 0 | init_lat=0.015400 | final_lat=0.012667 | lat_red=17.7489% | init_snr=14.2913 dB | final_snr=14.1781 dB | init_sinr=-2.9047 dB | final_sinr=-2.9662 dB | blocks=10 | total_n=190 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
-User 1 | init_lat=0.018867 | final_lat=0.015067 | lat_red=20.1413% | init_snr=10.7900 dB | final_snr=10.6473 dB | init_sinr=-3.6325 dB | final_sinr=-3.6786 dB | blocks=10 | total_n=226 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
-User 2 | init_lat=0.022067 | final_lat=0.018667 | lat_red=15.4079% | init_snr=8.3386 dB | final_snr=8.2978 dB | init_sinr=-3.0750 dB | final_sinr=-2.9857 dB | blocks=10 | total_n=280 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 0 | init_lat=0.015400 | final_lat=0.012667 | lat_red=17.7489% | init_snr=14.2913 dB | final_snr=14.1581 dB | init_sinr=-2.9047 dB | final_sinr=-2.9745 dB | blocks=10 | total_n=190 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 1 | init_lat=0.018867 | final_lat=0.015067 | lat_red=20.1413% | init_snr=10.7900 dB | final_snr=10.5745 dB | init_sinr=-3.6325 dB | final_sinr=-3.7619 dB | blocks=10 | total_n=226 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 2 | init_lat=0.022067 | final_lat=0.018667 | lat_red=15.4079% | init_snr=8.3386 dB | final_snr=8.3383 dB | init_sinr=-3.0750 dB | final_sinr=-2.9035 dB | blocks=10 | total_n=280 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
 
 Per-pair asynchronality
 Users 0-1 | initial_diff=0.003467 | final_diff=0.002400

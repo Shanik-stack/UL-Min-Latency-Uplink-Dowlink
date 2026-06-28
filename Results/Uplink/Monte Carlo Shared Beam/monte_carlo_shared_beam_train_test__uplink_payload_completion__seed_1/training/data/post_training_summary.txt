@@ -1,0 +1,28 @@
+Uplink shared-beam post-training summary
+Train-eval seed: 0
+Epochs requested: 1
+Per-user num epochs: [1, 1, 1]
+Final avg loss: -13.898248
+Best avg loss: -13.898248
+Final avg user rate: 13.898247
+Best avg user rate: 13.898247
+Per-user final loss: [-18.43317222595215, -12.943587064743042, -10.317983388900757]
+Per-user best loss: [-18.43317222595215, -12.943587064743042, -10.317983388900757]
+Per-user final rate: [18.43317100405693, 12.943587263425192, 10.317982787887255]
+Per-user best rate: [18.43317100405693, 12.943587263425192, 10.317982787887255]
+Train-eval initial latency: [0.0084, 0.011, 0.012466666666666666]
+Train-eval final latency: [0.0071333333333333335, 0.0094, 0.010866666666666667]
+Train-eval initial blocks per user: [2, 2, 2]
+Train-eval final blocks per user: [2, 2, 2]
+Train-eval initial total n per user: [126, 165, 187]
+Train-eval final total n per user: [107, 141, 163]
+Train-eval initial served bits per user: [2400, 2400, 2400]
+Train-eval final served bits per user: [2400, 2400, 2400]
+Train-eval total latency reduction (%): 14.0167
+Train-eval initial selected n_kl summary:
+{'global_selected_examples_by_n_kl': {'26': 1, '65': 1, '87': 1, '100': 3}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'26': 1, '100': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'65': 1, '100': 1}}, {'user': 2, 'selected_examples_by_n_kl': {'87': 1, '100': 1}}]}
+Train-eval selected n_kl summary:
+{'global_selected_examples_by_n_kl': {'7': 1, '41': 1, '63': 1, '100': 3}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'7': 1, '100': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'41': 1, '100': 1}}, {'user': 2, 'selected_examples_by_n_kl': {'63': 1, '100': 1}}]}
+
+Terminology
+- train-eval: evaluation of the trained shared-beam precoder nets on the first training seed

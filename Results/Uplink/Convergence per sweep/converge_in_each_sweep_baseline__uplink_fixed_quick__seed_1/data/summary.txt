@@ -1,0 +1,37 @@
+Uplink optimizer summary
+Method: converge_in_each_sweep_baseline
+Config: C:\Users\shani\AppData\Local\Temp\uldl_validate_wx6fouya\uplink_fixed_quick.yaml
+Seed: 1
+Experiment scenario mode: fixed_block_targets
+Precoder parameterization: shared_user_channel_sigma_epsilon_to_precoder_mlp_online_convergence
+Initial schedule source: random_precoder_baseline
+
+Latency summary
+Initial total latency: 0.003667
+Final total latency: 0.003133
+Total latency reduction (%): 14.5455
+Initial avg latency: 0.001222
+Final avg latency: 0.001044
+Initial min/max latency: 0.000933 / 0.001533
+Final min/max latency: 0.000800 / 0.001333
+
+Asynchronality summary
+Initial asynchronality sum: 0.001200
+Final asynchronality sum: 0.001067
+Asynchronality reduction (%): 11.1111
+
+Link quality summary
+Initial avg SNR (dB): 11.1188
+Final avg SNR (dB): 11.0554
+Initial avg SINR (dB): -3.2202
+Final avg SINR (dB): -3.2190
+
+Per-user details
+User 0 | init_lat=0.000933 | final_lat=0.000800 | lat_red=14.2857% | init_snr=14.7784 dB | final_snr=14.2388 dB | init_sinr=-2.2124 dB | final_sinr=-2.7737 dB | blocks=2 | total_n=12 | served_bits=200 | skipped_blocks=0 | target_bits=200 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 1 | init_lat=0.001200 | final_lat=0.001000 | lat_red=16.6667% | init_snr=11.4086 dB | final_snr=11.7848 dB | init_sinr=-3.1578 dB | final_sinr=-2.5969 dB | blocks=2 | total_n=15 | served_bits=200 | skipped_blocks=0 | target_bits=200 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 2 | init_lat=0.001533 | final_lat=0.001333 | lat_red=13.0435% | init_snr=7.1693 dB | final_snr=7.1427 dB | init_sinr=-4.2903 dB | final_sinr=-4.2863 dB | blocks=2 | total_n=20 | served_bits=200 | skipped_blocks=0 | target_bits=200 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.000267 | final_diff=0.000200
+Users 0-2 | initial_diff=0.000600 | final_diff=0.000533
+Users 1-2 | initial_diff=0.000333 | final_diff=0.000333

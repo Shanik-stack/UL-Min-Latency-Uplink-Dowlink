@@ -1,0 +1,38 @@
+Downlink optimizer summary
+Method: greedy_safe_sweep
+Config: C:\Users\shani\AppData\Local\Temp\dl_fixed_min_ur0fkd4y\downlink_fixed_min.yaml
+Seed: 1
+Objective mode: weighted_sum_rate
+Allocation mode: fixed_block_targets
+Weight strategy: fixed_block_targets
+Precoder parameterization: shared_user_channel_to_precoder_mlp
+
+Latency summary
+Initial total latency: 0.004000
+Final total latency: 0.002000
+Total latency reduction (%): 50.0000
+Initial avg latency: 0.001333
+Final avg latency: 0.000667
+Initial min/max latency: 0.001333 / 0.001333
+Final min/max latency: 0.000667 / 0.000667
+
+Asynchronality summary
+Initial asynchronality sum: 0.000000
+Final asynchronality sum: 0.000000
+Asynchronality reduction (%): 0.0000
+
+Link quality summary
+Initial avg SNR (dB): 8.0000
+Final avg SNR (dB): 14.2213
+Initial avg block SINR (dB): -2.9122
+Final avg block SINR (dB): 7.7666
+
+Per-user details
+User 0 | init_lat=0.001333 | final_lat=0.000667 | lat_red=50.0000% | init_block_sinr=-4.3950 dB | final_block_sinr=7.1237 dB | blocks=1 | total_n=10 | served_bits=60 | skipped_blocks=0 | target_bits=60 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 1 | init_lat=0.001333 | final_lat=0.000667 | lat_red=50.0000% | init_block_sinr=-2.9522 dB | final_block_sinr=8.7612 dB | blocks=1 | total_n=10 | served_bits=60 | skipped_blocks=0 | target_bits=60 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 2 | init_lat=0.001333 | final_lat=0.000667 | lat_red=50.0000% | init_block_sinr=-1.3894 dB | final_block_sinr=7.4149 dB | blocks=1 | total_n=10 | served_bits=60 | skipped_blocks=0 | target_bits=60 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.000000 | final_diff=0.000000
+Users 0-2 | initial_diff=0.000000 | final_diff=0.000000
+Users 1-2 | initial_diff=0.000000 | final_diff=0.000000

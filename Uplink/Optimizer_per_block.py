@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import torch
 import torch.nn as nn
@@ -304,6 +305,11 @@ def optimize_subblocklength_precoder(
     n_kl_min = int(sim_cfg["n_kl_min"])
     n_kl_step = int(sim_cfg["n_kl_step"])
     epochs_per_n_kl = int(sim_cfg["epochs_per_n_kl"])
+    reduced_n_kl_max_precoder_sweeps = max(
+        1,
+        int(sim_cfg.get("reduced_n_kl_max_precoder_sweeps", epochs_per_n_kl)),
+    )
+    print_every_reduced_n_kl = max(1, int(sim_cfg.get("print_every_reduced_n_kl", 1)))
     
     # psuedo_n_kl_max = int(1000*np.sin(1/real_n_kl_max))
     # psuedo_n_kl_max = int(B_rem*1.2)
@@ -317,6 +323,19 @@ def optimize_subblocklength_precoder(
             "convergence_min_precoder_sweeps_before_stop",
             sim_cfg.get("min_precoder_sweeps_before_stop", 1),
         )
+    )
+    min_sweeps_before_stop = max(1, min(int(epochs_per_n_kl), int(min_sweeps_before_stop)))
+    reduced_n_kl_min_precoder_sweeps_before_stop = max(
+        1,
+        min(
+            int(reduced_n_kl_max_precoder_sweeps),
+            int(
+                sim_cfg.get(
+                    "reduced_n_kl_min_precoder_sweeps_before_stop",
+                    min_sweeps_before_stop,
+                )
+            ),
+        ),
     )
     precoder_tol = float(sim_cfg.get("convergence_precoder_tol", sim_cfg.get("precoder_tol", 1e-4)))
     feasibility_tol = float(sim_cfg.get("convergence_feasibility_tol", sim_cfg.get("feasibility_tol", 1e-5)))
@@ -332,104 +351,71 @@ def optimize_subblocklength_precoder(
 
     results = []
 
-    def _evaluate_fixed_precoder_for_n(current_F: torch.Tensor, current_n_kl: int) -> dict[str, float | torch.Tensor]:
-        loss_fn.set_blocklength(int(current_n_kl))
-        loss_fn.set_payload(float(B_used))
-        with torch.no_grad():
-            R_eval = loss_fn.R_fbl(current_F)
-            F_power_eval = (torch.linalg.norm(current_F, ord="fro") ** 2).real
-        rate_violation_eval = (float(B_used) / float(current_n_kl)) - float(R_eval.detach().item())
-        power_violation_eval = float(F_power_eval.detach().item()) - float(P)
-        return {
-            "F": current_F,
-            "R_fbl": float(R_eval.detach().item()),
-            "F_power": float(F_power_eval.detach().item()),
-            "rate_violation": float(rate_violation_eval),
-            "power_violation": float(power_violation_eval),
-        }
-
     # ------------------------------------------------------------
-    # STEP A: Fix n = T feasible by reducing B (like your 2nd code)
+    # STEP A: Optimize once at n = T, then clip the served bits to the
+    # maximum payload that the optimized beam can support.
     # ------------------------------------------------------------
-    print(f"\n--- Step A: Fix n = T = {n_kl_max} and adjust bits if needed ---")
+    print(f"\n--- Step A: Optimize at n = T = {n_kl_max} ---")
     loss_fn.set_blocklength(n_kl_max)
     loss_fn.set_payload(float(B_rem))
-    max_payload_reductions = 1
-    B_used = None
     B_initial = int(B_rem)
-    attempt = 0
-    while(1):
-        print(f"\nAttempt {attempt+1}: n = {n_kl_max}, B = {int(loss_fn.B)}")
-        epochs = epochs_per_n_kl
+    out = optimize_precoder_for_nl(
+        precoder_net=precoder_net,
+        loss_fn=loss_fn,
+        Nt=Nt, dk=dk,
+        epochs=epochs_per_n_kl,
+        lambda_rate=lambda_rate, lambda_power=lambda_power,
+        lr_rate=lr_rate, lr_power=lr_power,
+        optimizer=optimizer,
+        min_sweeps_before_stop=min_sweeps_before_stop,
+        precoder_tol=precoder_tol,
+        feasibility_tol=feasibility_tol,
+    )
 
-        out = optimize_precoder_for_nl(
-            precoder_net=precoder_net,
-            loss_fn=loss_fn,
-            Nt=Nt, dk=dk,
-            epochs=epochs,
-            lambda_rate=lambda_rate, lambda_power=lambda_power,
-            lr_rate=lr_rate, lr_power=lr_power,
-            optimizer=optimizer,
-            min_sweeps_before_stop=min_sweeps_before_stop,
-            precoder_tol=precoder_tol,
-            feasibility_tol=feasibility_tol,
-        )
+    lambda_rate = out["lambda_rate"]
+    lambda_power = out["lambda_power"]
 
-        lambda_rate = out["lambda_rate"]
-        lambda_power = out["lambda_power"]
+    print(f"R_fbl: {out['R_fbl']}")
+    print(f"F_power: {out['F_power']}")
+    print(f"Rate violation: {out['rate_violation']}")
+    print(f"Power violation: {out['power_violation']}")
 
-        print(f"R_fbl: {out['R_fbl']}")
-        print(f"F_power: {out['F_power']}")
-        print(f"Rate violation: {out['rate_violation']}")
-        print(f"Power violation: {out['power_violation']}")
-
-        feasible = (out["rate_violation"] <= feasibility_tol) and (out["power_violation"] <= feasibility_tol)
-        if feasible:
-            print(">>> Feasible at n = T.")
-            B_used = int(loss_fn.B)
-
-            results.append({
-                "n_kl": int(n_kl_max),
-                "n": int(n_kl_max),                 # keep consistent; total n per block = n_kl here
-                "B_l": int(B_used),
-                "Bits per sub-block length B/n_kl": float(B_used) / float(n_kl_max),
-                "F": out["F"],
-                "R_fbl": float(out["R_fbl"]),
-                "F_power": float(out["F_power"]),
-                "lambda_rate": float(lambda_rate),
-                "lambda_power": float(lambda_power),
-                "loss_curve": out["loss_curve"],
-            })
-            break
-
-        # if out["power_violation"] > 0.0:
-        #     print(">>> Power constraint violated. Cannot fix by reducing B. STOP.")
-        #     return [], 0
-        elif not feasible and attempt<max_payload_reductions:
-            # Reduce B (same policy as your first code: floor(n * R))
-            B_update = int(np.floor(n_kl_max * float(out["R_fbl"])))
-            B_update_max = max(0, min(B_update, int(loss_fn.B)))
-            B_new = B_update_max
-            print(f">>> Reducing B from {int(loss_fn.B)} to {B_new}")
-            print(f" Reduction B_new = {B_new} = max({0}, min(B_update {B_update} = {n_kl_max} * {float(out['R_fbl'])}, B_try {int(loss_fn.B)})")
-
-            if B_new == int(loss_fn.B) or B_new == 0:
-                print(">>> B cannot be reduced further. STOP.")
-                return [], 0
-
-            loss_fn.set_payload(float(B_new))
-        else:
-            break
-        attempt+=1
-
-    if B_used is None or B_used <= 0:
-        if is_fixed_target_block:
-            print(">>> No feasible solution at n=T after block-target adjustment.")
-        else:
-            print(">>> No feasible solution at n=T after payload adjustment.")
+    if out["power_violation"] > feasibility_tol:
+        print(">>> Power constraint violated at n = T. STOP.")
         return [], 0
 
-    fixed_precoder = out["F"].detach()
+    B_max_T = max(int(np.floor(float(n_kl_max) * float(out["R_fbl"]))), 0)
+    B_used = int(min(B_initial, B_max_T))
+    fully_feasible_at_T = out["rate_violation"] <= feasibility_tol
+
+    if B_used <= 0:
+        if is_fixed_target_block:
+            print(">>> No feasible service at n = T for this block target.")
+        else:
+            print(">>> No feasible service at n = T for this payload.")
+        return [], 0
+
+    if fully_feasible_at_T:
+        print(">>> Requested bits are feasible at n = T.")
+    else:
+        print(
+            f">>> Requested bits are not feasible at n = T. "
+            f"Serving the feasible payload B_used={B_used} without retry."
+        )
+
+    results.append({
+        "n_kl": int(n_kl_max),
+        "n": int(n_kl_max),
+        "B_l": int(B_used),
+        "Bits per sub-block length B/n_kl": float(B_used) / float(n_kl_max),
+        "F": out["F"],
+        "R_fbl": float(out["R_fbl"]),
+        "F_power": float(out["F_power"]),
+        "lambda_rate": float(lambda_rate),
+        "lambda_power": float(lambda_power),
+        "loss_curve": out["loss_curve"],
+    })
+
     bits_left_after_current_request = int(B_initial - B_used)
     if is_fixed_target_block:
         print(
@@ -443,9 +429,10 @@ def optimize_subblocklength_precoder(
         )
 
     # ------------------------------------------------------------
-    # STEP B: Reduce n while keeping B fixed (store all feasible)
+    # STEP B: Reduce n while keeping B fixed. Each new n triggers a fresh
+    # inner optimization warm-started from the last feasible solution.
     # ------------------------------------------------------------
-    print(f"\n--- Step B: Reduce n while keeping B = {B_used} fixed ---")
+    print(f"\n--- Step B: Reduce n while keeping served bits B = {B_used} fixed ---")
     n_kl = n_kl_max - n_kl_step
 
     while n_kl >= n_kl_min:
@@ -455,19 +442,57 @@ def optimize_subblocklength_precoder(
             else:
                 print(f"\n Not reducing n_kl since not last sub-block (n_kl = {n_kl})")
             break
-        print(f"\nTesting n = {n_kl}")
-        out = _evaluate_fixed_precoder_for_n(fixed_precoder, int(n_kl))
+        should_print_candidate = (
+            n_kl == n_kl_max - n_kl_step
+            or n_kl == n_kl_min
+            or ((n_kl_max - n_kl) % max(int(n_kl_step) * int(print_every_reduced_n_kl), 1) == 0)
+        )
+        if should_print_candidate:
+            print(f"\nRe-optimizing at n = {n_kl}")
+        model_checkpoint = {
+            key: value.detach().cpu().clone()
+            for key, value in precoder_net.state_dict().items()
+        }
+        optimizer_checkpoint = copy.deepcopy(optimizer.state_dict())
+        lambda_rate_checkpoint = float(lambda_rate)
+        lambda_power_checkpoint = float(lambda_power)
 
-        print(f"R_fbl: {out['R_fbl']}")
-        print(f"Rate violation: {out['rate_violation']}")
-        print(f"Power violation: {out['power_violation']}")
+        loss_fn.set_blocklength(int(n_kl))
+        loss_fn.set_payload(float(B_used))
+        out = optimize_precoder_for_nl(
+            precoder_net=precoder_net,
+            loss_fn=loss_fn,
+            Nt=Nt,
+            dk=dk,
+            epochs=reduced_n_kl_max_precoder_sweeps,
+            lambda_rate=lambda_rate,
+            lambda_power=lambda_power,
+            lr_rate=lr_rate,
+            lr_power=lr_power,
+            optimizer=optimizer,
+            min_sweeps_before_stop=reduced_n_kl_min_precoder_sweeps_before_stop,
+            precoder_tol=precoder_tol,
+            feasibility_tol=feasibility_tol,
+        )
+        lambda_rate = out["lambda_rate"]
+        lambda_power = out["lambda_power"]
+
+        if should_print_candidate:
+            print(f"R_fbl: {out['R_fbl']}")
+            print(f"Rate violation: {out['rate_violation']}")
+            print(f"Power violation: {out['power_violation']}")
 
         feasible = (out["rate_violation"] <= feasibility_tol) and (out["power_violation"] <= feasibility_tol)
         if not feasible:
-            print(">>> Not feasible. Stop decreasing n.")
+            precoder_net.load_state_dict(model_checkpoint)
+            optimizer.load_state_dict(optimizer_checkpoint)
+            lambda_rate = float(lambda_rate_checkpoint)
+            lambda_power = float(lambda_power_checkpoint)
+            print(">>> Not feasible after re-optimization. Stop decreasing n.")
             break
 
-        print(">>> Feasible. Storing result.")
+        if should_print_candidate:
+            print(">>> Feasible. Storing result.")
         results.append({
             "n_kl": int(n_kl),
             "n": int(n_kl),
@@ -478,7 +503,7 @@ def optimize_subblocklength_precoder(
             "F_power": float(out["F_power"]),
             "lambda_rate": float(lambda_rate),
             "lambda_power": float(lambda_power),
-            "loss_curve": [],
+            "loss_curve": out["loss_curve"],
         })
 
         n_kl -= n_kl_step
@@ -509,8 +534,10 @@ def dynamic_subblocklength_precoder_training(
     Training version that is consistent with the TEST logic style:
       - For each user, iteratively allocate blocks until B_rem == 0
       - For each block:
-          Step A: ensure feasibility at n=T by reducing B (and training precoder)
-          Step B: decrease n_kl with B fixed (and training precoder at each n_kl)
+          Step A: optimize once at n=T and clip the served bits to the
+                  feasible payload supported by that beam
+          Step B: if the whole request was served, decrease n_kl and
+                  re-optimize the precoder at each new n_kl
       - Saves per-block trajectories S for plotting.
 
     Returns:
@@ -579,8 +606,8 @@ def dynamic_subblocklength_precoder_training(
             print(f"\n--- TRAIN User {k}, Block {ell}, B_rem={B_rem} ---")
 
             # This function already performs:
-            #  Step A: reduce B at n=T until feasible (and trains precoder)
-            #  Step B: decrease n_kl with fixed B_used (and trains precoder)
+            #  Step A: optimize once at n=T and clip to feasible served bits
+            #  Step B: if this is the tail block, decrease n_kl and re-optimize
             S, B_used = optimize_subblocklength_precoder(
                 uplinksystem=uplinksystem,
                 user=k,
@@ -881,8 +908,8 @@ def dynamic_subblocklength_precoder_testing(
     """
     Testing version consistent with training_v2 block allocation, but WITHOUT precoder optimization:
       - Uses fixed trained precoders F_star (per user per block; fallback to last if needed)
-      - Step A: at n=T, reduce B until feasible (for fixed F)
-      - Step B: reduce n_kl while keeping B_used fixed (for fixed F)
+      - Step A: at n=T, serve the feasible payload supported by the fixed F
+      - Step B: if this is the tail block, reduce n_kl while keeping B_used fixed
       - Create additional blocks while B_rem > 0
       - Saves per-block trajectory S_test for plotting (same structure as training)
 
@@ -977,36 +1004,22 @@ def dynamic_subblocklength_precoder_testing(
             print(f"\n--- TEST User {k}, Block {ell}, B_rem={B_rem} ---")
 
             # ==========================================================
-            # STEP A: ensure feasibility at n=T by reducing B (fixed F)
+            # STEP A: evaluate the fixed beam at n=T and serve the
+            # feasible payload directly, without retrying.
             # ==========================================================
-            B_try = int(B_rem)
-            max_payload_reductions = 12
-            B_used = None
+            R_T = _compute_R_fbl_np(
+                H_kl, F_fix, sigma2, epsilon, n_kl=T,
+                noise_plus_interference_cov=noise_plus_interference_cov
+            )
+            B_max = max(int(np.floor(float(T) * float(R_T))), 0)
+            B_used = int(min(B_rem, B_max))
 
-            for attempt in range(max_payload_reductions):
-                R_T = _compute_R_fbl_np(
-                    H_kl, F_fix, sigma2, epsilon, n_kl=T,
-                    noise_plus_interference_cov=noise_plus_interference_cov
-                )
-                rate_violation = (B_try / float(T)) - R_T
+            print(
+                f"n=T={T}, requested_bits={B_rem}, feasible_bits={B_max}, "
+                f"served_bits={B_used}, R_fbl={R_T}"
+            )
 
-                print(f"Attempt {attempt+1}: n=T={T}, B={B_try}, R_fbl={R_T}, "
-                      f"rate_violation={max(0.0, rate_violation)}")
-
-                if rate_violation <= 0.0:
-                    B_used = int(B_try)
-                    break
-
-                B_new = int(np.floor(T * R_T))
-                B_new = max(0, min(B_new, B_try))
-                if B_new == B_try:
-                    B_used = 0
-                    break
-                print(f">>> Reducing B from {B_try} to {B_new}")
-                print(f" Reduction B_new {B_try} = max({0}, min(B_new {B_new} = {T} * {R_T}, B_try {B_try})")
-                B_try = B_new
-
-            if B_used is None or B_used <= 0:
+            if B_used <= 0:
                 print(f">>> STOP test user {k} at block {ell}: cannot make n=T feasible.")
                 break
 
@@ -1039,6 +1052,9 @@ def dynamic_subblocklength_precoder_testing(
 
             n_kl = T - n_kl_step
             while n_kl >= n_kl_min:
+                if int(B_used) < int(B_rem):
+                    print(f"Not reducing n_kl since this block only served a partial payload (n_kl = {n_kl})")
+                    break
                 R = _compute_R_fbl_np(
                     H_kl, F_fix, sigma2, epsilon, n_kl=n_kl,
                     noise_plus_interference_cov=noise_plus_interference_cov

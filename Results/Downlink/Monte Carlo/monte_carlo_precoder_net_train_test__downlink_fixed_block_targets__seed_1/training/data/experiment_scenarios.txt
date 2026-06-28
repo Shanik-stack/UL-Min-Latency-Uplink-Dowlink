@@ -1,0 +1,16 @@
+Training experiment scenarios by seed
+Experiment scenario summary
+Mode: fixed_block_targets
+Seed: 0
+Termination rule: fixed_block_horizon
+Skip infeasible blocks: True
+Skip adds full-T latency: True
+Track skipped blocks: True
+Per-user total target bits: [2000, 4000, 6000]
+Total target bits: 12000
+Num blocks: 10
+Generation mode: constant
+Per-block total target bits: [1200, 1200, 1200, 1200, 1200, 1200, 1200, 1200, 1200, 1200]
+Active users per block: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+Block target matrix (rows=user, cols=block):
+[[200, 200, 200, 200, 200, 200, 200, 200, 200, 200], [400, 400, 400, 400, 400, 400, 400, 400, 400, 400], [600, 600, 600, 600, 600, 600, 600, 600, 600, 600]]

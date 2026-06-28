@@ -1,0 +1,82 @@
+{
+    "seed_scenarios": [
+        {
+            "mode": "fixed_block_targets",
+            "seed": 0,
+            "termination_rule": "fixed_block_horizon",
+            "skip_infeasible_blocks": true,
+            "skip_block_adds_full_T_latency": true,
+            "track_skipped_blocks": true,
+            "per_user_total_target_bits": [
+                4000,
+                4000,
+                4000
+            ],
+            "total_target_bits": 12000,
+            "num_blocks": 10,
+            "generation_mode": "constant",
+            "per_block_total_target_bits": [
+                1200,
+                1200,
+                1200,
+                1200,
+                1200,
+                1200,
+                1200,
+                1200,
+                1200,
+                1200
+            ],
+            "active_users_per_block": [
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3,
+                3
+            ],
+            "block_bit_targets": [
+                [
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400
+                ],
+                [
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400
+                ],
+                [
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400,
+                    400
+                ]
+            ]
+        }
+    ]
+}

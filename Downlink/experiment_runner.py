@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from typing import Callable
 
+import numpy as np
+
 from config_loader import load_config
 from determinism import configure_determinism
 from downlink_system import DownlinkSystem
@@ -65,6 +67,28 @@ def _pairwise_latency_diffs(latencies: list[float]) -> tuple[list[list[float]], 
     return matrix, pair_details, float(async_sum)
 
 
+def _mean_valid_rows(values: object, K: int) -> tuple[list[float], float, bool]:
+    arr = np.asarray(values, dtype=float)
+    if arr.ndim == 0:
+        arr = arr.reshape(1, 1)
+    elif arr.ndim == 1:
+        arr = arr.reshape(arr.shape[0], 1)
+
+    per_user = [0.0 for _ in range(K)]
+    global_values: list[float] = []
+    has_any = False
+    for k in range(K):
+        row = arr[k] if k < arr.shape[0] else np.asarray([], dtype=float)
+        valid = row[np.isfinite(row)]
+        if valid.size > 0:
+            per_user[k] = float(np.mean(valid))
+            global_values.extend(valid.tolist())
+            has_any = True
+
+    global_mean = float(np.mean(global_values)) if global_values else 0.0
+    return per_user, global_mean, has_any
+
+
 def _compute_summary_metrics(result: dict) -> dict:
     initial_latency = [float(x) for x in result["initial_latency"]]
     final_latency = [float(x) for x in result["final_latency"]]
@@ -100,8 +124,22 @@ def _compute_summary_metrics(result: dict) -> dict:
     n_totals = [int(sum(v)) for v in result.get("n_kl", [[] for _ in range(K)])]
     bits_totals = [int(sum(v)) for v in result.get("B_kl", [[] for _ in range(K)])]
     blocks_per_user = [int(v) for v in result.get("blocks_per_user", [0 for _ in range(K)])]
-    final_sinr_db = [float(x) for x in result.get("final_sinr_db", [0.0 for _ in range(K)])]
-    initial_sinr_db = [float(x) for x in result.get("initial_sinr_db", [0.0 for _ in range(K)])]
+    final_sinr_db_raw = [float(x) for x in result.get("final_sinr_db", [0.0 for _ in range(K)])]
+    initial_sinr_db_raw = [float(x) for x in result.get("initial_sinr_db", [0.0 for _ in range(K)])]
+    initial_block_sinr_db, initial_avg_block_sinr_db, has_initial_block_sinr = _mean_valid_rows(
+        result.get("initial_interference_diag", {}).get("sinr_db", []),
+        K,
+    )
+    final_block_sinr_db, final_avg_block_sinr_db, has_final_block_sinr = _mean_valid_rows(
+        result.get("final_interference_diag", {}).get("sinr_db", []),
+        K,
+    )
+    if not has_initial_block_sinr:
+        initial_block_sinr_db = list(initial_sinr_db_raw)
+        initial_avg_block_sinr_db = float(sum(initial_sinr_db_raw) / max(len(initial_sinr_db_raw), 1))
+    if not has_final_block_sinr:
+        final_block_sinr_db = list(final_sinr_db_raw)
+        final_avg_block_sinr_db = float(sum(final_sinr_db_raw) / max(len(final_sinr_db_raw), 1))
     scenario_mode = str(result.get("scenario_mode", ""))
     scenario_block_targets = np.asarray(result.get("scenario_block_targets", []), dtype=int)
     target_bits_per_user = [0 for _ in range(K)]
@@ -131,8 +169,10 @@ def _compute_summary_metrics(result: dict) -> dict:
                 "initial_latency": initial_latency[k],
                 "final_latency": final_latency[k],
                 "latency_reduction_percent": latency_reduction_per_user_percent[k],
-                "initial_sinr_db": initial_sinr_db[k],
-                "final_sinr_db": final_sinr_db[k],
+                "initial_sinr_db": initial_block_sinr_db[k],
+                "final_sinr_db": final_block_sinr_db[k],
+                "initial_sinr_db_raw": initial_sinr_db_raw[k],
+                "final_sinr_db_raw": final_sinr_db_raw[k],
                 "blocks": blocks_per_user[k],
                 "total_n": n_totals[k],
                 "target_bits": int(target_bits_per_user[k]),
@@ -162,8 +202,12 @@ def _compute_summary_metrics(result: dict) -> dict:
         "initial_asynchronality_sum": float(initial_async_sum),
         "final_asynchronality_sum": float(final_async_sum),
         "asynchronality_reduction_percent": float(async_reduction_percent),
-        "initial_avg_sinr_db": float(sum(initial_sinr_db) / max(len(initial_sinr_db), 1)),
-        "final_avg_sinr_db": float(sum(final_sinr_db) / max(len(final_sinr_db), 1)),
+        "initial_avg_sinr_db": float(initial_avg_block_sinr_db),
+        "final_avg_sinr_db": float(final_avg_block_sinr_db),
+        "initial_avg_sinr_db_raw": float(sum(initial_sinr_db_raw) / max(len(initial_sinr_db_raw), 1)),
+        "final_avg_sinr_db_raw": float(sum(final_sinr_db_raw) / max(len(final_sinr_db_raw), 1)),
+        "initial_sinr_db_per_user": initial_block_sinr_db,
+        "final_sinr_db_per_user": final_block_sinr_db,
         "initial_avg_snr_db": float(sum(result.get("initial_snr_db", [])) / max(len(result.get("initial_snr_db", [])), 1)),
         "final_avg_snr_db": float(sum(result.get("final_snr_db", [])) / max(len(result.get("final_snr_db", [])), 1)),
         "scenario_mode": scenario_mode,
@@ -258,8 +302,8 @@ def run_downlink_experiment(
         "Link quality summary",
         f"Initial avg SNR (dB): {metrics['initial_avg_snr_db']:.4f}",
         f"Final avg SNR (dB): {metrics['final_avg_snr_db']:.4f}",
-        f"Initial avg SINR (dB): {metrics['initial_avg_sinr_db']:.4f}",
-        f"Final avg SINR (dB): {metrics['final_avg_sinr_db']:.4f}",
+        f"Initial avg block SINR (dB): {metrics['initial_avg_sinr_db']:.4f}",
+        f"Final avg block SINR (dB): {metrics['final_avg_sinr_db']:.4f}",
         "",
         "Per-user details",
     ]
@@ -269,8 +313,8 @@ def run_downlink_experiment(
             f"init_lat={row['initial_latency']:.6f}",
             f"final_lat={row['final_latency']:.6f}",
             f"lat_red={row['latency_reduction_percent']:.4f}%",
-            f"init_sinr={row['initial_sinr_db']:.4f} dB",
-            f"final_sinr={row['final_sinr_db']:.4f} dB",
+            f"init_block_sinr={row['initial_sinr_db']:.4f} dB",
+            f"final_block_sinr={row['final_sinr_db']:.4f} dB",
             f"blocks={row['blocks']}",
             f"total_n={row['total_n']}",
             f"served_bits={row['served_bits']}",

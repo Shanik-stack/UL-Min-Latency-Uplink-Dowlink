@@ -1,0 +1,72 @@
+Uplink optimizer summary
+Method: monte_carlo_precoder_net_train_test
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\uplink_payload_completion.yaml
+Test seed: 1
+Train seeds: [0]
+Experiment scenario mode: payload_completion
+Training channel-episode counts per user: [4, 4, 4]
+Training dataset total channel episodes: 12
+Precoder parameterization: shared_user_channel_n_sigma_epsilon_to_precoder_mlp
+Training objective: rollout_lagrangian_user_finite_blocklength_rate_with_fixed_min_bits_objective
+Initial schedule source: random_precoder_baseline
+
+Training summary
+Train target-bits mode: minimum_required_bits_fallback
+Train target bits summary: {'1': 12}
+Final avg user rate: 15.849816
+Best avg user rate: 15.849816
+Final avg lagrangian: -15.849816
+Best avg lagrangian: -15.849816
+Final avg rate violation: 0.000000
+Final avg power violation: 0.000001
+Per-user final rate: [18.575338271356397, 15.71132795272335, 13.262782809378086]
+Per-user final lagrangian: [-18.575338271356397, -15.71132795272335, -13.262782809378086]
+Per-user final rate violation: [0.0, 0.0, 0.0]
+Per-user final power violation: [4.61455314390121e-07, 2.399567634828629e-06, 0.0]
+Cumulative rollout queries by n_kl: {'80': 1, '84': 1, '85': 1, '90': 3, '94': 2, '95': 7, '98': 1, '99': 4, '100': 12}
+Cumulative frontier rollout queries by n_kl: {'80': 1, '85': 1, '90': 2, '95': 5, '98': 1, '99': 1, '100': 8}
+Train-eval initial blocks per user: [2, 2, 2]
+Train-eval final blocks per user: [2, 2, 2]
+Train-eval initial total n per user: [126, 165, 187]
+Train-eval final total n per user: [115, 135, 163]
+Train-eval total latency reduction (%): 13.5983
+Train-eval initial selected n_kl summary: {'global_selected_examples_by_n_kl': {'26': 1, '65': 1, '87': 1, '100': 3}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'26': 1, '100': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'65': 1, '100': 1}}, {'user': 2, 'selected_examples_by_n_kl': {'87': 1, '100': 1}}]}
+Train-eval final selected n_kl summary: {'global_selected_examples_by_n_kl': {'15': 1, '35': 1, '63': 1, '100': 3}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'15': 1, '100': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'35': 1, '100': 1}}, {'user': 2, 'selected_examples_by_n_kl': {'63': 1, '100': 1}}]}
+
+Testing summary
+Initial latency source: random_precoder_baseline
+
+Latency summary
+Initial total latency: 0.031400
+Final total latency: 0.028800
+Total latency reduction (%): 8.2803
+Initial avg latency: 0.010467
+Final avg latency: 0.009600
+Initial min/max latency: 0.008333 / 0.012667
+Final min/max latency: 0.007467 / 0.012467
+
+Asynchronality summary
+Initial asynchronality sum: 0.008667
+Final asynchronality sum: 0.010000
+Asynchronality reduction (%): -15.3846
+
+Link quality summary
+Initial avg SNR (dB): 10.7880
+Final avg SNR (dB): 10.9612
+Initial avg SINR (dB): -3.2314
+Final avg SINR (dB): -3.2316
+
+Per-user details
+User 0 | init_lat=0.008333 | final_lat=0.007467 | lat_red=10.4000% | init_snr=14.3352 dB | final_snr=14.6180 dB | init_sinr=-2.3784 dB | final_sinr=-1.8921 dB | blocks=2 | total_n=112 | served_bits=2400 | skipped_blocks=0
+User 1 | init_lat=0.010400 | final_lat=0.008867 | lat_red=14.7436% | init_snr=10.5441 dB | final_snr=10.8839 dB | init_sinr=-3.9175 dB | final_sinr=-3.8617 dB | blocks=2 | total_n=133 | served_bits=2400 | skipped_blocks=0
+User 2 | init_lat=0.012667 | final_lat=0.012467 | lat_red=1.5789% | init_snr=7.4848 dB | final_snr=7.3816 dB | init_sinr=-3.3982 dB | final_sinr=-3.9411 dB | blocks=2 | total_n=187 | served_bits=2400 | skipped_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.002067 | final_diff=0.001400
+Users 0-2 | initial_diff=0.004333 | final_diff=0.005000
+Users 1-2 | initial_diff=0.002267 | final_diff=0.003600
+
+Terminology
+- channel episode: one (seed, user, block) channel realization stored in the base dataset
+- rollout query: one visited (episode, n_kl) state generated online from the current precoder net
+- initial schedule: the random-precoder baseline used for the before-optimization uplink latency

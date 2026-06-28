@@ -1,0 +1,151 @@
+{
+    "epochs_requested": 1,
+    "train_target_bits_mode": "fixed_block_targets_actual_bits",
+    "train_target_bits_summary": {
+        "200": 3,
+        "400": 3,
+        "600": 3
+    },
+    "train_target_bits_per_user": [
+        {
+            "200": 3
+        },
+        {
+            "400": 3
+        },
+        {
+            "600": 3
+        }
+    ],
+    "per_user_final_lagrangian": [
+        -0.3445684313774109,
+        -0.015762383118271828,
+        -0.12076269586881001
+    ],
+    "per_user_best_lagrangian": [
+        -0.3445684313774109,
+        -0.015762383118271828,
+        -0.12076269586881001
+    ],
+    "per_user_final_rate": [
+        0.6768804391225179,
+        0.6203900575637817,
+        0.7916024923324585
+    ],
+    "per_user_final_rate_violation": [
+        3.323119640350342,
+        6.046276251475017,
+        6.708397547403972
+    ],
+    "per_user_final_power_violation": [
+        3.1789143880208335e-06,
+        3.814697265625e-06,
+        3.814697265625e-06
+    ],
+    "final_avg_sum_rate": 2.0888729890187583,
+    "best_avg_sum_rate": 2.0888729890187583,
+    "final_avg_user_rate": 0.6962909963395861,
+    "best_avg_user_rate": 0.6962909963395861,
+    "final_avg_lagrangian": -0.16036450345483091,
+    "best_avg_lagrangian": -0.16036450345483091,
+    "final_avg_rate_violation": 5.359264479743111,
+    "best_avg_rate_violation": 5.359264479743111,
+    "final_avg_power_violation": 3.6027696397569448e-06,
+    "best_avg_power_violation": 3.6027696397569448e-06,
+    "final_feasible_rollout_query_fraction": 0.0,
+    "cumulative_rollout_queries_by_n_kl": {
+        "global_active_user_rollout_queries_by_n_kl_over_all_epochs": {
+            "50": 3,
+            "60": 3,
+            "80": 3
+        },
+        "per_user_active_user_rollout_queries_by_n_kl_over_all_epochs": [
+            {
+                "50": 3
+            },
+            {
+                "60": 3
+            },
+            {
+                "80": 3
+            }
+        ]
+    },
+    "cumulative_frontier_rollout_queries_by_n_kl": {
+        "global_active_user_frontier_rollout_queries_by_n_kl_over_all_epochs": {
+            "50": 3,
+            "60": 3,
+            "80": 3
+        },
+        "per_user_active_user_frontier_rollout_queries_by_n_kl_over_all_epochs": [
+            {
+                "50": 3
+            },
+            {
+                "60": 3
+            },
+            {
+                "80": 3
+            }
+        ]
+    },
+    "final_epoch_rollout_query_summary": {
+        "total_channel_episodes": 3,
+        "channel_episodes_by_seed": {
+            "0": 3
+        },
+        "channel_episodes_by_block": {
+            "0": 1,
+            "1": 1,
+            "2": 1
+        },
+        "channel_episodes_by_active_user_count": {
+            "3": 3
+        },
+        "channel_episodes_by_active_mask": {
+            "111": 3
+        },
+        "channel_episodes_per_user": [
+            3,
+            3,
+            3
+        ],
+        "global_active_user_rollout_queries_by_n_kl": {
+            "50": 3,
+            "60": 3,
+            "80": 3
+        },
+        "per_user_active_user_rollout_queries_by_n_kl": [
+            {
+                "50": 3
+            },
+            {
+                "60": 3
+            },
+            {
+                "80": 3
+            }
+        ],
+        "global_active_user_frontier_rollout_queries_by_n_kl": {
+            "50": 3,
+            "60": 3,
+            "80": 3
+        },
+        "per_user_active_user_frontier_rollout_queries_by_n_kl": [
+            {
+                "50": 3
+            },
+            {
+                "60": 3
+            },
+            {
+                "80": 3
+            }
+        ],
+        "total_rollout_queries": 3,
+        "feasible_rollout_queries": 0,
+        "infeasible_rollout_queries": 3,
+        "frontier_rollout_queries": 3,
+        "epoch": 1
+    }
+}

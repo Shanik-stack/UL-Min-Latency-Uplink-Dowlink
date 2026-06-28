@@ -47,6 +47,27 @@ def _to_complex_numpy(x) -> np.ndarray:
     return np.asarray(x, dtype=np.complex64)
 
 
+def _serialize_nested_history(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(key): _serialize_nested_history(val) for key, val in value.items()}
+    if isinstance(value, np.ndarray):
+        return _serialize_nested_history(value.tolist())
+    if isinstance(value, (list, tuple)):
+        return [_serialize_nested_history(v) for v in value]
+    if isinstance(value, (np.integer,)):
+        return int(value)
+    if isinstance(value, (np.floating,)):
+        return float(value)
+    if hasattr(value, "item") and not isinstance(value, (str, bytes, bool)):
+        try:
+            scalar = value.item()
+        except Exception:
+            return value
+        if isinstance(scalar, (int, float, str, bool)):
+            return scalar
+    return value
+
+
 def _rate_to_max_bits(n_kl: int, rate: float) -> int:
     return int(np.floor(float(n_kl) * float(rate)))
 
@@ -1616,16 +1637,7 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
             list(map(float, row))
             for row in ((precoder_net_training_history or {}).get("per_user_lagrangian", []))
         ],
-        "precoder_net_training_history": {
-            key: (
-                [list(map(float, row)) for row in value]
-                if isinstance(value, list) and len(value) > 0 and isinstance(value[0], list)
-                else list(map(float, value))
-                if isinstance(value, list)
-                else value
-            )
-            for key, value in (precoder_net_training_history or {}).items()
-        },
+        "precoder_net_training_history": _serialize_nested_history(precoder_net_training_history or {}),
         "train_seeds": [int(v) for v in (train_seeds or [])],
         "training_dataset_sizes": [int(v) for v in (training_dataset_sizes or [])],
         "training_channel_episode_counts_per_user": [int(v) for v in (training_dataset_sizes or [])],
@@ -1940,16 +1952,7 @@ def evaluate_downlink_precoder_net(
             list(map(float, row))
             for row in ((precoder_net_training_history or {}).get("per_user_lagrangian", []))
         ],
-        "precoder_net_training_history": {
-            key: (
-                [list(map(float, row)) for row in value]
-                if isinstance(value, list) and len(value) > 0 and isinstance(value[0], list)
-                else list(map(float, value))
-                if isinstance(value, list)
-                else value
-            )
-            for key, value in (precoder_net_training_history or {}).items()
-        },
+        "precoder_net_training_history": _serialize_nested_history(precoder_net_training_history or {}),
         "train_seeds": [int(v) for v in (train_seeds or [])],
         "training_dataset_sizes": [int(v) for v in (training_dataset_sizes or [])],
         "training_active_user_case_counts_per_user": [int(v) for v in (training_dataset_sizes or [])],
@@ -1978,16 +1981,7 @@ def build_precoder_net_artifact(
             list(map(float, row))
             for row in precoder_net_training_history.get("per_user_lagrangian", [])
         ],
-        "precoder_net_training_history": {
-            key: (
-                [list(map(float, row)) for row in value]
-                if isinstance(value, list) and len(value) > 0 and isinstance(value[0], list)
-                else list(map(float, value))
-                if isinstance(value, list)
-                else value
-            )
-            for key, value in precoder_net_training_history.items()
-        },
+        "precoder_net_training_history": _serialize_nested_history(precoder_net_training_history),
         "user_model_specs": export_user_model_specs(
             system_params["Nr"],
             system_params["Nb"],

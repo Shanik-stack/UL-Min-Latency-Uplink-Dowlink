@@ -1,0 +1,15 @@
+Downlink training dataset summary
+Total training channel episodes: 3
+Training scenario modes: ['fixed_block_targets']
+Training channel episodes by seed: {'0': 3}
+Training channel episodes by block: {'0': 1, '1': 1, '2': 1}
+Training channel episodes by active user count: {'3': 3}
+Training channel episodes by active mask: {'111': 3}
+Active-user channel episodes per user: [3, 3, 3]
+Global active-user channel episodes by target bits: {'200': 3, '400': 3, '600': 3}
+Per-user active-user channel episodes by target bits:
+[{'200': 3}, {'400': 3}, {'600': 3}]
+
+Terminology
+- channel episode: one (seed, block) block realization stored in the base dataset
+- active-user channel episode: one active user inside one stored channel episode

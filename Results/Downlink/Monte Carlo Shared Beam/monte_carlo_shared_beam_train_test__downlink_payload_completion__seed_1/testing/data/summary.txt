@@ -1,0 +1,59 @@
+Downlink optimizer summary
+Method: monte_carlo_shared_beam_train_test
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\downlink_payload_completion.yaml
+Test seed: 1
+Train seeds: [0]
+Training active user-cases per user: [12, 12, 12]
+Training dataset total cases: 21
+Objective mode: shared_beam_sum_rate
+Allocation mode: greedy
+Weight strategy: remaining_bits
+Precoder parameterization: shared_user_block_context_noise_epsilon_to_shared_beam_mlp
+Training objective: average_shared_beam_sum_fbl_rate_over_candidate_n_grid
+
+Training summary
+Final avg loss: -4.234821
+Best avg loss: -4.234821
+Final avg sum rate: 4.234821
+Best avg sum rate: 4.234821
+Final avg user rate: 2.528828
+Best avg user rate: 2.528828
+Per-user final rate: [1.9359432031710944, 2.4694878206108557, 3.1810519985026784]
+Per-user best rate: [1.9359432031710944, 2.4694878206108557, 3.1810519985026784]
+
+Testing summary
+
+Latency summary
+Initial total latency: 0.070933
+Final total latency: 0.086000
+Total latency reduction (%): -21.2406
+Initial avg latency: 0.023644
+Final avg latency: 0.028667
+Initial min/max latency: 0.018600 / 0.030600
+Final min/max latency: 0.021867 / 0.036933
+
+Asynchronality summary
+Initial asynchronality sum: 0.024000
+Final asynchronality sum: 0.030133
+Asynchronality reduction (%): -25.5556
+
+Link quality summary
+Initial avg SNR (dB): 8.0000
+Final avg SNR (dB): 7.4699
+Initial avg SINR (dB): -2.7240
+Final avg SINR (dB): -3.6711
+
+Per-user details
+User 0 | init_lat=0.018600 | final_lat=0.021867 | lat_red=-17.5627% | init_sinr=-3.2290 dB | final_sinr=-4.0560 dB | blocks=7 | total_n=328 | served_bits=200 | skipped_blocks=0
+User 1 | init_lat=0.021733 | final_lat=0.027200 | lat_red=-25.1534% | init_sinr=-2.2681 dB | final_sinr=-3.6406 dB | blocks=7 | total_n=408 | served_bits=400 | skipped_blocks=0
+User 2 | init_lat=0.030600 | final_lat=0.036933 | lat_red=-20.6972% | init_sinr=-2.6750 dB | final_sinr=-3.3165 dB | blocks=7 | total_n=554 | served_bits=600 | skipped_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.003133 | final_diff=0.005333
+Users 0-2 | initial_diff=0.012000 | final_diff=0.015067
+Users 1-2 | initial_diff=0.008867 | final_diff=0.009733
+
+Terminology
+- training case: one (seed, block, active-mask) item
+- active user-case: one user being active inside one training case
+- active-user n evaluation: one active user counted once at one candidate n_kl inside one training case

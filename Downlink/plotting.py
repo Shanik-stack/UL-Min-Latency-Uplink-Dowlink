@@ -306,11 +306,14 @@ def plot_asynchronality_comparison(result: dict[str, Any], figs_dir: str) -> Non
 
 def plot_link_quality(result: dict[str, Any], figs_dir: str) -> None:
     users = np.arange(len(result["initial_snr_db"]))
+    metrics = result.get("summary_metrics", {})
+    initial_block_sinr = metrics.get("initial_sinr_db_per_user", result["initial_sinr_db"])
+    final_block_sinr = metrics.get("final_sinr_db_per_user", result["final_sinr_db"])
     plt.figure(figsize=(max(8, len(users) * 0.4), 5))
     plt.plot(users, result["initial_snr_db"], label="Initial SNR", linestyle="--")
     plt.plot(users, result["final_snr_db"], label="Final SNR", linestyle=":")
-    plt.plot(users, result["initial_sinr_db"], label="Initial SINR", linewidth=2)
-    plt.plot(users, result["final_sinr_db"], label="Final SINR", linewidth=2)
+    plt.plot(users, initial_block_sinr, label="Initial mean block SINR", linewidth=2)
+    plt.plot(users, final_block_sinr, label="Final mean block SINR", linewidth=2)
     plt.xlabel("User")
     plt.ylabel("dB")
     plt.title("Downlink link quality")
