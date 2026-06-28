@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 
-import torch
+import numpy as np
 
 
 METHOD_DIR = Path(__file__).resolve().parent
@@ -14,84 +14,206 @@ for path in (METHOD_DIR, LINK_ROOT, PROJECT_ROOT):
     if path_str not in sys.path:
         sys.path.insert(0, path_str)
 
-from UplinkSystem import UplinkSystem
-from config_loader import get_config
-from experiment_utils import make_method_result_tag
-from main_per_block import test_simulate
+from advanced_methods_common import (
+    apply_training_solution,
+    estimate_initial_random_precoder_schedule_for_scenario,
+)
+from config_loader import _resolve_config_path, get_config
+from experiment_report import build_convergence_result, build_convergence_summary_lines
+from experiment_utils import make_method_result_tag, save_json, save_text
+from optimizer import dynamic_subblocklength_precoder_training_baseline
 from plotting import (
     initialize_plot_globals,
     plot_F_vs_n_for_all_subblocks,
+    plot_interference_before_after_heatmaps,
+    plot_interference_heatmaps,
+    plot_latency_and_asynchronality_from_json,
+    plot_link_quality_from_json,
     plot_optimization_result,
     plot_optimization_result_summary_dict,
+    plot_per_user_interference_before_after,
+    plot_per_user_interference_profiles,
+    plot_user_config,
 )
-from project_paths import build_uplink_result_dirs
-from optimizer import dynamic_subblocklength_precoder_training_baseline
+from project_paths import build_uplink_convergence_result_dirs
+from UplinkSystem import UplinkSystem
+from utils import save_test_results_to_txt
 
 
-def train_converge_in_each_sweep_baseline(
+def _resolve_run_seed(args: argparse.Namespace) -> int:
+    legacy_seeds = [value for value in (args.train_seed, args.test_seed) if value is not None]
+    run_seed = int(args.seed) if args.seed is not None else int(legacy_seeds[0]) if legacy_seeds else 0
+
+    for value in legacy_seeds:
+        if int(value) != run_seed:
+            raise ValueError(
+                "Uplink convergence per sweep now uses one shared seed only. "
+                "Provide the same value for --seed, --train_seed, and --test_seed, or use only --seed."
+            )
+    return run_seed
+
+
+def run_convergence_experiment(
     cfg_name: str,
-    train_seed: int = 0,
+    seed: int,
     *,
     do_plots: bool = True,
-):
+) -> dict:
     system_params, sim_cfg = get_config(cfg_name)
-    uplinksystem = UplinkSystem(system_params, seed=train_seed)
+    sim_cfg = dict(sim_cfg)
 
-    post = dynamic_subblocklength_precoder_training_baseline(
-        uplinksystem=uplinksystem,
-        sim_cfg=dict(sim_cfg),
+    initial_baseline = estimate_initial_random_precoder_schedule_for_scenario(
+        system_params,
+        sim_cfg,
+        seed=int(seed),
+    )
+
+    report_system = UplinkSystem(system_params, seed=int(seed))
+    initial_snr_db = list(initial_baseline["initial_snr_db"])
+    initial_sinr_db = list(initial_baseline["initial_sinr_db"])
+
+    if do_plots:
+        plot_params = dict(system_params)
+        plot_params["initial_bits_per_symbol"] = np.asarray(initial_baseline["initial_bits_per_symbol"], dtype=float)
+        plot_user_config(
+            plot_params,
+            extra_params={
+                "measured_snr_db_k": np.asarray(initial_snr_db),
+                "measured_sinr_db_k": np.asarray(initial_sinr_db),
+            },
+        )
+
+    convergence_system = UplinkSystem(system_params, seed=int(seed))
+    convergence_data = dynamic_subblocklength_precoder_training_baseline(
+        uplinksystem=convergence_system,
+        sim_cfg=sim_cfg,
         channel_norm=True,
     )
 
-    if do_plots:
-        plot_optimization_result(post["all_user_block_results_train"], train=True)
-        plot_optimization_result_summary_dict(post, train=True)
-        plot_F_vs_n_for_all_subblocks(post)
+    apply_training_solution(report_system, convergence_data["n_star"], convergence_data["F_star"])
 
-    return post
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Original per-block convergence baseline")
-    parser.add_argument("--cfg_name", type=str, default="config_raw_T_exp1.yaml", help="Configuration file name or path")
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=None,
-        help="Shared seed for both baseline optimization and testing; matches the downlink baseline CLI.",
+    result = build_convergence_result(
+        report_system,
+        convergence_data,
+        method_name="converge_in_each_sweep_baseline",
+        cfg_path=_resolve_config_path(cfg_name),
+        seed=int(seed),
+        initial_R_fbl=[np.array(v, copy=True) for v in initial_baseline["initial_R_fbl"]],
+        initial_n_kl=[list(values) for values in initial_baseline["initial_n_kl"]],
+        initial_n=list(initial_baseline["initial_n"]),
+        initial_latency=list(initial_baseline["initial_latency"]),
+        initial_snr_db=initial_snr_db,
+        initial_sinr_db=initial_sinr_db,
+        initial_bits_per_symbol=list(initial_baseline["initial_bits_per_symbol"]),
+        initial_B_kl=[list(values) for values in initial_baseline["initial_B_kl"]],
+        initial_bits_per_symbol_by_block=[
+            list(values) for values in initial_baseline["initial_bits_per_symbol_by_block"]
+        ],
+        initial_interference_diag=initial_baseline.get("initial_interference_diag"),
     )
+    result["scenario_mode"] = convergence_data.get(
+        "scenario_mode",
+        sim_cfg.get("experiment_scenario_mode", "payload_completion"),
+    )
+    return {
+        "result": result,
+        "report_system": report_system,
+        "convergence_data": convergence_data,
+        "initial_baseline": initial_baseline,
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Uplink online convergence baseline")
+    parser.add_argument("--cfg_name", type=str, default="config_raw_T_exp1.yaml", help="Configuration file name or path")
+    parser.add_argument("--seed", type=int, default=None, help="Deterministic random seed")
     parser.add_argument("--train_seed", "--train-seed", dest="train_seed", type=int, default=None)
     parser.add_argument("--test_seed", "--test-seed", dest="test_seed", type=int, default=None)
-    parser.add_argument("--skip_test", action="store_true")
     args = parser.parse_args()
 
-    shared_seed = int(args.seed) if args.seed is not None else 0
-    train_seed = int(args.train_seed) if args.train_seed is not None else int(shared_seed)
-    test_seed = int(args.test_seed) if args.test_seed is not None else int(shared_seed)
-
-    result_tag = make_method_result_tag("converge_in_each_sweep_baseline", args.cfg_name, seed=test_seed)
-    result_dirs = build_uplink_result_dirs("Convergence per sweep", result_tag)
+    run_seed = _resolve_run_seed(args)
+    result_tag = make_method_result_tag("converge_in_each_sweep_baseline", args.cfg_name, seed=run_seed)
+    result_dirs = build_uplink_convergence_result_dirs("Convergence per sweep", result_tag)
     initialize_plot_globals(result_tag, result_dirs)
 
-    post_training_data = train_converge_in_each_sweep_baseline(
+    experiment = run_convergence_experiment(
         cfg_name=args.cfg_name,
-        train_seed=train_seed,
+        seed=run_seed,
         do_plots=True,
     )
-    post_training_data["train_seed"] = int(train_seed)
-    post_training_data["test_seed"] = int(test_seed)
+    result = experiment["result"]
+    report_system = experiment["report_system"]
+    convergence_data = experiment["convergence_data"]
+    initial_baseline = experiment["initial_baseline"]
 
-    torch.save(post_training_data, os.path.join(result_dirs["train_data"], "train_artifact.pt"))
+    convergence_plot_dict = {
+        "n_star": convergence_data["n_star"],
+        "R_star": convergence_data["R_star"],
+    }
+    convergence_raw_dict = {
+        "B_kl_star_test": convergence_data["B_kl_star"],
+        "n_star_test": convergence_data["n_star"],
+        "R_star_test": convergence_data["R_star"],
+        "all_user_block_results_test": convergence_data["all_user_block_results_train"],
+        "scenario_mode": convergence_data.get("scenario_mode", ""),
+        "scenario_block_targets": convergence_data.get("scenario_block_targets", []),
+    }
 
-    if not args.skip_test:
-        test_simulate(
-            post_training_data_dict=post_training_data,
-            cfg_name=args.cfg_name,
-            test_seed=test_seed,
-            do_plots=True,
-            result_tag=result_tag,
-            result_dirs=result_dirs,
-        )
+    save_test_results_to_txt(
+        test_uplinksystem=report_system,
+        test_data_dict=convergence_raw_dict,
+        initial_Rfbl=[np.array(v, copy=True) for v in initial_baseline["initial_R_fbl"]],
+        initial_n_kl=[list(values) for values in initial_baseline["initial_n_kl"]],
+        initial_n=list(initial_baseline["initial_n"]),
+        initial_latency=list(initial_baseline["initial_latency"]),
+        initial_snr_db=list(result["initial_snr_db"]),
+        initial_sinr_db=list(result["initial_sinr_db"]),
+        initial_bits_per_symbol=list(initial_baseline["initial_bits_per_symbol"]),
+        save_dir=result_dirs["data"],
+        filename="convergence_results.txt",
+        initial_B_kl=[list(values) for values in initial_baseline["initial_B_kl"]],
+        initial_bits_per_symbol_by_block=[
+            list(values) for values in initial_baseline["initial_bits_per_symbol_by_block"]
+        ],
+    )
+
+    plot_optimization_result(
+        convergence_data["all_user_block_results_train"],
+        train=False,
+        save_dir=result_dirs["optimization_history"],
+        phase_label="Convergence",
+        filename_prefix="convergence",
+    )
+    plot_optimization_result_summary_dict(
+        convergence_plot_dict,
+        train=False,
+        save_dir=result_dirs["optimization_history"],
+        phase_label="Convergence",
+        filename_prefix="convergence",
+    )
+    plot_F_vs_n_for_all_subblocks(
+        convergence_data,
+        save_dir="F_vs_n",
+        base_dir=result_dirs["optimization_history"],
+    )
+    plot_latency_and_asynchronality_from_json(
+        json_path=os.path.join(result_dirs["data"], "convergence_results.json"),
+        save_dir=result_dirs["latency_asynchronality"],
+        prefix="convergence",
+    )
+    plot_link_quality_from_json(
+        json_path=os.path.join(result_dirs["data"], "convergence_results.json"),
+        save_dir=result_dirs["link_quality"],
+        prefix="convergence",
+    )
+
+    save_json(result, os.path.join(result_dirs["data"], "result.json"))
+    plot_interference_before_after_heatmaps(result, result_dirs["interference"])
+    plot_per_user_interference_before_after(result, result_dirs["interference"])
+    plot_interference_heatmaps(report_system, result_dirs["interference"])
+    plot_per_user_interference_profiles(report_system, result_dirs["interference"])
+    save_text(build_convergence_summary_lines(result), os.path.join(result_dirs["data"], "summary.txt"))
+    print(f"Saved uplink convergence results to: {result_dirs['experiment_root']}")
 
 
 if __name__ == "__main__":

@@ -169,6 +169,12 @@ class DownlinkSystem:
     def apply_solution(self, F_new: List[List[np.ndarray]], n_kl_new: List[List[int]]) -> None:
         self.n_kl = [list(map(int, blocks)) for blocks in n_kl_new]
         for k in range(self.K):
+            for l, n_kl in enumerate(self.n_kl[k]):
+                if int(n_kl) <= 0:
+                    raise ValueError(
+                        f"Downlink n_kl must be strictly positive; got n_kl[{k}][{l}]={int(n_kl)}."
+                    )
+        for k in range(self.K):
             for l in range(len(self.n_kl[k])):
                 template = None
                 if k < len(F_new) and l < len(F_new[k]):
@@ -241,8 +247,8 @@ class DownlinkSystem:
                     )
                 sig_vals.append(desired_power)
                 int_vals.append(interference_power)
-            mean_sig = float(np.mean(sig_vals))
-            mean_int = float(np.mean(int_vals))
+            mean_sig = float(np.mean(sig_vals)) if sig_vals else 0.0
+            mean_int = float(np.mean(int_vals)) if int_vals else 0.0
             mean_noise = float(self.sigma2[k])
             snr_db.append(10.0 * np.log10(max(mean_sig / max(mean_noise, 1e-30), 1e-30)))
             sinr_db.append(10.0 * np.log10(max(mean_sig / max(mean_int + mean_noise, 1e-30), 1e-30)))

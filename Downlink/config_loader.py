@@ -6,6 +6,8 @@ from typing import Any, Sequence
 import numpy as np
 import yaml
 
+from experiment_scenarios import normalize_experiment_scenario_config
+
 
 def _as_array(values: Any, K: int, name: str, dtype) -> np.ndarray:
     arr = np.asarray(values, dtype=dtype)
@@ -23,13 +25,17 @@ def _resolve_config_path(cfg_name: str) -> str:
     if os.path.isabs(cfg_name) and os.path.exists(cfg_name):
         return cfg_name
 
-    local_candidate = os.path.join(os.path.dirname(os.path.abspath(__file__)), cfg_name)
-    if os.path.exists(local_candidate):
-        return local_candidate
-
-    cwd_candidate = os.path.abspath(cfg_name)
-    if os.path.exists(cwd_candidate):
-        return cwd_candidate
+    loader_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(loader_dir)
+    candidates = [
+        os.path.join(loader_dir, cfg_name),
+        os.path.join(project_root, "Experiment Configs", cfg_name),
+        os.path.join(project_root, cfg_name),
+        os.path.abspath(cfg_name),
+    ]
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return candidate
 
     raise FileNotFoundError(f"Could not find config file: {cfg_name}")
 
@@ -73,6 +79,11 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
     sim_cfg_raw = cfg.get("simulation", {})
     n_range = sim_cfg_raw.get("n_kl_range", {})
     default_precoder_net_train_blocks = min(int(sim_cfg_raw.get("max_total_blocks", 256)), 2)
+    scenario_cfg = normalize_experiment_scenario_config(
+        sim_cfg_raw.get("experiment_scenario", {}),
+        system_params=system_params,
+        max_total_blocks=int(sim_cfg_raw.get("max_total_blocks", 256)),
+    )
     sim_params = {
         "max_precoder_sweeps": int(sim_cfg_raw.get("max_precoder_sweeps", 25)),
         "print_every_sweep": int(sim_cfg_raw.get("print_every_sweep", 1)),
@@ -135,6 +146,8 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
         "queue_weight_min": float(sim_cfg_raw.get("queue_weight_min", 0.25)),
         "network_weight_beta": float(sim_cfg_raw.get("network_weight_beta", 0.15)),
         "utility_latency_penalty": float(sim_cfg_raw.get("utility_latency_penalty", 0.5)),
+        "experiment_scenario": scenario_cfg,
+        "experiment_scenario_mode": str(scenario_cfg["mode"]),
     }
 
     run_meta = {

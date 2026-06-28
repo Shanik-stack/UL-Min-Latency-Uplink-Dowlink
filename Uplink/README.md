@@ -11,6 +11,7 @@ Shared files in this folder are the minimum common runtime needed by those two m
 Shared experiment conventions in this cleaned folder:
 
 - entry points use the shared result-tag helper from `experiment_utils.py`
-- results are split into `training/` and `testing/` subfolders inside each experiment folder
+- learned methods split results into `training/` and `testing/` subfolders inside each experiment folder
+- the `Methods/Convergence per sweep` baseline writes one flat convergence result bundle with no training/testing split
 - testing summaries live under `testing/data/`
 - training artifacts and training summaries live under `training/data/`

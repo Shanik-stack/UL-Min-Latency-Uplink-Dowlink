@@ -4,6 +4,8 @@ import os
 
 import yaml
 
+from experiment_scenarios import normalize_experiment_scenario_config
+from uplink_rate_model import normalize_uplink_rate_model
 from utils import initialize_system_params
 
 
@@ -14,13 +16,17 @@ def _resolve_config_path(cfg_name: str) -> str:
     if os.path.isabs(cfg_name) and os.path.exists(cfg_name):
         return cfg_name
 
-    local_candidate = os.path.join(os.path.dirname(os.path.abspath(__file__)), cfg_name)
-    if os.path.exists(local_candidate):
-        return local_candidate
-
-    cwd_candidate = os.path.abspath(cfg_name)
-    if os.path.exists(cwd_candidate):
-        return cwd_candidate
+    loader_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(loader_dir)
+    candidates = [
+        os.path.join(loader_dir, cfg_name),
+        os.path.join(project_root, "Experiment Configs", cfg_name),
+        os.path.join(project_root, cfg_name),
+        os.path.abspath(cfg_name),
+    ]
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return candidate
 
     raise FileNotFoundError(f"Could not find config file: {cfg_name}")
 
@@ -36,7 +42,13 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
     test_Nt = test_cfg["Nt"]
     initial_bits_per_symbol = test_cfg.get("initial_bits_per_symbol")
 
-    if "raw_T" in os.path.basename(cfg_path):
+    use_raw_t_initializer = (
+        "raw_T" in os.path.basename(cfg_path)
+        or "f_carrier" not in test_cfg
+        or "v" not in test_cfg
+    )
+
+    if use_raw_t_initializer:
         system_test_params = initialize_system_params(
             B=test_cfg["B"],
             P=test_cfg["P"],
@@ -67,7 +79,13 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
         )
 
     sim_cfg = cfg["simulation"]
+    uplink_rate_model = normalize_uplink_rate_model(sim_cfg.get("uplink_rate_model", "sinr"))
     lr_cfg = sim_cfg.get("lr", {})
+    scenario_cfg = normalize_experiment_scenario_config(
+        sim_cfg.get("experiment_scenario", {}),
+        system_params=system_test_params,
+        max_total_blocks=int(sim_cfg.get("max_total_blocks", 256)),
+    )
     n_kl_max = [system_test_params["T"][user] for user in range(system_test_params["K"])]
     simulation_test_params = {
         "initial_lambda_rate_constraint": sim_cfg["initial_lambda_rate_constraint"],
@@ -120,7 +138,22 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
                 sim_cfg.get("lr_net", lr_cfg.get("net", sim_cfg.get("step_lr", 1e-2))),
             )
         ),
+        "convergence_max_precoder_sweeps": int(
+            sim_cfg.get(
+                "convergence_max_precoder_sweeps",
+                min(int(sim_cfg.get("max_precoder_sweeps", sim_cfg.get("epochs_per_n_kl", 500))), 500),
+            )
+        ),
+        "convergence_min_precoder_sweeps_before_stop": int(
+            sim_cfg.get("convergence_min_precoder_sweeps_before_stop", 1)
+        ),
+        "convergence_precoder_tol": float(sim_cfg.get("convergence_precoder_tol", 1e-4)),
+        "convergence_feasibility_tol": float(sim_cfg.get("convergence_feasibility_tol", 1e-5)),
+        "uplink_rate_model": uplink_rate_model,
+        "experiment_scenario": scenario_cfg,
+        "experiment_scenario_mode": str(scenario_cfg["mode"]),
     }
+    system_test_params["uplink_rate_model"] = uplink_rate_model
     return system_test_params, simulation_test_params
 
 

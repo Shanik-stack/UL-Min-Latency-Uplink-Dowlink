@@ -1,0 +1,37 @@
+Uplink optimizer summary
+Method: converge_in_each_sweep_baseline
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\uplink_fixed_block_targets.yaml
+Seed: 3
+Experiment scenario mode: fixed_block_targets
+Precoder parameterization: shared_user_channel_sigma_epsilon_to_precoder_mlp_online_convergence
+Initial schedule source: random_precoder_baseline
+
+Latency summary
+Initial total latency: 0.056333
+Final total latency: 0.046400
+Total latency reduction (%): 17.6331
+Initial avg latency: 0.018778
+Final avg latency: 0.015467
+Initial min/max latency: 0.015400 / 0.022067
+Final min/max latency: 0.012667 / 0.018667
+
+Asynchronality summary
+Initial asynchronality sum: 0.013333
+Final asynchronality sum: 0.012000
+Asynchronality reduction (%): 10.0000
+
+Link quality summary
+Initial avg SNR (dB): 11.1399
+Final avg SNR (dB): 11.0411
+Initial avg SINR (dB): -3.2041
+Final avg SINR (dB): -3.2101
+
+Per-user details
+User 0 | init_lat=0.015400 | final_lat=0.012667 | lat_red=17.7489% | init_snr=14.2913 dB | final_snr=14.1781 dB | init_sinr=-2.9047 dB | final_sinr=-2.9662 dB | blocks=10 | total_n=190 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 1 | init_lat=0.018867 | final_lat=0.015067 | lat_red=20.1413% | init_snr=10.7900 dB | final_snr=10.6473 dB | init_sinr=-3.6325 dB | final_sinr=-3.6786 dB | blocks=10 | total_n=226 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 2 | init_lat=0.022067 | final_lat=0.018667 | lat_red=15.4079% | init_snr=8.3386 dB | final_snr=8.2978 dB | init_sinr=-3.0750 dB | final_sinr=-2.9857 dB | blocks=10 | total_n=280 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.003467 | final_diff=0.002400
+Users 0-2 | initial_diff=0.006667 | final_diff=0.006000
+Users 1-2 | initial_diff=0.003200 | final_diff=0.003600

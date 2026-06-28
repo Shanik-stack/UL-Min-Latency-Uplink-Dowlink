@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 # from system_constants import *
 from config_loader import *
 from scipy.stats import norm
+from uplink_rate_model import UPLINK_RATE_MODEL_SINR, normalize_uplink_rate_model
 
 
 def Q_inv(x):
@@ -17,9 +18,10 @@ class UplinkSystem:
     Single-class uplink simulator with fixed noise variance sigma2 (per user).
     sigma2 is calibrated ONCE from target snr_db using initially generated (H,F,X).
     After calibration, sigma2 is kept fixed even as new blocks are added.
-    Finite-blocklength rates are evaluated with interference-aware whitening, so
-    `snr_db` remains the simulation hyperparameter while the realized link metric
-    is SINR once other users are present.
+    Finite-blocklength rates are evaluated with either:
+      - SNR whitening: sigma2 * I
+      - SINR whitening: interference-plus-noise covariance
+    controlled by `uplink_rate_model`.
 
     Shapes:
       H[k][l] : (NR[k], NT[k])
@@ -56,6 +58,9 @@ class UplinkSystem:
         self.epsilon = list(self.sc["epsilon"])
         self.fs = list(self.sc["fs"])
         self.T = list(self.sc["T"])  # default block length for add_block()
+        self.uplink_rate_model = normalize_uplink_rate_model(
+            self.sc.get("uplink_rate_model", UPLINK_RATE_MODEL_SINR)
+        )
 
         # ---- deterministic base seed for per-(k,l,stream) RNG ----
         base_ss = np.random.SeedSequence([self.seed])
@@ -160,7 +165,11 @@ class UplinkSystem:
         )
 
         HF = H_k @ F_k
-        noise_plus_interference = self.get_interference_plus_noise_covariance(k, l, F_override=F_override)
+        Nr = int(self.NR[k])
+        if self.uplink_rate_model == UPLINK_RATE_MODEL_SINR:
+            noise_plus_interference = self.get_interference_plus_noise_covariance(k, l, F_override=F_override)
+        else:
+            noise_plus_interference = float(self.sigma2[k]) * np.eye(Nr, dtype=np.complex128)
         chol = np.linalg.cholesky(noise_plus_interference)
         G = np.linalg.solve(chol, HF)
         A = G @ G.conj().T
@@ -173,6 +182,13 @@ class UplinkSystem:
 
         for j in range(self.K):
             if j == k:
+                continue
+            if len(self.H[j]) == 0:
+                continue
+            if F_override is not None:
+                if j >= len(F_override) or len(F_override[j]) == 0:
+                    continue
+            elif len(self.F[j]) == 0:
                 continue
 
             lj = self._resolve_metric_block_index(j, block, F_override=F_override)
@@ -293,6 +309,10 @@ class UplinkSystem:
 
     def _update_cnr_metrics(self) -> None:
         for k in range(self.K):
+            if self.L[k] <= 0:
+                self.CNR_linear[k] = 0.0
+                self.CNR_db[k] = self._safe_db(0.0)
+                continue
             H_power = float(np.mean([np.linalg.norm(self.H[k][l], "fro") ** 2 for l in range(self.L[k])]))
             cnr_lin = H_power / float(self.sigma2[k])
             self.CNR_linear[k] = cnr_lin
@@ -388,6 +408,12 @@ class UplinkSystem:
 
         if n_kl is not None:
             self.n_kl = [list(v) for v in n_kl]
+            for k in range(self.K):
+                for l, n_kl_val in enumerate(self.n_kl[k]):
+                    if int(n_kl_val) <= 0:
+                        raise ValueError(
+                            f"Uplink n_kl must be strictly positive; got n_kl[{k}][{l}]={int(n_kl_val)}."
+                        )
             # check if any length differs
             if len(old_n_kl) != len(self.n_kl):
                 nl_changed = True
@@ -519,7 +545,7 @@ class UplinkSystem:
             self.C.append(Ck)
             self.V.append(Vk)
             self.R_fbl.append(R_fblk)
-            self.usr_avg_C.append(float(np.mean(Ck)))
+            self.usr_avg_C.append(float(np.mean(Ck)) if Lk > 0 else 0.0)
 
         # optional: refresh CNR metrics (H and sigma2 define it; H might have been truncated/extended)
         self._update_cnr_metrics()
@@ -533,6 +559,11 @@ class UplinkSystem:
         snr_db_list: List[float] = []
 
         for k in range(self.K):
+            if self.L[k] <= 0:
+                snr_lin_klist.append(0.0)
+                snr_db_list.append(self._safe_db(0.0))
+                continue
+
             p_sig = float(np.mean([
                 np.mean(np.abs(self.H[k][l] @ (self.F[k][l] @ self.X[k][l])) ** 2)
                 for l in range(self.L[k])
@@ -574,6 +605,8 @@ class UplinkSystem:
                 for j in range(self.K):
                     if j == k:
                         continue
+                    if len(self.H[j]) == 0 or len(self.F[j]) == 0 or len(self.X[j]) == 0:
+                        continue
 
                     lj = self._resolve_metric_block_index(j, l, require_x=True)
                     H_j = self._as_complex_array(self.H[j][lj])
@@ -610,6 +643,11 @@ class UplinkSystem:
         cnr_db_list: List[float] = []
 
         for k in range(self.K):
+            if self.L[k] <= 0:
+                cnr_lin_klist.append(0.0)
+                cnr_db_list.append(self._safe_db(0.0))
+                continue
+
             H_power = float(np.mean([np.linalg.norm(self.H[k][l], "fro") ** 2 for l in range(self.L[k])]))
             p_noise = float(np.mean([np.mean(np.abs(self.N[k][l]) ** 2) for l in range(self.L[k])]))
 

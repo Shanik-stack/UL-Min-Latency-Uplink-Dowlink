@@ -23,10 +23,14 @@ from experiment_utils import make_method_result_tag, parse_seed_list, save_json,
 from plotting import (
     initialize_plot_globals,
     plot_F_vs_n_for_all_subblocks,
+    plot_interference_before_after_heatmaps,
+    plot_interference_heatmaps,
     plot_latency_and_asynchronality_from_json,
     plot_link_quality_from_json,
     plot_optimization_result,
     plot_optimization_result_summary_dict,
+    plot_per_user_interference_before_after,
+    plot_per_user_interference_profiles,
     plot_user_config,
 )
 from policy_optimizer import evaluate_shared_beam_precoder_net, train_shared_beam_precoder_net
@@ -229,8 +233,8 @@ def _run_shared_beam_test(
         seed=int(test_seed),
     )
     test_uplinksystem = UplinkSystem(system_params, seed=int(test_seed))
-    _, initial_snr_db = test_uplinksystem.get_SNR()
-    _, initial_sinr_db = test_uplinksystem.get_SINR()
+    initial_snr_db = list(initial_baseline["initial_snr_db"])
+    initial_sinr_db = list(initial_baseline["initial_sinr_db"])
 
     plot_params = dict(system_params)
     plot_params["initial_bits_per_symbol"] = np.asarray(initial_baseline["initial_bits_per_symbol"], dtype=float)
@@ -328,8 +332,14 @@ def _run_shared_beam_test(
         initial_bits_per_symbol=initial_bits_per_symbol,
         initial_B_kl=initial_B_kl,
         initial_bits_per_symbol_by_block=initial_bits_per_symbol_by_block,
+        initial_interference_diag=initial_baseline.get("initial_interference_diag"),
     )
     save_json(result, os.path.join(result_dirs["test_data"], "result.json"))
+    if do_plots:
+        plot_interference_before_after_heatmaps(result, result_dirs["interference"])
+        plot_per_user_interference_before_after(result, result_dirs["interference"])
+        plot_interference_heatmaps(test_uplinksystem, result_dirs["interference"])
+        plot_per_user_interference_profiles(test_uplinksystem, result_dirs["interference"])
     save_text(_build_summary_lines(result), os.path.join(result_dirs["test_data"], "summary.txt"))
     return result
 

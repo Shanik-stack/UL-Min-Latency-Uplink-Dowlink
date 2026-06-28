@@ -34,11 +34,47 @@ def build_uplink_result_dirs(method_name: str, experiment_name: str) -> dict[str
         "test_user_config": testing_root / "user_config",
         "test_latency_asynchronality": testing_root / "latency_asynchronality",
         "test_link_quality": testing_root / "link_quality",
+        "test_interference": testing_root / "interference",
         "data": testing_root / "data",
         "optimization_history": testing_root / "optimization_history",
         "user_config": testing_root / "user_config",
         "latency_asynchronality": testing_root / "latency_asynchronality",
         "link_quality": testing_root / "link_quality",
+        "interference": testing_root / "interference",
+    }
+    for path in dirs.values():
+        Path(path).mkdir(parents=True, exist_ok=True)
+    return {key: str(value) for key, value in dirs.items()}
+
+
+def build_uplink_convergence_result_dirs(method_name: str, experiment_name: str) -> dict[str, str]:
+    root = build_experiment_root("Uplink", method_name, experiment_name)
+    data_root = root / "data"
+    optimization_root = root / "optimization_history"
+    user_config_root = root / "user_config"
+    latency_root = root / "latency_asynchronality"
+    link_root = root / "link_quality"
+    interference_root = root / "interference"
+    dirs = {
+        "experiment_root": root,
+        "training_root": root,
+        "testing_root": root,
+        "train_data": data_root,
+        "test_data": data_root,
+        "data": data_root,
+        "train_optimization_history": optimization_root,
+        "test_optimization_history": optimization_root,
+        "optimization_history": optimization_root,
+        "train_result": optimization_root,
+        "test_result": optimization_root,
+        "test_user_config": user_config_root,
+        "user_config": user_config_root,
+        "test_latency_asynchronality": latency_root,
+        "latency_asynchronality": latency_root,
+        "test_link_quality": link_root,
+        "link_quality": link_root,
+        "test_interference": interference_root,
+        "interference": interference_root,
     }
     for path in dirs.values():
         Path(path).mkdir(parents=True, exist_ok=True)

@@ -6,6 +6,7 @@ from typing import Callable
 from config_loader import load_config
 from determinism import configure_determinism
 from downlink_system import DownlinkSystem
+from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE
 from experiment_utils import make_method_result_tag
 from optimizer import (
     optimize_downlink_safe_sweep,
@@ -101,6 +102,26 @@ def _compute_summary_metrics(result: dict) -> dict:
     blocks_per_user = [int(v) for v in result.get("blocks_per_user", [0 for _ in range(K)])]
     final_sinr_db = [float(x) for x in result.get("final_sinr_db", [0.0 for _ in range(K)])]
     initial_sinr_db = [float(x) for x in result.get("initial_sinr_db", [0.0 for _ in range(K)])]
+    scenario_mode = str(result.get("scenario_mode", ""))
+    scenario_block_targets = np.asarray(result.get("scenario_block_targets", []), dtype=int)
+    target_bits_per_user = [0 for _ in range(K)]
+    unserved_bits_per_user = [0 for _ in range(K)]
+    partially_served_blocks_per_user = [0 for _ in range(K)]
+    zero_service_blocks_per_user = [0 for _ in range(K)]
+
+    if scenario_mode == FIXED_BLOCK_TARGETS_MODE and scenario_block_targets.ndim == 2 and scenario_block_targets.shape[0] == K:
+        target_bits_per_user = list(map(int, scenario_block_targets.sum(axis=1, dtype=int)))
+        served_by_user = [list(map(int, result.get("B_kl", [[] for _ in range(K)])[k])) for k in range(K)]
+        for k in range(K):
+            targets = scenario_block_targets[int(k)].tolist()
+            served = served_by_user[int(k)] if int(k) < len(served_by_user) else []
+            unserved_bits_per_user[int(k)] = int(sum(max(int(t) - int(s), 0) for t, s in zip(targets, served)))
+            partially_served_blocks_per_user[int(k)] = int(
+                sum(1 for t, s in zip(targets, served) if int(t) > 0 and 0 < int(s) < int(t))
+            )
+            zero_service_blocks_per_user[int(k)] = int(
+                sum(1 for t, s in zip(targets, served) if int(t) > 0 and int(s) <= 0)
+            )
 
     per_user_summary = []
     for k in range(K):
@@ -114,7 +135,11 @@ def _compute_summary_metrics(result: dict) -> dict:
                 "final_sinr_db": final_sinr_db[k],
                 "blocks": blocks_per_user[k],
                 "total_n": n_totals[k],
+                "target_bits": int(target_bits_per_user[k]),
                 "served_bits": bits_totals[k],
+                "unserved_bits": int(unserved_bits_per_user[k]),
+                "partially_served_blocks": int(partially_served_blocks_per_user[k]),
+                "zero_service_blocks": int(zero_service_blocks_per_user[k]),
                 "skipped_blocks": int(skipped_blocks_per_user[k]),
             }
         )
@@ -141,6 +166,11 @@ def _compute_summary_metrics(result: dict) -> dict:
         "final_avg_sinr_db": float(sum(final_sinr_db) / max(len(final_sinr_db), 1)),
         "initial_avg_snr_db": float(sum(result.get("initial_snr_db", [])) / max(len(result.get("initial_snr_db", [])), 1)),
         "final_avg_snr_db": float(sum(result.get("final_snr_db", [])) / max(len(result.get("final_snr_db", [])), 1)),
+        "scenario_mode": scenario_mode,
+        "target_bits_per_user": target_bits_per_user,
+        "unserved_bits_per_user": unserved_bits_per_user,
+        "partially_served_blocks_per_user": partially_served_blocks_per_user,
+        "zero_service_blocks_per_user": zero_service_blocks_per_user,
         "skipped_blocks_per_user": skipped_blocks_per_user,
         "per_user_summary": per_user_summary,
     }
@@ -234,22 +264,28 @@ def run_downlink_experiment(
         "Per-user details",
     ]
     for row in metrics["per_user_summary"]:
-        lines.append(
-            " | ".join(
+        parts = [
+            f"User {row['user']}",
+            f"init_lat={row['initial_latency']:.6f}",
+            f"final_lat={row['final_latency']:.6f}",
+            f"lat_red={row['latency_reduction_percent']:.4f}%",
+            f"init_sinr={row['initial_sinr_db']:.4f} dB",
+            f"final_sinr={row['final_sinr_db']:.4f} dB",
+            f"blocks={row['blocks']}",
+            f"total_n={row['total_n']}",
+            f"served_bits={row['served_bits']}",
+            f"skipped_blocks={row['skipped_blocks']}",
+        ]
+        if metrics.get("scenario_mode", "") == FIXED_BLOCK_TARGETS_MODE:
+            parts.extend(
                 [
-                    f"User {row['user']}",
-                    f"init_lat={row['initial_latency']:.6f}",
-                    f"final_lat={row['final_latency']:.6f}",
-                    f"lat_red={row['latency_reduction_percent']:.4f}%",
-                    f"init_sinr={row['initial_sinr_db']:.4f} dB",
-                    f"final_sinr={row['final_sinr_db']:.4f} dB",
-                    f"blocks={row['blocks']}",
-                    f"total_n={row['total_n']}",
-                    f"served_bits={row['served_bits']}",
-                    f"skipped_blocks={row['skipped_blocks']}",
+                    f"target_bits={row.get('target_bits', 0)}",
+                    f"unserved_bits={row.get('unserved_bits', 0)}",
+                    f"partial_blocks={row.get('partially_served_blocks', 0)}",
+                    f"zero_service_blocks={row.get('zero_service_blocks', 0)}",
                 ]
             )
-        )
+        lines.append(" | ".join(parts))
 
     if metrics["initial_asynchronality_pairs"]:
         lines.extend(["", "Per-pair asynchronality"])

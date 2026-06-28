@@ -5,6 +5,8 @@ import numpy as np
 import torch
 
 from UplinkSystem import UplinkSystem
+from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE, PAYLOAD_COMPLETION_MODE, build_experiment_scenario
+from uplink_rate_model import build_uplink_rate_covariance
 
 
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -48,6 +50,100 @@ def _to_complex_numpy(F) -> np.ndarray:
     return np.asarray(F, dtype=np.complex128)
 
 
+def collect_uplink_interference_diagnostics(uplinksystem: UplinkSystem) -> dict:
+    K = int(uplinksystem.K)
+    max_blocks = max((len(v) for v in uplinksystem.n_kl), default=0)
+    signal = np.full((K, max_blocks), np.nan, dtype=float)
+    total_interference = np.full((K, max_blocks), np.nan, dtype=float)
+    noise = np.full((K, max_blocks), np.nan, dtype=float)
+    sinr_db = np.full((K, max_blocks), np.nan, dtype=float)
+    pairwise_block = np.full((max_blocks, K, K), np.nan, dtype=float)
+    pairwise_sum = np.zeros((K, K), dtype=float)
+    pairwise_inr_sum = np.zeros((K, K), dtype=float)
+    pairwise_count = np.zeros((K, K), dtype=float)
+
+    for k in range(K):
+        for l in range(len(uplinksystem.n_kl[k])):
+            H_k = np.asarray(uplinksystem.H[k][l], dtype=np.complex128)
+            F_k = np.asarray(uplinksystem.F[k][l], dtype=np.complex128)
+            X_k = np.asarray(uplinksystem.X[k][l], dtype=np.complex128)
+            desired = H_k @ (F_k @ X_k)
+
+            p_sig = float(np.mean(np.abs(desired) ** 2))
+            if l < len(uplinksystem.N[k]):
+                p_noise = float(np.mean(np.abs(uplinksystem.N[k][l]) ** 2))
+            else:
+                p_noise = float(uplinksystem.sigma2[k])
+            p_interf = 0.0
+
+            for j in range(K):
+                if j == k:
+                    continue
+                if len(uplinksystem.H[j]) == 0 or len(uplinksystem.F[j]) == 0 or len(uplinksystem.X[j]) == 0:
+                    continue
+
+                lj = uplinksystem._resolve_metric_block_index(j, l, require_x=True)
+                H_j = np.asarray(uplinksystem.H[j][lj], dtype=np.complex128)
+                if H_j.shape[0] != H_k.shape[0]:
+                    raise ValueError(
+                        "Uplink interference diagnostics require a common BS receive dimension NR across users. "
+                        f"Victim user {k} block {l} has NR={H_k.shape[0]}, "
+                        f"interferer user {j} block {lj} has NR={H_j.shape[0]}."
+                    )
+                F_j = np.asarray(uplinksystem.F[j][lj], dtype=np.complex128)
+                X_j = np.asarray(uplinksystem.X[j][lj], dtype=np.complex128)
+                interference = H_j @ (F_j @ X_j)
+                coupling = float(np.mean(np.abs(interference) ** 2))
+                pairwise_block[l, k, j] = coupling
+                pairwise_sum[k, j] += coupling
+                pairwise_inr_sum[k, j] += coupling / max(p_noise, 1e-30)
+                pairwise_count[k, j] += 1.0
+                p_interf += coupling
+
+            signal[k, l] = p_sig
+            total_interference[k, l] = p_interf
+            noise[k, l] = p_noise
+            sinr_db[k, l] = float(
+                10.0 * np.log10(max(p_sig / max(p_interf + p_noise, 1e-30), 1e-30))
+            )
+
+    avg_pairwise_power = np.divide(
+        pairwise_sum,
+        pairwise_count,
+        out=np.full_like(pairwise_sum, np.nan),
+        where=pairwise_count > 0,
+    )
+    avg_pairwise_inr_lin = np.divide(
+        pairwise_inr_sum,
+        pairwise_count,
+        out=np.full_like(pairwise_inr_sum, np.nan),
+        where=pairwise_count > 0,
+    )
+    avg_pairwise_inr_db = 10.0 * np.log10(np.maximum(avg_pairwise_inr_lin, 1e-30))
+    row_sum = np.nansum(avg_pairwise_power, axis=1, keepdims=True)
+    avg_pairwise_share = np.divide(
+        avg_pairwise_power,
+        row_sum,
+        out=np.full_like(avg_pairwise_power, np.nan),
+        where=row_sum > 0,
+    )
+    block_totals = np.nansum(pairwise_block, axis=(1, 2)) if max_blocks > 0 else np.asarray([], dtype=float)
+    worst_block = int(np.nanargmax(block_totals)) if block_totals.size > 0 else -1
+
+    return {
+        "blocks_per_user": [len(v) for v in uplinksystem.n_kl],
+        "signal": signal.tolist(),
+        "total_interference": total_interference.tolist(),
+        "noise": noise.tolist(),
+        "sinr_db": sinr_db.tolist(),
+        "pairwise_block": pairwise_block.tolist(),
+        "avg_pairwise_power": avg_pairwise_power.tolist(),
+        "avg_pairwise_inr_db": avg_pairwise_inr_db.tolist(),
+        "avg_pairwise_share": avg_pairwise_share.tolist(),
+        "worst_block": int(worst_block),
+    }
+
+
 def apply_training_solution(
     uplink_system: UplinkSystem,
     n_star: Sequence[Sequence[int]],
@@ -58,7 +154,9 @@ def apply_training_solution(
     F_new: List[List[np.ndarray]] = []
 
     for k in range(K):
-        nk = list(map(int, n_star[k])) if len(n_star[k]) > 0 else list(map(int, uplink_system.n_kl[k]))
+        nk = list(map(int, n_star[k]))
+        if any(int(n_kl) <= 0 for n_kl in nk):
+            raise ValueError(f"Uplink blocklengths must be strictly positive for user {k}, got {nk}.")
         n_kl_new.append(nk)
 
         Lk = len(nk)
@@ -125,7 +223,9 @@ def estimate_initial_random_precoder_schedule(
             T_ref = int(baseline_system.T[k])
             sigma2 = float(baseline_system.sigma2[k])
             epsilon = float(baseline_system.epsilon[k])
-            noise_plus_interference_cov = baseline_system.get_interference_plus_noise_covariance(
+            noise_plus_interference_cov = build_uplink_rate_covariance(
+                baseline_system,
+                sim_cfg,
                 k,
                 block,
                 F_override=random_snapshot,
@@ -181,6 +281,9 @@ def estimate_initial_random_precoder_schedule(
         block += 1
 
     apply_training_solution(baseline_system, initial_n_kl, initial_F)
+    _, initial_snr_db = baseline_system.get_SNR()
+    _, initial_sinr_db = baseline_system.get_SINR()
+    initial_interference_diag = collect_uplink_interference_diagnostics(baseline_system)
 
     initial_n = [int(sum(user_n)) for user_n in initial_n_kl]
     initial_latency = [float(v) for v in baseline_system.latency]
@@ -201,9 +304,150 @@ def estimate_initial_random_precoder_schedule(
         "initial_R_fbl": initial_R_fbl,
         "initial_n": initial_n,
         "initial_latency": initial_latency,
+        "initial_snr_db": list(map(float, initial_snr_db)),
+        "initial_sinr_db": list(map(float, initial_sinr_db)),
         "initial_bits_per_symbol": initial_bits_per_symbol,
         "initial_bits_per_symbol_by_block": initial_bits_per_symbol_by_block,
+        "initial_interference_diag": initial_interference_diag,
     }
+
+
+def _estimate_initial_random_precoder_schedule_fixed_block_targets(
+    system_params: dict,
+    sim_cfg: dict,
+    *,
+    seed: int,
+    scenario: dict,
+) -> dict:
+    from Optimizer_per_block import _compute_R_fbl_np
+
+    baseline_system = UplinkSystem(system_params, seed=int(seed))
+    K = int(baseline_system.K)
+    n_kl_min = int(sim_cfg["n_kl_min"])
+    n_kl_step = int(sim_cfg["n_kl_step"])
+    block_targets = np.asarray(scenario["block_bit_targets"], dtype=int)
+    num_blocks = int(scenario["num_blocks"])
+
+    initial_n_kl: List[List[int]] = [[] for _ in range(K)]
+    initial_B_kl: List[List[int]] = [[] for _ in range(K)]
+    initial_R_fbl: List[List[float]] = [[] for _ in range(K)]
+    initial_F: List[List[np.ndarray]] = [[] for _ in range(K)]
+    skipped_blocks_per_user = [0 for _ in range(K)]
+
+    for block in range(num_blocks):
+        ensure_blocks_up_to(baseline_system, block)
+        random_snapshot = clone_nested_arrays(baseline_system.F)
+
+        for k in range(K):
+            target_bits = int(block_targets[k, block])
+            H_kl = np.asarray(baseline_system.H[k][block], dtype=np.complex64)
+            F_kl = np.asarray(random_snapshot[k][block], dtype=np.complex64)
+            T_ref = int(baseline_system.T[k])
+            sigma2 = float(baseline_system.sigma2[k])
+            epsilon = float(baseline_system.epsilon[k])
+            noise_plus_interference_cov = build_uplink_rate_covariance(
+                baseline_system,
+                sim_cfg,
+                k,
+                block,
+                F_override=random_snapshot,
+            )
+            R_T = _compute_R_fbl_np(
+                H_kl,
+                F_kl,
+                sigma2,
+                epsilon,
+                T_ref,
+                noise_plus_interference_cov,
+            )
+            B_max = max(int(np.floor(float(T_ref) * float(R_T))), 0)
+            B_used = int(min(target_bits, B_max))
+            best_n = int(T_ref)
+            best_R = float(R_T)
+
+            if int(B_used) >= int(target_bits) and int(target_bits) > 0:
+                candidate_n = int(T_ref) - int(n_kl_step)
+                while candidate_n >= int(n_kl_min):
+                    R_candidate = _compute_R_fbl_np(
+                        H_kl,
+                        F_kl,
+                        sigma2,
+                        epsilon,
+                        candidate_n,
+                        noise_plus_interference_cov,
+                    )
+                    if (float(target_bits) / float(max(candidate_n, 1))) <= R_candidate:
+                        best_n = int(candidate_n)
+                        best_R = float(R_candidate)
+                        candidate_n -= int(n_kl_step)
+                    else:
+                        break
+
+            initial_n_kl[k].append(int(best_n))
+            initial_B_kl[k].append(int(B_used))
+            initial_R_fbl[k].append(float(best_R) if int(B_used) > 0 else 0.0)
+            initial_F[k].append(
+                np.array(F_kl, copy=True) if int(B_used) > 0 else np.zeros_like(F_kl, dtype=np.complex64)
+            )
+            if int(B_used) <= 0:
+                skipped_blocks_per_user[k] += 1
+
+    apply_training_solution(baseline_system, initial_n_kl, initial_F)
+    _, initial_snr_db = baseline_system.get_SNR()
+    _, initial_sinr_db = baseline_system.get_SINR()
+    initial_interference_diag = collect_uplink_interference_diagnostics(baseline_system)
+
+    initial_n = [int(sum(int(max(v, 0)) for v in user_n)) for user_n in initial_n_kl]
+    initial_latency = [float(v) for v in baseline_system.latency]
+    initial_bits_per_symbol_by_block = []
+    initial_bits_per_symbol = []
+    for k in range(K):
+        user_bps = [
+            float(bits) / float(max(int(n_kl), 1))
+            if int(n_kl) > 0 and int(bits) > 0
+            else 0.0
+            for bits, n_kl in zip(initial_B_kl[k], initial_n_kl[k])
+        ]
+        total_n = float(max(initial_n[k], 1))
+        initial_bits_per_symbol_by_block.append(user_bps)
+        initial_bits_per_symbol.append(float(sum(initial_B_kl[k])) / total_n if initial_n[k] > 0 else 0.0)
+
+    return {
+        "initial_n_kl": initial_n_kl,
+        "initial_B_kl": initial_B_kl,
+        "initial_R_fbl": initial_R_fbl,
+        "initial_n": initial_n,
+        "initial_latency": initial_latency,
+        "initial_snr_db": list(map(float, initial_snr_db)),
+        "initial_sinr_db": list(map(float, initial_sinr_db)),
+        "initial_bits_per_symbol": initial_bits_per_symbol,
+        "initial_bits_per_symbol_by_block": initial_bits_per_symbol_by_block,
+        "initial_interference_diag": initial_interference_diag,
+        "skipped_blocks_per_user": [int(v) for v in skipped_blocks_per_user],
+        "scenario_mode": FIXED_BLOCK_TARGETS_MODE,
+        "scenario_block_targets": block_targets.tolist(),
+    }
+
+
+def estimate_initial_random_precoder_schedule_for_scenario(
+    system_params: dict,
+    sim_cfg: dict,
+    *,
+    seed: int,
+) -> dict:
+    scenario = build_experiment_scenario(system_params, sim_cfg, seed=int(seed))
+    if str(scenario["mode"]) == FIXED_BLOCK_TARGETS_MODE:
+        return _estimate_initial_random_precoder_schedule_fixed_block_targets(
+            system_params,
+            sim_cfg,
+            seed=int(seed),
+            scenario=scenario,
+        )
+
+    baseline = estimate_initial_random_precoder_schedule(system_params, sim_cfg, seed=int(seed))
+    baseline["skipped_blocks_per_user"] = [0 for _ in range(int(system_params["K"]))]
+    baseline["scenario_mode"] = PAYLOAD_COMPLETION_MODE
+    return baseline
 
 
 def max_precoder_delta(F_old: Sequence[Sequence], F_new: Sequence[Sequence]) -> float:

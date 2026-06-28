@@ -6,6 +6,8 @@ from typing import Optional, Sequence
 import numpy as np
 import torch
 
+from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE
+
 def make_json_serializable(obj):
     if isinstance(obj, dict):
         return {k: make_json_serializable(v) for k, v in obj.items()}
@@ -92,6 +94,22 @@ def save_test_results_to_txt(
                 f"SINR_dB: Initial {initial_sinr_db[user_idx]:.4f} -> Final {final_sinr_db[user_idx]:.4f}\n"
             )
 
+            if str(test_data_dict.get("scenario_mode", "")) == FIXED_BLOCK_TARGETS_MODE:
+                scenario_block_targets = np.asarray(test_data_dict.get("scenario_block_targets", []), dtype=int)
+                if scenario_block_targets.ndim == 2 and user_idx < scenario_block_targets.shape[0]:
+                    target_bits = scenario_block_targets[user_idx].tolist()
+                    final_bits = list(map(int, test_data_dict["B_kl_star_test"][user_idx]))
+                    initial_bits = (
+                        list(map(int, initial_B_kl[user_idx]))
+                        if initial_B_kl is not None and user_idx < len(initial_B_kl)
+                        else [0 for _ in range(len(target_bits))]
+                    )
+                    initial_unserved = [max(int(t) - int(b), 0) for t, b in zip(target_bits, initial_bits)]
+                    final_unserved = [max(int(t) - int(b), 0) for t, b in zip(target_bits, final_bits)]
+                    f.write(f"Target bits per block: {target_bits}\n")
+                    f.write(f"Initial unserved bits per block: {initial_unserved}\n")
+                    f.write(f"Final unserved bits per block: {final_unserved}\n")
+
         f.write("\nInitial Latency per user:\n")
         f.write(f"{initial_latency}\n")
 
@@ -174,6 +192,8 @@ def save_test_results_to_txt(
         "initial_bits_per_symbol_by_block": initial_bits_per_symbol_by_block,
         "final_bits_per_symbol": [list(x) for x in final_bits_per_symbol],
         "B_tx_final": test_data_dict["B_kl_star_test"],
+        "scenario_mode": test_data_dict.get("scenario_mode", ""),
+        "scenario_block_targets": test_data_dict.get("scenario_block_targets", []),
         "latency_reduction_per_user_percent": latency_reduction_per_user.tolist(),
         "total_latency_reduction_percent": latency_reduction_percent,
         "initial_asynchronality_sum": sum_initial_asynchronality,

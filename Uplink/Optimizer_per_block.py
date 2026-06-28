@@ -4,17 +4,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 from scipy.stats import norm
 
+from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE, build_experiment_scenario
 from precoder_models import (
     DEVICE,
-    build_user_precoder_net,
+    build_user_precoder_net_with_sigma_context,
     export_user_model_specs,
     export_user_model_states,
-    infer_precoder_numpy,
-    infer_precoder_torch,
+    infer_precoder_numpy_with_sigma_context,
+    infer_precoder_torch_with_sigma_context,
     load_user_precoder_models,
     net_output_to_precoder,
     project_precoder_power,
 )
+from uplink_rate_model import build_uplink_rate_covariance
 LOG2E_SQ = (np.log2(np.e)) ** 2
 
 # ============================================================
@@ -185,17 +187,36 @@ def optimize_precoder_for_nl(
     lr_rate: float,
     lr_power: float,
     optimizer: torch.optim.Optimizer,
+    min_sweeps_before_stop: int = 1,
+    precoder_tol: float = 1e-4,
+    feasibility_tol: float = 1e-5,
 ):
     losses = []
+    min_sweeps_before_stop = max(1, int(min_sweeps_before_stop))
+    precoder_tol = float(precoder_tol)
+    feasibility_tol = float(feasibility_tol)
+    prev_Fmat: torch.Tensor | None = None
 
     for epoch in range(int(epochs)):
-        Fmat = infer_precoder_torch(precoder_net, loss_fn.H_kl, Nt, dk, loss_fn.P)
+        Fmat = infer_precoder_torch_with_sigma_context(
+            precoder_net,
+            loss_fn.H_kl,
+            loss_fn.sigma2,
+            loss_fn.epsilon,
+            Nt,
+            dk,
+            loss_fn.P,
+        )
 
         optimizer.zero_grad()
         loss, R, F_power, rv_pos, pv_pos = loss_fn(Fmat, lambda_rate, lambda_power)
         # print("Post F_power: ", F_power)
-        feasible = (rv_pos.item() <= 0.0) and (pv_pos.item() <= 0.0)
-        if feasible and epoch >= 1000:
+        feasible = (rv_pos.item() <= feasibility_tol) and (pv_pos.item() <= feasibility_tol)
+        delta = None
+        if prev_Fmat is not None:
+            delta = float(torch.linalg.norm(Fmat - prev_Fmat, ord="fro").detach().cpu())
+        losses.append(float(loss.detach().cpu()))
+        if feasible and delta is not None and delta <= precoder_tol and (epoch + 1) >= min_sweeps_before_stop:
             break
 
         lambda_rate, lambda_power = update_lambdas(
@@ -204,10 +225,18 @@ def optimize_precoder_for_nl(
 
         loss.backward()
         optimizer.step()
-        losses.append(float(loss.detach().cpu()))
+        prev_Fmat = Fmat.detach()
 
     with torch.no_grad():
-        F_final = infer_precoder_torch(precoder_net, loss_fn.H_kl, Nt, dk, loss_fn.P)
+        F_final = infer_precoder_torch_with_sigma_context(
+            precoder_net,
+            loss_fn.H_kl,
+            loss_fn.sigma2,
+            loss_fn.epsilon,
+            Nt,
+            dk,
+            loss_fn.P,
+        )
         loss, R, F_power, rv_pos, pv_pos = loss_fn(F_final, lambda_rate, lambda_power)
 
     return {
@@ -235,10 +264,14 @@ def optimize_subblocklength_precoder(
     precoder_net: nn.Module,
     optimizer: torch.optim.Optimizer,
     interference_F_snapshot=None,
+    bit_budget_role: str = "payload_completion",
 ):
+    is_fixed_target_block = str(bit_budget_role).strip().lower() == "fixed_block_targets"
+    bit_budget_label = "target_bits" if is_fixed_target_block else "B_rem"
+
     print(f"\n========== OptimizeSubBlocklength-Precoder ==========")
     print(f"User: {user}, Block: {block}")
-    print(f"Initial B_rem: {B_rem}")
+    print(f"Initial {bit_budget_label}: {B_rem}")
     print("-----------------------------------------------------")
 
     P = float(uplinksystem.P[user])
@@ -249,14 +282,21 @@ def optimize_subblocklength_precoder(
     epsilon = float(uplinksystem.epsilon[user])
 
     H_kl = torch.tensor(uplinksystem.H[user][block], dtype=torch.complex64, device=DEVICE)
-    noise_plus_interference_cov = torch.tensor(
-        uplinksystem.get_interference_plus_noise_covariance(
-            user,
-            block,
-            F_override=interference_F_snapshot,
-        ),
-        dtype=torch.complex64,
-        device=DEVICE,
+    noise_plus_interference_cov_np = build_uplink_rate_covariance(
+        uplinksystem,
+        sim_cfg,
+        user,
+        block,
+        F_override=interference_F_snapshot,
+    )
+    noise_plus_interference_cov = (
+        None
+        if noise_plus_interference_cov_np is None
+        else torch.tensor(
+            noise_plus_interference_cov_np,
+            dtype=torch.complex64,
+            device=DEVICE,
+        )
     )
 
     T = int(uplinksystem.T[user])
@@ -272,6 +312,14 @@ def optimize_subblocklength_precoder(
     lr_net = float(sim_cfg["lr_net"])
     lr_rate = float(sim_cfg["lr_rate_constraint"])
     lr_power = float(sim_cfg["lr_power_constraint"])
+    min_sweeps_before_stop = int(
+        sim_cfg.get(
+            "convergence_min_precoder_sweeps_before_stop",
+            sim_cfg.get("min_precoder_sweeps_before_stop", 1),
+        )
+    )
+    precoder_tol = float(sim_cfg.get("convergence_precoder_tol", sim_cfg.get("precoder_tol", 1e-4)))
+    feasibility_tol = float(sim_cfg.get("convergence_feasibility_tol", sim_cfg.get("feasibility_tol", 1e-5)))
 
     lambda_rate = float(lambda_rate_0)
     lambda_power = float(lambda_power_0)
@@ -284,10 +332,26 @@ def optimize_subblocklength_precoder(
 
     results = []
 
+    def _evaluate_fixed_precoder_for_n(current_F: torch.Tensor, current_n_kl: int) -> dict[str, float | torch.Tensor]:
+        loss_fn.set_blocklength(int(current_n_kl))
+        loss_fn.set_payload(float(B_used))
+        with torch.no_grad():
+            R_eval = loss_fn.R_fbl(current_F)
+            F_power_eval = (torch.linalg.norm(current_F, ord="fro") ** 2).real
+        rate_violation_eval = (float(B_used) / float(current_n_kl)) - float(R_eval.detach().item())
+        power_violation_eval = float(F_power_eval.detach().item()) - float(P)
+        return {
+            "F": current_F,
+            "R_fbl": float(R_eval.detach().item()),
+            "F_power": float(F_power_eval.detach().item()),
+            "rate_violation": float(rate_violation_eval),
+            "power_violation": float(power_violation_eval),
+        }
+
     # ------------------------------------------------------------
     # STEP A: Fix n = T feasible by reducing B (like your 2nd code)
     # ------------------------------------------------------------
-    print(f"\n--- Step A: Fix n = T = {n_kl_max} and adjust B if needed ---")
+    print(f"\n--- Step A: Fix n = T = {n_kl_max} and adjust bits if needed ---")
     loss_fn.set_blocklength(n_kl_max)
     loss_fn.set_payload(float(B_rem))
     max_payload_reductions = 1
@@ -305,7 +369,10 @@ def optimize_subblocklength_precoder(
             epochs=epochs,
             lambda_rate=lambda_rate, lambda_power=lambda_power,
             lr_rate=lr_rate, lr_power=lr_power,
-            optimizer=optimizer
+            optimizer=optimizer,
+            min_sweeps_before_stop=min_sweeps_before_stop,
+            precoder_tol=precoder_tol,
+            feasibility_tol=feasibility_tol,
         )
 
         lambda_rate = out["lambda_rate"]
@@ -316,7 +383,7 @@ def optimize_subblocklength_precoder(
         print(f"Rate violation: {out['rate_violation']}")
         print(f"Power violation: {out['power_violation']}")
 
-        feasible = (out["rate_violation"] <= 0.0) and (out["power_violation"] <= 0.0)
+        feasible = (out["rate_violation"] <= feasibility_tol) and (out["power_violation"] <= feasibility_tol)
         if feasible:
             print(">>> Feasible at n = T.")
             B_used = int(loss_fn.B)
@@ -356,11 +423,24 @@ def optimize_subblocklength_precoder(
         attempt+=1
 
     if B_used is None or B_used <= 0:
-        print(">>> No feasible solution at n=T after payload adjustment.")
+        if is_fixed_target_block:
+            print(">>> No feasible solution at n=T after block-target adjustment.")
+        else:
+            print(">>> No feasible solution at n=T after payload adjustment.")
         return [], 0
 
-    B_rem_after = int(B_initial - B_used)
-    print(f"\n>>> Payload accepted at n=T: B_used={B_used}, remaining after this block would be B_rem={B_rem_after}")
+    fixed_precoder = out["F"].detach()
+    bits_left_after_current_request = int(B_initial - B_used)
+    if is_fixed_target_block:
+        print(
+            f"\n>>> Block target processed at n=T: B_used={B_used}, "
+            f"unserved_bits={bits_left_after_current_request}"
+        )
+    else:
+        print(
+            f"\n>>> Payload accepted at n=T: B_used={B_used}, "
+            f"remaining after this block would be B_rem={bits_left_after_current_request}"
+        )
 
     # ------------------------------------------------------------
     # STEP B: Reduce n while keeping B fixed (store all feasible)
@@ -369,31 +449,20 @@ def optimize_subblocklength_precoder(
     n_kl = n_kl_max - n_kl_step
 
     while n_kl >= n_kl_min:
-        if(B_rem_after != 0):
-            print(f"\n Not reducing n_kl since not last sub-block (n_kl = {n_kl})")
+        if bits_left_after_current_request != 0:
+            if is_fixed_target_block:
+                print(f"\n Not reducing n_kl because the block target was only partially served (n_kl = {n_kl})")
+            else:
+                print(f"\n Not reducing n_kl since not last sub-block (n_kl = {n_kl})")
             break
         print(f"\nTesting n = {n_kl}")
-        loss_fn.set_blocklength(n_kl)
-        loss_fn.set_payload(float(B_used))
-
-        out = optimize_precoder_for_nl(
-            precoder_net=precoder_net,
-            loss_fn=loss_fn,
-            Nt=Nt, dk=dk,
-            epochs=epochs_per_n_kl,
-            lambda_rate=lambda_rate, lambda_power=lambda_power,
-            lr_rate=lr_rate, lr_power=lr_power,
-            optimizer=optimizer
-        )
-
-        lambda_rate = out["lambda_rate"]
-        lambda_power = out["lambda_power"]
+        out = _evaluate_fixed_precoder_for_n(fixed_precoder, int(n_kl))
 
         print(f"R_fbl: {out['R_fbl']}")
         print(f"Rate violation: {out['rate_violation']}")
         print(f"Power violation: {out['power_violation']}")
 
-        feasible = (out["rate_violation"] <= 0.0) and (out["power_violation"] <= 0.0)
+        feasible = (out["rate_violation"] <= feasibility_tol) and (out["power_violation"] <= feasibility_tol)
         if not feasible:
             print(">>> Not feasible. Stop decreasing n.")
             break
@@ -409,7 +478,7 @@ def optimize_subblocklength_precoder(
             "F_power": float(out["F_power"]),
             "lambda_rate": float(lambda_rate),
             "lambda_power": float(lambda_power),
-            "loss_curve": out["loss_curve"],
+            "loss_curve": [],
         })
 
         n_kl -= n_kl_step
@@ -489,7 +558,7 @@ def dynamic_subblocklength_precoder_training(
         while len(uplinksystem.H[k]) < 1:
             uplinksystem.add_block(k)
 
-        user_model = build_user_precoder_net(
+        user_model = build_user_precoder_net_with_sigma_context(
             Nr=int(uplinksystem.NR[k]),
             Nt=int(uplinksystem.NT[k]),
             dk=int(uplinksystem.dk[k]),
@@ -563,8 +632,153 @@ def dynamic_subblocklength_precoder_training(
         uplinksystem.L[k] = int(L_out[k])
         if len(n_star[k]) > 0:
             uplinksystem.n_kl[k] = list(n_star[k])
-        print("Checkingtr F_star")
-        print(F_star)
+    post_training_data_dict = {
+        "L_out": L_out,
+        "n_star": n_star,
+        "F_star": F_star,
+        "R_star": R_star,
+        "norm_stats": norm_stats,
+        "all_user_block_results_train": all_user_block_results,
+        "B_used_star": B_used_star,
+        "B_kl_star": B_kl_star,
+        "user_model_specs": export_user_model_specs(
+            uplinksystem.NR,
+            uplinksystem.NT,
+            uplinksystem.dk,
+            input_mode="channel_sigma_epsilon",
+        ),
+        "user_model_states": export_user_model_states(user_precoder_models),
+        "precoder_parameterization": "shared_user_channel_sigma_epsilon_to_precoder_mlp",
+    }
+    return post_training_data_dict
+
+
+def dynamic_fixed_target_precoder_training(
+    uplinksystem,
+    sim_cfg: dict,
+    channel_norm: bool = True,
+    interference_F_snapshot=None,
+    commit_live_precoders: bool = True,
+):
+    scenario = build_experiment_scenario(uplinksystem.sc, sim_cfg, seed=int(uplinksystem.seed))
+    if str(scenario["mode"]) != FIXED_BLOCK_TARGETS_MODE:
+        raise ValueError("dynamic_fixed_target_precoder_training requires fixed_block_targets scenario mode.")
+
+    block_targets = np.asarray(scenario["block_bit_targets"], dtype=int)
+    num_blocks = int(scenario["num_blocks"])
+    K = int(uplinksystem.K)
+
+    L_out = [int(num_blocks)] * K
+    n_star = [[] for _ in range(K)]
+    F_star = [[] for _ in range(K)]
+    R_star = [[] for _ in range(K)]
+    B_used_star = [[] for _ in range(K)]
+    B_kl_star = [[] for _ in range(K)]
+    target_bits_star = [[] for _ in range(K)]
+    unserved_bits_star = [[] for _ in range(K)]
+    skipped_blocks_per_user = [0 for _ in range(K)]
+    norm_stats = []
+    all_user_block_results = [[] for _ in range(K)]
+
+    lambda_rate_0 = float(sim_cfg["initial_lambda_rate_constraint"])
+    lambda_power_0 = float(sim_cfg["initial_lambda_power_constraint"])
+    user_precoder_models: list[nn.Module] = []
+
+    for k in range(K):
+        print(f"\n================ FIXED-TARGET TRAIN USER {k} ================")
+
+        while len(uplinksystem.H[k]) < num_blocks:
+            uplinksystem.add_block(k)
+
+        H_user = np.array(uplinksystem.H[k], dtype=np.complex64)
+        mean = np.mean(H_user)
+        var = np.mean(np.abs(H_user - mean) ** 2) + 1e-12
+        norm_stats.append((mean, var))
+        if channel_norm:
+            uplinksystem.H[k] = list((H_user - mean) / np.sqrt(var))
+
+        user_model = build_user_precoder_net_with_sigma_context(
+            Nr=int(uplinksystem.NR[k]),
+            Nt=int(uplinksystem.NT[k]),
+            dk=int(uplinksystem.dk[k]),
+            device=DEVICE,
+        )
+        user_optimizer = torch.optim.Adam(user_model.parameters(), lr=float(sim_cfg["lr_net"]))
+        user_precoder_models.append(user_model)
+
+        lambda_rate_user = float(lambda_rate_0)
+        lambda_power_user = float(lambda_power_0)
+
+        for ell in range(num_blocks):
+            while len(uplinksystem.H[k]) <= ell:
+                uplinksystem.add_block(k)
+
+            target_bits = int(block_targets[k, ell])
+            print(f"\n--- FIXED-TARGET User {k}, Block {ell}, target_bits={target_bits} ---")
+            S, B_used = optimize_subblocklength_precoder(
+                uplinksystem=uplinksystem,
+                user=k,
+                block=ell,
+                B_rem=int(target_bits),
+                lambda_rate_0=lambda_rate_user,
+                lambda_power_0=lambda_power_user,
+                sim_cfg=sim_cfg,
+                precoder_net=user_model,
+                optimizer=user_optimizer,
+                interference_F_snapshot=interference_F_snapshot,
+                bit_budget_role="fixed_block_targets",
+            )
+
+            target_bits_star[k].append(int(target_bits))
+
+            if len(S) == 0:
+                H_kl = np.asarray(uplinksystem.H[k][ell], dtype=np.complex64)
+                F_zero = np.zeros((int(uplinksystem.NT[k]), int(uplinksystem.dk[k])), dtype=np.complex64)
+                zero_result = {
+                    "n_kl": int(uplinksystem.T[k]),
+                    "n": int(uplinksystem.T[k]),
+                    "B_l": 0,
+                    "Bits per sub-block length B/n_kl": 0.0,
+                    "F": torch.tensor(F_zero, dtype=torch.complex64),
+                    "R_fbl": 0.0,
+                    "F_power": 0.0,
+                    "lambda_rate": float(lambda_rate_user),
+                    "lambda_power": float(lambda_power_user),
+                    "loss_curve": [],
+                    "target_bits": int(target_bits),
+                    "unserved_bits": int(target_bits),
+                    "skipped": True,
+                }
+                S = [zero_result]
+                B_used = 0
+                skipped_blocks_per_user[k] += 1
+
+            all_user_block_results[k].append(S)
+            best = S[-1]
+            n_opt = int(best["n_kl"])
+            F_opt = best["F"]
+            R_opt = float(best["R_fbl"])
+            unserved_bits = max(0, int(target_bits) - int(B_used))
+
+            n_star[k].append(int(n_opt))
+            F_star[k].append(F_opt)
+            R_star[k].append(float(R_opt))
+            B_used_star[k].append(int(B_used))
+            B_kl_star[k].append(int(B_used))
+            unserved_bits_star[k].append(int(unserved_bits))
+            if int(B_used) <= 0 and len(S) > 0 and not bool(S[-1].get("skipped", False)):
+                skipped_blocks_per_user[k] += 1
+
+            if commit_live_precoders:
+                uplinksystem.F[k][ell] = F_opt.detach().cpu().numpy()
+
+            print(
+                f">>> Fixed-target choice: n_kl={n_opt}, served_bits={int(B_used)}, "
+                f"unserved_bits={int(unserved_bits)}"
+            )
+
+        uplinksystem.L[k] = int(num_blocks)
+        uplinksystem.n_kl[k] = list(map(int, n_star[k]))
 
     post_training_data_dict = {
         "L_out": L_out,
@@ -575,9 +789,19 @@ def dynamic_subblocklength_precoder_training(
         "all_user_block_results_train": all_user_block_results,
         "B_used_star": B_used_star,
         "B_kl_star": B_kl_star,
-        "user_model_specs": export_user_model_specs(uplinksystem.NR, uplinksystem.NT, uplinksystem.dk),
+        "target_bits_star": target_bits_star,
+        "unserved_bits_star": unserved_bits_star,
+        "skipped_blocks_per_user": [int(v) for v in skipped_blocks_per_user],
+        "scenario_mode": FIXED_BLOCK_TARGETS_MODE,
+        "scenario_block_targets": block_targets.tolist(),
+        "user_model_specs": export_user_model_specs(
+            uplinksystem.NR,
+            uplinksystem.NT,
+            uplinksystem.dk,
+            input_mode="channel_sigma_epsilon",
+        ),
         "user_model_states": export_user_model_states(user_precoder_models),
-        "precoder_parameterization": "shared_user_channel_to_precoder_mlp",
+        "precoder_parameterization": "shared_user_channel_sigma_epsilon_to_precoder_mlp",
     }
     return post_training_data_dict
 
@@ -603,9 +827,11 @@ def _build_precoder_snapshot_from_models(
         user_blocks: list[np.ndarray] = []
         for l in range(len(uplinksystem.H[k])):
             user_blocks.append(
-                infer_precoder_numpy(
+                infer_precoder_numpy_with_sigma_context(
                     user_models[k],
                     np.asarray(uplinksystem.H[k][l], dtype=np.complex64),
+                    sigma2=float(uplinksystem.sigma2[k]),
+                    epsilon=float(uplinksystem.epsilon[k]),
                     Nt=int(uplinksystem.NT[k]),
                     dk=int(uplinksystem.dk[k]),
                     P=float(uplinksystem.P[k]),
@@ -720,8 +946,12 @@ def dynamic_subblocklength_precoder_testing(
                 shared_snapshot = _build_precoder_snapshot_from_models(uplinksystem, user_models)
                 F_fix = np.asarray(shared_snapshot[k][ell], dtype=np.complex64)
                 F_fix_t = torch.tensor(F_fix, dtype=torch.complex64)
-                noise_plus_interference_cov = uplinksystem.get_interference_plus_noise_covariance(
-                    k, ell, F_override=shared_snapshot
+                noise_plus_interference_cov = build_uplink_rate_covariance(
+                    uplinksystem,
+                    sim_cfg,
+                    k,
+                    ell,
+                    F_override=shared_snapshot,
                 )
             else:
                 # ---- fallback for older saved training artifacts ----
@@ -736,8 +966,12 @@ def dynamic_subblocklength_precoder_testing(
 
                 F_fix = F_fix_t.detach().cpu().numpy().astype(np.complex64)
                 F_fix = _project_power_np(F_fix, P)
-                noise_plus_interference_cov = uplinksystem.get_interference_plus_noise_covariance(
-                    k, ell, F_override=F_star_train
+                noise_plus_interference_cov = build_uplink_rate_covariance(
+                    uplinksystem,
+                    sim_cfg,
+                    k,
+                    ell,
+                    F_override=F_star_train,
                 )
 
             print(f"\n--- TEST User {k}, Block {ell}, B_rem={B_rem} ---")
@@ -885,7 +1119,7 @@ def dynamic_subblocklength_precoder_testing(
         "user_model_states": user_model_states,
         "precoder_parameterization": post_training_data_dict.get(
             "precoder_parameterization",
-            "per_block_precoders" if user_models is None else "shared_user_channel_to_precoder_mlp",
+            "per_block_precoders" if user_models is None else "shared_user_channel_sigma_epsilon_to_precoder_mlp",
         ),
     }
     return test_data_dict

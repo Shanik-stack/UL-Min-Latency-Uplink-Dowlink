@@ -1,0 +1,61 @@
+{
+    "seed_scenarios": [
+        {
+            "mode": "payload_completion",
+            "seed": 0,
+            "termination_rule": "until_payload_drained",
+            "skip_infeasible_blocks": true,
+            "skip_block_adds_full_T_latency": true,
+            "track_skipped_blocks": true,
+            "per_user_total_target_bits": [
+                400,
+                400,
+                400
+            ],
+            "total_target_bits": 1200,
+            "payload_bits_per_user": [
+                400,
+                400,
+                400
+            ]
+        },
+        {
+            "mode": "payload_completion",
+            "seed": 1,
+            "termination_rule": "until_payload_drained",
+            "skip_infeasible_blocks": true,
+            "skip_block_adds_full_T_latency": true,
+            "track_skipped_blocks": true,
+            "per_user_total_target_bits": [
+                400,
+                400,
+                400
+            ],
+            "total_target_bits": 1200,
+            "payload_bits_per_user": [
+                400,
+                400,
+                400
+            ]
+        },
+        {
+            "mode": "payload_completion",
+            "seed": 2,
+            "termination_rule": "until_payload_drained",
+            "skip_infeasible_blocks": true,
+            "skip_block_adds_full_T_latency": true,
+            "track_skipped_blocks": true,
+            "per_user_total_target_bits": [
+                400,
+                400,
+                400
+            ],
+            "total_target_bits": 1200,
+            "payload_bits_per_user": [
+                400,
+                400,
+                400
+            ]
+        }
+    ]
+}

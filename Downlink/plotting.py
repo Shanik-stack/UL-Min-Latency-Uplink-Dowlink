@@ -139,25 +139,50 @@ def _collect_final_interference_diagnostics(system: DownlinkSystem) -> dict[str,
     }
 
 
-def _imshow_with_labels(ax: plt.Axes, matrix: np.ndarray, title: str, cbar_label: str, cmap: str = "viridis", center_zero: bool = False) -> None:
+def _imshow_with_labels(
+    ax: plt.Axes,
+    matrix: np.ndarray,
+    title: str,
+    cbar_label: str,
+    cmap: str = "viridis",
+    center_zero: bool = False,
+    vmin: float | None = None,
+    vmax: float | None = None,
+) -> None:
     mat = np.asarray(matrix, dtype=float)
     if center_zero:
         finite = mat[np.isfinite(mat)]
         if finite.size > 0:
-            vmax = max(abs(float(np.nanmin(finite))), abs(float(np.nanmax(finite))), 1e-12)
-            norm = TwoSlopeNorm(vmin=-vmax, vcenter=0.0, vmax=vmax)
+            bound = max(abs(float(np.nanmin(finite))), abs(float(np.nanmax(finite))), 1e-12)
+            norm = TwoSlopeNorm(vmin=-bound, vcenter=0.0, vmax=bound)
         else:
             norm = None
     else:
         norm = None
     masked = np.ma.masked_invalid(mat)
-    im = ax.imshow(masked, aspect="auto", interpolation="none", cmap=cmap, norm=norm)
+    if norm is None:
+        im = ax.imshow(masked, aspect="auto", interpolation="none", cmap=cmap, vmin=vmin, vmax=vmax)
+    else:
+        im = ax.imshow(masked, aspect="auto", interpolation="none", cmap=cmap, norm=norm)
     ax.set_title(title)
     ax.set_xlabel("Interferer user")
     ax.set_ylabel("Victim user")
     ax.set_xticks(np.arange(mat.shape[1]))
     ax.set_yticks(np.arange(mat.shape[0]))
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label=cbar_label)
+
+
+def _combined_finite_limits(*matrices: np.ndarray) -> tuple[float | None, float | None]:
+    finite_parts: list[np.ndarray] = []
+    for matrix in matrices:
+        arr = np.asarray(matrix, dtype=float)
+        finite = arr[np.isfinite(arr)]
+        if finite.size > 0:
+            finite_parts.append(finite.reshape(-1))
+    if not finite_parts:
+        return None, None
+    stacked = np.concatenate(finite_parts)
+    return float(np.min(stacked)), float(np.max(stacked))
 
 
 def plot_user_config(system_params: dict[str, Any], figs_dir: str) -> None:
@@ -473,11 +498,14 @@ def plot_optimization_history(result: dict[str, Any], figs_dir: str) -> None:
     if len(outer_history) > 0:
         block_ids = np.asarray([row["block"] for row in outer_history], dtype=int)
         allocated_bits = np.asarray([row["allocated_bits"] for row in outer_history], dtype=float)
-        remaining_bits = np.asarray([row["remaining_bits"] for row in outer_history], dtype=float)
+        uses_fixed_block_targets = str(result.get("scenario_mode", "")) == "fixed_block_targets"
+        remaining_key = "future_target_bits" if uses_fixed_block_targets else "remaining_bits"
+        remaining_label = "Future target bits" if uses_fixed_block_targets else "Remaining bits"
+        remaining_bits = np.asarray([row.get(remaining_key, row.get("remaining_bits", 0.0)) for row in outer_history], dtype=float)
 
-        axes[2].bar(block_ids - 0.2, allocated_bits, width=0.4, label="Allocated bits")
-        axes[2].plot(block_ids + 0.2, remaining_bits, marker="o", label="Remaining bits")
-        axes[2].set_title("Per-block allocation progress")
+        axes[2].bar(block_ids - 0.2, allocated_bits, width=0.4, label="Served bits")
+        axes[2].plot(block_ids + 0.2, remaining_bits, marker="o", label=remaining_label)
+        axes[2].set_title("Per-block bit allocation")
         axes[2].set_xlabel("Block index")
         axes[2].set_ylabel("Bits")
         axes[2].grid(True, alpha=0.3)
@@ -529,10 +557,26 @@ def plot_interference_before_after_heatmaps(result: dict[str, Any], figs_dir: st
     initial_inr_db = np.asarray(initial_diag["avg_pairwise_inr_db"], dtype=float)
     final_inr_db = np.asarray(final_diag["avg_pairwise_inr_db"], dtype=float)
     delta_inr_db = final_inr_db - initial_inr_db
+    power_vmin, power_vmax = _combined_finite_limits(initial_power_db, final_power_db)
+    inr_vmin, inr_vmax = _combined_finite_limits(initial_inr_db, final_inr_db)
 
     fig, axes = plt.subplots(2, 3, figsize=(18, 11))
-    _imshow_with_labels(axes[0, 0], initial_power_db, "Avg interference power before optimization", "dB")
-    _imshow_with_labels(axes[0, 1], final_power_db, "Avg interference power after optimization", "dB")
+    _imshow_with_labels(
+        axes[0, 0],
+        initial_power_db,
+        "Avg interference power before optimization",
+        "dB",
+        vmin=power_vmin,
+        vmax=power_vmax,
+    )
+    _imshow_with_labels(
+        axes[0, 1],
+        final_power_db,
+        "Avg interference power after optimization",
+        "dB",
+        vmin=power_vmin,
+        vmax=power_vmax,
+    )
     _imshow_with_labels(
         axes[0, 2],
         delta_power_db,
@@ -541,8 +585,22 @@ def plot_interference_before_after_heatmaps(result: dict[str, Any], figs_dir: st
         cmap="RdBu_r",
         center_zero=True,
     )
-    _imshow_with_labels(axes[1, 0], initial_inr_db, "Avg INR before optimization", "INR (dB)")
-    _imshow_with_labels(axes[1, 1], final_inr_db, "Avg INR after optimization", "INR (dB)")
+    _imshow_with_labels(
+        axes[1, 0],
+        initial_inr_db,
+        "Avg INR before optimization",
+        "INR (dB)",
+        vmin=inr_vmin,
+        vmax=inr_vmax,
+    )
+    _imshow_with_labels(
+        axes[1, 1],
+        final_inr_db,
+        "Avg INR after optimization",
+        "INR (dB)",
+        vmin=inr_vmin,
+        vmax=inr_vmax,
+    )
     _imshow_with_labels(
         axes[1, 2],
         delta_inr_db,

@@ -66,6 +66,53 @@ class ChannelToPrecoderNet(nn.Module):
         return self.net(x)
 
 
+class ChannelAndSigmaToPrecoderNet(nn.Module):
+    """
+    One user-specific model theta_k maps one channel block together with the
+    user's own noise level to one precoder F_{k,l}.
+    """
+
+    def __init__(self, Nr: int, Nt: int, dk: int):
+        super().__init__()
+        self.Nr = int(Nr)
+        self.Nt = int(Nt)
+        self.dk = int(dk)
+
+        in_dim = 2 * self.Nr * self.Nt + 2
+        out_dim = 2 * self.Nt * self.dk
+
+        h1 = max(256, 8 * out_dim)
+        h2 = max(128, 4 * out_dim)
+        h3 = max(64, 2 * out_dim)
+
+        self.net = nn.Sequential(
+            nn.Linear(in_dim, h1),
+            nn.ReLU(),
+            nn.Linear(h1, h2),
+            nn.ReLU(),
+            nn.Linear(h2, h3),
+            nn.ReLU(),
+            nn.Linear(h3, out_dim),
+        )
+
+    def forward(
+        self,
+        H_kl: torch.Tensor,
+        sigma2: float,
+        epsilon: float,
+    ) -> torch.Tensor:
+        H_flat = H_kl.reshape(1, -1)
+        x_h = torch.cat([H_flat.real, H_flat.imag], dim=1)
+        sigma_safe = max(float(sigma2), 1e-12)
+        x_meta = torch.tensor(
+            [[np.log(sigma_safe), float(epsilon)]],
+            dtype=x_h.dtype,
+            device=H_kl.device,
+        )
+        x = torch.cat([x_h, x_meta], dim=1)
+        return self.net(x)
+
+
 class ChannelAndInterferenceToPrecoderNet(nn.Module):
     """
     One user-specific model theta_k maps one channel block together with one
@@ -164,8 +211,67 @@ class ChannelAndBlocklengthToPrecoderNet(nn.Module):
         return self.net(x)
 
 
+class ChannelAndBlocklengthAndSigmaToPrecoderNet(nn.Module):
+    """
+    One user-specific model theta_k maps one channel block, one candidate
+    sub-blocklength, and the user's own noise level to one precoder F_{k,l}(n).
+    """
+
+    def __init__(self, Nr: int, Nt: int, dk: int):
+        super().__init__()
+        self.Nr = int(Nr)
+        self.Nt = int(Nt)
+        self.dk = int(dk)
+
+        in_dim = 2 * self.Nr * self.Nt + 3
+        out_dim = 2 * self.Nt * self.dk
+
+        h1 = max(256, 8 * out_dim)
+        h2 = max(128, 4 * out_dim)
+        h3 = max(64, 2 * out_dim)
+
+        self.net = nn.Sequential(
+            nn.Linear(in_dim, h1),
+            nn.ReLU(),
+            nn.Linear(h1, h2),
+            nn.ReLU(),
+            nn.Linear(h2, h3),
+            nn.ReLU(),
+            nn.Linear(h3, out_dim),
+        )
+
+    def forward(
+        self,
+        H_kl: torch.Tensor,
+        n_kl: int | float,
+        sigma2: float,
+        epsilon: float,
+    ) -> torch.Tensor:
+        H_flat = H_kl.reshape(1, -1)
+        x_h = torch.cat([H_flat.real, H_flat.imag], dim=1)
+        n_safe = max(float(n_kl), 1.0)
+        sigma_safe = max(float(sigma2), 1e-12)
+        x_meta = torch.tensor(
+            [[np.log1p(n_safe), np.log(sigma_safe), float(epsilon)]],
+            dtype=x_h.dtype,
+            device=H_kl.device,
+        )
+        x = torch.cat([x_h, x_meta], dim=1)
+        return self.net(x)
+
+
 def build_user_precoder_net(Nr: int, Nt: int, dk: int, *, device: torch.device = DEVICE) -> ChannelToPrecoderNet:
     return ChannelToPrecoderNet(Nr=Nr, Nt=Nt, dk=dk).to(device)
+
+
+def build_user_precoder_net_with_sigma_context(
+    Nr: int,
+    Nt: int,
+    dk: int,
+    *,
+    device: torch.device = DEVICE,
+) -> ChannelAndSigmaToPrecoderNet:
+    return ChannelAndSigmaToPrecoderNet(Nr=Nr, Nt=Nt, dk=dk).to(device)
 
 
 def build_user_precoder_net_with_interference_context(
@@ -188,6 +294,16 @@ def build_user_precoder_net_with_blocklength(
     return ChannelAndBlocklengthToPrecoderNet(Nr=Nr, Nt=Nt, dk=dk).to(device)
 
 
+def build_user_precoder_net_with_blocklength_and_sigma(
+    Nr: int,
+    Nt: int,
+    dk: int,
+    *,
+    device: torch.device = DEVICE,
+) -> ChannelAndBlocklengthAndSigmaToPrecoderNet:
+    return ChannelAndBlocklengthAndSigmaToPrecoderNet(Nr=Nr, Nt=Nt, dk=dk).to(device)
+
+
 def infer_precoder_torch(
     model: nn.Module,
     H_kl: torch.Tensor,
@@ -196,6 +312,20 @@ def infer_precoder_torch(
     P: float,
 ) -> torch.Tensor:
     F_out = model(H_kl)
+    Fmat = net_output_to_precoder(F_out, Nt, dk)
+    return project_precoder_power(Fmat, P)
+
+
+def infer_precoder_torch_with_sigma_context(
+    model: nn.Module,
+    H_kl: torch.Tensor,
+    sigma2: float,
+    epsilon: float,
+    Nt: int,
+    dk: int,
+    P: float,
+) -> torch.Tensor:
+    F_out = model(H_kl, float(sigma2), float(epsilon))
     Fmat = net_output_to_precoder(F_out, Nt, dk)
     return project_precoder_power(Fmat, P)
 
@@ -229,6 +359,21 @@ def infer_precoder_torch_with_blocklength(
     return project_precoder_power(Fmat, P)
 
 
+def infer_precoder_torch_with_blocklength_and_sigma(
+    model: nn.Module,
+    H_kl: torch.Tensor,
+    n_kl: int,
+    sigma2: float,
+    epsilon: float,
+    Nt: int,
+    dk: int,
+    P: float,
+) -> torch.Tensor:
+    F_out = model(H_kl, int(n_kl), float(sigma2), float(epsilon))
+    Fmat = net_output_to_precoder(F_out, Nt, dk)
+    return project_precoder_power(Fmat, P)
+
+
 def infer_precoder_numpy(
     model: nn.Module,
     H_kl: np.ndarray,
@@ -241,6 +386,31 @@ def infer_precoder_numpy(
     with torch.no_grad():
         H_t = torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
         F_t = infer_precoder_torch(model, H_t, Nt, dk, P)
+    return F_t.detach().cpu().numpy().astype(np.complex128)
+
+
+def infer_precoder_numpy_with_sigma_context(
+    model: nn.Module,
+    H_kl: np.ndarray,
+    sigma2: float,
+    epsilon: float,
+    Nt: int,
+    dk: int,
+    P: float,
+    *,
+    device: torch.device = DEVICE,
+) -> np.ndarray:
+    with torch.no_grad():
+        H_t = torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+        F_t = infer_precoder_torch_with_sigma_context(
+            model,
+            H_t,
+            float(sigma2),
+            float(epsilon),
+            Nt,
+            dk,
+            P,
+        )
     return F_t.detach().cpu().numpy().astype(np.complex128)
 
 
@@ -289,6 +459,33 @@ def infer_precoder_numpy_with_blocklength(
     return F_t.detach().cpu().numpy().astype(np.complex128)
 
 
+def infer_precoder_numpy_with_blocklength_and_sigma(
+    model: nn.Module,
+    H_kl: np.ndarray,
+    n_kl: int,
+    sigma2: float,
+    epsilon: float,
+    Nt: int,
+    dk: int,
+    P: float,
+    *,
+    device: torch.device = DEVICE,
+) -> np.ndarray:
+    with torch.no_grad():
+        H_t = torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+        F_t = infer_precoder_torch_with_blocklength_and_sigma(
+            model,
+            H_t,
+            n_kl,
+            float(sigma2),
+            float(epsilon),
+            Nt,
+            dk,
+            P,
+        )
+    return F_t.detach().cpu().numpy().astype(np.complex128)
+
+
 def export_user_model_specs(
     NR: Sequence[int],
     NT: Sequence[int],
@@ -325,12 +522,26 @@ def load_user_precoder_models(
     model_states: Sequence[dict[str, Any]],
     *,
     device: torch.device = DEVICE,
-) -> list[ChannelToPrecoderNet]:
-    models: list[ChannelToPrecoderNet] = []
+) -> list[nn.Module]:
+    models: list[nn.Module] = []
     for spec, state in zip(model_specs, model_states):
         input_mode = str(spec.get("input_mode", "")).strip().lower()
-        if input_mode == "channel_noise_epsilon":
+        if input_mode == "channel_sigma_epsilon":
+            model = build_user_precoder_net_with_sigma_context(
+                spec["Nr"],
+                spec["Nt"],
+                spec["dk"],
+                device=device,
+            )
+        elif input_mode == "channel_noise_epsilon":
             model = build_user_precoder_net_with_interference_context(
+                spec["Nr"],
+                spec["Nt"],
+                spec["dk"],
+                device=device,
+            )
+        elif input_mode == "channel_sigma_epsilon_n":
+            model = build_user_precoder_net_with_blocklength_and_sigma(
                 spec["Nr"],
                 spec["Nt"],
                 spec["dk"],

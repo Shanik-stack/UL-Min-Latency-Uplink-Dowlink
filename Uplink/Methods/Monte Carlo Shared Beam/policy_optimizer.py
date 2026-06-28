@@ -24,12 +24,13 @@ from advanced_methods_common import (
 from config_loader import get_config
 from precoder_models import (
     DEVICE,
-    build_user_precoder_net_with_interference_context,
+    build_user_precoder_net_with_sigma_context,
     export_user_model_specs,
     export_user_model_states,
-    infer_precoder_numpy_with_interference_context,
-    infer_precoder_torch_with_interference_context,
+    infer_precoder_numpy_with_sigma_context,
+    infer_precoder_torch_with_sigma_context,
 )
+from uplink_rate_model import build_uplink_rate_covariance
 
 
 def _q_inv_torch(epsilon: float, device: torch.device = DEVICE) -> torch.Tensor:
@@ -45,13 +46,17 @@ def _q_inv_torch(epsilon: float, device: torch.device = DEVICE) -> torch.Tensor:
 def _compute_r_fbl_torch(
     H: torch.Tensor,
     Fmat: torch.Tensor,
+    sigma2: float,
     epsilon: float,
     n_kl: int,
-    noise_plus_interference_cov: torch.Tensor,
+    noise_plus_interference_cov: torch.Tensor | None,
 ) -> torch.Tensor:
     Nr = H.shape[0]
     I = torch.eye(Nr, dtype=torch.complex64, device=H.device)
-    noise_cov = noise_plus_interference_cov.to(device=H.device, dtype=torch.complex64)
+    if noise_plus_interference_cov is None:
+        noise_cov = float(sigma2) * I
+    else:
+        noise_cov = noise_plus_interference_cov.to(device=H.device, dtype=torch.complex64)
     noise_cov = 0.5 * (noise_cov + noise_cov.conj().transpose(1, 0))
     noise_cov = noise_cov + (1e-6 * I)
 
@@ -78,7 +83,7 @@ def _compute_r_fbl_np(
     sigma2: float,
     epsilon: float,
     n_kl: int,
-    noise_plus_interference_cov: np.ndarray,
+    noise_plus_interference_cov: np.ndarray | None,
 ) -> float:
     from Optimizer_per_block import _compute_R_fbl_np
 
@@ -88,7 +93,11 @@ def _compute_r_fbl_np(
         sigma2=float(sigma2),
         epsilon=float(epsilon),
         n_kl=int(n_kl),
-        noise_plus_interference_cov=np.asarray(noise_plus_interference_cov, dtype=np.complex128),
+        noise_plus_interference_cov=(
+            None
+            if noise_plus_interference_cov is None
+            else np.asarray(noise_plus_interference_cov, dtype=np.complex128)
+        ),
     )
 
 
@@ -158,7 +167,12 @@ def build_training_dataset(
             max_blocks = min(int(blocks_per_seed), len(uplinksystem.H[k]))
             for block in range(max_blocks):
                 H_block = np.asarray(uplinksystem.H[k][int(block)], dtype=np.complex64)
-                noise_plus_interference_cov = uplinksystem.get_interference_plus_noise_covariance(k, int(block))
+                noise_plus_interference_cov = build_uplink_rate_covariance(
+                    uplinksystem,
+                    sim_cfg,
+                    k,
+                    int(block),
+                )
                 scenarios_by_user[k].append(
                     {
                         "seed": int(seed),
@@ -170,9 +184,13 @@ def build_training_dataset(
                         "P": float(uplinksystem.P[k]),
                         "sigma2": float(uplinksystem.sigma2[k]),
                         "epsilon": float(uplinksystem.epsilon[k]),
-                        "noise_plus_interference_cov": np.asarray(
-                            noise_plus_interference_cov,
-                            dtype=np.complex128,
+                        "noise_plus_interference_cov": (
+                            None
+                            if noise_plus_interference_cov is None
+                            else np.asarray(
+                                noise_plus_interference_cov,
+                                dtype=np.complex128,
+                            )
                         ),
                     }
                 )
@@ -286,12 +304,11 @@ def evaluate_shared_beam_precoder_net(
             epsilon = float(uplinksystem.epsilon[k])
 
             snapshot_full = copy.deepcopy(uplinksystem.F)
-            cov_input = uplinksystem.get_interference_plus_noise_covariance(k, ell, F_override=snapshot_full)
-            F_shared = infer_precoder_numpy_with_interference_context(
+            F_shared = infer_precoder_numpy_with_sigma_context(
                 user_models[k],
                 H_kl,
-                np.asarray(cov_input, dtype=np.complex128),
-                epsilon,
+                sigma2=float(sigma2),
+                epsilon=epsilon,
                 Nt=int(uplinksystem.NT[k]),
                 dk=int(uplinksystem.dk[k]),
                 P=P_user,
@@ -299,7 +316,13 @@ def evaluate_shared_beam_precoder_net(
             )
             snapshot_candidate = copy.deepcopy(snapshot_full)
             snapshot_candidate[k][ell] = F_shared
-            cov_shared = uplinksystem.get_interference_plus_noise_covariance(k, ell, F_override=snapshot_candidate)
+            cov_shared = build_uplink_rate_covariance(
+                uplinksystem,
+                sim_cfg,
+                k,
+                ell,
+                F_override=snapshot_candidate,
+            )
 
             B_try = int(B_rem)
             B_used = None
@@ -388,7 +411,7 @@ def evaluate_shared_beam_precoder_net(
         "final_n": [int(v) for v in uplinksystem.n],
         "final_served_bits_per_user": [int(sum(v)) for v in B_kl_star],
         "method_name": method_name,
-        "precoder_parameterization": "shared_user_channel_noise_epsilon_to_shared_beam_mlp",
+        "precoder_parameterization": "shared_user_channel_sigma_epsilon_to_shared_beam_mlp",
     }
 
 
@@ -467,7 +490,7 @@ def train_shared_beam_precoder_net(
     training_dataset_sizes = [int(len(scenarios)) for scenarios in scenarios_by_user]
 
     for k in range(K):
-        model = build_user_precoder_net_with_interference_context(
+        model = build_user_precoder_net_with_sigma_context(
             int(system_params["NR"][k]),
             int(system_params["NT"][k]),
             int(system_params["dk"][k]),
@@ -507,15 +530,19 @@ def train_shared_beam_precoder_net(
                 for idx in batch_idx:
                     scenario = scenarios[int(idx)]
                     H_t = torch.tensor(scenario["H"], dtype=torch.complex64, device=DEVICE)
-                    noise_cov_t = torch.tensor(
-                        scenario["noise_plus_interference_cov"],
-                        dtype=torch.complex64,
-                        device=DEVICE,
+                    noise_cov_t = (
+                        None
+                        if scenario.get("noise_plus_interference_cov") is None
+                        else torch.tensor(
+                            scenario["noise_plus_interference_cov"],
+                            dtype=torch.complex64,
+                            device=DEVICE,
+                        )
                     )
-                    pred_t = infer_precoder_torch_with_interference_context(
+                    pred_t = infer_precoder_torch_with_sigma_context(
                         model,
                         H_t,
-                        noise_cov_t,
+                        float(scenario["sigma2"]),
                         float(scenario["epsilon"]),
                         int(system_params["NT"][k]),
                         int(system_params["dk"][k]),
@@ -526,6 +553,7 @@ def train_shared_beam_precoder_net(
                         rate = _compute_r_fbl_torch(
                             H_t,
                             pred_t,
+                            sigma2=float(scenario["sigma2"]),
                             epsilon=float(scenario["epsilon"]),
                             n_kl=int(n_kl),
                             noise_plus_interference_cov=noise_cov_t,
@@ -598,14 +626,14 @@ def train_shared_beam_precoder_net(
             system_params["NT"],
             system_params["dk"],
             uses_blocklength_input=False,
-            input_mode="channel_noise_epsilon",
+            input_mode="channel_sigma_epsilon",
         ),
         "user_model_states": export_user_model_states(user_models),
         "training_dataset_sizes": training_dataset_sizes,
         "training_sample_counts_per_user": training_dataset_sizes,
         "training_dataset_summary": dataset_summary,
         "post_training_summary": post_training_summary,
-        "precoder_parameterization": "shared_user_channel_noise_epsilon_to_shared_beam_mlp",
+        "precoder_parameterization": "shared_user_channel_sigma_epsilon_to_shared_beam_mlp",
         "training_objective": "average_shared_beam_fbl_rate_over_candidate_n_grid",
         "precoder_net_training_history": training_history,
         "precoder_net_training_losses": [list(map(float, row)) for row in training_history["per_user_loss"]],

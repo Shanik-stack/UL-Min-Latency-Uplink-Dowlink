@@ -19,6 +19,13 @@ for path in (METHOD_DIR, LINK_ROOT, PROJECT_ROOT):
 from config_loader import load_config
 from determinism import configure_determinism
 from downlink_system import DownlinkSystem
+from experiment_scenarios import (
+    FIXED_BLOCK_TARGETS_MODE,
+    build_experiment_scenario,
+    build_experiment_scenario_summary,
+    build_experiment_scenario_summary_lines,
+    build_experiment_scenarios_for_seeds,
+)
 from experiment_utils import make_method_result_tag, parse_seed_list
 from experiment_runner import _compute_summary_metrics
 from policy_optimizer import (
@@ -47,22 +54,36 @@ from project_paths import build_downlink_result_dirs
 from utils import save_json, save_text
 
 
+def _build_seeded_scenario_collection_lines(
+    summaries: list[dict[str, object]],
+    *,
+    title: str,
+) -> list[str]:
+    lines = [title]
+    for idx, summary in enumerate(summaries):
+        if idx > 0:
+            lines.append("")
+        lines.extend(build_experiment_scenario_summary_lines(summary))
+    return lines
+
+
 def _build_dataset_summary_lines(dataset_summary: dict[str, object]) -> list[str]:
     return [
         "Downlink training dataset summary",
-        f"Total training cases: {int(dataset_summary.get('total_training_cases', 0))}",
-        f"Training cases by seed: {dataset_summary.get('training_cases_by_seed', {})}",
-        f"Training cases by block: {dataset_summary.get('training_cases_by_block', {})}",
-        f"Training cases by active user count: {dataset_summary.get('training_cases_by_active_user_count', {})}",
-        f"Training cases by active mask: {dataset_summary.get('training_cases_by_active_mask', {})}",
-        f"Active user-cases per user: {dataset_summary.get('active_user_cases_per_user', [])}",
-        f"Global active user-cases by initial n_kl: {dataset_summary.get('global_active_user_cases_by_initial_n_kl', {})}",
-        "Per-user active user-cases by initial n_kl:",
-        f"{dataset_summary.get('per_user_active_user_cases_by_initial_n_kl', [])}",
+        f"Total training channel episodes: {int(dataset_summary.get('total_channel_episodes', 0))}",
+        f"Training scenario modes: {dataset_summary.get('scenario_modes', [])}",
+        f"Training channel episodes by seed: {dataset_summary.get('channel_episodes_by_seed', {})}",
+        f"Training channel episodes by block: {dataset_summary.get('channel_episodes_by_block', {})}",
+        f"Training channel episodes by active user count: {dataset_summary.get('channel_episodes_by_active_user_count', {})}",
+        f"Training channel episodes by active mask: {dataset_summary.get('channel_episodes_by_active_mask', {})}",
+        f"Active-user channel episodes per user: {dataset_summary.get('channel_episodes_per_user', [])}",
+        f"Global active-user channel episodes by target bits: {dataset_summary.get('global_active_user_cases_by_target_bits', {})}",
+        "Per-user active-user channel episodes by target bits:",
+        f"{dataset_summary.get('per_user_active_user_cases_by_target_bits', [])}",
         "",
         "Terminology",
-        "- training case: one (seed, block, active-mask) item",
-        "- active user-case: one active user inside one training case",
+        "- channel episode: one (seed, block) block realization stored in the base dataset",
+        "- active-user channel episode: one active user inside one stored channel episode",
     ]
 
 
@@ -70,7 +91,8 @@ def _build_post_training_summary_lines(post_training_summary: dict[str, object])
     return [
         "Downlink post-training summary",
         f"Epochs requested: {int(post_training_summary.get('epochs_requested', 0))}",
-        f"Train minimum required bits per active user-case: {int(post_training_summary.get('train_min_bits_required', 1))}",
+        f"Train target-bits mode: {post_training_summary.get('train_target_bits_mode', 'unknown')}",
+        f"Train target bits summary: {post_training_summary.get('train_target_bits_summary', {})}",
         f"Final avg sum rate: {float(post_training_summary.get('final_avg_sum_rate', 0.0)):.6f}",
         f"Best avg sum rate: {float(post_training_summary.get('best_avg_sum_rate', 0.0)):.6f}",
         f"Final avg user rate: {float(post_training_summary.get('final_avg_user_rate', 0.0)):.6f}",
@@ -82,28 +104,29 @@ def _build_post_training_summary_lines(post_training_summary: dict[str, object])
         f"Final avg power violation: {float(post_training_summary.get('final_avg_power_violation', 0.0)):.6f}",
         f"Best avg power violation: {float(post_training_summary.get('best_avg_power_violation', 0.0)):.6f}",
         (
-            "Final feasible training-case fraction: "
-            f"{float(post_training_summary.get('final_feasible_training_case_fraction', 0.0)):.6f}"
+            "Final feasible rollout-query fraction: "
+            f"{float(post_training_summary.get('final_feasible_rollout_query_fraction', 0.0)):.6f}"
         ),
-        f"Total curriculum reduction events: {int(post_training_summary.get('total_curriculum_reduction_events', 0))}",
         f"Per-user final lagrangian: {post_training_summary.get('per_user_final_lagrangian', [])}",
         f"Per-user best lagrangian: {post_training_summary.get('per_user_best_lagrangian', [])}",
         f"Per-user final rate: {post_training_summary.get('per_user_final_rate', [])}",
         f"Per-user final rate violation: {post_training_summary.get('per_user_final_rate_violation', [])}",
         f"Per-user final power violation: {post_training_summary.get('per_user_final_power_violation', [])}",
-        "Global active user-case uses by n_kl over all epochs:",
-        f"{post_training_summary.get('cumulative_training_uses_by_n_kl', {}).get('global_active_user_case_uses_by_n_kl_over_all_epochs', {})}",
-        "Per-user active user-case uses by n_kl over all epochs:",
-        f"{post_training_summary.get('cumulative_training_uses_by_n_kl', {}).get('per_user_active_user_case_uses_by_n_kl_over_all_epochs', [])}",
-        "Global active user-cases by final n_kl:",
-        f"{post_training_summary.get('final_training_case_n_kl_summary', {}).get('global_active_user_cases_by_final_n_kl', {})}",
-        "Per-user active user-cases by final n_kl:",
-        f"{post_training_summary.get('final_training_case_n_kl_summary', {}).get('per_user_active_user_cases_by_final_n_kl', [])}",
+        "Global active-user rollout queries by n_kl over all epochs:",
+        f"{post_training_summary.get('cumulative_rollout_queries_by_n_kl', {}).get('global_active_user_rollout_queries_by_n_kl_over_all_epochs', {})}",
+        "Per-user active-user rollout queries by n_kl over all epochs:",
+        f"{post_training_summary.get('cumulative_rollout_queries_by_n_kl', {}).get('per_user_active_user_rollout_queries_by_n_kl_over_all_epochs', [])}",
+        "Global active-user frontier rollout queries by n_kl over all epochs:",
+        f"{post_training_summary.get('cumulative_frontier_rollout_queries_by_n_kl', {}).get('global_active_user_frontier_rollout_queries_by_n_kl_over_all_epochs', {})}",
+        "Per-user active-user frontier rollout queries by n_kl over all epochs:",
+        f"{post_training_summary.get('cumulative_frontier_rollout_queries_by_n_kl', {}).get('per_user_active_user_frontier_rollout_queries_by_n_kl_over_all_epochs', [])}",
+        "Final epoch rollout query summary:",
+        f"{post_training_summary.get('final_epoch_rollout_query_summary', {})}",
         "",
         "Terminology",
-        "- training case: one (seed, block, active-mask) item",
-        "- active user-case: one active user inside one training case",
-        "- training use: one active user-case consumed once in one epoch at its current n_kl",
+        "- channel episode: one (seed, block) block realization stored in the base dataset",
+        "- active-user channel episode: one active user inside one stored channel episode",
+        "- rollout query: one visited joint (episode, n_targets) state generated online from the current precoder nets",
     ]
 
 
@@ -119,8 +142,9 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
         f"Config: {cfg_path}",
         f"Test seed: {int(test_seed)}",
         f"Train seeds: {result.get('train_seeds', [])}",
-        f"Training active user-cases per user: {result.get('training_active_user_case_counts_per_user', result.get('training_dataset_sizes', []))}",
-        f"Training dataset total cases: {int(dataset_summary.get('total_training_cases', 0)) if isinstance(dataset_summary, dict) else 0}",
+        f"Experiment scenario mode: {result.get('experiment_scenario_mode', 'unknown')}",
+        f"Training channel-episode counts per user: {result.get('training_channel_episode_counts_per_user', result.get('training_active_user_case_counts_per_user', result.get('training_dataset_sizes', [])))}",
+        f"Training dataset total channel episodes: {int(dataset_summary.get('total_channel_episodes', 0)) if isinstance(dataset_summary, dict) else 0}",
         f"Objective mode: {result.get('objective_mode', 'unknown')}",
         f"Allocation mode: {result.get('allocation_mode', 'unknown')}",
         f"Weight strategy: {result.get('weight_strategy', 'n/a')}",
@@ -135,7 +159,16 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
         avg_user_rate_hist = training_history.get("avg_user_rate", [])
         lines.extend(
             [
-                f"Train minimum required bits per active user-case: {int(post_training_summary.get('train_min_bits_required', 1))}" if isinstance(post_training_summary, dict) else "Train minimum required bits per active user-case: 1",
+                (
+                    f"Train target-bits mode: {post_training_summary.get('train_target_bits_mode', 'unknown')}"
+                    if isinstance(post_training_summary, dict)
+                    else "Train target-bits mode: unknown"
+                ),
+                (
+                    f"Train target bits summary: {post_training_summary.get('train_target_bits_summary', {})}"
+                    if isinstance(post_training_summary, dict)
+                    else "Train target bits summary: {}"
+                ),
                 f"Final epoch avg sum rate: {float(sum_rate_hist[-1]):.6f}",
                 f"Final epoch avg user rate: {float(avg_user_rate_hist[-1]):.6f}" if avg_user_rate_hist else "Final epoch avg user rate: n/a",
                 f"Final epoch avg lagrangian: {float(training_history.get('avg_lagrangian', [])[-1]):.6f}" if training_history.get("avg_lagrangian") else "Final epoch avg lagrangian: n/a",
@@ -146,14 +179,14 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
                 f"Final epoch per-user rate violation: {training_history.get('avg_rate_violation', []) and [float(row[-1]) if len(row) > 0 else 0.0 for row in training_history.get('avg_rate_violation', [])]}",
                 f"Final epoch per-user power violation: {training_history.get('avg_power_violation', []) and [float(row[-1]) if len(row) > 0 else 0.0 for row in training_history.get('avg_power_violation', [])]}",
                 (
-                    f"Final feasible training-case fraction: "
-                    f"{float(post_training_summary.get('final_feasible_training_case_fraction', 0.0)):.6f}"
+                    f"Final feasible rollout-query fraction: "
+                    f"{float(post_training_summary.get('final_feasible_rollout_query_fraction', 0.0)):.6f}"
                     if isinstance(post_training_summary, dict)
-                    else "Final feasible training-case fraction: n/a"
+                    else "Final feasible rollout-query fraction: n/a"
                 ),
-                f"Global active user-case uses by n_kl over all epochs: {post_training_summary.get('cumulative_training_uses_by_n_kl', {}).get('global_active_user_case_uses_by_n_kl_over_all_epochs', {})}" if isinstance(post_training_summary, dict) else "Global active user-case uses by n_kl over all epochs: n/a",
-                f"Per-user active user-case uses by n_kl over all epochs: {post_training_summary.get('cumulative_training_uses_by_n_kl', {}).get('per_user_active_user_case_uses_by_n_kl_over_all_epochs', [])}" if isinstance(post_training_summary, dict) else "Per-user active user-case uses by n_kl over all epochs: n/a",
-                f"Per-user active user-cases by final n_kl: {post_training_summary.get('final_training_case_n_kl_summary', {}).get('per_user_active_user_cases_by_final_n_kl', [])}" if isinstance(post_training_summary, dict) else "Per-user active user-cases by final n_kl: n/a",
+                f"Global active-user rollout queries by n_kl over all epochs: {post_training_summary.get('cumulative_rollout_queries_by_n_kl', {}).get('global_active_user_rollout_queries_by_n_kl_over_all_epochs', {})}" if isinstance(post_training_summary, dict) else "Global active-user rollout queries by n_kl over all epochs: n/a",
+                f"Per-user active-user rollout queries by n_kl over all epochs: {post_training_summary.get('cumulative_rollout_queries_by_n_kl', {}).get('per_user_active_user_rollout_queries_by_n_kl_over_all_epochs', [])}" if isinstance(post_training_summary, dict) else "Per-user active-user rollout queries by n_kl over all epochs: n/a",
+                f"Per-user active-user frontier rollout queries by n_kl over all epochs: {post_training_summary.get('cumulative_frontier_rollout_queries_by_n_kl', {}).get('per_user_active_user_frontier_rollout_queries_by_n_kl_over_all_epochs', [])}" if isinstance(post_training_summary, dict) else "Per-user active-user frontier rollout queries by n_kl over all epochs: n/a",
                 "",
             ]
         )
@@ -185,22 +218,28 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
     ])
 
     for row in metrics["per_user_summary"]:
-        lines.append(
-            " | ".join(
+        parts = [
+            f"User {row['user']}",
+            f"init_lat={row['initial_latency']:.6f}",
+            f"final_lat={row['final_latency']:.6f}",
+            f"lat_red={row['latency_reduction_percent']:.4f}%",
+            f"init_sinr={row['initial_sinr_db']:.4f} dB",
+            f"final_sinr={row['final_sinr_db']:.4f} dB",
+            f"blocks={row['blocks']}",
+            f"total_n={row['total_n']}",
+            f"served_bits={row['served_bits']}",
+            f"skipped_blocks={row['skipped_blocks']}",
+        ]
+        if metrics.get("scenario_mode", "") == FIXED_BLOCK_TARGETS_MODE:
+            parts.extend(
                 [
-                    f"User {row['user']}",
-                    f"init_lat={row['initial_latency']:.6f}",
-                    f"final_lat={row['final_latency']:.6f}",
-                    f"lat_red={row['latency_reduction_percent']:.4f}%",
-                    f"init_sinr={row['initial_sinr_db']:.4f} dB",
-                    f"final_sinr={row['final_sinr_db']:.4f} dB",
-                    f"blocks={row['blocks']}",
-                    f"total_n={row['total_n']}",
-                    f"served_bits={row['served_bits']}",
-                    f"skipped_blocks={row['skipped_blocks']}",
+                    f"target_bits={row.get('target_bits', 0)}",
+                    f"unserved_bits={row.get('unserved_bits', 0)}",
+                    f"partial_blocks={row.get('partially_served_blocks', 0)}",
+                    f"zero_service_blocks={row.get('zero_service_blocks', 0)}",
                 ]
             )
-        )
+        lines.append(" | ".join(parts))
 
     if metrics["initial_asynchronality_pairs"]:
         lines.extend(["", "Per-pair asynchronality"])
@@ -219,9 +258,9 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
         [
             "",
             "Terminology",
-            "- training case: one (seed, block, active-mask) item",
-            "- active user-case: one active user inside one training case",
-            "- training use: one active user-case consumed once in one epoch at its current n_kl",
+            "- channel episode: one (seed, block) block realization stored in the base dataset",
+            "- active-user channel episode: one active user inside one stored channel episode",
+            "- rollout query: one visited joint (episode, n_targets) state generated online from the current precoder nets",
         ]
     )
 
@@ -244,6 +283,10 @@ def main() -> None:
     configure_determinism(train_seeds[0] if train_seeds else 0)
 
     system_params, sim_params, run_meta = load_config(args.cfg_name)
+    training_scenario_summaries = [
+        build_experiment_scenario_summary(scenario)
+        for scenario in build_experiment_scenarios_for_seeds(system_params, sim_params, train_seeds)
+    ]
     result_tag = make_method_result_tag("monte_carlo_precoder_net_train_test", run_meta["cfg_stem"], seed=args.test_seed)
     output_dirs = build_downlink_result_dirs("Monte Carlo", result_tag)
     output_root = output_dirs["experiment_root"]
@@ -266,7 +309,11 @@ def main() -> None:
     dataset_summary = precoder_net_training_history.get("dataset_summary", {})
     post_training_summary = precoder_net_training_history.get("post_training_summary", {})
 
+    configure_determinism(int(args.test_seed))
     test_system = DownlinkSystem(system_params, seed=int(args.test_seed))
+    test_scenario_summary = build_experiment_scenario_summary(
+        build_experiment_scenario(system_params, sim_params, seed=int(args.test_seed))
+    )
     result = evaluate_downlink_precoder_net(
         test_system,
         sim_params,
@@ -282,9 +329,12 @@ def main() -> None:
     result["sim_params"] = sim_params
     result["training_dataset_summary"] = dataset_summary
     result["post_training_summary"] = post_training_summary
+    result["experiment_scenario_mode"] = sim_params.get("experiment_scenario_mode", "payload_completion")
+    result["experiment_scenario"] = test_scenario_summary
+    result["training_experiment_scenarios"] = training_scenario_summaries
     result["training_objective"] = precoder_net_training_history.get(
         "training_objective",
-        "lagrangian_sum_finite_blocklength_rate_with_fixed_min_bits_objective",
+        "lagrangian_sum_finite_blocklength_rate_with_fixed_target_bits_objective",
     )
     result["summary_metrics"] = _compute_summary_metrics(result)
 
@@ -313,6 +363,8 @@ def main() -> None:
     )
     artifact["training_dataset_summary"] = dataset_summary
     artifact["post_training_summary"] = post_training_summary
+    artifact["experiment_scenario_mode"] = sim_params.get("experiment_scenario_mode", "payload_completion")
+    artifact["training_experiment_scenarios"] = training_scenario_summaries
     torch.save(artifact, os.path.join(output_dirs["train_data"], "train_artifact.pt"))
     save_json(dataset_summary, os.path.join(output_dirs["train_data"], "training_dataset_summary.json"))
     save_text(
@@ -324,10 +376,26 @@ def main() -> None:
         _build_post_training_summary_lines(post_training_summary),
         os.path.join(output_dirs["train_data"], "post_training_summary.txt"),
     )
+    save_json(
+        {"seed_scenarios": training_scenario_summaries},
+        os.path.join(output_dirs["train_data"], "experiment_scenarios.json"),
+    )
+    save_text(
+        _build_seeded_scenario_collection_lines(
+            training_scenario_summaries,
+            title="Training experiment scenarios by seed",
+        ),
+        os.path.join(output_dirs["train_data"], "experiment_scenarios.txt"),
+    )
     save_json(result, os.path.join(output_dirs["test_data"], "result.json"))
     save_text(
         _build_summary_lines(result, run_meta["cfg_path"], int(args.test_seed)),
         os.path.join(output_dirs["test_data"], "summary.txt"),
+    )
+    save_json(test_scenario_summary, os.path.join(output_dirs["test_data"], "experiment_scenario.json"))
+    save_text(
+        build_experiment_scenario_summary_lines(test_scenario_summary),
+        os.path.join(output_dirs["test_data"], "experiment_scenario.txt"),
     )
     print(f"Saved downlink precoder-net results to: {output_root}")
 

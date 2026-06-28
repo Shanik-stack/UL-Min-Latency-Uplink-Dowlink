@@ -16,8 +16,14 @@ for path in (METHOD_DIR, LINK_ROOT, PROJECT_ROOT):
         sys.path.insert(0, path_str)
 
 from UplinkSystem import UplinkSystem
-from advanced_methods_common import estimate_initial_random_precoder_schedule
 from config_loader import _resolve_config_path, get_config
+from experiment_determinism import configure_determinism
+from experiment_scenarios import (
+    build_experiment_scenario,
+    build_experiment_scenario_summary,
+    build_experiment_scenario_summary_lines,
+    build_experiment_scenarios_for_seeds,
+)
 from experiment_utils import make_method_result_tag, parse_seed_list, save_json, save_text
 from experiment_report import (
     build_post_training_summary_lines,
@@ -25,19 +31,40 @@ from experiment_report import (
     build_summary_lines,
     build_training_dataset_summary_lines,
 )
-from policy_optimizer import evaluate_blocklength_precoder_net, train_blocklength_aware_precoder_net
+from policy_optimizer import (
+    estimate_initial_random_precoder_schedule_for_scenario,
+    evaluate_blocklength_precoder_net,
+    train_blocklength_aware_precoder_net,
+)
 from plotting import (
     initialize_plot_globals,
     plot_F_vs_n_for_all_subblocks,
+    plot_interference_before_after_heatmaps,
+    plot_interference_heatmaps,
     plot_optimization_result,
     plot_optimization_result_summary_dict,
     plot_latency_and_asynchronality_from_json,
     plot_link_quality_from_json,
+    plot_per_user_interference_before_after,
+    plot_per_user_interference_profiles,
     plot_user_config,
 )
 from precoder_models import load_user_precoder_models
 from project_paths import build_uplink_result_dirs
 from utils import save_test_results_to_txt
+
+
+def _build_seeded_scenario_collection_lines(
+    summaries: list[dict],
+    *,
+    title: str,
+) -> list[str]:
+    lines = [title]
+    for idx, summary in enumerate(summaries):
+        if idx > 0:
+            lines.append("")
+        lines.extend(build_experiment_scenario_summary_lines(summary))
+    return lines
 
 
 def _run_precoder_net_test(
@@ -49,15 +76,18 @@ def _run_precoder_net_test(
     result_dirs: dict[str, str],
     train_seeds: list[int],
 ):
+    configure_determinism(int(test_seed))
     system_params, sim_cfg = get_config(cfg_name)
-    initial_baseline = estimate_initial_random_precoder_schedule(
+    test_scenario = build_experiment_scenario(system_params, sim_cfg, seed=int(test_seed))
+    test_scenario_summary = build_experiment_scenario_summary(test_scenario)
+    initial_baseline = estimate_initial_random_precoder_schedule_for_scenario(
         system_params,
         sim_cfg,
         seed=int(test_seed),
     )
     test_uplinksystem = UplinkSystem(system_params, seed=int(test_seed))
-    _, initial_snr_db = test_uplinksystem.get_SNR()
-    _, initial_sinr_db = test_uplinksystem.get_SINR()
+    initial_snr_db = list(initial_baseline["initial_snr_db"])
+    initial_sinr_db = list(initial_baseline["initial_sinr_db"])
 
     plot_params = dict(system_params)
     plot_params["initial_bits_per_symbol"] = np.asarray(initial_baseline["initial_bits_per_symbol"], dtype=float)
@@ -99,6 +129,9 @@ def _run_precoder_net_test(
         "all_user_block_results_test": post_test["all_user_block_results_train"],
         "B_used_star_test": post_test["B_used_star"],
         "B_kl_star_test": post_test["B_kl_star"],
+        "skipped_blocks_per_user": post_test.get("skipped_blocks_per_user", []),
+        "scenario_mode": post_test.get("scenario_mode", ""),
+        "scenario_block_targets": post_test.get("scenario_block_targets", []),
         "precoder_parameterization": train_artifact["precoder_parameterization"],
         "user_model_specs": train_artifact["user_model_specs"],
         "user_model_states": train_artifact["user_model_states"],
@@ -155,9 +188,22 @@ def _run_precoder_net_test(
         initial_bits_per_symbol=initial_bits_per_symbol,
         initial_B_kl=initial_B_kl,
         initial_bits_per_symbol_by_block=initial_bits_per_symbol_by_block,
+        initial_interference_diag=initial_baseline.get("initial_interference_diag"),
     )
+    result["experiment_scenario_mode"] = sim_cfg.get("experiment_scenario_mode", "payload_completion")
+    result["experiment_scenario"] = test_scenario_summary
     save_json(result, os.path.join(result_dirs["test_data"], "result.json"))
+    if do_plots:
+        plot_interference_before_after_heatmaps(result, result_dirs["interference"])
+        plot_per_user_interference_before_after(result, result_dirs["interference"])
+        plot_interference_heatmaps(test_uplinksystem, result_dirs["interference"])
+        plot_per_user_interference_profiles(test_uplinksystem, result_dirs["interference"])
     save_text(build_summary_lines(result), os.path.join(result_dirs["test_data"], "summary.txt"))
+    save_json(test_scenario_summary, os.path.join(result_dirs["test_data"], "experiment_scenario.json"))
+    save_text(
+        build_experiment_scenario_summary_lines(test_scenario_summary),
+        os.path.join(result_dirs["test_data"], "experiment_scenario.txt"),
+    )
     return result
 
 
@@ -173,6 +219,12 @@ def main():
     args = parser.parse_args()
 
     train_seeds = parse_seed_list(args.train_seeds)
+    configure_determinism(train_seeds[0] if train_seeds else 0)
+    system_params, sim_cfg = get_config(args.cfg_name)
+    training_scenario_summaries = [
+        build_experiment_scenario_summary(scenario)
+        for scenario in build_experiment_scenarios_for_seeds(system_params, sim_cfg, train_seeds)
+    ]
     result_tag = make_method_result_tag("monte_carlo_precoder_net_train_test", args.cfg_name, seed=args.test_seed)
     result_dirs = build_uplink_result_dirs("Monte Carlo", result_tag)
     initialize_plot_globals(result_tag, result_dirs)
@@ -187,6 +239,8 @@ def main():
     train_artifact["cfg_path"] = _resolve_config_path(args.cfg_name)
     train_artifact["method_name"] = "monte_carlo_precoder_net_train_test"
     train_artifact["test_seed"] = int(args.test_seed)
+    train_artifact["experiment_scenario_mode"] = sim_cfg.get("experiment_scenario_mode", "payload_completion")
+    train_artifact["training_experiment_scenarios"] = training_scenario_summaries
 
     plot_optimization_result(train_artifact["all_user_block_results_train"], train=True)
     plot_optimization_result_summary_dict(train_artifact, train=True)
@@ -208,6 +262,17 @@ def main():
     save_text(
         build_post_training_summary_lines(train_artifact.get("post_training_summary", {})),
         os.path.join(result_dirs["train_data"], "post_training_summary.txt"),
+    )
+    save_json(
+        {"seed_scenarios": training_scenario_summaries},
+        os.path.join(result_dirs["train_data"], "experiment_scenarios.json"),
+    )
+    save_text(
+        _build_seeded_scenario_collection_lines(
+            training_scenario_summaries,
+            title="Training experiment scenarios by seed",
+        ),
+        os.path.join(result_dirs["train_data"], "experiment_scenarios.txt"),
     )
 
     if not args.skip_test:

@@ -1,0 +1,10 @@
+Experiment scenario summary
+Mode: payload_completion
+Seed: 3
+Termination rule: until_payload_drained
+Skip infeasible blocks: True
+Skip adds full-T latency: True
+Track skipped blocks: True
+Per-user total target bits: [400, 400, 400]
+Total target bits: 1200
+Payload bits per user: [400, 400, 400]

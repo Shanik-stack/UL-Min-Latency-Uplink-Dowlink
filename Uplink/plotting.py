@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.colors import TwoSlopeNorm
+
+from advanced_methods_common import collect_uplink_interference_diagnostics
 
 # ============================================================
 # Module-level plotting globals
@@ -67,6 +70,8 @@ def plot_optimization_result_summary_dict(
     post_training_data_dict,
     train=True,
     save_dir=None,
+    phase_label=None,
+    filename_prefix=None,
 ):
     """
     Uses module global experiment folders unless save_dir is explicitly given.
@@ -92,6 +97,9 @@ def plot_optimization_result_summary_dict(
             f"Length mismatch: len(n_star)={len(n_star)} but len(R_star)={len(R_star)}"
         )
 
+    title_prefix = phase_label or ("Training" if train else "Testing")
+    file_prefix = filename_prefix or ("training" if train else "testing")
+
     for user_idx in range(len(n_star)):
         L = len(n_star[user_idx])
         if L == 0:
@@ -112,7 +120,6 @@ def plot_optimization_result_summary_dict(
         ax2.plot(blocks, r_vals, marker="s", label="R_fbl")
         ax2.set_ylabel("Chosen R_fbl")
 
-        title_prefix = "Training" if train else "Testing"
         ax1.set_title(f"{title_prefix} Result – User {user_idx}")
 
         # combined legend
@@ -122,10 +129,9 @@ def plot_optimization_result_summary_dict(
 
         fig.tight_layout()
 
-        filename_prefix = "training" if train else "testing"
         save_path = os.path.join(
             save_dir,
-            f"{filename_prefix}_user{user_idx}_summary.png"
+            f"{file_prefix}_user{user_idx}_summary.png"
         )
 
         fig.savefig(save_path, dpi=300, bbox_inches="tight")
@@ -151,7 +157,8 @@ def to_numpy_safe(x):
 
 def plot_F_vs_n_for_all_subblocks(
     post_training_data_dict,
-    save_dir="F_vs_n"   # only subfolder name
+    save_dir="F_vs_n",   # only subfolder name
+    base_dir=None,
 ):
     """
     Uses global cfg paths (must call initialize_plot_globals first)
@@ -160,7 +167,10 @@ def plot_F_vs_n_for_all_subblocks(
     """
 
     # base train_result path
-    base_dir = _get_result_save_dir(train=True)
+    if base_dir is None:
+        base_dir = _get_result_save_dir(train=True)
+    else:
+        os.makedirs(base_dir, exist_ok=True)
 
     # append subfolder
     save_dir = os.path.join(base_dir, save_dir)
@@ -367,6 +377,8 @@ def plot_optimization_result(
     all_user_results,
     train=True,
     save_dir=None,
+    phase_label=None,
+    filename_prefix=None,
 ):
     """
     all_user_results[user][block] = list_of_dicts_over_n_kl
@@ -378,6 +390,8 @@ def plot_optimization_result(
       testing_optimization_user{u}_block{b}.png    if train=False
     """
     save_dir = _get_result_save_dir(train=train, save_dir=save_dir)
+    title_prefix = phase_label or ("Training" if train else "Testing")
+    file_prefix = filename_prefix or ("training" if train else "testing")
 
     for user_idx, user_result in enumerate(all_user_results):
         for block_idx, block_result in enumerate(user_result):
@@ -422,7 +436,6 @@ def plot_optimization_result(
             plt.xlabel("Blocklength n_kl")
             plt.ylabel("Rate (bits / symbol)")
 
-            title_prefix = "Training" if train else "Testing"
             plt.title(f"{title_prefix} Result – User {user_idx}, Block {block_idx}")
 
             plt.legend()
@@ -430,10 +443,9 @@ def plot_optimization_result(
             plt.gca().invert_xaxis()
             plt.tight_layout()
 
-            filename_prefix = "training" if train else "testing"
             save_path = os.path.join(
                 save_dir,
-                f"{filename_prefix}_optimization_user{user_idx}_block{block_idx}.png"
+                f"{file_prefix}_optimization_user{user_idx}_block{block_idx}.png"
             )
 
             fig.savefig(save_path, dpi=300, bbox_inches="tight")
@@ -1020,6 +1032,272 @@ def plot_2(uplinksystem):
     plot_capacity2(uplinksystem)
     plot_dispersion2(uplinksystem)
     plot_rate_fbl2(uplinksystem)
+
+
+def _safe_db(values):
+    arr = np.asarray(values, dtype=float)
+    out = 10.0 * np.log10(np.maximum(arr, 1e-30))
+    if np.isscalar(values):
+        return float(out)
+    return out
+
+
+def _load_interference_diag(payload):
+    if not payload:
+        return None
+    return {
+        "blocks_per_user": [int(v) for v in payload.get("blocks_per_user", [])],
+        "signal": np.asarray(payload.get("signal", []), dtype=float),
+        "total_interference": np.asarray(payload.get("total_interference", []), dtype=float),
+        "noise": np.asarray(payload.get("noise", []), dtype=float),
+        "sinr_db": np.asarray(payload.get("sinr_db", []), dtype=float),
+        "pairwise_block": np.asarray(payload.get("pairwise_block", []), dtype=float),
+        "avg_pairwise_power": np.asarray(payload.get("avg_pairwise_power", []), dtype=float),
+        "avg_pairwise_inr_db": np.asarray(payload.get("avg_pairwise_inr_db", []), dtype=float),
+        "avg_pairwise_share": np.asarray(payload.get("avg_pairwise_share", []), dtype=float),
+        "worst_block": int(payload.get("worst_block", -1)),
+    }
+
+
+def _combined_finite_limits(*matrices):
+    finite_parts = []
+    for matrix in matrices:
+        arr = np.asarray(matrix, dtype=float)
+        finite = arr[np.isfinite(arr)]
+        if finite.size > 0:
+            finite_parts.append(finite.reshape(-1))
+    if not finite_parts:
+        return None, None
+    stacked = np.concatenate(finite_parts)
+    return float(np.min(stacked)), float(np.max(stacked))
+
+
+def _imshow_with_shared_scale(ax, matrix, title, cbar_label, *, cmap="viridis", center_zero=False, vmin=None, vmax=None):
+    mat = np.asarray(matrix, dtype=float)
+    masked = np.ma.masked_invalid(mat)
+    norm = None
+    if center_zero:
+        finite = mat[np.isfinite(mat)]
+        if finite.size > 0:
+            bound = max(abs(float(np.min(finite))), abs(float(np.max(finite))), 1e-12)
+            norm = TwoSlopeNorm(vmin=-bound, vcenter=0.0, vmax=bound)
+    im = ax.imshow(masked, aspect="auto", interpolation="none", cmap=cmap, norm=norm, vmin=vmin, vmax=vmax)
+    ax.set_title(title)
+    ax.set_xlabel("Interferer user")
+    ax.set_ylabel("Victim user")
+    ax.set_xticks(np.arange(mat.shape[1]))
+    ax.set_yticks(np.arange(mat.shape[0]))
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label=cbar_label)
+
+
+def plot_interference_heatmaps(uplinksystem, figs_dir):
+    os.makedirs(figs_dir, exist_ok=True)
+    diag = collect_uplink_interference_diagnostics(uplinksystem)
+    avg_power_db = _safe_db(diag["avg_pairwise_power"])
+    avg_inr_db = np.asarray(diag["avg_pairwise_inr_db"], dtype=float)
+    share_pct = 100.0 * np.asarray(diag["avg_pairwise_share"], dtype=float)
+    worst_block = int(diag["worst_block"])
+    worst_block_mat = None
+    if worst_block >= 0:
+        worst_block_mat = _safe_db(np.asarray(diag["pairwise_block"][worst_block], dtype=float))
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 11))
+    _imshow_with_shared_scale(axes[0, 0], avg_power_db, "Average pairwise interference power", "dB")
+    _imshow_with_shared_scale(axes[0, 1], avg_inr_db, "Average interference-to-noise ratio", "INR (dB)")
+    _imshow_with_shared_scale(axes[1, 0], share_pct, "Average interference share", "% of victim interference")
+    if worst_block_mat is not None:
+        _imshow_with_shared_scale(
+            axes[1, 1],
+            worst_block_mat,
+            f"Worst block interference map (block {worst_block})",
+            "dB",
+        )
+    else:
+        axes[1, 1].set_visible(False)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(figs_dir, "interference_heatmaps.png"), dpi=250)
+    plt.close(fig)
+
+
+def plot_interference_before_after_heatmaps(result, figs_dir):
+    os.makedirs(figs_dir, exist_ok=True)
+    initial_diag = _load_interference_diag(result.get("initial_interference_diag"))
+    final_diag = _load_interference_diag(result.get("final_interference_diag"))
+    if initial_diag is None or final_diag is None:
+        return
+
+    initial_power_db = _safe_db(initial_diag["avg_pairwise_power"])
+    final_power_db = _safe_db(final_diag["avg_pairwise_power"])
+    delta_power_db = final_power_db - initial_power_db
+    initial_inr_db = np.asarray(initial_diag["avg_pairwise_inr_db"], dtype=float)
+    final_inr_db = np.asarray(final_diag["avg_pairwise_inr_db"], dtype=float)
+    delta_inr_db = final_inr_db - initial_inr_db
+    power_vmin, power_vmax = _combined_finite_limits(initial_power_db, final_power_db)
+    inr_vmin, inr_vmax = _combined_finite_limits(initial_inr_db, final_inr_db)
+
+    fig, axes = plt.subplots(2, 3, figsize=(18, 11))
+    _imshow_with_shared_scale(
+        axes[0, 0],
+        initial_power_db,
+        "Avg interference power before optimization",
+        "dB",
+        vmin=power_vmin,
+        vmax=power_vmax,
+    )
+    _imshow_with_shared_scale(
+        axes[0, 1],
+        final_power_db,
+        "Avg interference power after optimization",
+        "dB",
+        vmin=power_vmin,
+        vmax=power_vmax,
+    )
+    _imshow_with_shared_scale(
+        axes[0, 2],
+        delta_power_db,
+        "Interference power change (after - before)",
+        "dB",
+        cmap="RdBu_r",
+        center_zero=True,
+    )
+    _imshow_with_shared_scale(
+        axes[1, 0],
+        initial_inr_db,
+        "Avg INR before optimization",
+        "INR (dB)",
+        vmin=inr_vmin,
+        vmax=inr_vmax,
+    )
+    _imshow_with_shared_scale(
+        axes[1, 1],
+        final_inr_db,
+        "Avg INR after optimization",
+        "INR (dB)",
+        vmin=inr_vmin,
+        vmax=inr_vmax,
+    )
+    _imshow_with_shared_scale(
+        axes[1, 2],
+        delta_inr_db,
+        "INR change (after - before)",
+        "dB",
+        cmap="RdBu_r",
+        center_zero=True,
+    )
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(figs_dir, "interference_before_after_heatmaps.png"), dpi=250)
+    plt.close(fig)
+
+
+def plot_per_user_interference_profiles(uplinksystem, figs_dir):
+    os.makedirs(figs_dir, exist_ok=True)
+    diag = collect_uplink_interference_diagnostics(uplinksystem)
+    signal_db = _safe_db(diag["signal"])
+    interference_db = _safe_db(diag["total_interference"])
+    noise_db = _safe_db(diag["noise"])
+    sinr_db = np.asarray(diag["sinr_db"], dtype=float)
+    pairwise_block = np.asarray(diag["pairwise_block"], dtype=float)
+    K = int(uplinksystem.K)
+
+    fig, axes = plt.subplots(K, 2, figsize=(15, max(4 * K, 5)), squeeze=False)
+    for k in range(K):
+        blocks = np.arange(len(uplinksystem.n_kl[k]))
+        ax_left = axes[k, 0]
+        ax_left.plot(blocks, signal_db[k, : len(blocks)], "o-", label="Signal", color="tab:blue")
+        ax_left.plot(blocks, interference_db[k, : len(blocks)], "o-", label="Total interference", color="tab:red")
+        ax_left.plot(blocks, noise_db[k, : len(blocks)], "o--", label="Noise", color="tab:gray")
+        ax_left.set_title(f"User {k} signal/interference/noise profile")
+        ax_left.set_xlabel("Block index")
+        ax_left.set_ylabel("Power (dB)")
+        ax_left.grid(True, alpha=0.3)
+
+        ax_left_r = ax_left.twinx()
+        ax_left_r.plot(blocks, sinr_db[k, : len(blocks)], "s-", color="tab:green", label="SINR")
+        ax_left_r.set_ylabel("SINR (dB)")
+
+        handles_l, labels_l = ax_left.get_legend_handles_labels()
+        handles_r, labels_r = ax_left_r.get_legend_handles_labels()
+        ax_left.legend(handles_l + handles_r, labels_l + labels_r, fontsize=8, loc="best")
+
+        ax_right = axes[k, 1]
+        contrib = pairwise_block[: len(blocks), k, :]
+        bottom = np.zeros(len(blocks), dtype=float)
+        for j in range(K):
+            if j == k:
+                continue
+            vals = np.nan_to_num(contrib[:, j], nan=0.0)
+            if np.allclose(vals, 0.0):
+                continue
+            ax_right.bar(blocks, vals, bottom=bottom, alpha=0.75, label=f"Interferer {j}")
+            bottom += vals
+        ax_right.set_title(f"User {k} interference contributors")
+        ax_right.set_xlabel("Block index")
+        ax_right.set_ylabel("Interference power")
+        ax_right.grid(True, axis="y", alpha=0.3)
+        if K <= 6:
+            ax_right.legend(fontsize=8, loc="best")
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(figs_dir, "per_user_interference_profiles.png"), dpi=250)
+    plt.close(fig)
+
+
+def plot_per_user_interference_before_after(result, figs_dir):
+    os.makedirs(figs_dir, exist_ok=True)
+    initial_diag = _load_interference_diag(result.get("initial_interference_diag"))
+    final_diag = _load_interference_diag(result.get("final_interference_diag"))
+    if initial_diag is None or final_diag is None:
+        return
+
+    K = max(
+        len(initial_diag.get("blocks_per_user", [])),
+        len(final_diag.get("blocks_per_user", [])),
+        len(result.get("n_kl", result.get("final_n_kl", []))),
+    )
+    if K == 0:
+        return
+
+    initial_interf_db = _safe_db(initial_diag["total_interference"])
+    final_interf_db = _safe_db(final_diag["total_interference"])
+    initial_sinr_db = np.asarray(initial_diag["sinr_db"], dtype=float)
+    final_sinr_db = np.asarray(final_diag["sinr_db"], dtype=float)
+    initial_signal_db = _safe_db(initial_diag["signal"])
+    final_signal_db = _safe_db(final_diag["signal"])
+
+    fig, axes = plt.subplots(K, 2, figsize=(16, max(4 * K, 5)), squeeze=False)
+    for k in range(K):
+        init_blocks = np.arange(int(initial_diag["blocks_per_user"][k])) if k < len(initial_diag["blocks_per_user"]) else np.asarray([], dtype=int)
+        final_blocks = np.arange(int(final_diag["blocks_per_user"][k])) if k < len(final_diag["blocks_per_user"]) else np.asarray([], dtype=int)
+
+        ax_left = axes[k, 0]
+        if len(init_blocks) > 0:
+            ax_left.plot(init_blocks, initial_interf_db[k, : len(init_blocks)], "o--", color="tab:red", alpha=0.8, label="Initial interference")
+            ax_left.plot(init_blocks, initial_signal_db[k, : len(init_blocks)], "o--", color="tab:blue", alpha=0.5, label="Initial signal")
+        if len(final_blocks) > 0:
+            ax_left.plot(final_blocks, final_interf_db[k, : len(final_blocks)], "o-", color="tab:red", label="Final interference")
+            ax_left.plot(final_blocks, final_signal_db[k, : len(final_blocks)], "o-", color="tab:blue", alpha=0.7, label="Final signal")
+        ax_left.set_title(f"User {k} interference before vs after")
+        ax_left.set_xlabel("Block index")
+        ax_left.set_ylabel("Power (dB)")
+        ax_left.grid(True, alpha=0.3)
+        ax_left.legend(fontsize=8, loc="best")
+
+        ax_right = axes[k, 1]
+        if len(init_blocks) > 0:
+            ax_right.plot(init_blocks, initial_sinr_db[k, : len(init_blocks)], "s--", color="tab:green", alpha=0.8, label="Initial SINR")
+        if len(final_blocks) > 0:
+            ax_right.plot(final_blocks, final_sinr_db[k, : len(final_blocks)], "s-", color="tab:green", label="Final SINR")
+        ax_right.set_title(f"User {k} SINR before vs after")
+        ax_right.set_xlabel("Block index")
+        ax_right.set_ylabel("SINR (dB)")
+        ax_right.grid(True, alpha=0.3)
+        ax_right.legend(fontsize=8, loc="best")
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(figs_dir, "per_user_interference_before_after.png"), dpi=250)
+    plt.close(fig)
 
 # ============================================================
 # Optimization plots (make them consistent with NEW pipeline)

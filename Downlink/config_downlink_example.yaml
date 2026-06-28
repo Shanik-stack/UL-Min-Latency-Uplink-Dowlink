@@ -53,6 +53,15 @@ simulation:
   queue_weight_min: 0.25
   network_weight_beta: 0.15
   utility_latency_penalty: 0.5
+  experiment_scenario:
+    mode: payload_completion
+    payload_bits_source: system_B
+    skip_infeasible_blocks: true
+    skip_block_adds_full_T_latency: true
+    track_skipped_blocks: true
+    fixed_block_targets:
+      num_blocks: 4
+      generation_mode: constant
   n_kl_range:
     min: 5
     step: 1
