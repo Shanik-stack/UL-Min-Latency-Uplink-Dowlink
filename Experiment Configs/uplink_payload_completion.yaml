@@ -34,41 +34,48 @@ test:
     - 1.0e-10
 
 simulation:
+  # Constrained precoder solve
   initial_lambda_rate_constraint: 0.1
   initial_lambda_power_constraint: 0.01
-  # epochs_per_n_kl: 10000
-  epochs_per_n_kl: 100000
-  # lr_net: 0.01
+  solve_sweeps_per_n_kl: 100000
   lr_net: 0.01
   lr_rate_constraint: 0.01
   lr_power_constraint: 0.001
-  # max_precoder_sweeps: 10000
+  constraint_loss_form: plain_lagrangian
+  augmented_lagrangian_rho_rate: 1.0
+  augmented_lagrangian_rho_power: 1.0
   max_precoder_sweeps: 100000
   print_every_sweep: 1
-  precoder_net_train_blocks_per_seed: 4
-  precoder_net_train_min_bits_required: 1
-  precoder_net_train_n_kl_coarse_step: 5
-  # step_lr: 0.01
-  step_lr: 0.01
-  user_update_steps: 1
-  user_update_lr: 0.01
+
+  # KKT-based stopping
+  main_solve_max_sweeps: 1000
+  reduced_n_kl_repair_max_sweeps: 10
+  kkt_primal_tol: 1.0e-5
+  kkt_complementarity_tol: 1.0e-5
+  kkt_stationarity_tol: 5.0e-5
+  kkt_patience: 3
+  kkt_stall_patience: 50
+  kkt_primal_improvement_tol: 1.0e-7
+  reduced_n_kl_log_interval: 10
+
+  # Monte Carlo training data
+  monte_carlo_training_blocks_per_seed: 4
+  monte_carlo_training_fallback_target_bits: 1
+  monte_carlo_training_n_kl_coarse_step: 5
+
+  # Experiment limits and rate model
   max_total_blocks: 256
-  precoder_tol: 1.0e-4
-  feasibility_tol: 1.0e-5
-  convergence_max_precoder_sweeps: 10000
-  convergence_min_precoder_sweeps_before_stop: 1000
-  reduced_n_kl_max_precoder_sweeps: 10
-  reduced_n_kl_min_precoder_sweeps_before_stop: 1
-  print_every_reduced_n_kl: 10
-  convergence_precoder_tol: 0.5e-4
-  convergence_feasibility_tol: 1.0e-5
   uplink_rate_model: snr
+
+  # Scenario definition
   experiment_scenario:
     mode: payload_completion
     payload_bits_source: system_B
     skip_infeasible_blocks: true
     skip_block_adds_full_T_latency: true
     track_skipped_blocks: true
+
+  # Allowed blocklength search range
   n_kl_range:
     min: 1
     step: 1

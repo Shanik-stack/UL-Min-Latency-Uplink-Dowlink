@@ -4,8 +4,14 @@ This is the existing downlink online baseline:
 
 - optimize the active users' block precoders with synchronized safe sweeps
 - allocate bits with the greedy outer `n_kl` search
+- when a user tries a smaller `n_kl`, first test it against the current beams
+- only trigger a fresh re-optimization if that smaller `n_kl` breaks committed-user feasibility
+- control which users are updated in that repair step with `simulation.n_kl_reduction_update_scope`
+  - `all_active_users`: update every active user in the block
+  - `infeasible_users_only`: update only the users that became infeasible
+  - `candidate_and_infeasible_users`: update the reduced-`n_kl` user and any infeasible users
 - recompute SINR using the committed block beams
-- choose the safe-sweep objective from `simulation.safe_sweep_objective_mode`
+- choose the convergence block objective from `simulation.convergence_block_objective_mode`
   - supported modes: `user_rate`, `weighted_sum_rate`, `blended_network_rate`
 
 Entry point:
@@ -17,7 +23,7 @@ Results are written under:
 `Results\\Downlink\\Convergence per sweep\\<experiment_name>`
 
 The objective mode is appended to the experiment tag so runs with different
-safe-sweep objectives do not overwrite each other.
+block objectives do not overwrite each other.
 
 Standard files in `testing/data/`:
 

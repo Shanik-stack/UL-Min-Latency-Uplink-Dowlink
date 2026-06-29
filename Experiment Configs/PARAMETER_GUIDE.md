@@ -1,379 +1,387 @@
 # Config Parameter Guide
 
-This guide explains the parameters used by the unified `UL_UPLINK_DOWNLINK_MONTE_CARLO` experiment configs and how changing them affects the simulation.
+This guide explains the canonical config parameters used by the cleaned
+`UL_UPLINK_DOWNLINK_MONTE_CARLO` experiment folder.
 
-## Uplink Convergence Stop Rule
+The current YAML files are meant to read like experiment definitions, not like
+internal training code. Older names such as `precoder_net_train_*`,
+`policy_train_*`, and the old "curriculum" fields are treated as legacy aliases
+by the loaders, but they are not the recommended names anymore.
 
-The uplink convergence baseline stops the inner precoder update loop for one `(user, block, n_kl)` state only when all of the following are true:
+## How To Read The Configs
 
-1. The state is feasible within tolerance.
-2. The current precoder changed only a little from the previous sweep.
-3. The minimum required number of sweeps has already been completed.
+Each config has two top-level sections:
 
-The exact checks are:
+- `test`
+  - Defines the physical system and payload setup.
+- `simulation`
+  - Defines how optimization, Monte Carlo training, and the outer experiment run.
 
-- Feasibility check:
-  - `rate_violation_pos <= convergence_feasibility_tol`
-  - `power_violation_pos <= convergence_feasibility_tol`
-- Beam-change check:
-  - `||F^(t) - F^(t-1)||_F <= convergence_precoder_tol`
-- Minimum sweep check:
-  - `t >= convergence_min_precoder_sweeps_before_stop`
+## `test` Parameters
 
-These checks are applied in:
+These parameters define the channel dimensions, payload, and timing.
 
-- `Uplink/Optimizer_per_block.py`
-- `Uplink/Methods/Convergence per sweep/optimizer.py`
-
-### Convergence Sweep Cap
-
-The convergence wrapper does not always use the raw `epochs_per_n_kl` value directly. It applies an effective cap:
-
-`effective_sweeps = min(epochs_per_n_kl, max_precoder_sweeps, convergence_max_precoder_sweeps)`
-
-This means:
-
-- `epochs_per_n_kl` is the requested inner-loop budget.
-- `max_precoder_sweeps` is the general hard ceiling.
-- `convergence_max_precoder_sweeps` is a smaller convergence-only ceiling so the baseline does not inherit very large Monte Carlo training budgets.
-
-## Uplink Net Inputs
-
-The current uplink code now uses only local-user information as neural-network input:
-
-- Convergence uplink precoder net:
-  - `H_k,l`, `sigma_k^2`, `epsilon_k`
-- Monte Carlo uplink precoder net:
-  - `H_k,l`, `n_k,l`, `sigma_k^2`, `epsilon_k`
-- Monte Carlo shared-beam uplink net:
-  - `H_k,l`, `sigma_k^2`, `epsilon_k`
-
-The uplink rate evaluation itself is now configurable:
-
-- `uplink_rate_model: snr`
-  - Uses only `sigma_k^2 I` in the finite-blocklength rate equation.
-  - Other users do not affect the rate calculation.
-
-- `uplink_rate_model: sinr`
-  - Uses the full interference-plus-noise covariance.
-  - Other users affect the rate calculation through the covariance, but their channels are still not fed into the network input.
-
-## Common `test` Parameters
-
-These fields define the physical system and payload setup.
-
-### Uplink `test`
+### Shared meaning
 
 - `K`
-  - Number of uplink users.
-  - Increasing it usually raises interference and makes feasibility harder.
-
-- `Nr`
-  - Number of receive antennas at the base station for each user link.
-  - Larger `Nr` usually improves receive diversity and achievable rate.
-
-- `Nt`
-  - Number of transmit antennas per uplink user.
-  - Larger `Nt` increases precoder dimension and model size.
+  - Number of users.
+  - Larger `K` usually makes the problem harder because more users must be served.
 
 - `T`
   - Maximum blocklength available to each user in one block.
-  - Larger `T` makes feasibility easier because rate dispersion penalty shrinks.
+  - Larger `T` makes rate feasibility easier.
 
 - `B`
-  - User payload size in bits.
-  - Larger `B` increases total latency in payload-completion experiments.
+  - User bit budget.
+  - In `payload_completion`, this is the full payload for each user.
+  - In `fixed_block_targets`, this is the per-block target for each user.
 
 - `P`
-  - Power budget per uplink user.
-  - Larger `P` usually helps rate but can increase inter-user interference.
+  - Per-user transmit power budget.
+  - Larger values usually improve rate feasibility.
 
 - `snr_db`
-  - Target per-user SNR used when calibrating the fixed noise variance `sigma2`.
-  - Larger `snr_db` means smaller noise variance and easier links.
+  - Per-user reference SNR used to set the noise scale.
+  - Larger values mean easier links.
 
 - `fs`
-  - Symbol rate per user.
-  - Larger `fs` reduces latency for the same total transmitted symbols.
+  - Symbol rate used to convert transmitted symbols into latency.
+  - Larger `fs` reduces latency for the same total symbol count.
 
 - `epsilon`
   - Block error probability target.
-  - Smaller `epsilon` is stricter and reduces finite-blocklength rate.
+  - Smaller `epsilon` is stricter and reduces the finite-blocklength rate.
 
-- `initial_bits_per_symbol`
-  - Used only when building the initial random baseline and initial latency estimate.
-  - It does not directly constrain the trained precoder net.
+### Uplink-specific `test` fields
 
-- `f_carrier`, `v`
-  - Used only by the dynamic-channel uplink initialization path.
-  - Higher carrier frequency or user speed generally produces faster channel variation.
+- `Nr`
+  - Number of receive antennas at the base station.
 
-### Downlink `test`
+- `Nt`
+  - Number of transmit antennas at each uplink user.
 
-- `K`
-  - Number of downlink users.
+### Downlink-specific `test` fields
 
 - `Nb`
   - Number of base-station transmit antennas.
-  - Larger `Nb` usually makes beamforming more flexible.
 
 - `Nr`
-  - Number of receive antennas per user.
-  - Larger `Nr` can improve receive combining gain.
-
-- `T`
-  - Maximum blocklength per user.
-
-- `B`
-  - Total payload bits per user.
-
-- `P`
-  - Power budget associated with each user stream.
-
-- `snr_db`
-  - Used to set the noise scale seen by each user.
-
-- `fs`
-  - Symbol rate for latency conversion.
-
-- `epsilon`
-  - Finite-blocklength reliability target.
+  - Number of receive antennas at each user.
 
 - `initial_bits_per_symbol`
-  - Used for the initial random baseline and initial latency estimate.
+  - Used only for the initial random baseline and initial latency estimate.
+  - It does not directly constrain the optimized or learned precoder.
 
 ## Uplink `simulation` Parameters
 
-These are read by the uplink config loader and then used by the convergence and Monte Carlo methods.
+### Constrained uplink solve
 
 - `initial_lambda_rate_constraint`
-  - Initial Lagrange multiplier for rate feasibility.
-  - Larger values penalize rate violations more strongly at the start.
+  - Initial rate dual variable.
+  - Larger values push the solver harder toward rate feasibility from the start.
 
 - `initial_lambda_power_constraint`
-  - Initial Lagrange multiplier for power feasibility.
+  - Initial power dual variable.
   - Larger values penalize power overshoot more strongly at the start.
 
-- `epochs_per_n_kl`
-  - Requested number of optimizer sweeps for one fixed `(user, block, n_kl)` state.
-  - Larger values give more time to settle but increase runtime.
+- `solve_sweeps_per_n_kl`
+  - Requested inner optimization budget for one fixed `(user, block, n_kl)` state.
+  - Larger values give the inner solve more time, but increase runtime.
 
 - `lr_net`
-  - Adam learning rate for uplink precoder-net parameters.
-  - Too large can cause oscillation; too small can stall updates.
+  - Learning rate for the uplink precoder net during inner constrained solves.
+  - Too large can make the inner solve oscillate.
+  - Too small can make it stall.
 
 - `lr_rate_constraint`
-  - Step size for updating the rate Lagrange multiplier.
-  - Larger values enforce rate feasibility more aggressively.
+  - Dual update step size for the rate constraint.
+  - Larger values enforce the rate condition more aggressively.
 
 - `lr_power_constraint`
-  - Step size for updating the power Lagrange multiplier.
-  - Larger values enforce the power limit more aggressively.
+  - Dual update step size for the power constraint.
+  - Larger values enforce the power condition more aggressively.
+
+- `constraint_loss_form`
+  - Choice of constrained loss shaping.
+  - `plain_lagrangian`: basic Lagrangian form.
+  - `augmented_lagrangian`: adds quadratic penalty on positive constraint violation.
+
+- `augmented_lagrangian_rho_rate`
+  - Quadratic rate-violation penalty strength when `constraint_loss_form: augmented_lagrangian`.
+
+- `augmented_lagrangian_rho_power`
+  - Quadratic power-violation penalty strength when `constraint_loss_form: augmented_lagrangian`.
 
 - `max_precoder_sweeps`
-  - General ceiling on inner optimization sweeps.
-  - Prevents very long runs even if `epochs_per_n_kl` is large.
+  - Hard ceiling on the inner solve budget.
+  - Prevents very long runs if `solve_sweeps_per_n_kl` is large.
 
 - `print_every_sweep`
-  - Logging frequency during iterative optimization.
-  - Affects console verbosity, not algorithm behavior.
+  - Logging frequency for inner solves.
+  - Affects console output only.
 
-- `precoder_net_train_blocks_per_seed`
-  - Number of channel blocks sampled per training seed when building uplink Monte Carlo training data.
+### KKT stopping for uplink convergence
+
+- `main_solve_max_sweeps`
+  - Maximum sweeps allowed for the main solve at `n = T`.
+  - This is the primary runtime cap for the convergence baseline.
+
+- `reduced_n_kl_repair_max_sweeps`
+  - Maximum sweeps allowed when re-solving after trying a smaller `n_kl`.
+  - Usually much smaller than `main_solve_max_sweeps`.
+
+- `kkt_primal_tol`
+  - Tolerance on the primal residual.
+  - This controls how close the rate and power constraints must be to satisfied.
+
+- `kkt_complementarity_tol`
+  - Tolerance on the complementarity residual.
+  - This controls how close the dual-weighted constraint residuals must be to zero.
+
+- `kkt_stationarity_tol`
+  - Tolerance on the stationarity residual.
+  - In the current code this is based on relative beam change between sweeps.
+  - Smaller values demand a more settled beam before stopping.
+
+- `kkt_patience`
+  - Number of consecutive sweeps that must satisfy all KKT checks before the solve is accepted.
+  - Larger values are safer but slower.
+
+- `kkt_stall_patience`
+  - Number of sweeps the solver may continue without meaningful primal-residual improvement before it is treated as stalled.
+  - Larger values are more forgiving but slower.
+
+- `kkt_primal_improvement_tol`
+  - Minimum improvement needed to reset the primal stall counter.
+  - Larger values make the solver declare a stall sooner.
+
+- `reduced_n_kl_log_interval`
+  - Logging interval when the code scans smaller `n_kl` values after a feasible main solve.
+  - Affects only console verbosity.
+
+### Uplink Monte Carlo training data
+
+- `monte_carlo_training_blocks_per_seed`
+  - Number of channel blocks sampled per training seed.
   - Larger values increase dataset diversity and runtime.
 
-- `precoder_net_train_min_bits_required`
-  - Minimum positive bit target used in the rollout dataset.
-  - In your current preferred setup this is typically `1`.
+- `monte_carlo_training_fallback_target_bits`
+  - Bit target used when building Monte Carlo training cases for payload-completion scenarios that do not already provide explicit per-block targets.
+  - In your current setup this is usually `1`.
 
-- `precoder_net_train_n_kl_coarse_step`
-  - Coarse decrement used when exploring candidate `n_kl` values in rollout-style training data generation.
-  - Larger values reduce runtime but sample the `n_kl` frontier more sparsely.
+- `monte_carlo_training_n_kl_coarse_step`
+  - Coarse step used when probing the feasible `n_kl` frontier during rollout query generation.
+  - Larger values speed up data generation but sample the frontier more sparsely.
 
-- `step_lr`
-  - Generic step-size field used by some older iterative routines.
-  - It is mainly a fallback when a method-specific learning rate is not given.
-
-- `user_update_steps`
-  - Number of local user-update substeps in iterative baselines that support it.
-  - Larger values spend more work per outer sweep.
-
-- `user_update_lr`
-  - Learning rate for those local user-update substeps.
-  - Larger values react faster but can become unstable.
+### Uplink experiment structure
 
 - `max_total_blocks`
-  - Hard cap on how many blocks may be created in one user simulation.
-  - Larger values allow long payloads to continue instead of stopping early.
-
-- `convergence_max_precoder_sweeps`
-  - Extra sweep cap used only by the uplink convergence baseline.
-  - Lower values speed up the baseline at the cost of less inner convergence.
-
-- `convergence_min_precoder_sweeps_before_stop`
-  - Minimum sweeps that must happen before the convergence stop rule is allowed to fire.
-  - Increasing it makes the baseline less eager to stop.
-
-- `convergence_precoder_tol`
-  - Threshold for the beam-change stop test.
-  - Smaller values require tighter beam stabilization before stopping.
-
-- `convergence_feasibility_tol`
-  - Threshold for accepting small residual rate or power violations as effectively feasible.
-  - Smaller values are stricter and may require more sweeps.
+  - Maximum number of blocks the outer experiment may create for one user.
+  - Prevents very long runs when payloads are hard to drain.
 
 - `uplink_rate_model`
-  - Selects which covariance is used inside the uplink finite-blocklength rate equation.
-  - `snr` uses only the user noise variance `sigma_k^2 I`.
-  - `sinr` uses interference-plus-noise covariance from the other active users.
-  - This changes feasibility checks, payload reduction, `n_kl` search, and Monte Carlo training targets.
+  - Selects how the finite-blocklength rate is computed.
+  - `snr`: uses only user noise variance.
+  - `sinr`: uses interference-plus-noise covariance.
 
 - `n_kl_range.min`
-  - Smallest allowed blocklength candidate.
-  - Lower values allow more aggressive latency reduction but make feasibility harder.
+  - Minimum allowed blocklength candidate.
 
 - `n_kl_range.step`
-  - Decrement step when scanning downward in `n_kl`.
-  - Larger values speed up search but may skip the true minimum feasible `n_kl`.
+  - Downward search step for `n_kl`.
+  - Smaller values are more precise but slower.
 
 ## Downlink `simulation` Parameters
 
-These are used by the downlink convergence and Monte Carlo methods.
+### Per-user beam updates inside one sweep
 
 - `max_precoder_sweeps`
-  - Maximum number of safe-sweep refinement sweeps per block.
+  - General sweep ceiling used by downlink block refinement logic.
 
 - `print_every_sweep`
-  - How often sweep progress is printed.
-
-- `step_lr`
-  - Step size used by the direct downlink safe-sweep updates.
+  - Logging interval for block sweeps.
 
 - `user_update_steps`
-  - Number of inner updates per active user inside one sweep.
-  - Higher values make each sweep stronger but slower.
+  - Number of local parameter updates performed for one user model when that user is visited in a sweep.
+  - Larger values make each sweep stronger but slower.
 
 - `user_update_lr`
-  - Learning rate for those user-local updates.
+  - Learning rate for those local user-model updates.
 
-- `precoder_tol`
-  - Stopping threshold for downlink beam change in safe-sweep refinement.
-  - Smaller values require tighter convergence.
+### Constrained downlink block solve
+
+- `initial_lambda_rate_constraint`
+  - Initial rate dual variable for each active user.
+
+- `initial_lambda_power_constraint`
+  - Initial power dual variable for each active user.
+
+- `lr_rate_constraint`
+  - Dual update step size for rate feasibility.
+
+- `lr_power_constraint`
+  - Dual update step size for power feasibility.
+
+- `constraint_loss_form`
+  - `plain_lagrangian` or `augmented_lagrangian`.
+
+- `augmented_lagrangian_rho_rate`
+  - Quadratic rate-violation penalty strength used only in augmented-Lagrangian mode.
+
+- `augmented_lagrangian_rho_power`
+  - Quadratic power-violation penalty strength used only in augmented-Lagrangian mode.
+
+- `main_solve_max_sweeps`
+  - Maximum synchronized sweeps allowed for the main block solve before blocklength reduction starts.
+
+- `reduced_n_kl_repair_max_sweeps`
+  - Maximum synchronized sweeps allowed when a smaller `n_kl` candidate requires a repair solve.
+
+- `kkt_primal_tol`
+  - Primal residual tolerance.
+
+- `kkt_complementarity_tol`
+  - Complementarity residual tolerance.
+
+- `kkt_stationarity_tol`
+  - Beam-change tolerance for KKT stopping.
+  - In downlink, this is based on the largest relative beam update in the active set.
+
+- `kkt_patience`
+  - Number of consecutive sweeps that must satisfy all KKT checks.
+
+- `kkt_stall_patience`
+  - Allowed number of non-improving primal sweeps before declaring a stall.
+
+- `kkt_primal_improvement_tol`
+  - Improvement threshold used by the stall detector.
+
+### Downlink reduced-`n_kl` repair behavior
+
+- `n_kl_reduction_update_scope`
+  - Controls which user models are updated when a smaller `n_kl` candidate breaks committed-user feasibility.
+  - `all_active_users`: repair all currently active users.
+  - `infeasible_users_only`: repair only the users whose committed bits became infeasible.
+  - `candidate_and_infeasible_users`: repair the user that tried the smaller `n_kl` plus any infeasible users.
+
+### Downlink Monte Carlo training data
+
+- `monte_carlo_training_blocks_per_seed`
+  - Number of channel blocks sampled per training seed.
+
+- `monte_carlo_training_fallback_target_bits`
+  - Bit target used in payload-completion training episodes when there is no explicit block target.
+  - In the current setup this is typically `1`.
+
+- `monte_carlo_training_n_kl_coarse_step`
+  - Coarse blocklength step used by rollout frontier probing.
+  - Larger values reduce training-data generation cost.
+
+### Downlink objective shaping
+
+- `convergence_block_objective_mode`
+  - Objective used by the downlink convergence baseline.
+  - `user_rate`: local user-rate style objective.
+  - `weighted_sum_rate`: sum rate with remaining-bits weighting.
+  - `blended_network_rate`: blends pure sum rate with weighted network rate.
+
+- `remaining_bits_weight_power`
+  - Exponent used when turning remaining payload into a user priority weight.
+  - Larger values emphasize users with larger remaining payload.
+
+- `minimum_user_weight`
+  - Lower bound on each user's weight so low-payload users are not ignored.
+
+- `network_rate_weight`
+  - Weight used by the blended network-rate objective.
+  - Larger values put more emphasis on network-level weighted service.
+
+- `latency_penalty_weight`
+  - Penalty used by the weighted utility allocator when that allocator is selected.
+  - Larger values push the allocator toward smaller blocklength choices.
+
+### Downlink experiment structure
 
 - `max_total_blocks`
   - Maximum block horizon allowed by the experiment.
 
-- `precoder_net_train_blocks_per_seed`
-  - Number of channel blocks sampled per training seed for downlink Monte Carlo data generation.
-
-- `precoder_net_train_n_kl_coarse_step`
-  - Coarse blocklength decrement used when building the training frontier.
-
-- `precoder_net_train_min_bits_required`
-  - Minimum positive target bits used during training data generation.
-
-- `precoder_net_train_max_reduction_rounds_per_epoch`
-  - Maximum number of curriculum reductions of `n_kl` per epoch.
-  - Lower values slow the curriculum and keep training closer to easier states.
-
-- `precoder_net_train_curriculum_warmup_epochs`
-  - Number of epochs before curriculum reduction begins.
-  - Larger values keep training on easier states longer.
-
-- `precoder_net_train_curriculum_interval_epochs`
-  - Number of epochs between curriculum reductions.
-  - Larger values make the `n_kl` frontier move downward more slowly.
-
-- `precoder_net_train_enumerate_all_masks_up_to_k`
-  - Enumerates all active-user masks up to this number of active users when forming training scenarios.
-  - Larger values improve mask diversity but increase dataset size quickly.
-
-- `safe_sweep_objective_mode`
-  - Downlink block objective used in safe-sweep optimization.
-  - Typical choices favor user rate or weighted sum rate.
-
-- `queue_weight_power`
-  - Exponent used when turning remaining payload or queue state into user weights.
-  - Larger values emphasize users with larger queues.
-
-- `queue_weight_min`
-  - Minimum user weight floor.
-  - Prevents small-queue users from receiving near-zero priority.
-
-- `network_weight_beta`
-  - Controls how strongly network-level weighting affects the downlink objective.
-  - Larger values make the objective more queue-aware and less purely rate-driven.
-
-- `utility_latency_penalty`
-  - Penalty weight for latency-oriented utility shaping.
-  - Larger values bias optimization toward serving delayed users earlier.
-
 - `n_kl_range.min`
-  - Minimum downlink blocklength allowed during search or curriculum.
+  - Minimum allowed downlink blocklength candidate.
 
 - `n_kl_range.step`
-  - Downward step size for blocklength exploration.
+  - Downward step for blocklength search.
 
 ## `experiment_scenario` Parameters
 
-These parameters define the outer experiment interpretation and are shared across uplink and downlink.
+These parameters define how the outer experiment interprets `test.B`.
 
 - `mode`
   - `payload_completion` or `fixed_block_targets`.
-  - `payload_completion` keeps sending until each user's payload is drained.
-  - `fixed_block_targets` assigns a fixed positive bit target to every block over a fixed horizon.
-  - In `fixed_block_targets`, blocks are independent: unmet bits do not carry into the next block.
 
 - `skip_infeasible_blocks`
-  - If `true`, the solver is allowed to leave a block unsent when the target is infeasible.
-  - If `false`, the method must keep trying to serve that block.
-  - In the current fixed-block-target implementation, the solver instead serves as many bits as possible in that block; any unmet bits are recorded and do not carry forward.
+  - Allows the experiment to leave a block partially or fully unserved when the requested bits are not feasible.
 
 - `skip_block_adds_full_T_latency`
-  - If `true`, a skipped block still contributes full-block latency.
-  - This matches the interpretation that time passed even though no useful payload was delivered.
+  - If `true`, time still advances by a full block when a block is skipped or yields zero service.
 
 - `track_skipped_blocks`
-  - Enables skipped-block statistics in summaries.
+  - Enables skipped-block statistics in saved summaries.
 
-### `payload_completion` Extras
+### `payload_completion`
 
 - `payload_bits_source`
-  - `system_B` or `explicit`.
-  - `system_B` uses the per-user `test.B` payload directly.
-  - `explicit` allows a separate payload vector in the scenario config.
+  - `system_B` means the total payload comes directly from `test.B`.
+  - `explicit` allows an explicit payload vector inside the scenario section.
 
-- `payload_bits.values`
-  - Explicit per-user payload sizes when `payload_bits_source: explicit`.
-
-### `fixed_block_targets` Extras
+### `fixed_block_targets`
 
 - `fixed_block_targets.num_blocks`
   - Number of blocks in the fixed-horizon experiment.
-  - Larger values increase total simulated time and total target bits.
 
 - `fixed_block_targets.generation_mode`
   - `constant`, `explicit`, or `uniform_integer`.
-  - `constant` means the per-block target comes directly from `test.B[k]` for each user.
-  - Larger `test.B[k]` values make fixed-target blocks harder to satisfy.
-  - If the full target is infeasible, the method serves the maximum feasible bits in that same block and records the unserved remainder.
+  - `constant` means each block target is `test.B[k]` for user `k`.
 
 - `fixed_block_targets.values`
   - Explicit user-by-block target matrix when `generation_mode: explicit`.
 
 - `fixed_block_targets.min_bits`
-  - Minimum candidate bits when `generation_mode: uniform_integer`.
+  - Minimum candidate per-block target in `uniform_integer` mode.
 
 - `fixed_block_targets.max_bits`
-  - Maximum candidate bits when `generation_mode: uniform_integer`.
+  - Maximum candidate per-block target in `uniform_integer` mode.
 
 - `fixed_block_targets.step_bits`
-  - Spacing between candidate bit values when `generation_mode: uniform_integer`.
+  - Spacing between candidate targets in `uniform_integer` mode.
 
 ## Practical Tuning Notes
 
-- If runtime is too long in uplink convergence, first lower `convergence_max_precoder_sweeps`.
-- If uplink convergence stops too early, increase `convergence_min_precoder_sweeps_before_stop` or reduce `convergence_precoder_tol`.
-- If uplink Monte Carlo over-focuses on very small `n_kl`, increase `precoder_net_train_n_kl_coarse_step` or slow the curriculum logic in the method.
-- If downlink Monte Carlo lacks active-mask diversity, increase `precoder_net_train_blocks_per_seed` or `precoder_net_train_enumerate_all_masks_up_to_k`.
-- If skipped blocks dominate fixed-block-target experiments, lower `test.B` for those users or raise `T` or `P`.
+- If uplink convergence runs too long, first lower `main_solve_max_sweeps`.
+- If uplink KKT stop fires too early, lower `kkt_stationarity_tol` or increase `kkt_patience`.
+- If uplink Monte Carlo samples the `n_kl` frontier too sparsely, lower `monte_carlo_training_n_kl_coarse_step`.
+- If downlink repair solves are too expensive, lower `reduced_n_kl_repair_max_sweeps` or use `n_kl_reduction_update_scope: infeasible_users_only`.
+- If downlink weighted scheduling is too aggressive toward large backlogs, lower `remaining_bits_weight_power`.
+- If fixed-block-target runs frequently leave bits unserved, lower `test.B`, increase `T`, or increase `P`.
+
+## Legacy Alias Notes
+
+The loaders still accept older names so older experiment files do not immediately
+break. The main legacy aliases are:
+
+- `epochs_per_n_kl` -> `solve_sweeps_per_n_kl`
+- `main_solve_guard_sweeps` -> `main_solve_max_sweeps`
+- `repair_solve_guard_sweeps` -> `reduced_n_kl_repair_max_sweeps`
+- `print_every_reduced_n_kl` -> `reduced_n_kl_log_interval`
+- `precoder_net_train_blocks_per_seed` -> `monte_carlo_training_blocks_per_seed`
+- `precoder_net_train_min_bits_required` -> `monte_carlo_training_fallback_target_bits`
+- `precoder_net_train_n_kl_coarse_step` -> `monte_carlo_training_n_kl_coarse_step`
+- `safe_sweep_objective_mode` -> `convergence_block_objective_mode`
+- `queue_weight_power` -> `remaining_bits_weight_power`
+- `queue_weight_min` -> `minimum_user_weight`
+- `network_weight_beta` -> `network_rate_weight`
+- `utility_latency_penalty` -> `latency_penalty_weight`
+- `reduced_n_kl_reoptimization_scope` -> `n_kl_reduction_update_scope`
+
+The removed downlink "curriculum" settings are not part of the canonical config
+surface anymore because the current cleaned Monte Carlo implementation does not
+use them.

@@ -22,15 +22,19 @@ SAFE_SWEEP_OBJECTIVE_MODES = {
     "weighted_sum_rate",
     "blended_network_rate",
 }
+CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
 
 
 def resolve_safe_sweep_objective_mode(sim_params: dict[str, Any]) -> str:
     raw_mode = str(
         sim_params.get(
-            "safe_sweep_objective_mode",
+            "convergence_block_objective_mode",
             sim_params.get(
-                "downlink_safe_sweep_objective_mode",
-                sim_params.get("objective_mode", "user_rate"),
+                "safe_sweep_objective_mode",
+                sim_params.get(
+                    "downlink_safe_sweep_objective_mode",
+                    sim_params.get("objective_mode", "user_rate"),
+                ),
             ),
         )
     ).strip().lower()
@@ -45,6 +49,22 @@ def resolve_safe_sweep_objective_mode(sim_params: dict[str, Any]) -> str:
 def safe_sweep_objective_tag(objective_mode: str) -> str:
     safe_mode = str(objective_mode).strip().lower().replace(" ", "_").replace("-", "_")
     return f"obj_{safe_mode}"
+
+
+def resolve_constraint_loss_form(sim_params: dict[str, Any]) -> str:
+    raw_mode = str(sim_params.get("constraint_loss_form", "plain_lagrangian")).strip().lower()
+    if raw_mode not in CONSTRAINT_LOSS_FORMS:
+        known = ", ".join(sorted(CONSTRAINT_LOSS_FORMS))
+        raise ValueError(
+            f"Unknown constraint loss form '{raw_mode}'. Expected one of: {known}"
+        )
+    return raw_mode
+
+
+def _constraint_violation_activation(value: torch.Tensor, loss_form: str) -> torch.Tensor:
+    if loss_form == "plain_lagrangian":
+        return torch.nn.functional.leaky_relu(value)
+    return torch.relu(value)
 
 
 def _clone_precoders(F_nested: List[List[np.ndarray]]) -> List[List[np.ndarray]]:
@@ -273,6 +293,166 @@ def _evaluate_update_objective_numpy(
     return total
 
 
+def _block_rate_torch_from_precoders(
+    system: DownlinkSystem,
+    active_users: List[int],
+    block: int,
+    user: int,
+    n_kl: int,
+    precoders: dict[int, torch.Tensor],
+) -> torch.Tensor:
+    k = int(user)
+    l = int(block)
+    Hk = torch.tensor(system.H[k][l], dtype=torch.complex64, device=DEVICE)
+    Nrk = int(system.Nr[k])
+    I = torch.eye(Nrk, dtype=torch.complex64, device=DEVICE)
+
+    Fk = precoders[int(k)]
+    noise_cov = float(system.sigma2[k]) * I
+    for j in active_users:
+        j_int = int(j)
+        if j_int == k:
+            continue
+        Fj = precoders[j_int]
+        HFj = Hk @ Fj
+        noise_cov = noise_cov + HFj @ HFj.conj().transpose(1, 0)
+
+    noise_cov = 0.5 * (noise_cov + noise_cov.conj().transpose(1, 0))
+    noise_cov = noise_cov + (1e-6 * I)
+
+    HF = Hk @ Fk
+    chol = torch.linalg.cholesky(noise_cov)
+    G = torch.linalg.solve(chol, HF)
+    A = G @ G.conj().transpose(1, 0)
+    A = 0.5 * (A + A.conj().transpose(1, 0))
+
+    sign, logdet = torch.linalg.slogdet(I + A)
+    if torch.any(torch.abs(sign) <= 1e-12):
+        raise RuntimeError(f"Non-positive logdet sign for user {k}, block {l}")
+
+    C = (logdet / np.log(2.0)).real
+    eigvals = torch.linalg.eigvalsh(A)
+    V = torch.sum(eigvals * (eigvals + 2.0) / (eigvals + 1.0) ** 2).real * LOG2E_SQ
+    R = C - torch.sqrt(V / float(max(int(n_kl), 1))) * _q_inv(float(system.epsilon[k]))
+    return R.real
+
+
+def _evaluate_constrained_block_state(
+    system: DownlinkSystem,
+    working_F: List[List[np.ndarray]],
+    user_models: list[torch.nn.Module],
+    active_users: List[int],
+    update_users: List[int],
+    block: int,
+    requested_bits: dict[int, int],
+    sim_params: dict[str, Any],
+    objective_mode: str,
+    user_weights: dict[int, float],
+    lambda_rate: dict[int, float],
+    lambda_power: dict[int, float],
+    *,
+    n_kl_overrides: dict[int, int] | None = None,
+) -> dict[str, Any]:
+    network_weight_beta = float(sim_params.get("network_rate_weight", 0.15))
+    constraint_loss_form = resolve_constraint_loss_form(sim_params)
+    rho_rate = float(sim_params.get("augmented_lagrangian_rho_rate", 0.0))
+    rho_power = float(sim_params.get("augmented_lagrangian_rho_power", 0.0))
+    update_user_set = {int(k) for k in update_users}
+
+    precoders: dict[int, torch.Tensor] = {}
+    for k in active_users:
+        k_int = int(k)
+        if k_int in update_user_set:
+            H_kl = torch.tensor(system.H[k_int][int(block)], dtype=torch.complex64, device=DEVICE)
+            precoders[k_int] = infer_precoder_torch(
+                user_models[k_int],
+                H_kl,
+                nb=int(system.Nb[k_int]),
+                dk=int(system.dk[k_int]),
+                power_limit=float(system.P[k_int]),
+            )
+        else:
+            precoders[k_int] = torch.tensor(
+                working_F[k_int][int(block)],
+                dtype=torch.complex64,
+                device=DEVICE,
+            )
+
+    rates: dict[int, torch.Tensor] = {}
+    powers: dict[int, torch.Tensor] = {}
+    required_rates: dict[int, float] = {}
+    rate_violation_pos: dict[int, torch.Tensor] = {}
+    power_violation_pos: dict[int, torch.Tensor] = {}
+    rate_constraint_terms: dict[int, torch.Tensor] = {}
+    power_constraint_terms: dict[int, torch.Tensor] = {}
+
+    for k in active_users:
+        k_int = int(k)
+        n_k = _resolve_user_n_kl(system, k_int, n_kl_overrides)
+        rate_k = _block_rate_torch_from_precoders(
+            system,
+            active_users,
+            int(block),
+            k_int,
+            n_k,
+            precoders,
+        )
+        power_k = (torch.linalg.norm(precoders[k_int], ord="fro") ** 2).real
+        required_rate_k = float(requested_bits.get(k_int, 0)) / float(max(int(n_k), 1))
+        rate_gap = torch.tensor(required_rate_k, dtype=torch.float32, device=DEVICE) - rate_k
+        power_gap = power_k - float(system.P[k_int])
+        rates[k_int] = rate_k
+        powers[k_int] = power_k
+        required_rates[k_int] = float(required_rate_k)
+        rate_violation_pos[k_int] = torch.relu(rate_gap)
+        power_violation_pos[k_int] = torch.relu(power_gap)
+        rate_constraint_terms[k_int] = _constraint_violation_activation(rate_gap, constraint_loss_form)
+        power_constraint_terms[k_int] = _constraint_violation_activation(power_gap, constraint_loss_form)
+
+    total_rate = torch.stack([rates[int(k)] for k in active_users]).sum() if active_users else torch.tensor(0.0, device=DEVICE)
+    weighted_total = torch.stack(
+        [
+            torch.tensor(float(user_weights.get(int(k), 1.0)), dtype=torch.float32, device=DEVICE) * rates[int(k)]
+            for k in active_users
+        ]
+    ).sum() if active_users else torch.tensor(0.0, device=DEVICE)
+    blended_total = total_rate + float(network_weight_beta) * weighted_total
+    if objective_mode == "weighted_sum_rate":
+        objective = weighted_total
+    elif objective_mode == "blended_network_rate":
+        objective = blended_total
+    else:
+        objective = total_rate
+
+    loss = -objective
+    for k in active_users:
+        k_int = int(k)
+        loss = (
+            loss
+            + float(lambda_rate.get(k_int, 0.0)) * rate_constraint_terms[k_int]
+            + float(lambda_power.get(k_int, 0.0)) * power_constraint_terms[k_int]
+        )
+        if constraint_loss_form == "augmented_lagrangian":
+            loss = (
+                loss
+                + 0.5 * rho_rate * rate_violation_pos[k_int].pow(2)
+                + 0.5 * rho_power * power_violation_pos[k_int].pow(2)
+            )
+
+    return {
+        "loss": loss,
+        "rates": rates,
+        "powers": powers,
+        "required_rates": required_rates,
+        "rate_violation_pos": rate_violation_pos,
+        "power_violation_pos": power_violation_pos,
+        "sum_rate": total_rate,
+        "weighted_sum_rate": weighted_total,
+        "blended_objective": blended_total,
+        "constraint_loss_form": constraint_loss_form,
+    }
+
+
 def _expand_precoders_for_plan(
     system: DownlinkSystem,
     base_F: List[List[np.ndarray]],
@@ -350,8 +530,8 @@ def _build_user_weights(
     if len(active_users) == 0:
         return {}
 
-    power = float(sim_params.get("queue_weight_power", 1.0))
-    min_weight = float(sim_params.get("queue_weight_min", 0.25))
+    power = float(sim_params.get("remaining_bits_weight_power", 1.0))
+    min_weight = float(sim_params.get("minimum_user_weight", 0.25))
     raw_scores: dict[int, float] = {}
 
     if strategy == "inverse_cnr":
@@ -395,7 +575,7 @@ def _optimize_user_block_precoder(
     l = int(block)
     n_kl = _resolve_user_n_kl(system, k, n_kl_overrides)
     steps = max(1, int(sim_params.get("user_update_steps", 1)))
-    network_weight_beta = float(sim_params.get("network_weight_beta", 0.15))
+    network_weight_beta = float(sim_params.get("network_rate_weight", 0.15))
     H_kl = torch.tensor(system.H[k][l], dtype=torch.complex64, device=DEVICE)
 
     best_beam = np.array(working_F[k][l], copy=True)
@@ -485,6 +665,57 @@ def _optimize_user_block_precoder(
     precoder_model.load_state_dict(best_model_state)
 
     return best_beam
+
+
+def _optimize_user_block_precoder_constrained(
+    system: DownlinkSystem,
+    working_F: List[List[np.ndarray]],
+    user_models: list[torch.nn.Module],
+    active_users: List[int],
+    requested_bits: dict[int, int],
+    user_weights: dict[int, float],
+    user: int,
+    block: int,
+    sim_params: dict[str, Any],
+    objective_mode: str,
+    precoder_model: torch.nn.Module,
+    model_optimizer: torch.optim.Optimizer,
+    lambda_rate: dict[int, float],
+    lambda_power: dict[int, float],
+    n_kl_overrides: dict[int, int] | None = None,
+) -> np.ndarray:
+    k = int(user)
+    l = int(block)
+    steps = max(1, int(sim_params.get("user_update_steps", 1)))
+
+    for _ in range(steps):
+        model_optimizer.zero_grad()
+        state = _evaluate_constrained_block_state(
+            system,
+            working_F,
+            user_models=user_models,
+            active_users=active_users,
+            update_users=[k],
+            block=l,
+            requested_bits=requested_bits,
+            sim_params=sim_params,
+            objective_mode=objective_mode,
+            user_weights=user_weights,
+            lambda_rate=lambda_rate,
+            lambda_power=lambda_power,
+            n_kl_overrides=n_kl_overrides,
+        )
+        state["loss"].backward()
+        model_optimizer.step()
+
+    return infer_precoder_numpy(
+        precoder_model,
+        np.asarray(system.H[k][l], dtype=np.complex64),
+        nb=int(system.Nb[k]),
+        dk=int(system.dk[k]),
+        power_limit=float(system.P[k]),
+        device=DEVICE,
+    )
 
 
 def _block_delta(
@@ -666,6 +897,45 @@ def _restore_active_model_optimizer_states(
         model_optimizers[int(k)].load_state_dict(optimizer_states[int(k)])
 
 
+def _capture_active_block_solver_state(
+    working_F: List[List[np.ndarray]],
+    user_models: list[torch.nn.Module],
+    model_optimizers: list[torch.optim.Optimizer],
+    active_users: List[int],
+    lambda_rate: dict[int, float],
+    lambda_power: dict[int, float],
+) -> dict[str, Any]:
+    model_states, optimizer_states = _copy_active_model_optimizer_states(
+        user_models,
+        model_optimizers,
+        active_users,
+    )
+    return {
+        "working_F": _clone_precoders(working_F),
+        "model_states": model_states,
+        "optimizer_states": optimizer_states,
+        "lambda_rate": {int(k): float(v) for k, v in lambda_rate.items()},
+        "lambda_power": {int(k): float(v) for k, v in lambda_power.items()},
+    }
+
+
+def _restore_active_block_solver_state(
+    working_F: List[List[np.ndarray]],
+    user_models: list[torch.nn.Module],
+    model_optimizers: list[torch.optim.Optimizer],
+    active_users: List[int],
+    state: dict[str, Any],
+) -> None:
+    working_F[:] = _clone_precoders(state["working_F"])
+    _restore_active_model_optimizer_states(
+        user_models,
+        model_optimizers,
+        active_users,
+        state["model_states"],
+        state["optimizer_states"],
+    )
+
+
 def _all_committed_bits_feasible(
     system: DownlinkSystem,
     working_F: List[List[np.ndarray]],
@@ -674,8 +944,9 @@ def _all_committed_bits_feasible(
     committed_bits: dict[int, int],
     n_kl_targets: dict[int, int],
     feasibility_tol: float = 1e-6,
-) -> tuple[bool, dict[int, float]]:
+) -> tuple[bool, dict[int, float], list[int]]:
     user_rates: dict[int, float] = {}
+    infeasible_users: list[int] = []
     for k in active_users:
         k_int = int(k)
         B_used = int(committed_bits.get(k_int, 0))
@@ -686,8 +957,35 @@ def _all_committed_bits_feasible(
             continue
         required_rate = float(B_used) / float(max(n_k, 1))
         if float(rate_k) + float(feasibility_tol) < float(required_rate):
-            return False, user_rates
-    return True, user_rates
+            infeasible_users.append(int(k_int))
+    return len(infeasible_users) == 0, user_rates, infeasible_users
+
+
+def _resolve_reduced_n_reoptimization_users(
+    active_users: List[int],
+    candidate_user: int,
+    infeasible_users: list[int],
+    scope: str,
+) -> list[int]:
+    ordered_active = [int(k) for k in active_users]
+    infeasible_set = {int(k) for k in infeasible_users}
+    scope_key = str(scope).strip().lower()
+
+    if scope_key == "all_active_users":
+        return ordered_active
+
+    if scope_key == "infeasible_users_only":
+        return [k for k in ordered_active if k in infeasible_set]
+
+    if scope_key == "candidate_and_infeasible_users":
+        update_users = [int(candidate_user)]
+        update_users.extend(k for k in ordered_active if k in infeasible_set and int(k) != int(candidate_user))
+        return update_users
+
+    raise ValueError(
+        "simulation.n_kl_reduction_update_scope must be one of "
+        "{'all_active_users', 'infeasible_users_only', 'candidate_and_infeasible_users'}."
+    )
 
 
 def _reduce_blocklengths_with_reoptimization(
@@ -703,9 +1001,13 @@ def _reduce_blocklengths_with_reoptimization(
     objective_mode: str,
     user_weights: dict[int, float],
     verbose: bool,
-) -> tuple[dict[int, dict[str, Any]], list[dict[str, float]]]:
+    dual_state: dict[str, dict[int, float]] | None = None,
+) -> tuple[dict[int, dict[str, Any]], list[dict[str, float]], dict[str, dict[int, float]]]:
     n_min = int(sim_params["n_kl_min"])
     n_step = int(sim_params["n_kl_step"])
+    reoptimization_scope = str(
+        sim_params.get("n_kl_reduction_update_scope", "all_active_users")
+    ).strip().lower()
 
     current_n_targets = {
         int(k): int(system.T[int(k)])
@@ -715,6 +1017,7 @@ def _reduce_blocklengths_with_reoptimization(
     current_rates: dict[int, float] = {}
     plans: dict[int, dict[str, Any]] = {}
     refinement_history: list[dict[str, float]] = []
+    current_dual_state = copy.deepcopy(dual_state) if dual_state is not None else None
 
     for k in active_users:
         k_int = int(k)
@@ -765,26 +1068,80 @@ def _reduce_blocklengths_with_reoptimization(
 
             candidate_targets = dict(current_n_targets)
             candidate_targets[k_int] = int(candidate)
-            beam_checkpoint = _clone_precoders(working_F)
-            model_states, optimizer_states = _copy_active_model_optimizer_states(
+            feasible_without_reopt, candidate_rates, infeasible_users = _all_committed_bits_feasible(
+                system,
+                working_F,
+                active_users,
+                block,
+                committed_bits,
+                candidate_targets,
+            )
+            if feasible_without_reopt:
+                current_n_targets = candidate_targets
+                current_rates = candidate_rates
+                plans[k_int]["n_used"] = int(candidate)
+                plans[k_int]["R_used"] = float(candidate_rates.get(k_int, current_rates.get(k_int, 0.0)))
+                progress_this_sweep = True
+                if verbose:
+                    print(
+                        f"  user={k_int:02d} block={block:02d} accepted smaller n_kl={int(candidate):4d} "
+                        "without fresh re-optimization."
+                    )
+                continue
+            if verbose:
+                infeasible_text = ", ".join(str(int(user_id)) for user_id in infeasible_users)
+                print(
+                    f"  user={k_int:02d} block={block:02d} candidate n_kl={int(candidate):4d} "
+                    f"breaks committed-user feasibility [{infeasible_text}]; trying fresh re-optimization."
+                )
+
+            update_users = _resolve_reduced_n_reoptimization_users(
+                active_users,
+                k_int,
+                infeasible_users,
+                reoptimization_scope,
+            )
+            solver_checkpoint = _capture_active_block_solver_state(
+                working_F,
                 user_models,
                 model_optimizers,
                 active_users,
+                (
+                    current_dual_state["lambda_rate"]
+                    if current_dual_state is not None
+                    else {
+                        int(user_id): float(sim_params.get("initial_lambda_rate_constraint", 0.1))
+                        for user_id in active_users
+                    }
+                ),
+                (
+                    current_dual_state["lambda_power"]
+                    if current_dual_state is not None
+                    else {
+                        int(user_id): float(sim_params.get("initial_lambda_power_constraint", 0.01))
+                        for user_id in active_users
+                    }
+                ),
             )
-            candidate_history = optimize_precoders_for_block(
+            solve_result = optimize_precoders_for_block_constrained(
                 system,
                 working_F,
                 user_models,
                 model_optimizers,
                 active_users,
                 block,
+                committed_bits,
                 sim_params,
                 verbose=verbose,
                 objective_mode=objective_mode,
                 user_weights=user_weights,
                 n_kl_overrides=candidate_targets,
+                users_to_update=update_users,
+                dual_state=current_dual_state,
+                guard_sweeps=int(sim_params.get("reduced_n_kl_repair_max_sweeps", sim_params["max_precoder_sweeps"])),
             )
-            feasible, candidate_rates = _all_committed_bits_feasible(
+            candidate_history = solve_result["history"]
+            feasible, candidate_rates, remaining_infeasible_users = _all_committed_bits_feasible(
                 system,
                 working_F,
                 active_users,
@@ -793,31 +1150,36 @@ def _reduce_blocklengths_with_reoptimization(
                 candidate_targets,
             )
             if not feasible:
-                working_F[:] = beam_checkpoint
-                _restore_active_model_optimizer_states(
+                _restore_active_block_solver_state(
+                    working_F,
                     user_models,
                     model_optimizers,
                     active_users,
-                    model_states,
-                    optimizer_states,
+                    solver_checkpoint,
                 )
                 if verbose:
+                    infeasible_text = ", ".join(str(int(user_id)) for user_id in remaining_infeasible_users)
+                    updated_text = ", ".join(str(int(user_id)) for user_id in update_users)
                     print(
                         f"  user={k_int:02d} block={block:02d} candidate n_kl={int(candidate):4d} "
-                        "became infeasible after re-optimization; keeping previous n_kl for this sweep."
+                        f"after updating users [{updated_text}] "
+                        f"still leaves committed users infeasible [{infeasible_text}] after re-optimization; "
+                        "keeping previous n_kl for this sweep."
                     )
                 continue
 
             current_n_targets = candidate_targets
             current_rates = candidate_rates
             refinement_history.extend(candidate_history)
+            current_dual_state = copy.deepcopy(solve_result["dual_state"])
             plans[k_int]["n_used"] = int(candidate)
             plans[k_int]["R_used"] = float(candidate_rates.get(k_int, current_rates.get(k_int, 0.0)))
             progress_this_sweep = True
             if verbose:
+                updated_text = ", ".join(str(int(user_id)) for user_id in update_users)
                 print(
                     f"  user={k_int:02d} block={block:02d} accepted smaller n_kl={int(candidate):4d} "
-                    "after fresh re-optimization."
+                    f"after fresh re-optimization of users [{updated_text}]."
                 )
 
         if not progress_this_sweep:
@@ -831,7 +1193,21 @@ def _reduce_blocklengths_with_reoptimization(
         plans[k_int]["n_used"] = int(final_n)
         plans[k_int]["R_used"] = float(final_rate if committed_bits.get(k_int, 0) > 0 else 0.0)
 
-    return plans, refinement_history
+    final_dual_state = (
+        current_dual_state
+        if current_dual_state is not None
+        else {
+            "lambda_rate": {
+                int(k): float(sim_params.get("initial_lambda_rate_constraint", 0.1))
+                for k in active_users
+            },
+            "lambda_power": {
+                int(k): float(sim_params.get("initial_lambda_power_constraint", 0.01))
+                for k in active_users
+            },
+        }
+    )
+    return plans, refinement_history, final_dual_state
 
 
 def optimize_precoders_for_block(
@@ -846,26 +1222,28 @@ def optimize_precoders_for_block(
     objective_mode: str = "user_rate",
     user_weights: dict[int, float] | None = None,
     n_kl_overrides: dict[int, int] | None = None,
+    users_to_update: List[int] | None = None,
 ) -> list[dict[str, float]]:
     history: list[dict[str, float]] = []
     if len(active_users) == 0:
         return history
 
     weights = user_weights or {int(k): 1.0 for k in active_users}
+    update_users = [int(k) for k in (users_to_update or active_users)]
     print_every = max(1, int(sim_params.get("print_every_sweep", 1)))
-    tol = float(sim_params["precoder_tol"])
+    tol = float(sim_params.get("precoder_tol", 1e-4))
     if objective_mode == "weighted_sum_rate":
         objective_label = "weighted_sum_rate"
     elif objective_mode == "blended_network_rate":
         objective_label = "blended_objective"
     else:
         objective_label = "sum_rate"
-    network_weight_beta = float(sim_params.get("network_weight_beta", 0.15))
+    network_weight_beta = float(sim_params.get("network_rate_weight", 0.15))
 
     for sweep_idx in range(int(sim_params["max_precoder_sweeps"])):
-        before_beams = {k: np.array(working_F[k][block], copy=True) for k in active_users}
+        before_beams = {k: np.array(working_F[k][block], copy=True) for k in update_users}
 
-        for k in active_users:
+        for k in update_users:
             beam_k = _optimize_user_block_precoder(
                 system,
                 working_F,
@@ -903,7 +1281,9 @@ def optimize_precoders_for_block(
                 "block": int(block),
                 "sweep": sweep_idx + 1,
                 "active_users": int(len(active_users)),
+                "updated_users": int(len(update_users)),
                 "user_ids": [int(k) for k in active_users],
+                "updated_user_ids": [int(k) for k in update_users],
                 "user_n_kl": [_resolve_user_n_kl(system, int(k), n_kl_overrides) for k in active_users],
                 "user_rates": user_rates,
                 "user_sinr_db": user_sinr_db,
@@ -927,6 +1307,7 @@ def optimize_precoders_for_block(
             print(
                 f"[Block {block:02d} | Sweep {sweep_idx + 1:03d}] "
                 f"active_users={len(active_users)} "
+                f"updated_users={len(update_users)} "
                 f"{objective_label}={objective_value:.4f} "
                 f"sum_rate={total_rate:.4f} "
                 f"max_delta={delta:.6e}"
@@ -935,6 +1316,263 @@ def optimize_precoders_for_block(
             break
 
     return history
+
+
+def optimize_precoders_for_block_constrained(
+    system: DownlinkSystem,
+    working_F: List[List[np.ndarray]],
+    user_models: list[torch.nn.Module],
+    model_optimizers: list[torch.optim.Optimizer],
+    active_users: List[int],
+    block: int,
+    requested_bits: dict[int, int],
+    sim_params: dict[str, Any],
+    *,
+    verbose: bool = True,
+    objective_mode: str = "user_rate",
+    user_weights: dict[int, float] | None = None,
+    n_kl_overrides: dict[int, int] | None = None,
+    users_to_update: List[int] | None = None,
+    dual_state: dict[str, dict[int, float]] | None = None,
+    guard_sweeps: int | None = None,
+) -> dict[str, Any]:
+    history: list[dict[str, float]] = []
+    if len(active_users) == 0:
+        return {
+            "history": history,
+            "dual_state": {"lambda_rate": {}, "lambda_power": {}},
+            "solve_status": "empty",
+        }
+
+    weights = user_weights or {int(k): 1.0 for k in active_users}
+    update_users = [int(k) for k in (users_to_update or active_users)]
+    print_every = max(1, int(sim_params.get("print_every_sweep", 1)))
+    guard_sweeps = max(
+        1,
+        int(guard_sweeps if guard_sweeps is not None else sim_params.get("main_solve_max_sweeps", sim_params["max_precoder_sweeps"])),
+    )
+    lr_rate = float(sim_params.get("lr_rate_constraint", 1e-2))
+    lr_power = float(sim_params.get("lr_power_constraint", 1e-3))
+    kkt_primal_tol = float(sim_params.get("kkt_primal_tol", 1e-5))
+    kkt_complementarity_tol = float(sim_params.get("kkt_complementarity_tol", 1e-5))
+    kkt_stationarity_tol = float(sim_params.get("kkt_stationarity_tol", 1e-4))
+    kkt_patience = max(1, int(sim_params.get("kkt_patience", 1)))
+    kkt_stall_patience = max(1, int(sim_params.get("kkt_stall_patience", 25)))
+    kkt_primal_improvement_tol = float(sim_params.get("kkt_primal_improvement_tol", 1e-7))
+
+    if objective_mode == "weighted_sum_rate":
+        objective_label = "weighted_sum_rate"
+    elif objective_mode == "blended_network_rate":
+        objective_label = "blended_objective"
+    else:
+        objective_label = "sum_rate"
+
+    lambda_rate = {
+        int(k): float((dual_state or {}).get("lambda_rate", {}).get(int(k), sim_params.get("initial_lambda_rate_constraint", 0.1)))
+        for k in active_users
+    }
+    lambda_power = {
+        int(k): float((dual_state or {}).get("lambda_power", {}).get(int(k), sim_params.get("initial_lambda_power_constraint", 0.01)))
+        for k in active_users
+    }
+
+    best_primal_residual = float("inf")
+    best_feasible_objective = -float("inf")
+    success_streak = 0
+    stall_streak = 0
+    solve_status = "guard_stop"
+    best_primal_state = _capture_active_block_solver_state(
+        working_F,
+        user_models,
+        model_optimizers,
+        active_users,
+        lambda_rate,
+        lambda_power,
+    )
+    best_feasible_state: dict[str, Any] | None = None
+
+    for sweep_idx in range(guard_sweeps):
+        before_beams = {k: np.array(working_F[k][block], copy=True) for k in update_users}
+
+        for k in update_users:
+            beam_k = _optimize_user_block_precoder_constrained(
+                system,
+                working_F,
+                user_models,
+                active_users,
+                requested_bits,
+                weights,
+                k,
+                block,
+                sim_params,
+                objective_mode,
+                user_models[int(k)],
+                model_optimizers[int(k)],
+                lambda_rate,
+                lambda_power,
+                n_kl_overrides,
+            )
+            working_F[int(k)][block] = np.array(beam_k, copy=True)
+
+        for k in update_users:
+            model_optimizers[int(k)].zero_grad()
+        state = _evaluate_constrained_block_state(
+            system,
+            working_F,
+            user_models,
+            active_users,
+            update_users,
+            block,
+            requested_bits,
+            sim_params,
+            objective_mode,
+            weights,
+            lambda_rate,
+            lambda_power,
+            n_kl_overrides=n_kl_overrides,
+        )
+        state["loss"].backward()
+
+        rate_violations = {int(k): float(state["rate_violation_pos"][int(k)].detach().cpu()) for k in active_users}
+        power_violations = {int(k): float(state["power_violation_pos"][int(k)].detach().cpu()) for k in active_users}
+        r_p = max(
+            max(rate_violations.values(), default=0.0),
+            max(power_violations.values(), default=0.0),
+        )
+        r_c = 0.0
+        for k in active_users:
+            k_int = int(k)
+            r_c = max(
+                r_c,
+                abs(float(lambda_rate.get(k_int, 0.0)) * rate_violations[k_int]),
+                abs(float(lambda_power.get(k_int, 0.0)) * power_violations[k_int]),
+            )
+        user_rates = [float(state["rates"][int(k)].detach().cpu()) for k in active_users]
+        user_sinr_db = []
+        user_interference_db = []
+        user_signal_db = []
+        for k in active_users:
+            signal_power, interference_power, _, sinr_db = _compute_user_link_budget(system, working_F, int(k), int(block))
+            user_sinr_db.append(float(sinr_db))
+            user_interference_db.append(_power_to_db(interference_power))
+            user_signal_db.append(_power_to_db(signal_power))
+
+        total_rate = float(state["sum_rate"].detach().cpu())
+        weighted_total = float(state["weighted_sum_rate"].detach().cpu())
+        blended_total = float(state["blended_objective"].detach().cpu())
+        if objective_mode == "weighted_sum_rate":
+            objective_value = weighted_total
+        elif objective_mode == "blended_network_rate":
+            objective_value = blended_total
+        else:
+            objective_value = total_rate
+        delta = _block_delta(before_beams, working_F, update_users, block)
+        r_s = float(delta)
+        history.append(
+            {
+                "block": int(block),
+                "sweep": sweep_idx + 1,
+                "active_users": int(len(active_users)),
+                "updated_users": int(len(update_users)),
+                "user_ids": [int(k) for k in active_users],
+                "updated_user_ids": [int(k) for k in update_users],
+                "user_n_kl": [_resolve_user_n_kl(system, int(k), n_kl_overrides) for k in active_users],
+                "user_rates": user_rates,
+                "user_sinr_db": user_sinr_db,
+                "user_interference_db": user_interference_db,
+                "user_signal_db": user_signal_db,
+                "user_weights": [float(weights.get(int(k), 1.0)) for k in active_users],
+                "max_precoder_delta": float(delta),
+                "sum_rate": total_rate,
+                "weighted_sum_rate": weighted_total,
+                "blended_objective": blended_total,
+                "objective_mode": objective_mode,
+                "kkt_primal_residual": float(r_p),
+                "kkt_complementarity_residual": float(r_c),
+                "kkt_stationarity_residual": float(r_s),
+            }
+        )
+
+        for k in active_users:
+            k_int = int(k)
+            lambda_rate[k_int] = max(0.0, float(lambda_rate[k_int]) + lr_rate * rate_violations[k_int])
+            lambda_power[k_int] = max(0.0, float(lambda_power[k_int]) + lr_power * power_violations[k_int])
+
+        if r_p + kkt_primal_improvement_tol < best_primal_residual:
+            best_primal_residual = float(r_p)
+            best_primal_state = _capture_active_block_solver_state(
+                working_F,
+                user_models,
+                model_optimizers,
+                active_users,
+                lambda_rate,
+                lambda_power,
+            )
+            stall_streak = 0
+        elif r_p > kkt_primal_tol:
+            stall_streak += 1
+        else:
+            stall_streak = 0
+
+        if r_p <= kkt_primal_tol and objective_value >= best_feasible_objective:
+            best_feasible_objective = float(objective_value)
+            best_feasible_state = _capture_active_block_solver_state(
+                working_F,
+                user_models,
+                model_optimizers,
+                active_users,
+                lambda_rate,
+                lambda_power,
+            )
+
+        if (
+            r_p <= kkt_primal_tol
+            and r_c <= kkt_complementarity_tol
+            and r_s <= kkt_stationarity_tol
+        ):
+            success_streak += 1
+        else:
+            success_streak = 0
+
+        if verbose and (((sweep_idx + 1) % print_every) == 0 or sweep_idx == 0):
+            print(
+                f"[Block {block:02d} | KKT Sweep {sweep_idx + 1:03d}] "
+                f"active_users={len(active_users)} "
+                f"updated_users={len(update_users)} "
+                f"{objective_label}={objective_value:.4f} "
+                f"r_p={r_p:.6e} r_c={r_c:.6e} r_s={r_s:.6e}"
+            )
+
+        if success_streak >= kkt_patience:
+            solve_status = "kkt_converged"
+            break
+
+        if stall_streak >= kkt_stall_patience:
+            solve_status = "stalled_infeasible"
+            break
+
+    restored_state = best_feasible_state if best_feasible_state is not None else best_primal_state
+    _restore_active_block_solver_state(
+        working_F,
+        user_models,
+        model_optimizers,
+        active_users,
+        restored_state,
+    )
+    lambda_rate = dict(restored_state["lambda_rate"])
+    lambda_power = dict(restored_state["lambda_power"])
+    if best_feasible_state is not None and solve_status == "guard_stop":
+        solve_status = "guard_feasible_best"
+
+    return {
+        "history": history,
+        "dual_state": {
+            "lambda_rate": {int(k): float(v) for k, v in lambda_rate.items()},
+            "lambda_power": {int(k): float(v) for k, v in lambda_power.items()},
+        },
+        "solve_status": solve_status,
+        "best_feasible_found": bool(best_feasible_state is not None),
+    }
 
 
 def _allocate_bits_for_user_block_greedy(
@@ -994,7 +1632,7 @@ def _allocate_bits_for_user_block_weighted(
     T_k = int(system.T[k])
     n_min = int(sim_params["n_kl_min"])
     n_step = int(sim_params["n_kl_step"])
-    latency_penalty = float(sim_params.get("utility_latency_penalty", 0.5))
+    latency_penalty = float(sim_params.get("latency_penalty_weight", 0.5))
 
     R_T = float(system.compute_block_rate(k, l, T_k, F_override=working_F))
     B_max = max(_rate_to_max_bits(T_k, R_T), 0)
@@ -1254,7 +1892,7 @@ def _run_safe_sweep(
     )
     user_models = _build_user_precoder_models(system)
     model_optimizers = [
-        torch.optim.Adam(model.parameters(), lr=float(sim_params.get("user_update_lr", sim_params["step_lr"])))
+        torch.optim.Adam(model.parameters(), lr=float(sim_params.get("user_update_lr", 5e-3)))
         for model in user_models
     ]
 
@@ -1306,6 +1944,7 @@ def _run_safe_sweep(
         transmit_users = list(active_users)
         skipped_users: list[int] = []
         block_history: list[dict[str, float]] = []
+        block_dual_state: dict[str, dict[int, float]] | None = None
         block_eval: dict[str, Any] = {
             "feasible_count": 0,
             "min_max_bits": 0,
@@ -1318,18 +1957,24 @@ def _run_safe_sweep(
 
         while len(transmit_users) > 0:
             transmit_weights = {int(k): float(queue_weights.get(int(k), 1.0)) for k in transmit_users}
-            current_history = optimize_precoders_for_block(
+            requested_bits_block = {int(k): int(remaining[int(k)]) for k in transmit_users}
+            solve_result = optimize_precoders_for_block_constrained(
                 system,
                 working_F,
                 user_models,
                 model_optimizers,
                 transmit_users,
                 block,
+                requested_bits_block,
                 sim_params,
                 verbose=verbose,
                 objective_mode=objective_mode,
                 user_weights=transmit_weights,
+                dual_state=block_dual_state,
+                guard_sweeps=int(sim_params.get("main_solve_max_sweeps", sim_params["max_precoder_sweeps"])),
             )
+            current_history = solve_result["history"]
+            block_dual_state = copy.deepcopy(solve_result["dual_state"])
             current_eval = _evaluate_block_candidate(system, working_F, transmit_users, block)
             block_history.extend(current_history)
             block_eval = current_eval
@@ -1354,7 +1999,7 @@ def _run_safe_sweep(
         if len(transmit_users) > 0:
             transmit_weights = {int(k): float(queue_weights.get(int(k), 1.0)) for k in transmit_users}
             requested_bits_block = {int(k): int(remaining[int(k)]) for k in transmit_users}
-            final_plans, refinement_history = _reduce_blocklengths_with_reoptimization(
+            final_plans, refinement_history, block_dual_state = _reduce_blocklengths_with_reoptimization(
                 system,
                 working_F,
                 user_models,
@@ -1366,6 +2011,7 @@ def _run_safe_sweep(
                 objective_mode=objective_mode,
                 user_weights=transmit_weights,
                 verbose=verbose,
+                dual_state=block_dual_state,
             )
             block_history.extend(refinement_history)
         sweep_history.extend(block_history)
@@ -1503,7 +2149,7 @@ def _run_safe_sweep_fixed_block_targets(
     )
     user_models = _build_user_precoder_models(system)
     model_optimizers = [
-        torch.optim.Adam(model.parameters(), lr=float(sim_params.get("user_update_lr", sim_params["step_lr"])))
+        torch.optim.Adam(model.parameters(), lr=float(sim_params.get("user_update_lr", 5e-3)))
         for model in user_models
     ]
 
@@ -1537,6 +2183,7 @@ def _run_safe_sweep_fixed_block_targets(
         transmit_users = list(active_users)
         skipped_users: list[int] = []
         block_history: list[dict[str, float]] = []
+        block_dual_state: dict[str, dict[int, float]] | None = None
         block_eval: dict[str, Any] = {
             "feasible_count": 0,
             "min_max_bits": 0,
@@ -1548,18 +2195,27 @@ def _run_safe_sweep_fixed_block_targets(
         }
 
         while len(transmit_users) > 0:
-            current_history = optimize_precoders_for_block(
+            requested_bits_block = {
+                int(k): int(block_targets[int(k), block])
+                for k in transmit_users
+            }
+            solve_result = optimize_precoders_for_block_constrained(
                 system,
                 working_F,
                 user_models,
                 model_optimizers,
                 transmit_users,
                 block,
+                requested_bits_block,
                 sim_params,
                 verbose=verbose,
                 objective_mode=objective_mode,
                 user_weights=queue_weights,
+                dual_state=block_dual_state,
+                guard_sweeps=int(sim_params.get("main_solve_max_sweeps", sim_params["max_precoder_sweeps"])),
             )
+            current_history = solve_result["history"]
+            block_dual_state = copy.deepcopy(solve_result["dual_state"])
             current_eval = _evaluate_block_candidate(system, working_F, transmit_users, block)
             block_history.extend(current_history)
             block_eval = current_eval
@@ -1587,7 +2243,7 @@ def _run_safe_sweep_fixed_block_targets(
                 for k in transmit_users
             }
             uniform_weights = {int(k): 1.0 for k in transmit_users}
-            final_plans, refinement_history = _reduce_blocklengths_with_reoptimization(
+            final_plans, refinement_history, block_dual_state = _reduce_blocklengths_with_reoptimization(
                 system,
                 working_F,
                 user_models,
@@ -1599,6 +2255,7 @@ def _run_safe_sweep_fixed_block_targets(
                 objective_mode=objective_mode,
                 user_weights=uniform_weights,
                 verbose=verbose,
+                dual_state=block_dual_state,
             )
             block_history.extend(refinement_history)
         sweep_history.extend(block_history)

@@ -9,10 +9,10 @@ Precoder parameterization: shared_user_channel_to_precoder_mlp
 
 Latency summary
 Initial total latency: 0.076800
-Final total latency: 0.007000
-Total latency reduction (%): 90.8854
+Final total latency: 0.006933
+Total latency reduction (%): 90.9722
 Initial avg latency: 0.025600
-Final avg latency: 0.002333
+Final avg latency: 0.002311
 Initial min/max latency: 0.019800 / 0.033333
 Final min/max latency: 0.001400 / 0.003200
 
@@ -23,16 +23,16 @@ Asynchronality reduction (%): 86.6995
 
 Link quality summary
 Initial avg SNR (dB): 8.0000
-Final avg SNR (dB): 13.5195
+Final avg SNR (dB): 13.5326
 Initial avg block SINR (dB): -3.1814
-Final avg block SINR (dB): 7.6682
+Final avg block SINR (dB): 7.6507
 
 Per-user details
-User 0 | init_lat=0.019800 | final_lat=0.001400 | lat_red=92.9293% | init_block_sinr=-3.8652 dB | final_block_sinr=9.3232 dB | blocks=1 | total_n=21 | served_bits=200 | skipped_blocks=0
-User 1 | init_lat=0.023667 | final_lat=0.002400 | lat_red=89.8592% | init_block_sinr=-3.5152 dB | final_block_sinr=5.6590 dB | blocks=1 | total_n=36 | served_bits=400 | skipped_blocks=0
-User 2 | init_lat=0.033333 | final_lat=0.003200 | lat_red=90.4000% | init_block_sinr=-2.3093 dB | final_block_sinr=8.0224 dB | blocks=1 | total_n=48 | served_bits=600 | skipped_blocks=0
+User 0 | init_lat=0.019800 | final_lat=0.001400 | lat_red=92.9293% | init_block_sinr=-3.8652 dB | final_block_sinr=9.1968 dB | blocks=1 | total_n=21 | served_bits=200 | skipped_blocks=0
+User 1 | init_lat=0.023667 | final_lat=0.002333 | lat_red=90.1408% | init_block_sinr=-3.5152 dB | final_block_sinr=5.8292 dB | blocks=1 | total_n=35 | served_bits=400 | skipped_blocks=0
+User 2 | init_lat=0.033333 | final_lat=0.003200 | lat_red=90.4000% | init_block_sinr=-2.3093 dB | final_block_sinr=7.9260 dB | blocks=1 | total_n=48 | served_bits=600 | skipped_blocks=0
 
 Per-pair asynchronality
-Users 0-1 | initial_diff=0.003867 | final_diff=0.001000
+Users 0-1 | initial_diff=0.003867 | final_diff=0.000933
 Users 0-2 | initial_diff=0.013533 | final_diff=0.001800
-Users 1-2 | initial_diff=0.009667 | final_diff=0.000800
+Users 1-2 | initial_diff=0.009667 | final_diff=0.000867

@@ -106,6 +106,8 @@ def normalize_experiment_scenario_config(
     default_num_blocks = 1
     if max_total_blocks is not None:
         default_num_blocks = max(1, min(int(max_total_blocks), 4))
+    elif "monte_carlo_training_blocks_per_seed" in raw_cfg:
+        default_num_blocks = max(1, int(raw_cfg["monte_carlo_training_blocks_per_seed"]))
     elif "precoder_net_train_blocks_per_seed" in raw_cfg:
         default_num_blocks = max(1, int(raw_cfg["precoder_net_train_blocks_per_seed"]))
     num_blocks = int(

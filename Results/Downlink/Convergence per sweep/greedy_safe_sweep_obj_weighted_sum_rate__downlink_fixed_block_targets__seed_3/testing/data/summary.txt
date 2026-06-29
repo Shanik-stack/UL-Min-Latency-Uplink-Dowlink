@@ -9,30 +9,30 @@ Precoder parameterization: shared_user_channel_to_precoder_mlp
 
 Latency summary
 Initial total latency: 0.126667
-Final total latency: 0.071067
-Total latency reduction (%): 43.8947
+Final total latency: 0.071200
+Total latency reduction (%): 43.7895
 Initial avg latency: 0.042222
-Final avg latency: 0.023689
+Final avg latency: 0.023733
 Initial min/max latency: 0.033333 / 0.053333
-Final min/max latency: 0.014267 / 0.033067
+Final min/max latency: 0.015200 / 0.032467
 
 Asynchronality summary
 Initial asynchronality sum: 0.040000
-Final asynchronality sum: 0.037600
-Asynchronality reduction (%): 6.0000
+Final asynchronality sum: 0.034533
+Asynchronality reduction (%): 13.6667
 
 Link quality summary
 Initial avg SNR (dB): 8.0000
-Final avg SNR (dB): 13.2336
+Final avg SNR (dB): 13.3514
 Initial avg block SINR (dB): -3.6964
-Final avg block SINR (dB): 7.5786
+Final avg block SINR (dB): 7.4437
 
 Per-user details
-User 0 | init_lat=0.033333 | final_lat=0.014267 | lat_red=57.2000% | init_block_sinr=-3.6436 dB | final_block_sinr=7.7607 dB | blocks=10 | total_n=214 | served_bits=2000 | skipped_blocks=0 | target_bits=2000 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
-User 1 | init_lat=0.040000 | final_lat=0.023733 | lat_red=40.6667% | init_block_sinr=-3.2344 dB | final_block_sinr=7.6186 dB | blocks=10 | total_n=356 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
-User 2 | init_lat=0.053333 | final_lat=0.033067 | lat_red=38.0000% | init_block_sinr=-4.2113 dB | final_block_sinr=7.3566 dB | blocks=10 | total_n=496 | served_bits=6000 | skipped_blocks=0 | target_bits=6000 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 0 | init_lat=0.033333 | final_lat=0.015200 | lat_red=54.4000% | init_block_sinr=-3.6436 dB | final_block_sinr=7.1356 dB | blocks=10 | total_n=228 | served_bits=2000 | skipped_blocks=0 | target_bits=2000 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 1 | init_lat=0.040000 | final_lat=0.023533 | lat_red=41.1667% | init_block_sinr=-3.2344 dB | final_block_sinr=7.3287 dB | blocks=10 | total_n=353 | served_bits=4000 | skipped_blocks=0 | target_bits=4000 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 2 | init_lat=0.053333 | final_lat=0.032467 | lat_red=39.1250% | init_block_sinr=-4.2113 dB | final_block_sinr=7.8669 dB | blocks=10 | total_n=487 | served_bits=6000 | skipped_blocks=0 | target_bits=6000 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
 
 Per-pair asynchronality
-Users 0-1 | initial_diff=0.006667 | final_diff=0.009467
-Users 0-2 | initial_diff=0.020000 | final_diff=0.018800
-Users 1-2 | initial_diff=0.013333 | final_diff=0.009333
+Users 0-1 | initial_diff=0.006667 | final_diff=0.008333
+Users 0-2 | initial_diff=0.020000 | final_diff=0.017267
+Users 1-2 | initial_diff=0.013333 | final_diff=0.008933

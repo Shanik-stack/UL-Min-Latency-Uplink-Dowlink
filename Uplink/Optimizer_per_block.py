@@ -19,6 +19,7 @@ from precoder_models import (
 )
 from uplink_rate_model import build_uplink_rate_covariance
 LOG2E_SQ = (np.log2(np.e)) ** 2
+CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
 
 # ============================================================
 # Utils
@@ -34,6 +35,21 @@ def update_lambdas(lambda_rate: float, lambda_power: float,
     lambda_rate = max(0.0, float(lambda_rate) + float(lr_rate) * r)
     lambda_power = max(0.0, float(lambda_power) + float(lr_power) * p)
     return lambda_rate, lambda_power
+
+
+def resolve_constraint_loss_form(raw_mode: str) -> str:
+    mode = str(raw_mode).strip().lower()
+    if mode not in CONSTRAINT_LOSS_FORMS:
+        known = ", ".join(sorted(CONSTRAINT_LOSS_FORMS))
+        raise ValueError(f"Unknown constraint loss form '{raw_mode}'. Expected one of: {known}")
+    return mode
+
+
+def _constraint_violation_activation(value: torch.Tensor, loss_form: str) -> torch.Tensor:
+    if loss_form == "plain_lagrangian":
+        return F.leaky_relu(value)
+    return torch.relu(value)
+
 
 def project_power(Fmat: torch.Tensor, P: float, eps: float = 1e-12, delta: float = 1e-9) -> torch.Tensor:
     """
@@ -103,6 +119,9 @@ class LagrangianLoss(nn.Module):
         P: float,
         n_kl: int,
         noise_plus_interference_cov: torch.Tensor | None = None,
+        constraint_loss_form: str = "plain_lagrangian",
+        augmented_lagrangian_rho_rate: float = 0.0,
+        augmented_lagrangian_rho_power: float = 0.0,
     ):
         super().__init__()
         self.H_kl = H_kl
@@ -112,6 +131,9 @@ class LagrangianLoss(nn.Module):
         self.P = float(P)
         self.n_kl = int(n_kl)
         self.noise_plus_interference_cov = noise_plus_interference_cov
+        self.constraint_loss_form = resolve_constraint_loss_form(constraint_loss_form)
+        self.augmented_lagrangian_rho_rate = float(augmented_lagrangian_rho_rate)
+        self.augmented_lagrangian_rho_power = float(augmented_lagrangian_rho_power)
 
     def set_blocklength(self, n_kl: int):
         self.n_kl = int(n_kl)
@@ -164,13 +186,20 @@ class LagrangianLoss(nn.Module):
         rate_violation = (self.B / float(self.n_kl)) - R
         power_violation = F_power - self.P
 
-        # positive-part penalties (keep your original "leaky_relu" style)
-        rate_violation_pos = F.leaky_relu(rate_violation)
-        power_violation_pos = F.leaky_relu(power_violation)
+        rate_violation_pos = torch.relu(rate_violation)
+        power_violation_pos = torch.relu(power_violation)
+        rate_constraint_term = _constraint_violation_activation(rate_violation, self.constraint_loss_form)
+        power_constraint_term = _constraint_violation_activation(power_violation, self.constraint_loss_form)
 
         loss = (-R
-                + float(lambda_rate) * rate_violation_pos
-                + float(lambda_power) * power_violation_pos)
+                + float(lambda_rate) * rate_constraint_term
+                + float(lambda_power) * power_constraint_term)
+        if self.constraint_loss_form == "augmented_lagrangian":
+            loss = (
+                loss
+                + 0.5 * float(self.augmented_lagrangian_rho_rate) * rate_violation_pos.pow(2)
+                + 0.5 * float(self.augmented_lagrangian_rho_power) * power_violation_pos.pow(2)
+            )
 
         return loss, R, F_power, rate_violation_pos, power_violation_pos
 
@@ -182,23 +211,46 @@ def optimize_precoder_for_nl(
     loss_fn: LagrangianLoss,
     Nt: int,
     dk: int,
-    epochs: int,
+    guard_sweeps: int,
     lambda_rate: float,
     lambda_power: float,
     lr_rate: float,
     lr_power: float,
     optimizer: torch.optim.Optimizer,
-    min_sweeps_before_stop: int = 1,
-    precoder_tol: float = 1e-4,
-    feasibility_tol: float = 1e-5,
+    kkt_primal_tol: float = 1e-5,
+    kkt_complementarity_tol: float = 1e-5,
+    kkt_stationarity_tol: float = 1e-5,
+    kkt_patience: int = 1,
+    kkt_stall_patience: int = 25,
+    kkt_primal_improvement_tol: float = 1e-7,
 ):
     losses = []
-    min_sweeps_before_stop = max(1, int(min_sweeps_before_stop))
-    precoder_tol = float(precoder_tol)
-    feasibility_tol = float(feasibility_tol)
-    prev_Fmat: torch.Tensor | None = None
+    guard_sweeps = max(1, int(guard_sweeps))
+    kkt_patience = max(1, int(kkt_patience))
+    kkt_stall_patience = max(1, int(kkt_stall_patience))
 
-    for epoch in range(int(epochs)):
+    kkt_history: list[dict[str, float]] = []
+    success_streak = 0
+    stall_streak = 0
+    best_primal_residual = float("inf")
+    best_feasible_rate = -float("inf")
+    solve_status = "guard_stop"
+
+    best_primal_model_state = {
+        key: value.detach().cpu().clone()
+        for key, value in precoder_net.state_dict().items()
+    }
+    best_primal_optimizer_state = copy.deepcopy(optimizer.state_dict())
+    best_primal_lambda_rate = float(lambda_rate)
+    best_primal_lambda_power = float(lambda_power)
+    previous_precoder_eval: torch.Tensor | None = None
+
+    best_feasible_model_state: dict[str, torch.Tensor] | None = None
+    best_feasible_optimizer_state: dict | None = None
+    best_feasible_lambda_rate: float | None = None
+    best_feasible_lambda_power: float | None = None
+
+    for sweep_idx in range(guard_sweeps):
         Fmat = infer_precoder_torch_with_sigma_context(
             precoder_net,
             loss_fn.H_kl,
@@ -211,22 +263,104 @@ def optimize_precoder_for_nl(
 
         optimizer.zero_grad()
         loss, R, F_power, rv_pos, pv_pos = loss_fn(Fmat, lambda_rate, lambda_power)
-        # print("Post F_power: ", F_power)
-        feasible = (rv_pos.item() <= feasibility_tol) and (pv_pos.item() <= feasibility_tol)
-        delta = None
-        if prev_Fmat is not None:
-            delta = float(torch.linalg.norm(Fmat - prev_Fmat, ord="fro").detach().cpu())
+        loss.backward()
+
+        r_p = max(float(rv_pos.detach().cpu()), float(pv_pos.detach().cpu()))
+        r_c = max(
+            abs(float(lambda_rate) * float(rv_pos.detach().cpu())),
+            abs(float(lambda_power) * float(pv_pos.detach().cpu())),
+        )
+        if previous_precoder_eval is None:
+            r_s = float("inf")
+        else:
+            delta_num = float(
+                torch.linalg.norm(Fmat.detach() - previous_precoder_eval, ord="fro").detach().cpu()
+            )
+            delta_den = max(
+                float(torch.linalg.norm(previous_precoder_eval, ord="fro").detach().cpu()),
+                1e-12,
+            )
+            r_s = float(delta_num / delta_den)
+        feasible = r_p <= float(kkt_primal_tol)
         losses.append(float(loss.detach().cpu()))
-        if feasible and delta is not None and delta <= precoder_tol and (epoch + 1) >= min_sweeps_before_stop:
-            break
+        kkt_history.append(
+            {
+                "sweep": float(sweep_idx + 1),
+                "primal_residual": float(r_p),
+                "complementarity_residual": float(r_c),
+                "stationarity_residual": float(r_s),
+                "rate_violation": float(rv_pos.detach().cpu()),
+                "power_violation": float(pv_pos.detach().cpu()),
+                "rate": float(R.detach().cpu()),
+                "power": float(F_power.detach().cpu()),
+                "lambda_rate": float(lambda_rate),
+                "lambda_power": float(lambda_power),
+            }
+        )
+        previous_precoder_eval = Fmat.detach().clone()
 
         lambda_rate, lambda_power = update_lambdas(
             lambda_rate, lambda_power, rv_pos, pv_pos, lr_rate, lr_power
         )
 
-        loss.backward()
-        optimizer.step()
-        prev_Fmat = Fmat.detach()
+        if r_p + float(kkt_primal_improvement_tol) < best_primal_residual:
+            best_primal_residual = float(r_p)
+            best_primal_model_state = {
+                key: value.detach().cpu().clone()
+                for key, value in precoder_net.state_dict().items()
+            }
+            best_primal_optimizer_state = copy.deepcopy(optimizer.state_dict())
+            best_primal_lambda_rate = float(lambda_rate)
+            best_primal_lambda_power = float(lambda_power)
+            stall_streak = 0
+        elif r_p > float(kkt_primal_tol):
+            stall_streak += 1
+        else:
+            stall_streak = 0
+
+        if feasible and float(R.detach().cpu()) >= best_feasible_rate:
+            best_feasible_rate = float(R.detach().cpu())
+            best_feasible_model_state = {
+                key: value.detach().cpu().clone()
+                for key, value in precoder_net.state_dict().items()
+            }
+            best_feasible_optimizer_state = copy.deepcopy(optimizer.state_dict())
+            best_feasible_lambda_rate = float(lambda_rate)
+            best_feasible_lambda_power = float(lambda_power)
+
+        if (
+            r_p <= float(kkt_primal_tol)
+            and r_c <= float(kkt_complementarity_tol)
+            and r_s <= float(kkt_stationarity_tol)
+        ):
+            success_streak += 1
+        else:
+            success_streak = 0
+
+        if success_streak >= kkt_patience:
+            solve_status = "kkt_converged"
+            break
+
+        if stall_streak >= kkt_stall_patience:
+            solve_status = "stalled_infeasible"
+            break
+
+        if (sweep_idx + 1) < guard_sweeps:
+            optimizer.step()
+
+    if best_feasible_model_state is not None:
+        precoder_net.load_state_dict(best_feasible_model_state)
+        if best_feasible_optimizer_state is not None:
+            optimizer.load_state_dict(best_feasible_optimizer_state)
+        lambda_rate = float(best_feasible_lambda_rate)
+        lambda_power = float(best_feasible_lambda_power)
+        if solve_status == "guard_stop":
+            solve_status = "guard_feasible_best"
+    else:
+        precoder_net.load_state_dict(best_primal_model_state)
+        optimizer.load_state_dict(best_primal_optimizer_state)
+        lambda_rate = float(best_primal_lambda_rate)
+        lambda_power = float(best_primal_lambda_power)
 
     with torch.no_grad():
         F_final = infer_precoder_torch_with_sigma_context(
@@ -249,6 +383,15 @@ def optimize_precoder_for_nl(
         "rate_violation": float(rv_pos.detach().item()),
         "power_violation": float(pv_pos.detach().item()),
         "loss_curve": losses,
+        "solve_status": solve_status,
+        "kkt_history": kkt_history,
+        "final_primal_residual": float(max(float(rv_pos.detach().cpu()), float(pv_pos.detach().cpu()))),
+        "final_complementarity_residual": float(
+            max(
+                abs(float(lambda_rate) * float(rv_pos.detach().cpu())),
+                abs(float(lambda_power) * float(pv_pos.detach().cpu())),
+            )
+        ),
     }
 
 # ============================================================
@@ -304,12 +447,17 @@ def optimize_subblocklength_precoder(
     n_kl_max = int(uplinksystem.T[user])
     n_kl_min = int(sim_cfg["n_kl_min"])
     n_kl_step = int(sim_cfg["n_kl_step"])
-    epochs_per_n_kl = int(sim_cfg["epochs_per_n_kl"])
-    reduced_n_kl_max_precoder_sweeps = max(
+    main_guard_sweeps = int(sim_cfg.get("main_solve_max_sweeps", sim_cfg["solve_sweeps_per_n_kl"]))
+    reduced_n_kl_repair_max_sweeps = max(
         1,
-        int(sim_cfg.get("reduced_n_kl_max_precoder_sweeps", epochs_per_n_kl)),
+        int(
+            sim_cfg.get(
+                "reduced_n_kl_repair_max_sweeps",
+                sim_cfg["solve_sweeps_per_n_kl"],
+            )
+        ),
     )
-    print_every_reduced_n_kl = max(1, int(sim_cfg.get("print_every_reduced_n_kl", 1)))
+    reduced_n_kl_log_interval = max(1, int(sim_cfg.get("reduced_n_kl_log_interval", 1)))
     
     # psuedo_n_kl_max = int(1000*np.sin(1/real_n_kl_max))
     # psuedo_n_kl_max = int(B_rem*1.2)
@@ -318,27 +466,23 @@ def optimize_subblocklength_precoder(
     lr_net = float(sim_cfg["lr_net"])
     lr_rate = float(sim_cfg["lr_rate_constraint"])
     lr_power = float(sim_cfg["lr_power_constraint"])
-    min_sweeps_before_stop = int(
-        sim_cfg.get(
-            "convergence_min_precoder_sweeps_before_stop",
-            sim_cfg.get("min_precoder_sweeps_before_stop", 1),
-        )
+    kkt_primal_tol = float(sim_cfg.get("kkt_primal_tol", sim_cfg.get("convergence_feasibility_tol", 1e-5)))
+    kkt_complementarity_tol = float(
+        sim_cfg.get("kkt_complementarity_tol", sim_cfg.get("convergence_feasibility_tol", 1e-5))
     )
-    min_sweeps_before_stop = max(1, min(int(epochs_per_n_kl), int(min_sweeps_before_stop)))
-    reduced_n_kl_min_precoder_sweeps_before_stop = max(
-        1,
-        min(
-            int(reduced_n_kl_max_precoder_sweeps),
-            int(
-                sim_cfg.get(
-                    "reduced_n_kl_min_precoder_sweeps_before_stop",
-                    min_sweeps_before_stop,
-                )
-            ),
-        ),
+    kkt_stationarity_tol = float(
+        sim_cfg.get("kkt_stationarity_tol", sim_cfg.get("convergence_precoder_tol", 1e-4))
     )
-    precoder_tol = float(sim_cfg.get("convergence_precoder_tol", sim_cfg.get("precoder_tol", 1e-4)))
-    feasibility_tol = float(sim_cfg.get("convergence_feasibility_tol", sim_cfg.get("feasibility_tol", 1e-5)))
+    kkt_patience = int(
+        sim_cfg.get("kkt_patience", 1)
+    )
+    kkt_stall_patience = int(sim_cfg.get("kkt_stall_patience", 25))
+    kkt_primal_improvement_tol = float(sim_cfg.get("kkt_primal_improvement_tol", 1e-7))
+    constraint_loss_form = resolve_constraint_loss_form(
+        sim_cfg.get("constraint_loss_form", "plain_lagrangian")
+    )
+    augmented_lagrangian_rho_rate = float(sim_cfg.get("augmented_lagrangian_rho_rate", 0.0))
+    augmented_lagrangian_rho_power = float(sim_cfg.get("augmented_lagrangian_rho_power", 0.0))
 
     lambda_rate = float(lambda_rate_0)
     lambda_power = float(lambda_power_0)
@@ -347,6 +491,9 @@ def optimize_subblocklength_precoder(
         H_kl=H_kl, sigma2=sigma2, epsilon=epsilon,
         B=float(B_rem), P=float(P), n_kl=n_kl_max,
         noise_plus_interference_cov=noise_plus_interference_cov,
+        constraint_loss_form=constraint_loss_form,
+        augmented_lagrangian_rho_rate=augmented_lagrangian_rho_rate,
+        augmented_lagrangian_rho_power=augmented_lagrangian_rho_power,
     ).to(DEVICE)
 
     results = []
@@ -363,13 +510,16 @@ def optimize_subblocklength_precoder(
         precoder_net=precoder_net,
         loss_fn=loss_fn,
         Nt=Nt, dk=dk,
-        epochs=epochs_per_n_kl,
+        guard_sweeps=main_guard_sweeps,
         lambda_rate=lambda_rate, lambda_power=lambda_power,
         lr_rate=lr_rate, lr_power=lr_power,
         optimizer=optimizer,
-        min_sweeps_before_stop=min_sweeps_before_stop,
-        precoder_tol=precoder_tol,
-        feasibility_tol=feasibility_tol,
+        kkt_primal_tol=kkt_primal_tol,
+        kkt_complementarity_tol=kkt_complementarity_tol,
+        kkt_stationarity_tol=kkt_stationarity_tol,
+        kkt_patience=kkt_patience,
+        kkt_stall_patience=kkt_stall_patience,
+        kkt_primal_improvement_tol=kkt_primal_improvement_tol,
     )
 
     lambda_rate = out["lambda_rate"]
@@ -380,13 +530,13 @@ def optimize_subblocklength_precoder(
     print(f"Rate violation: {out['rate_violation']}")
     print(f"Power violation: {out['power_violation']}")
 
-    if out["power_violation"] > feasibility_tol:
+    if out["power_violation"] > kkt_primal_tol:
         print(">>> Power constraint violated at n = T. STOP.")
         return [], 0
 
     B_max_T = max(int(np.floor(float(n_kl_max) * float(out["R_fbl"]))), 0)
     B_used = int(min(B_initial, B_max_T))
-    fully_feasible_at_T = out["rate_violation"] <= feasibility_tol
+    fully_feasible_at_T = out["rate_violation"] <= kkt_primal_tol
 
     if B_used <= 0:
         if is_fixed_target_block:
@@ -414,6 +564,9 @@ def optimize_subblocklength_precoder(
         "lambda_rate": float(lambda_rate),
         "lambda_power": float(lambda_power),
         "loss_curve": out["loss_curve"],
+        "solve_status": out.get("solve_status", "unknown"),
+        "final_primal_residual": float(out.get("final_primal_residual", 0.0)),
+        "final_complementarity_residual": float(out.get("final_complementarity_residual", 0.0)),
     })
 
     bits_left_after_current_request = int(B_initial - B_used)
@@ -445,7 +598,7 @@ def optimize_subblocklength_precoder(
         should_print_candidate = (
             n_kl == n_kl_max - n_kl_step
             or n_kl == n_kl_min
-            or ((n_kl_max - n_kl) % max(int(n_kl_step) * int(print_every_reduced_n_kl), 1) == 0)
+            or ((n_kl_max - n_kl) % max(int(n_kl_step) * int(reduced_n_kl_log_interval), 1) == 0)
         )
         if should_print_candidate:
             print(f"\nRe-optimizing at n = {n_kl}")
@@ -464,15 +617,18 @@ def optimize_subblocklength_precoder(
             loss_fn=loss_fn,
             Nt=Nt,
             dk=dk,
-            epochs=reduced_n_kl_max_precoder_sweeps,
+            guard_sweeps=reduced_n_kl_repair_max_sweeps,
             lambda_rate=lambda_rate,
             lambda_power=lambda_power,
             lr_rate=lr_rate,
             lr_power=lr_power,
             optimizer=optimizer,
-            min_sweeps_before_stop=reduced_n_kl_min_precoder_sweeps_before_stop,
-            precoder_tol=precoder_tol,
-            feasibility_tol=feasibility_tol,
+            kkt_primal_tol=kkt_primal_tol,
+            kkt_complementarity_tol=kkt_complementarity_tol,
+            kkt_stationarity_tol=kkt_stationarity_tol,
+            kkt_patience=kkt_patience,
+            kkt_stall_patience=kkt_stall_patience,
+            kkt_primal_improvement_tol=kkt_primal_improvement_tol,
         )
         lambda_rate = out["lambda_rate"]
         lambda_power = out["lambda_power"]
@@ -482,7 +638,7 @@ def optimize_subblocklength_precoder(
             print(f"Rate violation: {out['rate_violation']}")
             print(f"Power violation: {out['power_violation']}")
 
-        feasible = (out["rate_violation"] <= feasibility_tol) and (out["power_violation"] <= feasibility_tol)
+        feasible = (out["rate_violation"] <= kkt_primal_tol) and (out["power_violation"] <= kkt_primal_tol)
         if not feasible:
             precoder_net.load_state_dict(model_checkpoint)
             optimizer.load_state_dict(optimizer_checkpoint)
@@ -504,6 +660,9 @@ def optimize_subblocklength_precoder(
             "lambda_rate": float(lambda_rate),
             "lambda_power": float(lambda_power),
             "loss_curve": out["loss_curve"],
+            "solve_status": out.get("solve_status", "unknown"),
+            "final_primal_residual": float(out.get("final_primal_residual", 0.0)),
+            "final_complementarity_residual": float(out.get("final_complementarity_residual", 0.0)),
         })
 
         n_kl -= n_kl_step
@@ -1154,7 +1313,7 @@ if __name__ == "__main__":
 
     # expected keys in SIMULATION_TEST_PARAMS:
     #   initial_lambda_rate_constraint, initial_lambda_power_constraint,
-    #   epochs_per_n_kl, lr_net, lr_rate_constraint, lr_power_constraint,
+    #   solve_sweeps_per_n_kl, lr_net, lr_rate_constraint, lr_power_constraint,
     #   n_kl_min, n_kl_step
     sim_cfg = dict(SIMULATION_TEST_PARAMS)
 

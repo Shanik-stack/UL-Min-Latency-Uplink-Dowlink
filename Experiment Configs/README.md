@@ -1,99 +1,71 @@
 # Experiment Configs
 
-This folder contains ready-to-run experiment configurations for the two scenario families used by the unified uplink/downlink Monte Carlo setup.
+This folder contains the canonical ready-to-run YAML files for the cleaned
+uplink/downlink experiment setup.
 
-For a detailed explanation of every config parameter and how it affects the simulation, see `PARAMETER_GUIDE.md`.
+For the detailed parameter-by-parameter reference, read `PARAMETER_GUIDE.md`.
 
-The provided experiment YAML files are intended to define the canonical parameters explicitly instead of relying on hidden loader defaults.
+## Config Design
+
+The configs now follow a simpler structure:
+
+- `test`
+  - Physical system dimensions, payload, SNR, symbol rate, and reliability.
+- `simulation`
+  - Optimization settings, KKT stopping settings, Monte Carlo training-data settings, and scenario definition.
+
+The confusing legacy Monte Carlo names such as `precoder_net_train_*`,
+`curriculum_*`, and `policy_train_*` are no longer used in the canonical YAML
+files. The loaders still accept those old names as legacy aliases, but the
+recommended names are the ones shown in the current files.
 
 ## Files
 
 - `uplink_payload_completion.yaml`
-  - Uplink payload-draining scenario.
-  - Each user starts with a payload budget from `test.B`.
-  - The simulation continues until the payload is fully transmitted.
+  - Uplink payload-draining experiment.
+  - Each user starts with `test.B[k]` total payload bits.
+  - Transmission continues until each payload is drained.
 
 - `uplink_fixed_block_targets.yaml`
-  - Uplink fixed-bits-per-block scenario.
-  - Each user attempts to transmit `test.B[k]` bits in every block.
-  - The current default uses `num_blocks: 10`, with per-user block targets taken directly from `B`.
+  - Uplink fixed-bits-per-block experiment.
+  - Each user tries to send `test.B[k]` bits in every block.
+  - Unserved bits do not carry into the next block.
 
 - `downlink_payload_completion.yaml`
-  - Downlink payload-draining scenario.
-  - Each user starts with a payload budget from `test.B`.
-  - The simulation continues until the payload is fully transmitted.
+  - Downlink payload-draining experiment.
+  - Each user starts with `test.B[k]` total payload bits.
 
 - `downlink_fixed_block_targets.yaml`
-  - Downlink fixed-bits-per-block scenario.
-  - Each user attempts to transmit `test.B[k]` bits in every block.
-  - The current default uses `num_blocks: 10`, with per-user block targets taken directly from `B`.
+  - Downlink fixed-bits-per-block experiment.
+  - Each user tries to send `test.B[k]` bits in every block over a fixed horizon.
 
 ## Running With Short Config Names
 
-You do not need to pass the full config path. The uplink and downlink config loaders now automatically search:
+You only need the config filename. The loaders search:
 
-1. Their local method folder.
+1. The local method folder.
 2. `UL_UPLINK_DOWNLINK_MONTE_CARLO/Experiment Configs`
 3. `UL_UPLINK_DOWNLINK_MONTE_CARLO`
 4. The current working directory.
 
-That means you can pass only the config filename, but the script path still depends on your current working directory.
+## Example Commands
 
-### If your current directory is `C:\All Codes\Taiwan_Internship`
-
-Use the project-prefixed script path:
+If your current directory is `C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO`:
 
 ```powershell
-python "UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Monte Carlo\main.py" --cfg_name uplink_payload_completion.yaml --train_seeds 0,1,2 --test_seed 3
-```
-
-```powershell
-python "UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Monte Carlo\main.py" --cfg_name uplink_fixed_block_targets.yaml --train_seeds 0,1,2 --test_seed 3
-```
-
-```powershell
-python "UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Monte Carlo\main.py" --cfg_name downlink_payload_completion.yaml --train_seeds 0,1,2 --test_seed 3
-```
-
-```powershell
-python "UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Monte Carlo\main.py" --cfg_name downlink_fixed_block_targets.yaml --train_seeds 0,1,2 --test_seed 3
-```
-
-### If your current directory is `C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO`
-
-Use the shorter script path:
-
-### Uplink payload
-
-```powershell
+python "Uplink\Methods\Convergence per sweep\main.py" --cfg_name uplink_payload_completion.yaml --seed 3
 python "Uplink\Methods\Monte Carlo\main.py" --cfg_name uplink_payload_completion.yaml --train_seeds 0,1,2 --test_seed 3
-```
-
-### Uplink fixed block targets
-
-```powershell
-python "Uplink\Methods\Monte Carlo\main.py" --cfg_name uplink_fixed_block_targets.yaml --train_seeds 0,1,2 --test_seed 3
-```
-
-### Downlink payload
-
-```powershell
+python "Downlink\Methods\Convergence per sweep\main.py" --cfg_name downlink_payload_completion.yaml --seed 3
 python "Downlink\Methods\Monte Carlo\main.py" --cfg_name downlink_payload_completion.yaml --train_seeds 0,1,2 --test_seed 3
-```
-
-### Downlink fixed block targets
-
-```powershell
-python "Downlink\Methods\Monte Carlo\main.py" --cfg_name downlink_fixed_block_targets.yaml --train_seeds 0,1,2 --test_seed 3
 ```
 
 ## Scenario Meaning
 
 - `payload_completion`
-  - Total payload is fixed per user.
-  - The final block may act like a tail block because only the remaining payload needs to be sent.
+  - `test.B[k]` is the full payload for user `k`.
+  - Later blocks may become tail blocks because only the remaining payload matters.
 
 - `fixed_block_targets`
-  - A fixed positive bit target is assigned to every block for every user.
-  - In the canonical `generation_mode: constant` setup, that per-block target is `test.B[k]`.
-  - This models continuous per-block transmission demand over a fixed block horizon.
+  - `test.B[k]` is the per-block target for user `k`.
+  - Blocks are independent.
+  - Unserved bits are recorded for that block only and do not carry forward.

@@ -24,19 +24,25 @@ def dynamic_subblocklength_precoder_training_baseline(
     """
 
     local_sim_cfg = dict(sim_cfg)
-    requested_epochs = int(local_sim_cfg.get("epochs_per_n_kl", local_sim_cfg.get("max_precoder_sweeps", 500)))
-    requested_max_sweeps = int(local_sim_cfg.get("max_precoder_sweeps", requested_epochs))
-    convergence_cap = int(
-        local_sim_cfg.get(
-            "convergence_max_precoder_sweeps",
-            min(requested_max_sweeps, 500),
-        )
-    )
-    effective_sweeps = max(1, min(requested_epochs, requested_max_sweeps, convergence_cap))
-    local_sim_cfg["epochs_per_n_kl"] = int(effective_sweeps)
+    requested_sweeps = int(local_sim_cfg.get("solve_sweeps_per_n_kl", local_sim_cfg.get("max_precoder_sweeps", 500)))
+    requested_max_sweeps = int(local_sim_cfg.get("max_precoder_sweeps", requested_sweeps))
+    convergence_cap = int(local_sim_cfg.get("main_solve_max_sweeps", min(requested_max_sweeps, 500)))
+    effective_sweeps = max(1, min(requested_sweeps, requested_max_sweeps, convergence_cap))
+    local_sim_cfg["solve_sweeps_per_n_kl"] = int(effective_sweeps)
     local_sim_cfg["max_precoder_sweeps"] = int(effective_sweeps)
-    local_sim_cfg["convergence_min_precoder_sweeps_before_stop"] = int(
-        local_sim_cfg.get("convergence_min_precoder_sweeps_before_stop", 1)
+    local_sim_cfg["main_solve_max_sweeps"] = int(
+        min(int(local_sim_cfg.get("main_solve_max_sweeps", effective_sweeps)), int(effective_sweeps))
+    )
+    local_sim_cfg["reduced_n_kl_repair_max_sweeps"] = int(
+        max(
+            1,
+            int(
+                local_sim_cfg.get(
+                    "reduced_n_kl_repair_max_sweeps",
+                    10,
+                )
+            ),
+        )
     )
 
     if str(local_sim_cfg.get("experiment_scenario_mode", "")) == FIXED_BLOCK_TARGETS_MODE:

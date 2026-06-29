@@ -9,6 +9,13 @@ import yaml
 from experiment_scenarios import normalize_experiment_scenario_config
 
 
+def _first_present(mapping: dict, *names: str, default=None):
+    for name in names:
+        if name in mapping:
+            return mapping[name]
+    return default
+
+
 def _as_array(values: Any, K: int, name: str, dtype) -> np.ndarray:
     arr = np.asarray(values, dtype=dtype)
     if arr.ndim == 0:
@@ -78,74 +85,137 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
 
     sim_cfg_raw = cfg.get("simulation", {})
     n_range = sim_cfg_raw.get("n_kl_range", {})
-    default_precoder_net_train_blocks = min(int(sim_cfg_raw.get("max_total_blocks", 256)), 2)
+    default_monte_carlo_training_blocks = min(int(sim_cfg_raw.get("max_total_blocks", 256)), 2)
     scenario_cfg = normalize_experiment_scenario_config(
         sim_cfg_raw.get("experiment_scenario", {}),
         system_params=system_params,
         max_total_blocks=int(sim_cfg_raw.get("max_total_blocks", 256)),
     )
+    max_precoder_sweeps = int(sim_cfg_raw.get("max_precoder_sweeps", 25))
     sim_params = {
         "max_precoder_sweeps": int(sim_cfg_raw.get("max_precoder_sweeps", 25)),
         "print_every_sweep": int(sim_cfg_raw.get("print_every_sweep", 1)),
-        "step_lr": float(sim_cfg_raw.get("step_lr", 5e-3)),
         "user_update_steps": int(sim_cfg_raw.get("user_update_steps", 1)),
-        "user_update_lr": float(sim_cfg_raw.get("user_update_lr", sim_cfg_raw.get("step_lr", 5e-3))),
-        "precoder_tol": float(sim_cfg_raw.get("precoder_tol", 1e-4)),
+        "user_update_lr": float(
+            _first_present(
+                sim_cfg_raw,
+                "user_update_lr",
+                "step_lr",
+                default=5e-3,
+            )
+        ),
+        "initial_lambda_rate_constraint": float(sim_cfg_raw.get("initial_lambda_rate_constraint", 0.1)),
+        "initial_lambda_power_constraint": float(sim_cfg_raw.get("initial_lambda_power_constraint", 0.01)),
+        "lr_rate_constraint": float(sim_cfg_raw.get("lr_rate_constraint", 1e-2)),
+        "lr_power_constraint": float(sim_cfg_raw.get("lr_power_constraint", 1e-3)),
+        "constraint_loss_form": str(sim_cfg_raw.get("constraint_loss_form", "plain_lagrangian")).strip().lower(),
+        "augmented_lagrangian_rho_rate": float(sim_cfg_raw.get("augmented_lagrangian_rho_rate", 0.0)),
+        "augmented_lagrangian_rho_power": float(sim_cfg_raw.get("augmented_lagrangian_rho_power", 0.0)),
+        "main_solve_max_sweeps": int(
+            _first_present(
+                sim_cfg_raw,
+                "main_solve_max_sweeps",
+                "main_solve_guard_sweeps",
+                default=max_precoder_sweeps,
+            )
+        ),
+        "reduced_n_kl_repair_max_sweeps": int(
+            _first_present(
+                sim_cfg_raw,
+                "reduced_n_kl_repair_max_sweeps",
+                "repair_solve_guard_sweeps",
+                default=max_precoder_sweeps,
+            )
+        ),
+        "kkt_primal_tol": float(sim_cfg_raw.get("kkt_primal_tol", 1e-5)),
+        "kkt_complementarity_tol": float(sim_cfg_raw.get("kkt_complementarity_tol", 1e-5)),
+        "kkt_stationarity_tol": float(sim_cfg_raw.get("kkt_stationarity_tol", 1e-4)),
+        "kkt_patience": int(sim_cfg_raw.get("kkt_patience", 1)),
+        "kkt_stall_patience": int(sim_cfg_raw.get("kkt_stall_patience", 25)),
+        "kkt_primal_improvement_tol": float(sim_cfg_raw.get("kkt_primal_improvement_tol", 1e-7)),
         "max_total_blocks": int(sim_cfg_raw.get("max_total_blocks", 256)),
         "n_kl_min": int(n_range.get("min", 5)),
         "n_kl_step": int(n_range.get("step", 1)),
-        "precoder_net_train_blocks_per_seed": int(
-            sim_cfg_raw.get(
-                "precoder_net_train_blocks_per_seed",
-                sim_cfg_raw.get(
-                    "precoder_train_blocks_per_seed",
-                    sim_cfg_raw.get("policy_train_blocks_per_seed", default_precoder_net_train_blocks),
-                ),
-            )
-        ),
-        "precoder_net_train_n_kl_coarse_step": int(
-            sim_cfg_raw.get(
-                "precoder_net_train_n_kl_coarse_step",
-                sim_cfg_raw.get(
-                    "precoder_train_n_kl_coarse_step",
-                    sim_cfg_raw.get("policy_train_n_kl_coarse_step", 5),
-                ),
-            )
-        ),
-        "precoder_net_train_min_bits_required": int(
-            sim_cfg_raw.get(
-                "precoder_net_train_min_bits_required",
-                sim_cfg_raw.get(
-                    "precoder_train_min_bits_required",
-                    sim_cfg_raw.get("policy_train_min_bits_required", 1),
-                ),
-            )
-        ),
-        "precoder_net_train_max_reduction_rounds_per_epoch": int(
-            sim_cfg_raw.get("precoder_net_train_max_reduction_rounds_per_epoch", 4)
-        ),
-        "precoder_net_train_curriculum_warmup_epochs": int(
-            sim_cfg_raw.get("precoder_net_train_curriculum_warmup_epochs", 0)
-        ),
-        "precoder_net_train_curriculum_interval_epochs": int(
-            sim_cfg_raw.get("precoder_net_train_curriculum_interval_epochs", 1)
-        ),
-        "precoder_net_train_enumerate_all_masks_up_to_k": int(
-            sim_cfg_raw.get("precoder_net_train_enumerate_all_masks_up_to_k", 3)
-        ),
-        "safe_sweep_objective_mode": str(
-            sim_cfg_raw.get(
-                "safe_sweep_objective_mode",
-                sim_cfg_raw.get(
-                    "downlink_safe_sweep_objective_mode",
-                    sim_cfg_raw.get("objective_mode", "user_rate"),
-                ),
+        "n_kl_reduction_update_scope": str(
+            _first_present(
+                sim_cfg_raw,
+                "n_kl_reduction_update_scope",
+                "reduced_n_kl_reoptimization_scope",
+                default="all_active_users",
             )
         ).strip().lower(),
-        "queue_weight_power": float(sim_cfg_raw.get("queue_weight_power", 1.0)),
-        "queue_weight_min": float(sim_cfg_raw.get("queue_weight_min", 0.25)),
-        "network_weight_beta": float(sim_cfg_raw.get("network_weight_beta", 0.15)),
-        "utility_latency_penalty": float(sim_cfg_raw.get("utility_latency_penalty", 0.5)),
+        "monte_carlo_training_blocks_per_seed": int(
+            _first_present(
+                sim_cfg_raw,
+                "monte_carlo_training_blocks_per_seed",
+                "precoder_net_train_blocks_per_seed",
+                "precoder_train_blocks_per_seed",
+                "policy_train_blocks_per_seed",
+                default=default_monte_carlo_training_blocks,
+            )
+        ),
+        "monte_carlo_training_n_kl_coarse_step": int(
+            _first_present(
+                sim_cfg_raw,
+                "monte_carlo_training_n_kl_coarse_step",
+                "precoder_net_train_n_kl_coarse_step",
+                "precoder_train_n_kl_coarse_step",
+                "policy_train_n_kl_coarse_step",
+                default=5,
+            )
+        ),
+        "monte_carlo_training_fallback_target_bits": int(
+            _first_present(
+                sim_cfg_raw,
+                "monte_carlo_training_fallback_target_bits",
+                "precoder_net_train_min_bits_required",
+                "precoder_train_min_bits_required",
+                "policy_train_min_bits_required",
+                default=1,
+            )
+        ),
+        "convergence_block_objective_mode": str(
+            _first_present(
+                sim_cfg_raw,
+                "convergence_block_objective_mode",
+                "safe_sweep_objective_mode",
+                "downlink_safe_sweep_objective_mode",
+                "objective_mode",
+                default="user_rate",
+            )
+        ).strip().lower(),
+        "remaining_bits_weight_power": float(
+            _first_present(
+                sim_cfg_raw,
+                "remaining_bits_weight_power",
+                "queue_weight_power",
+                default=1.0,
+            )
+        ),
+        "minimum_user_weight": float(
+            _first_present(
+                sim_cfg_raw,
+                "minimum_user_weight",
+                "queue_weight_min",
+                default=0.25,
+            )
+        ),
+        "network_rate_weight": float(
+            _first_present(
+                sim_cfg_raw,
+                "network_rate_weight",
+                "network_weight_beta",
+                default=0.15,
+            )
+        ),
+        "latency_penalty_weight": float(
+            _first_present(
+                sim_cfg_raw,
+                "latency_penalty_weight",
+                "utility_latency_penalty",
+                default=0.5,
+            )
+        ),
         "experiment_scenario": scenario_cfg,
         "experiment_scenario_mode": str(scenario_cfg["mode"]),
     }

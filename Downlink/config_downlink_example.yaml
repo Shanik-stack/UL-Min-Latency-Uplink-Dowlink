@@ -34,34 +34,56 @@ test:
     - 4
     - 4
 simulation:
+  # Per-user precoder updates inside one synchronized block sweep
   max_precoder_sweeps: 500
   print_every_sweep: 5
-  step_lr: 0.001
   user_update_steps: 1
   user_update_lr: 0.001
-  precoder_tol: 1.0e-6
+
+  # Constrained block solve
+  initial_lambda_rate_constraint: 0.1
+  initial_lambda_power_constraint: 0.01
+  lr_rate_constraint: 0.01
+  lr_power_constraint: 0.001
+  constraint_loss_form: plain_lagrangian
+  augmented_lagrangian_rho_rate: 1.0
+  augmented_lagrangian_rho_power: 1.0
+  main_solve_max_sweeps: 500
+  reduced_n_kl_repair_max_sweeps: 50
+  kkt_primal_tol: 1.0e-5
+  kkt_complementarity_tol: 1.0e-5
+  kkt_stationarity_tol: 3.0e-3
+  kkt_patience: 3
+  kkt_stall_patience: 25
+  kkt_primal_improvement_tol: 1.0e-7
+
+  # Reduced-n_kl repair behavior
+  n_kl_reduction_update_scope: infeasible_users_only
+
+  # Monte Carlo training data
+  monte_carlo_training_blocks_per_seed: 3
+  monte_carlo_training_fallback_target_bits: 1
+  monte_carlo_training_n_kl_coarse_step: 5
+
+  # Downlink block objective and payload weighting
+  convergence_block_objective_mode: weighted_sum_rate
+  remaining_bits_weight_power: 1.0
+  minimum_user_weight: 0.25
+  network_rate_weight: 0.15
+  latency_penalty_weight: 0.5
+
+  # Experiment limits
   max_total_blocks: 256
-  precoder_net_train_blocks_per_seed: 3
-  precoder_net_train_n_kl_coarse_step: 5
-  precoder_net_train_min_bits_required: 1
-  precoder_net_train_max_reduction_rounds_per_epoch: 1
-  precoder_net_train_curriculum_warmup_epochs: 8
-  precoder_net_train_curriculum_interval_epochs: 5
-  precoder_net_train_enumerate_all_masks_up_to_k: 3
-  safe_sweep_objective_mode: weighted_sum_rate
-  queue_weight_power: 1.0
-  queue_weight_min: 0.25
-  network_weight_beta: 0.15
-  utility_latency_penalty: 0.5
+
+  # Scenario definition
   experiment_scenario:
     mode: payload_completion
     payload_bits_source: system_B
     skip_infeasible_blocks: true
     skip_block_adds_full_T_latency: true
     track_skipped_blocks: true
-    fixed_block_targets:
-      num_blocks: 4
-      generation_mode: constant
+
+  # Allowed blocklength search range
   n_kl_range:
     min: 5
     step: 1

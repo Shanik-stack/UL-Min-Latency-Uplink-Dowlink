@@ -22,14 +22,14 @@ Asynchronality reduction (%): -26.3158
 
 Link quality summary
 Initial avg SNR (dB): 11.0228
-Final avg SNR (dB): 11.2284
+Final avg SNR (dB): 11.1192
 Initial avg SINR (dB): -3.2329
-Final avg SINR (dB): -3.0853
+Final avg SINR (dB): -3.1273
 
 Per-user details
-User 0 | init_lat=0.008867 | final_lat=0.006667 | lat_red=24.8120% | init_snr=14.2587 dB | final_snr=14.3356 dB | init_sinr=-2.7026 dB | final_sinr=-2.6020 dB | blocks=1 | total_n=100 | served_bits=2400 | skipped_blocks=0
-User 1 | init_lat=0.010533 | final_lat=0.008000 | lat_red=24.0506% | init_snr=10.2818 dB | final_snr=10.6565 dB | init_sinr=-4.3505 dB | final_sinr=-4.0165 dB | blocks=2 | total_n=120 | served_bits=2400 | skipped_blocks=0
-User 2 | init_lat=0.011400 | final_lat=0.009867 | lat_red=13.4503% | init_snr=8.5280 dB | final_snr=8.6931 dB | init_sinr=-2.6456 dB | final_sinr=-2.6375 dB | blocks=2 | total_n=148 | served_bits=2400 | skipped_blocks=0
+User 0 | init_lat=0.008867 | final_lat=0.006667 | lat_red=24.8120% | init_snr=14.2587 dB | final_snr=14.3334 dB | init_sinr=-2.7026 dB | final_sinr=-2.5515 dB | blocks=1 | total_n=100 | served_bits=2400 | skipped_blocks=0
+User 1 | init_lat=0.010533 | final_lat=0.008000 | lat_red=24.0506% | init_snr=10.2818 dB | final_snr=10.4488 dB | init_sinr=-4.3505 dB | final_sinr=-4.1641 dB | blocks=2 | total_n=120 | served_bits=2400 | skipped_blocks=0
+User 2 | init_lat=0.011400 | final_lat=0.009867 | lat_red=13.4503% | init_snr=8.5280 dB | final_snr=8.5753 dB | init_sinr=-2.6456 dB | final_sinr=-2.6664 dB | blocks=2 | total_n=148 | served_bits=2400 | skipped_blocks=0
 
 Per-pair asynchronality
 Users 0-1 | initial_diff=0.001667 | final_diff=0.001333

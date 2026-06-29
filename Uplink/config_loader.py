@@ -9,6 +9,13 @@ from uplink_rate_model import normalize_uplink_rate_model
 from utils import initialize_system_params
 
 
+def _first_present(mapping: dict, *names: str, default=None):
+    for name in names:
+        if name in mapping:
+            return mapping[name]
+    return default
+
+
 def _resolve_config_path(cfg_name: str) -> str:
     if not cfg_name.endswith(".yaml"):
         cfg_name = f"{cfg_name}.yaml"
@@ -87,81 +94,115 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
         max_total_blocks=int(sim_cfg.get("max_total_blocks", 256)),
     )
     n_kl_max = [system_test_params["T"][user] for user in range(system_test_params["K"])]
+    solve_sweeps_per_n_kl = int(
+        _first_present(
+            sim_cfg,
+            "solve_sweeps_per_n_kl",
+            "epochs_per_n_kl",
+            "max_precoder_sweeps",
+            default=10000,
+        )
+    )
+    max_precoder_sweeps = int(
+        _first_present(
+            sim_cfg,
+            "max_precoder_sweeps",
+            "solve_sweeps_per_n_kl",
+            "epochs_per_n_kl",
+            default=solve_sweeps_per_n_kl,
+        )
+    )
+    main_solve_max_sweeps = int(
+        _first_present(
+            sim_cfg,
+            "main_solve_max_sweeps",
+            "main_solve_guard_sweeps",
+            "convergence_max_precoder_sweeps",
+            default=min(max_precoder_sweeps, 500),
+        )
+    )
+    reduced_n_kl_repair_max_sweeps = int(
+        _first_present(
+            sim_cfg,
+            "reduced_n_kl_repair_max_sweeps",
+            "repair_solve_guard_sweeps",
+            "reduced_n_kl_max_precoder_sweeps",
+            default=solve_sweeps_per_n_kl,
+        )
+    )
     simulation_test_params = {
         "initial_lambda_rate_constraint": sim_cfg["initial_lambda_rate_constraint"],
         "initial_lambda_power_constraint": sim_cfg["initial_lambda_power_constraint"],
-        "epochs_per_n_kl": sim_cfg.get("epochs_per_n_kl", sim_cfg.get("max_precoder_sweeps", 10000)),
+        "solve_sweeps_per_n_kl": solve_sweeps_per_n_kl,
         "lr_net": sim_cfg.get(
             "lr_net",
             lr_cfg.get("net", sim_cfg.get("user_update_lr", sim_cfg.get("step_lr", 1e-2))),
         ),
         "lr_rate_constraint": sim_cfg.get("lr_rate_constraint", lr_cfg.get("rate_constraint", 1e-2)),
         "lr_power_constraint": sim_cfg.get("lr_power_constraint", lr_cfg.get("power_constraint", 1e-3)),
+        "constraint_loss_form": str(sim_cfg.get("constraint_loss_form", "plain_lagrangian")).strip().lower(),
+        "augmented_lagrangian_rho_rate": float(sim_cfg.get("augmented_lagrangian_rho_rate", 0.0)),
+        "augmented_lagrangian_rho_power": float(sim_cfg.get("augmented_lagrangian_rho_power", 0.0)),
         "n_kl_min": sim_cfg["n_kl_range"]["min"],
         "n_kl_max": n_kl_max,
         "n_kl_step": sim_cfg["n_kl_range"]["step"],
         "max_total_blocks": int(sim_cfg.get("max_total_blocks", 256)),
-        "max_precoder_sweeps": int(sim_cfg.get("max_precoder_sweeps", sim_cfg.get("epochs_per_n_kl", 10000))),
+        "max_precoder_sweeps": max_precoder_sweeps,
         "print_every_sweep": int(sim_cfg.get("print_every_sweep", 1)),
-        "precoder_net_train_min_bits_required": int(
-            sim_cfg.get(
+        "monte_carlo_training_fallback_target_bits": int(
+            _first_present(
+                sim_cfg,
+                "monte_carlo_training_fallback_target_bits",
                 "precoder_net_train_min_bits_required",
-                sim_cfg.get(
-                    "precoder_train_min_bits_required",
-                    sim_cfg.get("policy_train_min_bits_required", 1),
-                ),
+                "precoder_train_min_bits_required",
+                "policy_train_min_bits_required",
+                default=1,
             )
         ),
-        "precoder_net_train_blocks_per_seed": int(
-            sim_cfg.get(
+        "monte_carlo_training_blocks_per_seed": int(
+            _first_present(
+                sim_cfg,
+                "monte_carlo_training_blocks_per_seed",
                 "precoder_net_train_blocks_per_seed",
-                sim_cfg.get(
-                    "precoder_train_blocks_per_seed",
-                    sim_cfg.get("policy_train_blocks_per_seed", 1),
-                ),
+                "precoder_train_blocks_per_seed",
+                "policy_train_blocks_per_seed",
+                default=1,
             )
         ),
-        "precoder_net_train_n_kl_coarse_step": int(
-            sim_cfg.get(
+        "monte_carlo_training_n_kl_coarse_step": int(
+            _first_present(
+                sim_cfg,
+                "monte_carlo_training_n_kl_coarse_step",
                 "precoder_net_train_n_kl_coarse_step",
-                sim_cfg.get(
-                    "precoder_train_n_kl_coarse_step",
-                    sim_cfg.get("policy_train_n_kl_coarse_step", 5),
-                ),
+                "precoder_train_n_kl_coarse_step",
+                "policy_train_n_kl_coarse_step",
+                default=5,
             )
         ),
-        "step_lr": float(sim_cfg.get("step_lr", sim_cfg.get("lr_net", lr_cfg.get("net", 1e-2)))),
-        "user_update_steps": int(sim_cfg.get("user_update_steps", 1)),
-        "user_update_lr": float(
-            sim_cfg.get(
-                "user_update_lr",
-                sim_cfg.get("lr_net", lr_cfg.get("net", sim_cfg.get("step_lr", 1e-2))),
+        "main_solve_max_sweeps": main_solve_max_sweeps,
+        "reduced_n_kl_repair_max_sweeps": reduced_n_kl_repair_max_sweeps,
+        "kkt_primal_tol": float(
+            sim_cfg.get("kkt_primal_tol", sim_cfg.get("convergence_feasibility_tol", 1e-5))
+        ),
+        "kkt_complementarity_tol": float(
+            sim_cfg.get("kkt_complementarity_tol", sim_cfg.get("convergence_feasibility_tol", 1e-5))
+        ),
+        "kkt_stationarity_tol": float(
+            sim_cfg.get("kkt_stationarity_tol", sim_cfg.get("convergence_precoder_tol", 1e-4))
+        ),
+        "kkt_patience": int(
+            sim_cfg.get("kkt_patience", sim_cfg.get("convergence_min_precoder_sweeps_before_stop", 1))
+        ),
+        "kkt_stall_patience": int(sim_cfg.get("kkt_stall_patience", 25)),
+        "kkt_primal_improvement_tol": float(sim_cfg.get("kkt_primal_improvement_tol", 1e-7)),
+        "reduced_n_kl_log_interval": int(
+            _first_present(
+                sim_cfg,
+                "reduced_n_kl_log_interval",
+                "print_every_reduced_n_kl",
+                default=1,
             )
         ),
-        "convergence_max_precoder_sweeps": int(
-            sim_cfg.get(
-                "convergence_max_precoder_sweeps",
-                min(int(sim_cfg.get("max_precoder_sweeps", sim_cfg.get("epochs_per_n_kl", 500))), 500),
-            )
-        ),
-        "convergence_min_precoder_sweeps_before_stop": int(
-            sim_cfg.get("convergence_min_precoder_sweeps_before_stop", 1)
-        ),
-        "reduced_n_kl_max_precoder_sweeps": int(
-            sim_cfg.get(
-                "reduced_n_kl_max_precoder_sweeps",
-                sim_cfg.get("epochs_per_n_kl", sim_cfg.get("max_precoder_sweeps", 10000)),
-            )
-        ),
-        "reduced_n_kl_min_precoder_sweeps_before_stop": int(
-            sim_cfg.get(
-                "reduced_n_kl_min_precoder_sweeps_before_stop",
-                sim_cfg.get("convergence_min_precoder_sweeps_before_stop", 1),
-            )
-        ),
-        "print_every_reduced_n_kl": int(sim_cfg.get("print_every_reduced_n_kl", 1)),
-        "convergence_precoder_tol": float(sim_cfg.get("convergence_precoder_tol", 1e-4)),
-        "convergence_feasibility_tol": float(sim_cfg.get("convergence_feasibility_tol", 1e-5)),
         "uplink_rate_model": uplink_rate_model,
         "experiment_scenario": scenario_cfg,
         "experiment_scenario_mode": str(scenario_cfg["mode"]),

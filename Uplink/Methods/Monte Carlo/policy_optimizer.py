@@ -40,6 +40,8 @@ from precoder_models import (
 )
 from uplink_rate_model import build_uplink_rate_covariance
 
+CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
+
 
 def _to_complex_numpy(x) -> np.ndarray:
     if isinstance(x, np.ndarray):
@@ -115,6 +117,20 @@ def _compute_r_fbl_np(
             else np.asarray(noise_plus_interference_cov, dtype=np.complex128)
         ),
     )
+
+
+def _resolve_constraint_loss_form(sim_cfg: dict[str, Any]) -> str:
+    mode = str(sim_cfg.get("constraint_loss_form", "plain_lagrangian")).strip().lower()
+    if mode not in CONSTRAINT_LOSS_FORMS:
+        known = ", ".join(sorted(CONSTRAINT_LOSS_FORMS))
+        raise ValueError(f"Unknown constraint loss form '{mode}'. Expected one of: {known}")
+    return mode
+
+
+def _constraint_violation_activation(value: torch.Tensor, loss_form: str) -> torch.Tensor:
+    if loss_form == "plain_lagrangian":
+        return F.leaky_relu(value)
+    return torch.relu(value)
 
 
 def _zero_uplink_precoder(uplinksystem: UplinkSystem, user: int) -> np.ndarray:
@@ -266,8 +282,8 @@ def build_training_dataset(
     system_params, sim_cfg = get_config(cfg_name)
     K = int(system_params["K"])
     episodes_by_user: list[list[dict]] = [[] for _ in range(K)]
-    min_bits_required = max(1, int(sim_cfg.get("precoder_net_train_min_bits_required", 1)))
-    blocks_per_seed = max(1, int(sim_cfg.get("precoder_net_train_blocks_per_seed", 1)))
+    min_bits_required = max(1, int(sim_cfg.get("monte_carlo_training_fallback_target_bits", 1)))
+    blocks_per_seed = max(1, int(sim_cfg.get("monte_carlo_training_blocks_per_seed", 1)))
     scenario_mode = str(sim_cfg.get("experiment_scenario_mode", PAYLOAD_COMPLETION_MODE))
 
     for seed in train_seeds:
@@ -466,7 +482,7 @@ def _generate_rollout_queries_for_user(
 ) -> list[dict[str, Any]]:
     n_min = int(sim_cfg["n_kl_min"])
     fine_step = max(1, int(sim_cfg["n_kl_step"]))
-    coarse_step = max(fine_step, int(sim_cfg.get("precoder_net_train_n_kl_coarse_step", fine_step)))
+    coarse_step = max(fine_step, int(sim_cfg.get("monte_carlo_training_n_kl_coarse_step", fine_step)))
     rollout_queries: list[dict[str, Any]] = []
 
     for episode in episodes:
@@ -774,6 +790,9 @@ def train_blocklength_aware_precoder_net(
         user_rate_history = training_history["per_user_rate"][k]
         user_rate_violation_history = training_history["avg_rate_violation"][k]
         user_power_violation_history = training_history["avg_power_violation"][k]
+        constraint_loss_form = _resolve_constraint_loss_form(sim_cfg)
+        augmented_lagrangian_rho_rate = float(sim_cfg.get("augmented_lagrangian_rho_rate", 0.0))
+        augmented_lagrangian_rho_power = float(sim_cfg.get("augmented_lagrangian_rho_power", 0.0))
         lambda_rate = float(sim_cfg.get("initial_lambda_rate_constraint", 0.1))
         lambda_power = float(sim_cfg.get("initial_lambda_power_constraint", 0.01))
         lr_rate = float(sim_cfg.get("lr_rate_constraint", 1e-2))
@@ -894,13 +913,19 @@ def train_blocklength_aware_precoder_net(
                     )
                     rate_violation = torch.tensor(required_rate, dtype=torch.float32, device=DEVICE) - rate
                     power_violation = power - float(query["P"])
-                    rate_violation_pos = F.relu(rate_violation)
-                    power_violation_pos = F.relu(power_violation)
+                    rate_violation_pos = _constraint_violation_activation(rate_violation, constraint_loss_form)
+                    power_violation_pos = _constraint_violation_activation(power_violation, constraint_loss_form)
                     term = (
                         -rate
                         + float(lambda_rate) * rate_violation_pos
                         + float(lambda_power) * power_violation_pos
                     )
+                    if constraint_loss_form == "augmented_lagrangian":
+                        term = (
+                            term
+                            + 0.5 * augmented_lagrangian_rho_rate * rate_violation_pos.pow(2)
+                            + 0.5 * augmented_lagrangian_rho_power * power_violation_pos.pow(2)
+                        )
                     loss = loss + (float(query_weight) * term)
                     batch_rate_violation += float(query_weight) * float(rate_violation_pos.detach().cpu())
                     batch_power_violation += float(query_weight) * float(power_violation_pos.detach().cpu())

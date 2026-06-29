@@ -17,10 +17,10 @@ This baseline now uses one shared seed for one convergence run. The legacy
 `--train_seed` and `--test_seed` arguments are accepted only when they match the
 same shared seed value.
 
-By default, the convergence method also caps the effective inner sweeps per
-`(user, block, n_kl)` step to keep runtime in line with the downlink
-convergence baseline. You can override that with
-`simulation.convergence_max_precoder_sweeps` in the config if needed.
+By default, the convergence wrapper caps the effective inner sweeps per
+`(user, block, n_kl)` state so runtime stays in line with the downlink
+baseline. The main user-facing cap for that is
+`simulation.main_solve_max_sweeps`.
 
 Results are written under:
 
