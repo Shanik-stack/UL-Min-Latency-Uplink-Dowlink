@@ -11,11 +11,11 @@ This folder adds the direct offline downlink path:
 Notes:
 
 - no expert-label collection or MSE imitation is used
-- the dataset stays simple; smaller `n_{k,l}` values are introduced by rollout frontier search during training rather than by a separate expert-label sweep
+- the dataset stays simple; smaller `n_{k,l}` values are introduced by rollout frontier search during training rather than by a separate expert-label pass
 
-The original online safe sweep is kept separately as the baseline:
+The original online convergence baseline is kept separately:
 
-`python "Downlink\\Methods\\Convergence per sweep\\main.py" --cfg_name config_downlink_example.yaml --seed 0`
+`python "Downlink\\Methods\\Convergence per epoch\\main.py" --cfg_name config_downlink_example.yaml --seed 0`
 
 Offline precoder-net entry point:
 

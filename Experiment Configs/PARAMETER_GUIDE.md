@@ -84,9 +84,10 @@ These parameters define the channel dimensions, payload, and timing.
   - Initial power dual variable.
   - Larger values penalize power overshoot more strongly at the start.
 
-- `solve_sweeps_per_n_kl`
-  - Requested inner optimization budget for one fixed `(user, block, n_kl)` state.
-  - Larger values give the inner solve more time, but increase runtime.
+- `max_epochs`
+  - Shared optimization budget for one constrained uplink solve.
+  - The same cap is used for the first solve at `n = T` and for any smaller-`n_kl` re-solves.
+  - The solver stops earlier if one epoch satisfies the KKT tolerances.
 
 - `lr_net`
   - Learning rate for the uplink precoder net during inner constrained solves.
@@ -112,23 +113,9 @@ These parameters define the channel dimensions, payload, and timing.
 - `augmented_lagrangian_rho_power`
   - Quadratic power-violation penalty strength when `constraint_loss_form: augmented_lagrangian`.
 
-- `max_precoder_sweeps`
-  - Hard ceiling on the inner solve budget.
-  - Prevents very long runs if `solve_sweeps_per_n_kl` is large.
-
-- `print_every_sweep`
+- `print_every_epoch`
   - Logging frequency for inner solves.
   - Affects console output only.
-
-### KKT stopping for uplink convergence
-
-- `main_solve_max_sweeps`
-  - Maximum sweeps allowed for the main solve at `n = T`.
-  - This is the primary runtime cap for the convergence baseline.
-
-- `reduced_n_kl_repair_max_sweeps`
-  - Maximum sweeps allowed when re-solving after trying a smaller `n_kl`.
-  - Usually much smaller than `main_solve_max_sweeps`.
 
 - `kkt_primal_tol`
   - Tolerance on the primal residual.
@@ -140,20 +127,9 @@ These parameters define the channel dimensions, payload, and timing.
 
 - `kkt_stationarity_tol`
   - Tolerance on the stationarity residual.
-  - In the current code this is based on relative beam change between sweeps.
+  - In the current code this is based on relative beam change between epochs.
   - Smaller values demand a more settled beam before stopping.
-
-- `kkt_patience`
-  - Number of consecutive sweeps that must satisfy all KKT checks before the solve is accepted.
-  - Larger values are safer but slower.
-
-- `kkt_stall_patience`
-  - Number of sweeps the solver may continue without meaningful primal-residual improvement before it is treated as stalled.
-  - Larger values are more forgiving but slower.
-
-- `kkt_primal_improvement_tol`
-  - Minimum improvement needed to reset the primal stall counter.
-  - Larger values make the solver declare a stall sooner.
+  - If the beam has already settled under this tolerance but primal infeasibility remains, the solver rejects that candidate early instead of using the full `max_epochs` budget.
 
 - `reduced_n_kl_log_interval`
   - Logging interval when the code scans smaller `n_kl` values after a feasible main solve.
@@ -193,17 +169,19 @@ These parameters define the channel dimensions, payload, and timing.
 
 ## Downlink `simulation` Parameters
 
-### Per-user beam updates inside one sweep
+### Per-user beam updates inside one epoch
 
-- `max_precoder_sweeps`
-  - General sweep ceiling used by downlink block refinement logic.
+- `max_epochs`
+  - Shared epoch ceiling used by the downlink constrained block solver.
+  - The same cap is used for the first solve at the full blocklengths and for any reduced-`n_kl` repair solve.
+  - The solver stops earlier if one epoch satisfies the KKT tolerances.
 
-- `print_every_sweep`
-  - Logging interval for block sweeps.
+- `print_every_epoch`
+  - Logging interval for block epochs.
 
 - `user_update_steps`
-  - Number of local parameter updates performed for one user model when that user is visited in a sweep.
-  - Larger values make each sweep stronger but slower.
+  - Number of local parameter updates performed for one user model when that user is visited in an epoch.
+  - Larger values make each epoch stronger but slower.
 
 - `user_update_lr`
   - Learning rate for those local user-model updates.
@@ -231,12 +209,6 @@ These parameters define the channel dimensions, payload, and timing.
 - `augmented_lagrangian_rho_power`
   - Quadratic power-violation penalty strength used only in augmented-Lagrangian mode.
 
-- `main_solve_max_sweeps`
-  - Maximum synchronized sweeps allowed for the main block solve before blocklength reduction starts.
-
-- `reduced_n_kl_repair_max_sweeps`
-  - Maximum synchronized sweeps allowed when a smaller `n_kl` candidate requires a repair solve.
-
 - `kkt_primal_tol`
   - Primal residual tolerance.
 
@@ -246,15 +218,7 @@ These parameters define the channel dimensions, payload, and timing.
 - `kkt_stationarity_tol`
   - Beam-change tolerance for KKT stopping.
   - In downlink, this is based on the largest relative beam update in the active set.
-
-- `kkt_patience`
-  - Number of consecutive sweeps that must satisfy all KKT checks.
-
-- `kkt_stall_patience`
-  - Allowed number of non-improving primal sweeps before declaring a stall.
-
-- `kkt_primal_improvement_tol`
-  - Improvement threshold used by the stall detector.
+  - If the active-set beams have already settled under this tolerance but the primal residual is still above tolerance, the solver rejects that candidate early instead of spending the whole `max_epochs` budget.
 
 ### Downlink reduced-`n_kl` repair behavior
 
@@ -356,10 +320,10 @@ These parameters define how the outer experiment interprets `test.B`.
 
 ## Practical Tuning Notes
 
-- If uplink convergence runs too long, first lower `main_solve_max_sweeps`.
-- If uplink KKT stop fires too early, lower `kkt_stationarity_tol` or increase `kkt_patience`.
+- If uplink convergence runs too long, first lower `max_epochs`.
+- If uplink KKT stop fires too early, lower `kkt_stationarity_tol`.
 - If uplink Monte Carlo samples the `n_kl` frontier too sparsely, lower `monte_carlo_training_n_kl_coarse_step`.
-- If downlink repair solves are too expensive, lower `reduced_n_kl_repair_max_sweeps` or use `n_kl_reduction_update_scope: infeasible_users_only`.
+- If downlink repair solves are too expensive, lower `max_epochs` or use `n_kl_reduction_update_scope: infeasible_users_only`.
 - If downlink weighted scheduling is too aggressive toward large backlogs, lower `remaining_bits_weight_power`.
 - If fixed-block-target runs frequently leave bits unserved, lower `test.B`, increase `T`, or increase `P`.
 
@@ -368,9 +332,13 @@ These parameters define how the outer experiment interprets `test.B`.
 The loaders still accept older names so older experiment files do not immediately
 break. The main legacy aliases are:
 
-- `epochs_per_n_kl` -> `solve_sweeps_per_n_kl`
-- `main_solve_guard_sweeps` -> `main_solve_max_sweeps`
-- `repair_solve_guard_sweeps` -> `reduced_n_kl_repair_max_sweeps`
+- `epochs_per_n_kl` -> `max_epochs`
+- `solve_epochs_per_n_kl` -> `max_epochs`
+- `max_precoder_epochs` -> `max_epochs`
+- `main_solve_guard_sweeps` -> `max_epochs`
+- `main_solve_max_epochs` -> `max_epochs`
+- `repair_solve_guard_sweeps` -> `max_epochs`
+- `reduced_n_kl_repair_max_epochs` -> `max_epochs`
 - `print_every_reduced_n_kl` -> `reduced_n_kl_log_interval`
 - `precoder_net_train_blocks_per_seed` -> `monte_carlo_training_blocks_per_seed`
 - `precoder_net_train_min_bits_required` -> `monte_carlo_training_fallback_target_bits`

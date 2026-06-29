@@ -17,7 +17,7 @@ from precoder_models import (
     infer_precoder_torch,
 )
 LOG2E_SQ = float(np.log2(np.e) ** 2)
-SAFE_SWEEP_OBJECTIVE_MODES = {
+CONVERGENCE_OBJECTIVE_MODES = {
     "user_rate",
     "weighted_sum_rate",
     "blended_network_rate",
@@ -25,7 +25,7 @@ SAFE_SWEEP_OBJECTIVE_MODES = {
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
 
 
-def resolve_safe_sweep_objective_mode(sim_params: dict[str, Any]) -> str:
+def resolve_convergence_objective_mode(sim_params: dict[str, Any]) -> str:
     raw_mode = str(
         sim_params.get(
             "convergence_block_objective_mode",
@@ -38,17 +38,25 @@ def resolve_safe_sweep_objective_mode(sim_params: dict[str, Any]) -> str:
             ),
         )
     ).strip().lower()
-    if raw_mode not in SAFE_SWEEP_OBJECTIVE_MODES:
-        known = ", ".join(sorted(SAFE_SWEEP_OBJECTIVE_MODES))
+    if raw_mode not in CONVERGENCE_OBJECTIVE_MODES:
+        known = ", ".join(sorted(CONVERGENCE_OBJECTIVE_MODES))
         raise ValueError(
-            f"Unknown safe-sweep objective mode '{raw_mode}'. Expected one of: {known}"
+            f"Unknown convergence objective mode '{raw_mode}'. Expected one of: {known}"
         )
     return raw_mode
 
 
-def safe_sweep_objective_tag(objective_mode: str) -> str:
+def resolve_safe_sweep_objective_mode(sim_params: dict[str, Any]) -> str:
+    return resolve_convergence_objective_mode(sim_params)
+
+
+def convergence_objective_tag(objective_mode: str) -> str:
     safe_mode = str(objective_mode).strip().lower().replace(" ", "_").replace("-", "_")
     return f"obj_{safe_mode}"
+
+
+def safe_sweep_objective_tag(objective_mode: str) -> str:
+    return convergence_objective_tag(objective_mode)
 
 
 def resolve_constraint_loss_form(sim_params: dict[str, Any]) -> str:
@@ -1049,14 +1057,14 @@ def _reduce_blocklengths_with_reoptimization(
             continue
         full_service_users.append(int(k_int))
 
-    sweep_idx = 0
+    epoch_idx = 0
     while len(full_service_users) > 0:
-        progress_this_sweep = False
-        start_offset = int(sweep_idx % max(len(full_service_users), 1))
+        progress_this_epoch = False
+        start_offset = int(epoch_idx % max(len(full_service_users), 1))
         ordered_users = full_service_users[start_offset:] + full_service_users[:start_offset]
         if verbose:
             print(
-                f"  block={block:02d} n_kl reduction sweep {sweep_idx + 1} "
+                f"  block={block:02d} n_kl reduction epoch {epoch_idx + 1} "
                 f"over users {ordered_users}"
             )
 
@@ -1081,7 +1089,7 @@ def _reduce_blocklengths_with_reoptimization(
                 current_rates = candidate_rates
                 plans[k_int]["n_used"] = int(candidate)
                 plans[k_int]["R_used"] = float(candidate_rates.get(k_int, current_rates.get(k_int, 0.0)))
-                progress_this_sweep = True
+                progress_this_epoch = True
                 if verbose:
                     print(
                         f"  user={k_int:02d} block={block:02d} accepted smaller n_kl={int(candidate):4d} "
@@ -1138,7 +1146,7 @@ def _reduce_blocklengths_with_reoptimization(
                 n_kl_overrides=candidate_targets,
                 users_to_update=update_users,
                 dual_state=current_dual_state,
-                guard_sweeps=int(sim_params.get("reduced_n_kl_repair_max_sweeps", sim_params["max_precoder_sweeps"])),
+                max_epochs=int(sim_params["max_epochs"]),
             )
             candidate_history = solve_result["history"]
             feasible, candidate_rates, remaining_infeasible_users = _all_committed_bits_feasible(
@@ -1164,7 +1172,7 @@ def _reduce_blocklengths_with_reoptimization(
                         f"  user={k_int:02d} block={block:02d} candidate n_kl={int(candidate):4d} "
                         f"after updating users [{updated_text}] "
                         f"still leaves committed users infeasible [{infeasible_text}] after re-optimization; "
-                        "keeping previous n_kl for this sweep."
+                        "keeping previous n_kl for this epoch."
                     )
                 continue
 
@@ -1174,7 +1182,7 @@ def _reduce_blocklengths_with_reoptimization(
             current_dual_state = copy.deepcopy(solve_result["dual_state"])
             plans[k_int]["n_used"] = int(candidate)
             plans[k_int]["R_used"] = float(candidate_rates.get(k_int, current_rates.get(k_int, 0.0)))
-            progress_this_sweep = True
+            progress_this_epoch = True
             if verbose:
                 updated_text = ", ".join(str(int(user_id)) for user_id in update_users)
                 print(
@@ -1182,9 +1190,9 @@ def _reduce_blocklengths_with_reoptimization(
                     f"after fresh re-optimization of users [{updated_text}]."
                 )
 
-        if not progress_this_sweep:
+        if not progress_this_epoch:
             break
-        sweep_idx += 1
+        epoch_idx += 1
 
     for k in active_users:
         k_int = int(k)
@@ -1230,7 +1238,7 @@ def optimize_precoders_for_block(
 
     weights = user_weights or {int(k): 1.0 for k in active_users}
     update_users = [int(k) for k in (users_to_update or active_users)]
-    print_every = max(1, int(sim_params.get("print_every_sweep", 1)))
+    print_every = max(1, int(sim_params.get("print_every_epoch", 1)))
     tol = float(sim_params.get("precoder_tol", 1e-4))
     if objective_mode == "weighted_sum_rate":
         objective_label = "weighted_sum_rate"
@@ -1240,7 +1248,7 @@ def optimize_precoders_for_block(
         objective_label = "sum_rate"
     network_weight_beta = float(sim_params.get("network_rate_weight", 0.15))
 
-    for sweep_idx in range(int(sim_params["max_precoder_sweeps"])):
+    for epoch_idx in range(int(sim_params["max_precoder_epochs"])):
         before_beams = {k: np.array(working_F[k][block], copy=True) for k in update_users}
 
         for k in update_users:
@@ -1279,7 +1287,7 @@ def optimize_precoders_for_block(
         history.append(
             {
                 "block": int(block),
-                "sweep": sweep_idx + 1,
+                "epoch": epoch_idx + 1,
                 "active_users": int(len(active_users)),
                 "updated_users": int(len(update_users)),
                 "user_ids": [int(k) for k in active_users],
@@ -1303,9 +1311,9 @@ def optimize_precoders_for_block(
             objective_value = blended_total
         else:
             objective_value = total_rate
-        if verbose and (((sweep_idx + 1) % print_every) == 0 or sweep_idx == 0 or delta <= tol):
+        if verbose and (((epoch_idx + 1) % print_every) == 0 or epoch_idx == 0 or delta <= tol):
             print(
-                f"[Block {block:02d} | Sweep {sweep_idx + 1:03d}] "
+                f"[Block {block:02d} | Epoch {epoch_idx + 1:03d}] "
                 f"active_users={len(active_users)} "
                 f"updated_users={len(update_users)} "
                 f"{objective_label}={objective_value:.4f} "
@@ -1334,7 +1342,7 @@ def optimize_precoders_for_block_constrained(
     n_kl_overrides: dict[int, int] | None = None,
     users_to_update: List[int] | None = None,
     dual_state: dict[str, dict[int, float]] | None = None,
-    guard_sweeps: int | None = None,
+    max_epochs: int | None = None,
 ) -> dict[str, Any]:
     history: list[dict[str, float]] = []
     if len(active_users) == 0:
@@ -1346,19 +1354,13 @@ def optimize_precoders_for_block_constrained(
 
     weights = user_weights or {int(k): 1.0 for k in active_users}
     update_users = [int(k) for k in (users_to_update or active_users)]
-    print_every = max(1, int(sim_params.get("print_every_sweep", 1)))
-    guard_sweeps = max(
-        1,
-        int(guard_sweeps if guard_sweeps is not None else sim_params.get("main_solve_max_sweeps", sim_params["max_precoder_sweeps"])),
-    )
+    print_every = max(1, int(sim_params.get("print_every_epoch", 1)))
+    max_epochs = max(1, int(max_epochs if max_epochs is not None else sim_params["max_epochs"]))
     lr_rate = float(sim_params.get("lr_rate_constraint", 1e-2))
     lr_power = float(sim_params.get("lr_power_constraint", 1e-3))
     kkt_primal_tol = float(sim_params.get("kkt_primal_tol", 1e-5))
     kkt_complementarity_tol = float(sim_params.get("kkt_complementarity_tol", 1e-5))
     kkt_stationarity_tol = float(sim_params.get("kkt_stationarity_tol", 1e-4))
-    kkt_patience = max(1, int(sim_params.get("kkt_patience", 1)))
-    kkt_stall_patience = max(1, int(sim_params.get("kkt_stall_patience", 25)))
-    kkt_primal_improvement_tol = float(sim_params.get("kkt_primal_improvement_tol", 1e-7))
 
     if objective_mode == "weighted_sum_rate":
         objective_label = "weighted_sum_rate"
@@ -1378,9 +1380,7 @@ def optimize_precoders_for_block_constrained(
 
     best_primal_residual = float("inf")
     best_feasible_objective = -float("inf")
-    success_streak = 0
-    stall_streak = 0
-    solve_status = "guard_stop"
+    solve_status = "max_epochs_reached"
     best_primal_state = _capture_active_block_solver_state(
         working_F,
         user_models,
@@ -1391,7 +1391,7 @@ def optimize_precoders_for_block_constrained(
     )
     best_feasible_state: dict[str, Any] | None = None
 
-    for sweep_idx in range(guard_sweeps):
+    for epoch_idx in range(max_epochs):
         before_beams = {k: np.array(working_F[k][block], copy=True) for k in update_users}
 
         for k in update_users:
@@ -1471,7 +1471,7 @@ def optimize_precoders_for_block_constrained(
         history.append(
             {
                 "block": int(block),
-                "sweep": sweep_idx + 1,
+                "epoch": epoch_idx + 1,
                 "active_users": int(len(active_users)),
                 "updated_users": int(len(update_users)),
                 "user_ids": [int(k) for k in active_users],
@@ -1498,7 +1498,7 @@ def optimize_precoders_for_block_constrained(
             lambda_rate[k_int] = max(0.0, float(lambda_rate[k_int]) + lr_rate * rate_violations[k_int])
             lambda_power[k_int] = max(0.0, float(lambda_power[k_int]) + lr_power * power_violations[k_int])
 
-        if r_p + kkt_primal_improvement_tol < best_primal_residual:
+        if r_p < best_primal_residual:
             best_primal_residual = float(r_p)
             best_primal_state = _capture_active_block_solver_state(
                 working_F,
@@ -1508,11 +1508,6 @@ def optimize_precoders_for_block_constrained(
                 lambda_rate,
                 lambda_power,
             )
-            stall_streak = 0
-        elif r_p > kkt_primal_tol:
-            stall_streak += 1
-        else:
-            stall_streak = 0
 
         if r_p <= kkt_primal_tol and objective_value >= best_feasible_objective:
             best_feasible_objective = float(objective_value)
@@ -1530,25 +1525,21 @@ def optimize_precoders_for_block_constrained(
             and r_c <= kkt_complementarity_tol
             and r_s <= kkt_stationarity_tol
         ):
-            success_streak += 1
-        else:
-            success_streak = 0
+            solve_status = "kkt_converged"
 
-        if verbose and (((sweep_idx + 1) % print_every) == 0 or sweep_idx == 0):
+        if epoch_idx > 0 and r_s <= kkt_stationarity_tol and r_p > kkt_primal_tol:
+            solve_status = "stationary_infeasible"
+
+        if verbose and (((epoch_idx + 1) % print_every) == 0 or epoch_idx == 0 or solve_status in {"kkt_converged", "stationary_infeasible"}):
             print(
-                f"[Block {block:02d} | KKT Sweep {sweep_idx + 1:03d}] "
+                f"[Block {block:02d} | KKT Epoch {epoch_idx + 1:03d}] "
                 f"active_users={len(active_users)} "
                 f"updated_users={len(update_users)} "
                 f"{objective_label}={objective_value:.4f} "
                 f"r_p={r_p:.6e} r_c={r_c:.6e} r_s={r_s:.6e}"
             )
 
-        if success_streak >= kkt_patience:
-            solve_status = "kkt_converged"
-            break
-
-        if stall_streak >= kkt_stall_patience:
-            solve_status = "stalled_infeasible"
+        if solve_status in {"kkt_converged", "stationary_infeasible"}:
             break
 
     restored_state = best_feasible_state if best_feasible_state is not None else best_primal_state
@@ -1561,8 +1552,10 @@ def optimize_precoders_for_block_constrained(
     )
     lambda_rate = dict(restored_state["lambda_rate"])
     lambda_power = dict(restored_state["lambda_power"])
-    if best_feasible_state is not None and solve_status == "guard_stop":
-        solve_status = "guard_feasible_best"
+    if best_feasible_state is not None and solve_status == "max_epochs_reached":
+        solve_status = "max_epochs_feasible_best"
+    elif best_feasible_state is None and solve_status == "max_epochs_reached":
+        solve_status = "max_epochs_best_primal"
 
     return {
         "history": history,
@@ -1901,7 +1894,7 @@ def _run_safe_sweep(
     B_plan: List[List[int]] = [[] for _ in range(system.K)]
     R_plan: List[List[float]] = [[] for _ in range(system.K)]
     working_F: List[List[np.ndarray]] = system.clone_precoders()
-    sweep_history: list[dict[str, float]] = []
+    epoch_history: list[dict[str, float]] = []
     outer_history: list[dict[str, float]] = []
     rate_points: list[dict[str, float]] = []
     max_blocks = int(sim_params.get("max_total_blocks", 256))
@@ -1971,7 +1964,7 @@ def _run_safe_sweep(
                 objective_mode=objective_mode,
                 user_weights=transmit_weights,
                 dual_state=block_dual_state,
-                guard_sweeps=int(sim_params.get("main_solve_max_sweeps", sim_params["max_precoder_sweeps"])),
+                max_epochs=int(sim_params["max_epochs"]),
             )
             current_history = solve_result["history"]
             block_dual_state = copy.deepcopy(solve_result["dual_state"])
@@ -2014,7 +2007,7 @@ def _run_safe_sweep(
                 dual_state=block_dual_state,
             )
             block_history.extend(refinement_history)
-        sweep_history.extend(block_history)
+        epoch_history.extend(block_history)
 
         block_bits = 0
         for k in active_users:
@@ -2124,7 +2117,7 @@ def _run_safe_sweep(
         "final_sinr_db": final_sinr_db,
         "final_interference_diag": final_interference_diag,
         "outer_history": outer_history,
-        "sweep_history": sweep_history,
+        "epoch_history": epoch_history,
         "rate_points": rate_points,
         "blocks_per_user": [len(v) for v in n_plan],
     }
@@ -2157,7 +2150,7 @@ def _run_safe_sweep_fixed_block_targets(
     B_plan: List[List[int]] = [[] for _ in range(system.K)]
     R_plan: List[List[float]] = [[] for _ in range(system.K)]
     working_F: List[List[np.ndarray]] = system.clone_precoders()
-    sweep_history: list[dict[str, float]] = []
+    epoch_history: list[dict[str, float]] = []
     outer_history: list[dict[str, float]] = []
     rate_points: list[dict[str, float]] = []
     skipped_blocks_per_user = [0 for _ in range(system.K)]
@@ -2212,7 +2205,7 @@ def _run_safe_sweep_fixed_block_targets(
                 objective_mode=objective_mode,
                 user_weights=queue_weights,
                 dual_state=block_dual_state,
-                guard_sweeps=int(sim_params.get("main_solve_max_sweeps", sim_params["max_precoder_sweeps"])),
+                max_epochs=int(sim_params["max_epochs"]),
             )
             current_history = solve_result["history"]
             block_dual_state = copy.deepcopy(solve_result["dual_state"])
@@ -2258,7 +2251,7 @@ def _run_safe_sweep_fixed_block_targets(
                 dual_state=block_dual_state,
             )
             block_history.extend(refinement_history)
-        sweep_history.extend(block_history)
+        epoch_history.extend(block_history)
 
         block_bits = 0
         block_unserved_bits = 0
@@ -2383,7 +2376,7 @@ def _run_safe_sweep_fixed_block_targets(
         "final_sinr_db": final_sinr_db,
         "final_interference_diag": final_interference_diag,
         "outer_history": outer_history,
-        "sweep_history": sweep_history,
+        "epoch_history": epoch_history,
         "rate_points": rate_points,
         "blocks_per_user": [len(v) for v in n_plan],
         "skipped_blocks_per_user": [int(v) for v in skipped_blocks_per_user],
@@ -2397,22 +2390,30 @@ def optimize_downlink_safe_sweep(
     sim_params: dict[str, Any],
     verbose: bool = True,
 ) -> dict[str, Any]:
-    objective_mode = resolve_safe_sweep_objective_mode(sim_params)
+    objective_mode = resolve_convergence_objective_mode(sim_params)
     scenario = build_experiment_scenario(system.sc, sim_params, seed=int(system.seed))
     if str(scenario["mode"]) == FIXED_BLOCK_TARGETS_MODE:
         return _run_safe_sweep_fixed_block_targets(
             system,
             sim_params,
             verbose=verbose,
-            method_name="downlink_greedy_safe_sweep",
+            method_name="convergence_per_epoch_baseline",
             objective_mode=objective_mode,
         )
     return _run_safe_sweep(
         system,
         sim_params,
         verbose=verbose,
-        method_name="downlink_greedy_safe_sweep",
+        method_name="convergence_per_epoch_baseline",
         objective_mode=objective_mode,
         allocation_mode="greedy",
         weight_strategy="remaining_bits",
     )
+
+
+def optimize_downlink_convergence_epoch(
+    system: DownlinkSystem,
+    sim_params: dict[str, Any],
+    verbose: bool = True,
+) -> dict[str, Any]:
+    return optimize_downlink_safe_sweep(system, sim_params, verbose=verbose)

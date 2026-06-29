@@ -2,7 +2,7 @@ Downlink
 
 This downlink subset keeps only:
 
-- `Methods/Convergence per sweep`: the greedy safe-sweep baseline
+- `Methods/Convergence per epoch`: the online convergence baseline
 - `Methods/Monte Carlo`: the offline blocklength-aware precoder-net path
 
 The extra weighted baselines and their wrappers were intentionally removed from this cleaned copy.

@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from time import perf_counter
 
 import numpy as np
 
@@ -19,6 +20,7 @@ from advanced_methods_common import (
     estimate_initial_random_precoder_schedule_for_scenario,
 )
 from config_loader import _resolve_config_path, get_config
+from experiment_cost import build_uplink_convergence_cost
 from experiment_report import build_convergence_result, build_convergence_summary_lines
 from experiment_utils import make_method_result_tag, save_json, save_text
 from optimizer import dynamic_subblocklength_precoder_training_baseline
@@ -39,6 +41,9 @@ from project_paths import build_uplink_convergence_result_dirs
 from UplinkSystem import UplinkSystem
 from utils import save_test_results_to_txt
 
+METHOD_NAME = "convergence_per_epoch_baseline"
+METHOD_LABEL = "Convergence per epoch"
+
 
 def _resolve_run_seed(args: argparse.Namespace) -> int:
     legacy_seeds = [value for value in (args.train_seed, args.test_seed) if value is not None]
@@ -47,7 +52,7 @@ def _resolve_run_seed(args: argparse.Namespace) -> int:
     for value in legacy_seeds:
         if int(value) != run_seed:
             raise ValueError(
-                "Uplink convergence per sweep now uses one shared seed only. "
+                "Uplink convergence per epoch now uses one shared seed only. "
                 "Provide the same value for --seed, --train_seed, and --test_seed, or use only --seed."
             )
     return run_seed
@@ -61,6 +66,7 @@ def run_convergence_experiment(
 ) -> dict:
     system_params, sim_cfg = get_config(cfg_name)
     sim_cfg = dict(sim_cfg)
+    core_start = perf_counter()
 
     initial_baseline = estimate_initial_random_precoder_schedule_for_scenario(
         system_params,
@@ -95,7 +101,7 @@ def run_convergence_experiment(
     result = build_convergence_result(
         report_system,
         convergence_data,
-        method_name="converge_in_each_sweep_baseline",
+        method_name=METHOD_NAME,
         cfg_path=_resolve_config_path(cfg_name),
         seed=int(seed),
         initial_R_fbl=[np.array(v, copy=True) for v in initial_baseline["initial_R_fbl"]],
@@ -115,6 +121,11 @@ def run_convergence_experiment(
         "scenario_mode",
         sim_cfg.get("experiment_scenario_mode", "payload_completion"),
     )
+    result["experiment_cost"] = build_uplink_convergence_cost(
+        system_params,
+        convergence_data,
+        core_wall_time_seconds_total=perf_counter() - core_start,
+    )
     return {
         "result": result,
         "report_system": report_system,
@@ -132,8 +143,8 @@ def main() -> None:
     args = parser.parse_args()
 
     run_seed = _resolve_run_seed(args)
-    result_tag = make_method_result_tag("converge_in_each_sweep_baseline", args.cfg_name, seed=run_seed)
-    result_dirs = build_uplink_convergence_result_dirs("Convergence per sweep", result_tag)
+    result_tag = make_method_result_tag(METHOD_NAME, args.cfg_name, seed=run_seed)
+    result_dirs = build_uplink_convergence_result_dirs(METHOD_LABEL, result_tag)
     initialize_plot_globals(result_tag, result_dirs)
 
     experiment = run_convergence_experiment(

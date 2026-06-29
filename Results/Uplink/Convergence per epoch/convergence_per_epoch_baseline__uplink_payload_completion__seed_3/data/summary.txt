@@ -1,0 +1,53 @@
+Uplink optimizer summary
+Method: convergence_per_epoch_baseline
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\uplink_payload_completion.yaml
+Seed: 3
+Experiment scenario mode: payload_completion
+Precoder parameterization: shared_user_channel_sigma_epsilon_to_precoder_mlp_online_convergence
+Initial schedule source: random_precoder_baseline
+
+Latency summary
+Initial total latency: 0.030800
+Final total latency: 0.024533
+Total latency reduction (%): 20.3463
+Initial avg latency: 0.010267
+Final avg latency: 0.008178
+Initial min/max latency: 0.008867 / 0.011400
+Final min/max latency: 0.006667 / 0.009867
+
+Asynchronality summary
+Initial asynchronality sum: 0.005067
+Final asynchronality sum: 0.006400
+Asynchronality reduction (%): -26.3158
+
+Link quality summary
+Initial avg SNR (dB): 11.0228
+Final avg SNR (dB): 11.0468
+Initial avg SINR (dB): -3.2329
+Final avg SINR (dB): -3.1403
+
+Per-user details
+User 0 | init_lat=0.008867 | final_lat=0.006667 | lat_red=24.8120% | init_snr=14.2587 dB | final_snr=13.9579 dB | init_sinr=-2.7026 dB | final_sinr=-3.0240 dB | blocks=1 | total_n=100 | served_bits=2400 | skipped_blocks=0
+User 1 | init_lat=0.010533 | final_lat=0.008000 | lat_red=24.0506% | init_snr=10.2818 dB | final_snr=10.4462 dB | init_sinr=-4.3505 dB | final_sinr=-4.0794 dB | blocks=2 | total_n=120 | served_bits=2400 | skipped_blocks=0
+User 2 | init_lat=0.011400 | final_lat=0.009867 | lat_red=13.4503% | init_snr=8.5280 dB | final_snr=8.7364 dB | init_sinr=-2.6456 dB | final_sinr=-2.3174 dB | blocks=2 | total_n=148 | served_bits=2400 | skipped_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.001667 | final_diff=0.001333
+Users 0-2 | initial_diff=0.002533 | final_diff=0.003200
+Users 1-2 | initial_diff=0.000867 | final_diff=0.001867
+
+Experiment cost
+Core wall time total (s): 30.844068
+Core wall time training (s): 30.844068
+Core wall time testing (s): 0.000000
+Estimated NN training FLOPs: 0.000e+00
+Estimated NN inference FLOPs: 2.103e+07
+Estimated NN total FLOPs: 2.103e+07
+Training forward/backward sample-equivalents: 0
+Inference forward calls: 137
+Optimizer steps: 0
+Workload counters:
+{'solver_calls': 0, 'solver_epochs_per_user': [0, 0, 0], 'visited_candidate_n_states_per_user': [1, 82, 54]}
+Notes:
+- FLOPs are estimated from the precoder MLP shapes and counted solver epochs; plotting and file export are excluded from wall time.
+- One uplink convergence solver epoch is counted as one forward/backward sample-equivalent on that user's precoder net.

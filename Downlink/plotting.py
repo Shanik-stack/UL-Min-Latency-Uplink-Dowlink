@@ -185,6 +185,17 @@ def _combined_finite_limits(*matrices: np.ndarray) -> tuple[float | None, float 
     return float(np.min(stacked)), float(np.max(stacked))
 
 
+def _epoch_history_rows(result: dict[str, Any]) -> list[dict[str, Any]]:
+    rows = result.get("epoch_history")
+    if rows is not None:
+        return list(rows)
+    return list(result.get("sweep_history", []))
+
+
+def _row_epoch(row: dict[str, Any]) -> int:
+    return int(row.get("epoch", row.get("sweep", 0)))
+
+
 def plot_user_config(system_params: dict[str, Any], figs_dir: str) -> None:
     K = int(system_params["K"])
     users = np.arange(K)
@@ -410,7 +421,7 @@ def plot_rate_violation_heatmap(result: dict[str, Any], figs_dir: str) -> None:
     plt.close(fig)
 
 
-def plot_blocklength_sweep_curves(system: DownlinkSystem, result: dict[str, Any], figs_dir: str) -> None:
+def plot_blocklength_feasibility_curves(system: DownlinkSystem, result: dict[str, Any], figs_dir: str) -> None:
     K = len(result.get("n_kl", []))
     if K == 0:
         return
@@ -442,7 +453,7 @@ def plot_blocklength_sweep_curves(system: DownlinkSystem, result: dict[str, Any]
             ax.scatter([chosen_n], [chosen_rate], color=color, s=28, zorder=3)
             subblock_handles.append(Line2D([0], [0], color=color, linewidth=2.0, label=label))
 
-        ax.set_title(f"User {k} blocklength sweep curves")
+        ax.set_title(f"User {k} blocklength feasibility curves")
         ax.set_xlabel("Blocklength n")
         ax.set_ylabel("Rate (bits/channel-use)")
         ax.grid(True, alpha=0.3)
@@ -464,37 +475,41 @@ def plot_blocklength_sweep_curves(system: DownlinkSystem, result: dict[str, Any]
         ax.legend(handles=style_handles, fontsize=8, loc="upper right", title="Curve meaning")
 
     plt.tight_layout()
-    plt.savefig(os.path.join(figs_dir, "blocklength_sweep_curves.png"), dpi=250, bbox_inches="tight")
+    plt.savefig(os.path.join(figs_dir, "blocklength_feasibility_curves.png"), dpi=250, bbox_inches="tight")
     plt.close(fig)
 
 
+def plot_blocklength_sweep_curves(system: DownlinkSystem, result: dict[str, Any], figs_dir: str) -> None:
+    plot_blocklength_feasibility_curves(system, result, figs_dir)
+
+
 def plot_optimization_history(result: dict[str, Any], figs_dir: str) -> None:
-    sweep_history = result.get("sweep_history", [])
+    epoch_history = _epoch_history_rows(result)
     outer_history = result.get("outer_history", [])
-    if len(sweep_history) == 0 and len(outer_history) == 0:
+    if len(epoch_history) == 0 and len(outer_history) == 0:
         return
 
     fig, axes = plt.subplots(3, 1, figsize=(10, 11))
 
-    if len(sweep_history) > 0:
-        sweep_idx = np.arange(1, len(sweep_history) + 1)
-        sum_rate = np.asarray([row["sum_rate"] for row in sweep_history], dtype=float)
-        max_delta = np.asarray([row["max_precoder_delta"] for row in sweep_history], dtype=float)
-        block_ids = np.asarray([row["block"] for row in sweep_history], dtype=int)
+    if len(epoch_history) > 0:
+        epoch_idx = np.arange(1, len(epoch_history) + 1)
+        sum_rate = np.asarray([row["sum_rate"] for row in epoch_history], dtype=float)
+        max_delta = np.asarray([row["max_precoder_delta"] for row in epoch_history], dtype=float)
+        block_ids = np.asarray([row["block"] for row in epoch_history], dtype=int)
 
-        axes[0].plot(sweep_idx, sum_rate, marker="o", markersize=3)
+        axes[0].plot(epoch_idx, sum_rate, marker="o", markersize=3)
         for boundary in np.where(np.diff(block_ids) != 0)[0]:
             axes[0].axvline(boundary + 1.5, color="gray", linestyle=":", alpha=0.4)
         axes[0].set_title("Sum-rate during precoder optimization")
-        axes[0].set_xlabel("Sweep index")
+        axes[0].set_xlabel("Epoch index")
         axes[0].set_ylabel("Sum R_fbl at n=T")
         axes[0].grid(True, alpha=0.3)
 
-        axes[1].semilogy(sweep_idx, np.maximum(max_delta, 1e-12), marker="o", markersize=3)
+        axes[1].semilogy(epoch_idx, np.maximum(max_delta, 1e-12), marker="o", markersize=3)
         for boundary in np.where(np.diff(block_ids) != 0)[0]:
             axes[1].axvline(boundary + 1.5, color="gray", linestyle=":", alpha=0.4)
         axes[1].set_title("Maximum relative precoder change")
-        axes[1].set_xlabel("Sweep index")
+        axes[1].set_xlabel("Epoch index")
         axes[1].set_ylabel("Max delta")
         axes[1].grid(True, alpha=0.3)
 
@@ -830,30 +845,30 @@ def plot_per_user_schedule_details(result: dict[str, Any], figs_dir: str) -> Non
 
 
 def plot_per_user_convergence(result: dict[str, Any], figs_dir: str) -> None:
-    sweep_history = result.get("sweep_history", [])
+    epoch_history = _epoch_history_rows(result)
     K = len(result.get("n_kl", []))
-    if len(sweep_history) == 0 or K == 0:
+    if len(epoch_history) == 0 or K == 0:
         return
 
     user_block_rates: list[dict[int, list[tuple[int, float]]]] = [dict() for _ in range(K)]
     user_block_sinr: list[dict[int, list[tuple[int, float]]]] = [dict() for _ in range(K)]
     user_block_interference: list[dict[int, list[tuple[int, float]]]] = [dict() for _ in range(K)]
-    max_sweeps = 0
-    for row in sweep_history:
+    max_epochs = 0
+    for row in epoch_history:
         block = int(row["block"])
         user_ids = row.get("user_ids", [])
         user_rates = row.get("user_rates", [])
         user_sinr_db = row.get("user_sinr_db", [])
         user_interference_db = row.get("user_interference_db", [])
-        sweep = int(row["sweep"])
-        max_sweeps = max(max_sweeps, sweep)
+        epoch = _row_epoch(row)
+        max_epochs = max(max_epochs, epoch)
         for user_id, user_rate, user_sinr, user_interf in zip(user_ids, user_rates, user_sinr_db, user_interference_db):
             per_block = user_block_rates[int(user_id)]
-            per_block.setdefault(block, []).append((sweep, float(user_rate)))
+            per_block.setdefault(block, []).append((epoch, float(user_rate)))
             per_block_sinr = user_block_sinr[int(user_id)]
-            per_block_sinr.setdefault(block, []).append((sweep, float(user_sinr)))
+            per_block_sinr.setdefault(block, []).append((epoch, float(user_sinr)))
             per_block_interf = user_block_interference[int(user_id)]
-            per_block_interf.setdefault(block, []).append((sweep, float(user_interf)))
+            per_block_interf.setdefault(block, []).append((epoch, float(user_interf)))
 
     fig, axes = plt.subplots(K, 3, figsize=(22, max(3.2 * K, 4)), squeeze=False)
     cmap_rate = plt.get_cmap("viridis")
@@ -870,16 +885,16 @@ def plot_per_user_convergence(result: dict[str, Any], figs_dir: str) -> None:
             continue
 
         block_ids = sorted(block_map_rate.keys())
-        heat_rate = np.full((max_sweeps, len(block_ids)), np.nan, dtype=float)
-        heat_sinr = np.full((max_sweeps, len(block_ids)), np.nan, dtype=float)
-        heat_interf = np.full((max_sweeps, len(block_ids)), np.nan, dtype=float)
+        heat_rate = np.full((max_epochs, len(block_ids)), np.nan, dtype=float)
+        heat_sinr = np.full((max_epochs, len(block_ids)), np.nan, dtype=float)
+        heat_interf = np.full((max_epochs, len(block_ids)), np.nan, dtype=float)
         for col, block_id in enumerate(block_ids):
-            for sweep, rate in block_map_rate[block_id]:
-                heat_rate[sweep - 1, col] = rate
-            for sweep, sinr in block_map_sinr[block_id]:
-                heat_sinr[sweep - 1, col] = sinr
-            for sweep, interf in block_map_interf[block_id]:
-                heat_interf[sweep - 1, col] = interf
+            for epoch, rate in block_map_rate[block_id]:
+                heat_rate[epoch - 1, col] = rate
+            for epoch, sinr in block_map_sinr[block_id]:
+                heat_sinr[epoch - 1, col] = sinr
+            for epoch, interf in block_map_interf[block_id]:
+                heat_interf[epoch - 1, col] = interf
 
         ax_rate = axes[k, 0]
         ax_sinr = axes[k, 1]
@@ -893,7 +908,7 @@ def plot_per_user_convergence(result: dict[str, Any], figs_dir: str) -> None:
 
         for ax in (ax_rate, ax_sinr, ax_interf):
             ax.set_xlabel("Block index")
-            ax.set_ylabel("Sweep")
+            ax.set_ylabel("Epoch")
             ax.set_xticks(np.arange(len(block_ids)))
             ax.set_xticklabels(block_ids)
 

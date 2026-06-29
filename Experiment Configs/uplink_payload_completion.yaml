@@ -37,25 +37,19 @@ simulation:
   # Constrained precoder solve
   initial_lambda_rate_constraint: 0.1
   initial_lambda_power_constraint: 0.01
-  solve_sweeps_per_n_kl: 100000
+  max_epochs: 1000
   lr_net: 0.01
   lr_rate_constraint: 0.01
   lr_power_constraint: 0.001
   constraint_loss_form: plain_lagrangian
   augmented_lagrangian_rho_rate: 1.0
   augmented_lagrangian_rho_power: 1.0
-  max_precoder_sweeps: 100000
-  print_every_sweep: 1
+  print_every_epoch: 1
 
   # KKT-based stopping
-  main_solve_max_sweeps: 1000
-  reduced_n_kl_repair_max_sweeps: 10
   kkt_primal_tol: 1.0e-5
   kkt_complementarity_tol: 1.0e-5
   kkt_stationarity_tol: 5.0e-5
-  kkt_patience: 3
-  kkt_stall_patience: 50
-  kkt_primal_improvement_tol: 1.0e-7
   reduced_n_kl_log_interval: 10
 
   # Monte Carlo training data

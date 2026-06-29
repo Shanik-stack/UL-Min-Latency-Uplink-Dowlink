@@ -1126,9 +1126,15 @@ def _precoder_net_beam_for_n(
     n_kl: int,
     active_mask: Sequence[int | float],
     input_precoders: list[list[np.ndarray]],
+    inference_counters: dict[str, Any] | None = None,
 ) -> np.ndarray:
     k = int(user)
     l = int(block)
+    if inference_counters is not None:
+        inference_counters["total_forward_calls"] = int(inference_counters.get("total_forward_calls", 0)) + 1
+        per_user = inference_counters.get("per_user_forward_calls")
+        if isinstance(per_user, list) and 0 <= k < len(per_user):
+            per_user[k] = int(per_user[k]) + 1
     H_block = _context_channels_for_block(system, l)
     input_noise_cov = system.get_interference_plus_noise_covariance(k, l, F_override=input_precoders)
     return infer_precoder_numpy_with_blocklength(
@@ -1200,13 +1206,23 @@ def _allocate_bits_for_user_block_precoder_net(
     active_mask: Sequence[int | float],
     *,
     allow_infeasible_zero: bool = False,
+    inference_counters: dict[str, Any] | None = None,
 ) -> tuple[int, int, float, np.ndarray]:
     k = int(user)
     l = int(block)
     T_k = int(system.T[k])
     n_min = int(sim_params["n_kl_min"])
     n_step = int(sim_params["n_kl_step"])
-    F_T = _precoder_net_beam_for_n(system, model, k, l, T_k, active_mask, frozen_F)
+    F_T = _precoder_net_beam_for_n(
+        system,
+        model,
+        k,
+        l,
+        T_k,
+        active_mask,
+        frozen_F,
+        inference_counters=inference_counters,
+    )
     snapshot_T = _clone_precoders(frozen_F)
     snapshot_T[k][l] = np.array(F_T, copy=True)
     R_T = float(system.compute_block_rate(k, l, T_k, F_override=snapshot_T))
@@ -1234,6 +1250,7 @@ def _allocate_bits_for_user_block_precoder_net(
                 int(candidate),
                 active_mask,
                 frozen_F,
+                inference_counters=inference_counters,
             )
             candidate_snapshot = _clone_precoders(frozen_F)
             candidate_snapshot[k][l] = np.array(F_candidate, copy=True)
@@ -1260,6 +1277,7 @@ def _allocate_fixed_target_for_user_block_precoder_net(
     active_mask: Sequence[int | float],
     *,
     allow_infeasible_zero: bool = False,
+    inference_counters: dict[str, Any] | None = None,
 ) -> tuple[int, int, float, np.ndarray]:
     k = int(user)
     l = int(block)
@@ -1271,7 +1289,16 @@ def _allocate_fixed_target_for_user_block_precoder_net(
     if int(target_bits) <= 0:
         return 0, 0, 0.0, zero_beam
 
-    F_T = _precoder_net_beam_for_n(system, model, k, l, T_k, active_mask, frozen_F)
+    F_T = _precoder_net_beam_for_n(
+        system,
+        model,
+        k,
+        l,
+        T_k,
+        active_mask,
+        frozen_F,
+        inference_counters=inference_counters,
+    )
     snapshot_T = _clone_precoders(frozen_F)
     snapshot_T[k][l] = np.array(F_T, copy=True)
     R_T = float(system.compute_block_rate(k, l, T_k, F_override=snapshot_T))
@@ -1294,6 +1321,7 @@ def _allocate_fixed_target_for_user_block_precoder_net(
                 int(candidate),
                 active_mask,
                 frozen_F,
+                inference_counters=inference_counters,
             )
             candidate_snapshot = _clone_precoders(frozen_F)
             candidate_snapshot[k][l] = np.array(F_candidate, copy=True)
@@ -1410,10 +1438,14 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
     B_plan: list[list[int]] = [[] for _ in range(system.K)]
     R_plan: list[list[float]] = [[] for _ in range(system.K)]
     working_F = system.clone_precoders()
-    sweep_history: list[dict[str, Any]] = []
+    epoch_history: list[dict[str, Any]] = []
     outer_history: list[dict[str, Any]] = []
     rate_points: list[dict[str, Any]] = []
     skipped_blocks_per_user = [0 for _ in range(system.K)]
+    evaluation_cost_counters = {
+        "per_user_forward_calls": [0 for _ in range(system.K)],
+        "total_forward_calls": 0,
+    }
 
     for block in range(num_blocks):
         active_users = list(range(system.K))
@@ -1430,6 +1462,7 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
                 int(system.T[int(k)]),
                 active_mask,
                 input_snapshot,
+                inference_counters=evaluation_cost_counters,
             )
         for k in range(system.K):
             if int(block_targets[k, block]) <= 0 and int(block) < len(working_F[k]):
@@ -1455,6 +1488,7 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
                 sim_params,
                 active_mask,
                 allow_infeasible_zero=True,
+                inference_counters=evaluation_cost_counters,
             )
             block_plans[int(k)] = {
                 "B_used": int(B_used),
@@ -1500,6 +1534,7 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
                 sim_params,
                 active_mask,
                 allow_infeasible_zero=True,
+                inference_counters=evaluation_cost_counters,
             )
             corrected_plans[int(k)] = {
                 "B_used": int(B_fix),
@@ -1531,10 +1566,10 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
             user_interference_db.append(_power_to_db(interference_power))
             user_signal_db.append(_power_to_db(signal_power))
 
-        sweep_history.append(
+        epoch_history.append(
             {
                 "block": int(block),
-                "sweep": 1,
+                "epoch": 1,
                 "active_users": int(len(active_users)),
                 "user_ids": [int(k) for k in active_users],
                 "user_rates": user_rates,
@@ -1654,7 +1689,7 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
         "final_sinr_db": final_sinr_db,
         "final_interference_diag": final_interference_diag,
         "outer_history": outer_history,
-        "sweep_history": sweep_history,
+        "epoch_history": epoch_history,
         "rate_points": rate_points,
         "blocks_per_user": [len(v) for v in n_plan],
         "precoder_net_training_losses": [
@@ -1667,6 +1702,7 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
         "training_channel_episode_counts_per_user": [int(v) for v in (training_dataset_sizes or [])],
         "training_active_user_case_counts_per_user": [int(v) for v in (training_dataset_sizes or [])],
         "skipped_blocks_per_user": [int(v) for v in skipped_blocks_per_user],
+        "evaluation_cost_counters": evaluation_cost_counters,
         "scenario_mode": FIXED_BLOCK_TARGETS_MODE,
         "scenario_block_targets": block_targets.tolist(),
     }
@@ -1709,9 +1745,13 @@ def evaluate_downlink_precoder_net(
     B_plan: list[list[int]] = [[] for _ in range(system.K)]
     R_plan: list[list[float]] = [[] for _ in range(system.K)]
     working_F = system.clone_precoders()
-    sweep_history: list[dict[str, Any]] = []
+    epoch_history: list[dict[str, Any]] = []
     outer_history: list[dict[str, Any]] = []
     rate_points: list[dict[str, Any]] = []
+    evaluation_cost_counters = {
+        "per_user_forward_calls": [0 for _ in range(system.K)],
+        "total_forward_calls": 0,
+    }
     max_blocks = int(sim_params.get("max_total_blocks", 256))
     block = 0
     while np.any(remaining > 0):
@@ -1734,6 +1774,7 @@ def evaluate_downlink_precoder_net(
                 int(system.T[int(k)]),
                 active_mask,
                 input_snapshot,
+                inference_counters=evaluation_cost_counters,
             )
 
         if verbose:
@@ -1784,6 +1825,7 @@ def evaluate_downlink_precoder_net(
                 sim_params,
                 transmit_mask,
                 allow_infeasible_zero=True,
+                inference_counters=evaluation_cost_counters,
             )
             block_plans[int(k)] = {
                 "B_used": int(B_used),
@@ -1829,6 +1871,7 @@ def evaluate_downlink_precoder_net(
                 sim_params,
                 transmit_mask,
                 allow_infeasible_zero=True,
+                inference_counters=evaluation_cost_counters,
             )
             corrected_plans[int(k)] = {
                 "B_used": int(B_fix),
@@ -1856,10 +1899,10 @@ def evaluate_downlink_precoder_net(
             user_interference_db.append(_power_to_db(interference_power))
             user_signal_db.append(_power_to_db(signal_power))
 
-        sweep_history.append(
+        epoch_history.append(
             {
                 "block": int(block),
-                "sweep": 1,
+                "epoch": 1,
                 "active_users": int(len(active_users)),
                 "user_ids": [int(k) for k in active_users],
                 "user_rates": user_rates,
@@ -1969,7 +2012,7 @@ def evaluate_downlink_precoder_net(
         "final_sinr_db": final_sinr_db,
         "final_interference_diag": final_interference_diag,
         "outer_history": outer_history,
-        "sweep_history": sweep_history,
+        "epoch_history": epoch_history,
         "rate_points": rate_points,
         "blocks_per_user": [len(v) for v in n_plan],
         "precoder_net_training_losses": [
@@ -1981,6 +2024,7 @@ def evaluate_downlink_precoder_net(
         "training_dataset_sizes": [int(v) for v in (training_dataset_sizes or [])],
         "training_active_user_case_counts_per_user": [int(v) for v in (training_dataset_sizes or [])],
         "skipped_blocks_per_user": [0 for _ in range(system.K)],
+        "evaluation_cost_counters": evaluation_cost_counters,
         "scenario_mode": PAYLOAD_COMPLETION_MODE,
     }
     return result

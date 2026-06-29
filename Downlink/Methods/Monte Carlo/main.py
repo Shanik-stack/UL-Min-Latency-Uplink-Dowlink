@@ -4,6 +4,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from time import perf_counter
 
 import torch
 
@@ -19,6 +20,11 @@ for path in (METHOD_DIR, LINK_ROOT, PROJECT_ROOT):
 from config_loader import load_config
 from determinism import configure_determinism
 from downlink_system import DownlinkSystem
+from experiment_cost import (
+    build_downlink_monte_carlo_total_cost,
+    build_downlink_monte_carlo_training_cost,
+    format_experiment_cost_lines,
+)
 from experiment_scenarios import (
     FIXED_BLOCK_TARGETS_MODE,
     build_experiment_scenario,
@@ -36,7 +42,7 @@ from policy_optimizer import (
 )
 from plotting import (
     plot_asynchronality_comparison,
-    plot_blocklength_sweep_curves,
+    plot_blocklength_feasibility_curves,
     plot_blocks,
     plot_interference_before_after_heatmaps,
     plot_interference_heatmaps,
@@ -88,7 +94,7 @@ def _build_dataset_summary_lines(dataset_summary: dict[str, object]) -> list[str
 
 
 def _build_post_training_summary_lines(post_training_summary: dict[str, object]) -> list[str]:
-    return [
+    lines = [
         "Downlink post-training summary",
         f"Epochs requested: {int(post_training_summary.get('epochs_requested', 0))}",
         f"Train target-bits mode: {post_training_summary.get('train_target_bits_mode', 'unknown')}",
@@ -122,12 +128,18 @@ def _build_post_training_summary_lines(post_training_summary: dict[str, object])
         f"{post_training_summary.get('cumulative_frontier_rollout_queries_by_n_kl', {}).get('per_user_active_user_frontier_rollout_queries_by_n_kl_over_all_epochs', [])}",
         "Final epoch rollout query summary:",
         f"{post_training_summary.get('final_epoch_rollout_query_summary', {})}",
-        "",
-        "Terminology",
-        "- channel episode: one (seed, block) block realization stored in the base dataset",
-        "- active-user channel episode: one active user inside one stored channel episode",
-        "- rollout query: one visited joint (episode, n_targets) state generated online from the current precoder nets",
     ]
+    lines.extend(format_experiment_cost_lines(post_training_summary.get("experiment_cost")))
+    lines.extend(
+        [
+            "",
+            "Terminology",
+            "- channel episode: one (seed, block) block realization stored in the base dataset",
+            "- active-user channel episode: one active user inside one stored channel episode",
+            "- rollout query: one visited joint (episode, n_targets) state generated online from the current precoder nets",
+        ]
+    )
+    return lines
 
 
 def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: int) -> list[str]:
@@ -254,6 +266,7 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
                 )
             )
 
+    lines.extend(format_experiment_cost_lines(result.get("experiment_cost")))
     lines.extend(
         [
             "",
@@ -291,6 +304,7 @@ def main() -> None:
     output_dirs = build_downlink_result_dirs("Monte Carlo", result_tag)
     output_root = output_dirs["experiment_root"]
 
+    training_start = perf_counter()
     training_scenarios = build_training_dataset(
         train_seeds,
         system_params,
@@ -306,10 +320,26 @@ def main() -> None:
         lr=args.precoder_net_lr,
         verbose=verbose,
     )
+    training_wall_time_seconds = perf_counter() - training_start
     dataset_summary = precoder_net_training_history.get("dataset_summary", {})
     post_training_summary = precoder_net_training_history.get("post_training_summary", {})
+    artifact = build_precoder_net_artifact(
+        system_params,
+        sim_params,
+        train_seeds,
+        user_models,
+        precoder_net_training_history,
+        training_dataset_sizes,
+    )
+    training_cost = build_downlink_monte_carlo_training_cost(
+        artifact,
+        batch_size=args.precoder_net_batch_size,
+        core_wall_time_seconds_training=training_wall_time_seconds,
+    )
+    post_training_summary["experiment_cost"] = training_cost
 
     configure_determinism(int(args.test_seed))
+    testing_start = perf_counter()
     test_system = DownlinkSystem(system_params, seed=int(args.test_seed))
     test_scenario_summary = build_experiment_scenario_summary(
         build_experiment_scenario(system_params, sim_params, seed=int(args.test_seed))
@@ -323,6 +353,7 @@ def main() -> None:
         train_seeds=train_seeds,
         training_dataset_sizes=training_dataset_sizes,
     )
+    testing_wall_time_seconds = perf_counter() - testing_start
     result["cfg_path"] = run_meta["cfg_path"]
     result["seed"] = int(args.test_seed)
     result["system_params"] = system_params
@@ -336,6 +367,13 @@ def main() -> None:
         "training_objective",
         "lagrangian_sum_finite_blocklength_rate_with_fixed_target_bits_objective",
     )
+    result["experiment_cost"] = build_downlink_monte_carlo_total_cost(
+        artifact,
+        result.get("evaluation_cost_counters", {}),
+        batch_size=args.precoder_net_batch_size,
+        core_wall_time_seconds_training=training_wall_time_seconds,
+        core_wall_time_seconds_testing=testing_wall_time_seconds,
+    )
     result["summary_metrics"] = _compute_summary_metrics(result)
 
     plot_user_config(system_params, output_dirs["user_config"])
@@ -347,24 +385,17 @@ def main() -> None:
     plot_optimization_history(result, output_dirs["optimization_history"])
     plot_per_user_schedule_details(result, output_dirs["schedule_details"])
     plot_per_user_convergence(result, output_dirs["optimization_history"])
-    plot_blocklength_sweep_curves(test_system, result, output_dirs["optimization_history"])
+    plot_blocklength_feasibility_curves(test_system, result, output_dirs["optimization_history"])
     plot_interference_before_after_heatmaps(result, output_dirs["interference"])
     plot_per_user_interference_before_after(result, output_dirs["interference"])
     plot_interference_heatmaps(test_system, output_dirs["interference"])
     plot_per_user_interference_profiles(test_system, output_dirs["interference"])
 
-    artifact = build_precoder_net_artifact(
-        system_params,
-        sim_params,
-        train_seeds,
-        user_models,
-        precoder_net_training_history,
-        training_dataset_sizes,
-    )
     artifact["training_dataset_summary"] = dataset_summary
     artifact["post_training_summary"] = post_training_summary
     artifact["experiment_scenario_mode"] = sim_params.get("experiment_scenario_mode", "payload_completion")
     artifact["training_experiment_scenarios"] = training_scenario_summaries
+    artifact["experiment_cost"] = training_cost
     torch.save(artifact, os.path.join(output_dirs["train_data"], "train_artifact.pt"))
     save_json(dataset_summary, os.path.join(output_dirs["train_data"], "training_dataset_summary.json"))
     save_text(

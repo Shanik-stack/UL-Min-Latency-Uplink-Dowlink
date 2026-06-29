@@ -94,46 +94,34 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
         max_total_blocks=int(sim_cfg.get("max_total_blocks", 256)),
     )
     n_kl_max = [system_test_params["T"][user] for user in range(system_test_params["K"])]
-    solve_sweeps_per_n_kl = int(
+    max_epochs = int(
         _first_present(
             sim_cfg,
-            "solve_sweeps_per_n_kl",
-            "epochs_per_n_kl",
-            "max_precoder_sweeps",
-            default=10000,
-        )
-    )
-    max_precoder_sweeps = int(
-        _first_present(
-            sim_cfg,
-            "max_precoder_sweeps",
-            "solve_sweeps_per_n_kl",
-            "epochs_per_n_kl",
-            default=solve_sweeps_per_n_kl,
-        )
-    )
-    main_solve_max_sweeps = int(
-        _first_present(
-            sim_cfg,
+            "max_epochs",
+            "main_solve_max_epochs",
             "main_solve_max_sweeps",
-            "main_solve_guard_sweeps",
+            "convergence_max_precoder_epochs",
             "convergence_max_precoder_sweeps",
-            default=min(max_precoder_sweeps, 500),
-        )
-    )
-    reduced_n_kl_repair_max_sweeps = int(
-        _first_present(
-            sim_cfg,
+            "max_precoder_epochs",
+            "max_precoder_sweeps",
+            "solve_epochs_per_n_kl",
+            "solve_sweeps_per_n_kl",
+            "epochs_per_n_kl",
+            "main_solve_guard_epochs",
+            "main_solve_guard_sweeps",
+            "reduced_n_kl_repair_max_epochs",
             "reduced_n_kl_repair_max_sweeps",
+            "repair_solve_guard_epochs",
             "repair_solve_guard_sweeps",
+            "reduced_n_kl_max_precoder_epochs",
             "reduced_n_kl_max_precoder_sweeps",
-            default=solve_sweeps_per_n_kl,
+            default=500,
         )
     )
     simulation_test_params = {
         "initial_lambda_rate_constraint": sim_cfg["initial_lambda_rate_constraint"],
         "initial_lambda_power_constraint": sim_cfg["initial_lambda_power_constraint"],
-        "solve_sweeps_per_n_kl": solve_sweeps_per_n_kl,
+        "max_epochs": max(1, max_epochs),
         "lr_net": sim_cfg.get(
             "lr_net",
             lr_cfg.get("net", sim_cfg.get("user_update_lr", sim_cfg.get("step_lr", 1e-2))),
@@ -147,8 +135,8 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
         "n_kl_max": n_kl_max,
         "n_kl_step": sim_cfg["n_kl_range"]["step"],
         "max_total_blocks": int(sim_cfg.get("max_total_blocks", 256)),
-        "max_precoder_sweeps": max_precoder_sweeps,
-        "print_every_sweep": int(sim_cfg.get("print_every_sweep", 1)),
+        "max_precoder_epochs": max(1, max_epochs),
+        "print_every_epoch": int(_first_present(sim_cfg, "print_every_epoch", "print_every_sweep", default=1)),
         "monte_carlo_training_fallback_target_bits": int(
             _first_present(
                 sim_cfg,
@@ -179,8 +167,6 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
                 default=5,
             )
         ),
-        "main_solve_max_sweeps": main_solve_max_sweeps,
-        "reduced_n_kl_repair_max_sweeps": reduced_n_kl_repair_max_sweeps,
         "kkt_primal_tol": float(
             sim_cfg.get("kkt_primal_tol", sim_cfg.get("convergence_feasibility_tol", 1e-5))
         ),
@@ -190,11 +176,6 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
         "kkt_stationarity_tol": float(
             sim_cfg.get("kkt_stationarity_tol", sim_cfg.get("convergence_precoder_tol", 1e-4))
         ),
-        "kkt_patience": int(
-            sim_cfg.get("kkt_patience", sim_cfg.get("convergence_min_precoder_sweeps_before_stop", 1))
-        ),
-        "kkt_stall_patience": int(sim_cfg.get("kkt_stall_patience", 25)),
-        "kkt_primal_improvement_tol": float(sim_cfg.get("kkt_primal_improvement_tol", 1e-7)),
         "reduced_n_kl_log_interval": int(
             _first_present(
                 sim_cfg,

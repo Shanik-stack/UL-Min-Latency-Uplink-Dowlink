@@ -91,10 +91,27 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
         system_params=system_params,
         max_total_blocks=int(sim_cfg_raw.get("max_total_blocks", 256)),
     )
-    max_precoder_sweeps = int(sim_cfg_raw.get("max_precoder_sweeps", 25))
+    max_epochs = int(
+        _first_present(
+            sim_cfg_raw,
+            "max_epochs",
+            "main_solve_max_epochs",
+            "main_solve_max_sweeps",
+            "max_precoder_epochs",
+            "max_precoder_sweeps",
+            "main_solve_guard_epochs",
+            "main_solve_guard_sweeps",
+            "reduced_n_kl_repair_max_epochs",
+            "reduced_n_kl_repair_max_sweeps",
+            "repair_solve_guard_epochs",
+            "repair_solve_guard_sweeps",
+            default=500,
+        )
+    )
     sim_params = {
-        "max_precoder_sweeps": int(sim_cfg_raw.get("max_precoder_sweeps", 25)),
-        "print_every_sweep": int(sim_cfg_raw.get("print_every_sweep", 1)),
+        "max_epochs": max(1, max_epochs),
+        "max_precoder_epochs": max(1, max_epochs),
+        "print_every_epoch": int(_first_present(sim_cfg_raw, "print_every_epoch", "print_every_sweep", default=1)),
         "user_update_steps": int(sim_cfg_raw.get("user_update_steps", 1)),
         "user_update_lr": float(
             _first_present(
@@ -111,28 +128,9 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
         "constraint_loss_form": str(sim_cfg_raw.get("constraint_loss_form", "plain_lagrangian")).strip().lower(),
         "augmented_lagrangian_rho_rate": float(sim_cfg_raw.get("augmented_lagrangian_rho_rate", 0.0)),
         "augmented_lagrangian_rho_power": float(sim_cfg_raw.get("augmented_lagrangian_rho_power", 0.0)),
-        "main_solve_max_sweeps": int(
-            _first_present(
-                sim_cfg_raw,
-                "main_solve_max_sweeps",
-                "main_solve_guard_sweeps",
-                default=max_precoder_sweeps,
-            )
-        ),
-        "reduced_n_kl_repair_max_sweeps": int(
-            _first_present(
-                sim_cfg_raw,
-                "reduced_n_kl_repair_max_sweeps",
-                "repair_solve_guard_sweeps",
-                default=max_precoder_sweeps,
-            )
-        ),
         "kkt_primal_tol": float(sim_cfg_raw.get("kkt_primal_tol", 1e-5)),
         "kkt_complementarity_tol": float(sim_cfg_raw.get("kkt_complementarity_tol", 1e-5)),
         "kkt_stationarity_tol": float(sim_cfg_raw.get("kkt_stationarity_tol", 1e-4)),
-        "kkt_patience": int(sim_cfg_raw.get("kkt_patience", 1)),
-        "kkt_stall_patience": int(sim_cfg_raw.get("kkt_stall_patience", 25)),
-        "kkt_primal_improvement_tol": float(sim_cfg_raw.get("kkt_primal_improvement_tol", 1e-7)),
         "max_total_blocks": int(sim_cfg_raw.get("max_total_blocks", 256)),
         "n_kl_min": int(n_range.get("min", 5)),
         "n_kl_step": int(n_range.get("step", 1)),

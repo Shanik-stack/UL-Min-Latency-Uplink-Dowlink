@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from time import perf_counter
 from typing import Callable
 
 import numpy as np
@@ -8,17 +9,19 @@ import numpy as np
 from config_loader import load_config
 from determinism import configure_determinism
 from downlink_system import DownlinkSystem
+from experiment_cost import build_downlink_convergence_cost, format_experiment_cost_lines
 from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE
 from experiment_utils import make_method_result_tag
 from optimizer import (
+    convergence_objective_tag,
+    optimize_downlink_convergence_epoch,
+    resolve_convergence_objective_mode,
     optimize_downlink_safe_sweep,
-    resolve_safe_sweep_objective_mode,
-    safe_sweep_objective_tag,
 )
 from plotting import (
     initialize_output_dirs,
     plot_asynchronality_comparison,
-    plot_blocklength_sweep_curves,
+    plot_blocklength_feasibility_curves,
     plot_blocks,
     plot_interference_before_after_heatmaps,
     plot_interference_heatmaps,
@@ -36,6 +39,7 @@ from utils import save_json, save_text
 
 
 OPTIMIZERS: dict[str, Callable] = {
+    "convergence_per_epoch_baseline": optimize_downlink_convergence_epoch,
     "greedy_safe_sweep": optimize_downlink_safe_sweep,
 }
 
@@ -49,7 +53,7 @@ def build_result_tag(
 ) -> str:
     method_tag = method_name
     if objective_mode:
-        method_tag = f"{method_name}_{safe_sweep_objective_tag(objective_mode)}"
+        method_tag = f"{method_name}_{convergence_objective_tag(objective_mode)}"
     return make_method_result_tag(method_tag, cfg_stem, seed=seed)
 
 
@@ -235,8 +239,8 @@ def run_downlink_experiment(
     configure_determinism(seed)
     system_params, sim_params, run_meta = load_config(cfg_name)
     objective_mode_tag = (
-        resolve_safe_sweep_objective_mode(sim_params)
-        if method_name == "greedy_safe_sweep"
+        resolve_convergence_objective_mode(sim_params)
+        if method_name in {"greedy_safe_sweep", "convergence_per_epoch_baseline"}
         else None
     )
     result_tag = build_result_tag(
@@ -249,13 +253,21 @@ def run_downlink_experiment(
         output_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs", result_tag)
     output_dirs = initialize_output_dirs(output_root)
 
+    core_start = perf_counter()
     system = DownlinkSystem(system_params, seed=seed)
     result = OPTIMIZERS[method_name](system, sim_params, verbose=verbose)
+    core_wall_time_seconds_total = perf_counter() - core_start
     result["cfg_path"] = run_meta["cfg_path"]
     result["seed"] = int(seed)
     result["system_params"] = system_params
     result["sim_params"] = sim_params
     result["summary_metrics"] = _compute_summary_metrics(result)
+    result["experiment_cost"] = build_downlink_convergence_cost(
+        system_params,
+        sim_params,
+        result,
+        core_wall_time_seconds_total=core_wall_time_seconds_total,
+    )
 
     plot_user_config(system_params, output_dirs["user_config"])
     plot_latency(result, output_dirs["latency_asynchronality"])
@@ -266,7 +278,7 @@ def run_downlink_experiment(
     plot_optimization_history(result, output_dirs["optimization_history"])
     plot_per_user_schedule_details(result, output_dirs["schedule_details"])
     plot_per_user_convergence(result, output_dirs["optimization_history"])
-    plot_blocklength_sweep_curves(system, result, output_dirs["optimization_history"])
+    plot_blocklength_feasibility_curves(system, result, output_dirs["optimization_history"])
     plot_interference_before_after_heatmaps(result, output_dirs["interference"])
     plot_per_user_interference_before_after(result, output_dirs["interference"])
     plot_interference_heatmaps(system, output_dirs["interference"])
@@ -344,6 +356,7 @@ def run_downlink_experiment(
                 )
             )
 
+    lines.extend(format_experiment_cost_lines(result.get("experiment_cost")))
     save_text(lines, os.path.join(output_dirs["data"], "summary.txt"))
     print(f"Saved downlink results to: {output_root}")
     return result

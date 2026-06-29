@@ -5,6 +5,7 @@ from typing import Any, Sequence
 import numpy as np
 
 from advanced_methods_common import collect_uplink_interference_diagnostics
+from experiment_cost import format_experiment_cost_lines
 from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE
 
 
@@ -423,6 +424,7 @@ def build_convergence_summary_lines(result: dict[str, Any]) -> list[str]:
                 )
             )
 
+    lines.extend(format_experiment_cost_lines(result.get("experiment_cost")))
     return lines
 
 
@@ -546,6 +548,7 @@ def build_summary_lines(result: dict[str, Any]) -> list[str]:
                     ]
                 )
             )
+    lines.extend(format_experiment_cost_lines(result.get("experiment_cost")))
     lines.extend(
         [
             "",
@@ -633,11 +636,16 @@ def build_post_training_summary_lines(post_training_summary: dict[str, Any]) -> 
         f"{post_training_summary.get('train_eval_initial_selected_n_kl_summary', {})}",
         "Train-eval selected n_kl summary:",
         f"{post_training_summary.get('train_eval_selected_n_kl_summary', {})}",
-        "",
-        "Terminology",
-        "- train-eval: evaluation of the trained precoder nets on the first training seed",
-        "- channel episode: one (seed, user, block) channel realization stored in the base dataset",
-        "- rollout query: one visited (episode, n_kl) state generated online from the current precoder net",
-        "- initial schedule: the random-precoder baseline used for the before-training latency",
     ]
+    lines.extend(format_experiment_cost_lines(post_training_summary.get("experiment_cost")))
+    lines.extend(
+        [
+            "",
+            "Terminology",
+            "- train-eval: evaluation of the trained precoder nets on the first training seed",
+            "- channel episode: one (seed, user, block) channel realization stored in the base dataset",
+            "- rollout query: one visited (episode, n_kl) state generated online from the current precoder net",
+            "- initial schedule: the random-precoder baseline used for the before-training latency",
+        ]
+    )
     return lines

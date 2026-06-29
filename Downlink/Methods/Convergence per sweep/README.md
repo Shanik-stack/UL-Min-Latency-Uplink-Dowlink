@@ -1,8 +1,8 @@
-Converge-in-each-sweep baseline
+Convergence-per-epoch baseline
 
 This is the existing downlink online baseline:
 
-- optimize the active users' block precoders with synchronized safe sweeps
+- optimize the active users' block precoders with synchronized epochs
 - allocate bits with the greedy outer `n_kl` search
 - when a user tries a smaller `n_kl`, first test it against the current beams
 - only trigger a fresh re-optimization if that smaller `n_kl` breaks committed-user feasibility
@@ -16,11 +16,11 @@ This is the existing downlink online baseline:
 
 Entry point:
 
-`python "Downlink\\Methods\\Convergence per sweep\\main.py" --cfg_name config_downlink_example.yaml --seed 3`
+`python "Downlink\\Methods\\Convergence per epoch\\main.py" --cfg_name config_downlink_example.yaml --seed 3`
 
 Results are written under:
 
-`Results\\Downlink\\Convergence per sweep\\<experiment_name>`
+`Results\\Downlink\\Convergence per epoch\\<experiment_name>`
 
 The objective mode is appended to the experiment tag so runs with different
 block objectives do not overwrite each other.

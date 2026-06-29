@@ -120,7 +120,7 @@ def test_simulate(
     result = build_precoder_net_result(
         test_uplinksystem,
         test_data_dict,
-        method_name="converge_in_each_sweep_baseline",
+        method_name="convergence_per_epoch_baseline",
         cfg_path=_resolve_config_path(cfg_name),
         test_seed=int(test_seed),
         train_seeds=[],

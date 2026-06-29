@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from time import perf_counter
 
 import numpy as np
 import torch
@@ -17,6 +18,10 @@ for path in (METHOD_DIR, LINK_ROOT, PROJECT_ROOT):
 
 from UplinkSystem import UplinkSystem
 from config_loader import _resolve_config_path, get_config
+from experiment_cost import (
+    build_uplink_monte_carlo_total_cost,
+    build_uplink_monte_carlo_training_cost,
+)
 from experiment_determinism import configure_determinism
 from experiment_scenarios import (
     build_experiment_scenario,
@@ -192,6 +197,14 @@ def _run_precoder_net_test(
     )
     result["experiment_scenario_mode"] = sim_cfg.get("experiment_scenario_mode", "payload_completion")
     result["experiment_scenario"] = test_scenario_summary
+    test_candidate_n_states_per_user = [
+        int(sum(len(block_states) for block_states in user_blocks))
+        for user_blocks in test_data_dict["all_user_block_results_test"]
+    ]
+    result["evaluation_cost_counters"] = {
+        "per_user_candidate_n_states": test_candidate_n_states_per_user,
+        "total_candidate_n_states": int(sum(test_candidate_n_states_per_user)),
+    }
     save_json(result, os.path.join(result_dirs["test_data"], "result.json"))
     if do_plots:
         plot_interference_before_after_heatmaps(result, result_dirs["interference"])
@@ -229,6 +242,7 @@ def main():
     result_dirs = build_uplink_result_dirs("Monte Carlo", result_tag)
     initialize_plot_globals(result_tag, result_dirs)
 
+    training_start = perf_counter()
     train_artifact = train_blocklength_aware_precoder_net(
         cfg_name=args.cfg_name,
         train_seeds=train_seeds,
@@ -236,11 +250,20 @@ def main():
         batch_size=args.precoder_net_batch_size,
         lr=args.precoder_net_lr,
     )
+    training_wall_time_seconds = perf_counter() - training_start
     train_artifact["cfg_path"] = _resolve_config_path(args.cfg_name)
     train_artifact["method_name"] = "monte_carlo_precoder_net_train_test"
     train_artifact["test_seed"] = int(args.test_seed)
     train_artifact["experiment_scenario_mode"] = sim_cfg.get("experiment_scenario_mode", "payload_completion")
     train_artifact["training_experiment_scenarios"] = training_scenario_summaries
+    training_cost = build_uplink_monte_carlo_training_cost(
+        train_artifact,
+        batch_size=args.precoder_net_batch_size,
+        core_wall_time_seconds_training=training_wall_time_seconds,
+    )
+    train_artifact["experiment_cost"] = training_cost
+    if isinstance(train_artifact.get("post_training_summary"), dict):
+        train_artifact["post_training_summary"]["experiment_cost"] = training_cost
 
     plot_optimization_result(train_artifact["all_user_block_results_train"], train=True)
     plot_optimization_result_summary_dict(train_artifact, train=True)
@@ -276,7 +299,8 @@ def main():
     )
 
     if not args.skip_test:
-        _run_precoder_net_test(
+        testing_start = perf_counter()
+        test_result = _run_precoder_net_test(
             train_artifact=train_artifact,
             cfg_name=args.cfg_name,
             test_seed=args.test_seed,
@@ -284,6 +308,17 @@ def main():
             result_dirs=result_dirs,
             train_seeds=train_seeds,
         )
+        testing_wall_time_seconds = perf_counter() - testing_start
+        total_cost = build_uplink_monte_carlo_total_cost(
+            train_artifact,
+            test_result.get("evaluation_cost_counters", {}).get("per_user_candidate_n_states", []),
+            batch_size=args.precoder_net_batch_size,
+            core_wall_time_seconds_training=training_wall_time_seconds,
+            core_wall_time_seconds_testing=testing_wall_time_seconds,
+        )
+        test_result["experiment_cost"] = total_cost
+        save_json(test_result, os.path.join(result_dirs["test_data"], "result.json"))
+        save_text(build_summary_lines(test_result), os.path.join(result_dirs["test_data"], "summary.txt"))
     print(f"Saved uplink precoder-net results to: {result_dirs['experiment_root']}")
 
 

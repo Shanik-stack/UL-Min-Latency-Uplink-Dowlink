@@ -211,7 +211,7 @@ def optimize_precoder_for_nl(
     loss_fn: LagrangianLoss,
     Nt: int,
     dk: int,
-    guard_sweeps: int,
+    max_epochs: int,
     lambda_rate: float,
     lambda_power: float,
     lr_rate: float,
@@ -220,21 +220,14 @@ def optimize_precoder_for_nl(
     kkt_primal_tol: float = 1e-5,
     kkt_complementarity_tol: float = 1e-5,
     kkt_stationarity_tol: float = 1e-5,
-    kkt_patience: int = 1,
-    kkt_stall_patience: int = 25,
-    kkt_primal_improvement_tol: float = 1e-7,
 ):
     losses = []
-    guard_sweeps = max(1, int(guard_sweeps))
-    kkt_patience = max(1, int(kkt_patience))
-    kkt_stall_patience = max(1, int(kkt_stall_patience))
+    max_epochs = max(1, int(max_epochs))
 
     kkt_history: list[dict[str, float]] = []
-    success_streak = 0
-    stall_streak = 0
     best_primal_residual = float("inf")
     best_feasible_rate = -float("inf")
-    solve_status = "guard_stop"
+    solve_status = "max_epochs_reached"
 
     best_primal_model_state = {
         key: value.detach().cpu().clone()
@@ -250,7 +243,7 @@ def optimize_precoder_for_nl(
     best_feasible_lambda_rate: float | None = None
     best_feasible_lambda_power: float | None = None
 
-    for sweep_idx in range(guard_sweeps):
+    for epoch_idx in range(max_epochs):
         Fmat = infer_precoder_torch_with_sigma_context(
             precoder_net,
             loss_fn.H_kl,
@@ -285,7 +278,7 @@ def optimize_precoder_for_nl(
         losses.append(float(loss.detach().cpu()))
         kkt_history.append(
             {
-                "sweep": float(sweep_idx + 1),
+                "epoch": float(epoch_idx + 1),
                 "primal_residual": float(r_p),
                 "complementarity_residual": float(r_c),
                 "stationarity_residual": float(r_s),
@@ -303,7 +296,7 @@ def optimize_precoder_for_nl(
             lambda_rate, lambda_power, rv_pos, pv_pos, lr_rate, lr_power
         )
 
-        if r_p + float(kkt_primal_improvement_tol) < best_primal_residual:
+        if r_p < best_primal_residual:
             best_primal_residual = float(r_p)
             best_primal_model_state = {
                 key: value.detach().cpu().clone()
@@ -312,11 +305,6 @@ def optimize_precoder_for_nl(
             best_primal_optimizer_state = copy.deepcopy(optimizer.state_dict())
             best_primal_lambda_rate = float(lambda_rate)
             best_primal_lambda_power = float(lambda_power)
-            stall_streak = 0
-        elif r_p > float(kkt_primal_tol):
-            stall_streak += 1
-        else:
-            stall_streak = 0
 
         if feasible and float(R.detach().cpu()) >= best_feasible_rate:
             best_feasible_rate = float(R.detach().cpu())
@@ -333,19 +321,14 @@ def optimize_precoder_for_nl(
             and r_c <= float(kkt_complementarity_tol)
             and r_s <= float(kkt_stationarity_tol)
         ):
-            success_streak += 1
-        else:
-            success_streak = 0
-
-        if success_streak >= kkt_patience:
             solve_status = "kkt_converged"
             break
 
-        if stall_streak >= kkt_stall_patience:
-            solve_status = "stalled_infeasible"
+        if previous_precoder_eval is not None and r_s <= float(kkt_stationarity_tol) and r_p > float(kkt_primal_tol):
+            solve_status = "stationary_infeasible"
             break
 
-        if (sweep_idx + 1) < guard_sweeps:
+        if (epoch_idx + 1) < max_epochs:
             optimizer.step()
 
     if best_feasible_model_state is not None:
@@ -354,13 +337,15 @@ def optimize_precoder_for_nl(
             optimizer.load_state_dict(best_feasible_optimizer_state)
         lambda_rate = float(best_feasible_lambda_rate)
         lambda_power = float(best_feasible_lambda_power)
-        if solve_status == "guard_stop":
-            solve_status = "guard_feasible_best"
+        if solve_status == "max_epochs_reached":
+            solve_status = "max_epochs_feasible_best"
     else:
         precoder_net.load_state_dict(best_primal_model_state)
         optimizer.load_state_dict(best_primal_optimizer_state)
         lambda_rate = float(best_primal_lambda_rate)
         lambda_power = float(best_primal_lambda_power)
+        if solve_status == "max_epochs_reached":
+            solve_status = "max_epochs_best_primal"
 
     with torch.no_grad():
         F_final = infer_precoder_torch_with_sigma_context(
@@ -447,16 +432,7 @@ def optimize_subblocklength_precoder(
     n_kl_max = int(uplinksystem.T[user])
     n_kl_min = int(sim_cfg["n_kl_min"])
     n_kl_step = int(sim_cfg["n_kl_step"])
-    main_guard_sweeps = int(sim_cfg.get("main_solve_max_sweeps", sim_cfg["solve_sweeps_per_n_kl"]))
-    reduced_n_kl_repair_max_sweeps = max(
-        1,
-        int(
-            sim_cfg.get(
-                "reduced_n_kl_repair_max_sweeps",
-                sim_cfg["solve_sweeps_per_n_kl"],
-            )
-        ),
-    )
+    max_epochs = max(1, int(sim_cfg["max_epochs"]))
     reduced_n_kl_log_interval = max(1, int(sim_cfg.get("reduced_n_kl_log_interval", 1)))
     
     # psuedo_n_kl_max = int(1000*np.sin(1/real_n_kl_max))
@@ -473,11 +449,6 @@ def optimize_subblocklength_precoder(
     kkt_stationarity_tol = float(
         sim_cfg.get("kkt_stationarity_tol", sim_cfg.get("convergence_precoder_tol", 1e-4))
     )
-    kkt_patience = int(
-        sim_cfg.get("kkt_patience", 1)
-    )
-    kkt_stall_patience = int(sim_cfg.get("kkt_stall_patience", 25))
-    kkt_primal_improvement_tol = float(sim_cfg.get("kkt_primal_improvement_tol", 1e-7))
     constraint_loss_form = resolve_constraint_loss_form(
         sim_cfg.get("constraint_loss_form", "plain_lagrangian")
     )
@@ -510,16 +481,13 @@ def optimize_subblocklength_precoder(
         precoder_net=precoder_net,
         loss_fn=loss_fn,
         Nt=Nt, dk=dk,
-        guard_sweeps=main_guard_sweeps,
+        max_epochs=max_epochs,
         lambda_rate=lambda_rate, lambda_power=lambda_power,
         lr_rate=lr_rate, lr_power=lr_power,
         optimizer=optimizer,
         kkt_primal_tol=kkt_primal_tol,
         kkt_complementarity_tol=kkt_complementarity_tol,
         kkt_stationarity_tol=kkt_stationarity_tol,
-        kkt_patience=kkt_patience,
-        kkt_stall_patience=kkt_stall_patience,
-        kkt_primal_improvement_tol=kkt_primal_improvement_tol,
     )
 
     lambda_rate = out["lambda_rate"]
@@ -617,7 +585,7 @@ def optimize_subblocklength_precoder(
             loss_fn=loss_fn,
             Nt=Nt,
             dk=dk,
-            guard_sweeps=reduced_n_kl_repair_max_sweeps,
+            max_epochs=max_epochs,
             lambda_rate=lambda_rate,
             lambda_power=lambda_power,
             lr_rate=lr_rate,
@@ -626,9 +594,6 @@ def optimize_subblocklength_precoder(
             kkt_primal_tol=kkt_primal_tol,
             kkt_complementarity_tol=kkt_complementarity_tol,
             kkt_stationarity_tol=kkt_stationarity_tol,
-            kkt_patience=kkt_patience,
-            kkt_stall_patience=kkt_stall_patience,
-            kkt_primal_improvement_tol=kkt_primal_improvement_tol,
         )
         lambda_rate = out["lambda_rate"]
         lambda_power = out["lambda_power"]
@@ -1313,7 +1278,7 @@ if __name__ == "__main__":
 
     # expected keys in SIMULATION_TEST_PARAMS:
     #   initial_lambda_rate_constraint, initial_lambda_power_constraint,
-    #   solve_sweeps_per_n_kl, lr_net, lr_rate_constraint, lr_power_constraint,
+    #   max_epochs, lr_net, lr_rate_constraint, lr_power_constraint,
     #   n_kl_min, n_kl_step
     sim_cfg = dict(SIMULATION_TEST_PARAMS)
 

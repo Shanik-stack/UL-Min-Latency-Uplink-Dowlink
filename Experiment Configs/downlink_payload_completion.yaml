@@ -35,9 +35,9 @@ test:
     - 4
 
 simulation:
-  # Per-user precoder updates inside one synchronized block sweep
-  max_precoder_sweeps: 500
-  print_every_sweep: 5
+  # Per-user precoder updates inside one synchronized block epoch
+  max_epochs: 500
+  print_every_epoch: 5
   user_update_steps: 1
   user_update_lr: 0.001
 
@@ -49,14 +49,9 @@ simulation:
   lr_power_constraint: 0.001
   augmented_lagrangian_rho_rate: 1.0
   augmented_lagrangian_rho_power: 1.0
-  main_solve_max_sweeps: 500
-  reduced_n_kl_repair_max_sweeps: 50
   kkt_primal_tol: 1.0e-5
   kkt_complementarity_tol: 1.0e-5
   kkt_stationarity_tol: 3.0e-3
-  kkt_patience: 3
-  kkt_stall_patience: 25
-  kkt_primal_improvement_tol: 1.0e-7
 
   # Reduced-n_kl repair behavior
   n_kl_reduction_update_scope: infeasible_users_only

@@ -15,8 +15,11 @@ for path in (LINK_ROOT, PROJECT_ROOT):
 
 from config_loader import load_config
 from experiment_runner import build_result_tag, run_downlink_experiment
-from optimizer import resolve_safe_sweep_objective_mode
+from optimizer import resolve_convergence_objective_mode
 from project_paths import build_downlink_result_dirs
+
+METHOD_NAME = "convergence_per_epoch_baseline"
+METHOD_LABEL = "Convergence per epoch"
 
 
 def main() -> None:
@@ -27,16 +30,16 @@ def main() -> None:
     args = parser.parse_args()
 
     _, sim_params, run_meta = load_config(args.cfg_name)
-    objective_mode = resolve_safe_sweep_objective_mode(sim_params)
+    objective_mode = resolve_convergence_objective_mode(sim_params)
     result_tag = build_result_tag(
-        "greedy_safe_sweep",
+        METHOD_NAME,
         run_meta["cfg_stem"],
         int(args.seed),
         objective_mode=objective_mode,
     )
-    output_dirs = build_downlink_result_dirs("Convergence per sweep", result_tag)
+    output_dirs = build_downlink_result_dirs(METHOD_LABEL, result_tag)
     run_downlink_experiment(
-        "greedy_safe_sweep",
+        METHOD_NAME,
         args.cfg_name,
         args.seed,
         verbose=not args.quiet,

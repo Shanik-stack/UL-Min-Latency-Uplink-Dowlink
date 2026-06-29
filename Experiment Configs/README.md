@@ -12,7 +12,7 @@ The configs now follow a simpler structure:
 - `test`
   - Physical system dimensions, payload, SNR, symbol rate, and reliability.
 - `simulation`
-  - Optimization settings, KKT stopping settings, Monte Carlo training-data settings, and scenario definition.
+  - Optimization settings, one shared KKT stop budget `max_epochs`, Monte Carlo training-data settings, and scenario definition.
 
 The confusing legacy Monte Carlo names such as `precoder_net_train_*`,
 `curriculum_*`, and `policy_train_*` are no longer used in the canonical YAML
@@ -53,9 +53,9 @@ You only need the config filename. The loaders search:
 If your current directory is `C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO`:
 
 ```powershell
-python "Uplink\Methods\Convergence per sweep\main.py" --cfg_name uplink_payload_completion.yaml --seed 3
+python "Uplink\Methods\Convergence per epoch\main.py" --cfg_name uplink_payload_completion.yaml --seed 3
 python "Uplink\Methods\Monte Carlo\main.py" --cfg_name uplink_payload_completion.yaml --train_seeds 0,1,2 --test_seed 3
-python "Downlink\Methods\Convergence per sweep\main.py" --cfg_name downlink_payload_completion.yaml --seed 3
+python "Downlink\Methods\Convergence per epoch\main.py" --cfg_name downlink_payload_completion.yaml --seed 3
 python "Downlink\Methods\Monte Carlo\main.py" --cfg_name downlink_payload_completion.yaml --train_seeds 0,1,2 --test_seed 3
 ```
 

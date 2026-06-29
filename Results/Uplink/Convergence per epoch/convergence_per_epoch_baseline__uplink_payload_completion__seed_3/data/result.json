@@ -1,0 +1,717 @@
+{
+    "method_name": "convergence_per_epoch_baseline",
+    "cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\uplink_payload_completion.yaml",
+    "seed": 3,
+    "precoder_parameterization": "shared_user_channel_sigma_epsilon_to_precoder_mlp_online_convergence",
+    "initial_latency": [
+        0.008866666666666667,
+        0.010533333333333334,
+        0.0114
+    ],
+    "final_latency": [
+        0.006666666666666667,
+        0.008,
+        0.009866666666666666
+    ],
+    "initial_n": [
+        133.0,
+        158.0,
+        171.0
+    ],
+    "final_n": [
+        100,
+        120,
+        148
+    ],
+    "initial_n_kl": [
+        [
+            100.0,
+            33.0
+        ],
+        [
+            100.0,
+            58.0
+        ],
+        [
+            100.0,
+            71.0
+        ]
+    ],
+    "final_n_kl": [
+        [
+            100
+        ],
+        [
+            100,
+            20
+        ],
+        [
+            100,
+            48
+        ]
+    ],
+    "initial_B_kl": [
+        [
+            1825,
+            575
+        ],
+        [
+            1557,
+            843
+        ],
+        [
+            1415,
+            985
+        ]
+    ],
+    "initial_R_fbl": [
+        [
+            18.259862286182585,
+            17.650413110378498
+        ],
+        [
+            15.573676640502072,
+            14.565163092454426
+        ],
+        [
+            14.154784307429564,
+            13.941540140515034
+        ]
+    ],
+    "final_R_fbl": [
+        [
+            24.676703145529963
+        ],
+        [
+            20.233688888693308,
+            17.449274958925333
+        ],
+        [
+            16.669238015183062,
+            16.38283217263309
+        ]
+    ],
+    "initial_snr_db": [
+        14.258672300952055,
+        10.281832842524054,
+        8.527997757706864
+    ],
+    "final_snr_db": [
+        13.95791449953747,
+        10.446203067085529,
+        8.736371286776073
+    ],
+    "initial_sinr_db": [
+        -2.7026028983404293,
+        -4.350458813565988,
+        -2.6456058522755113
+    ],
+    "final_sinr_db": [
+        -3.023978668356011,
+        -4.079371867782528,
+        -2.3174194069219385
+    ],
+    "initial_bits_per_symbol": [
+        18.045112781954888,
+        15.189873417721518,
+        14.035087719298245
+    ],
+    "initial_bits_per_symbol_by_block": [
+        [
+            18.25,
+            17.424242424242426
+        ],
+        [
+            15.57,
+            14.53448275862069
+        ],
+        [
+            14.15,
+            13.873239436619718
+        ]
+    ],
+    "final_bits_per_symbol": [
+        [
+            24.0
+        ],
+        [
+            20.61,
+            16.95
+        ],
+        [
+            16.27,
+            16.104166666666668
+        ]
+    ],
+    "B_kl": [
+        [
+            2400
+        ],
+        [
+            2061,
+            339
+        ],
+        [
+            1627,
+            773
+        ]
+    ],
+    "n_kl": [
+        [
+            100
+        ],
+        [
+            100,
+            20
+        ],
+        [
+            100,
+            48
+        ]
+    ],
+    "R_fbl": [
+        [
+            24.051977157592773
+        ],
+        [
+            20.61615562438965,
+            17.44930648803711
+        ],
+        [
+            16.279382705688477,
+            16.382843017578125
+        ]
+    ],
+    "blocks_per_user": [
+        1,
+        2,
+        2
+    ],
+    "initial_schedule_source": "random_precoder_baseline",
+    "scenario_mode": "payload_completion",
+    "scenario_block_targets": [],
+    "initial_interference_diag": {
+        "blocks_per_user": [
+            2,
+            2,
+            2
+        ],
+        "signal": [
+            [
+                25.335460563952164,
+                19.103379329309597
+            ],
+            [
+                15.979749011316223,
+                18.619637424735842
+            ],
+            [
+                20.423915848829648,
+                26.108453431085938
+            ]
+        ],
+        "total_interference": [
+            [
+                36.40366486014587,
+                44.728090855821776
+            ],
+            [
+                45.75937641278181,
+                45.21183276039554
+            ],
+            [
+                41.31520957526838,
+                37.72301675404544
+            ]
+        ],
+        "noise": [
+            [
+                0.818879042546182,
+                0.8479669788479843
+            ],
+            [
+                1.597983294240164,
+                1.6445549948871567
+            ],
+            [
+                3.189217948024549,
+                3.341416731418626
+            ]
+        ],
+        "sinr_db": [
+            [
+                -1.6707724724756323,
+                -3.7762655814815744
+            ],
+            [
+                -4.718175276600102,
+                -4.007975851683623
+            ],
+            [
+                -3.3826420651188833,
+                -1.9668468921341322
+            ]
+        ],
+        "pairwise_block": [
+            [
+                [
+                    NaN,
+                    15.979749011316223,
+                    20.423915848829648
+                ],
+                [
+                    25.335460563952164,
+                    NaN,
+                    20.423915848829648
+                ],
+                [
+                    25.335460563952164,
+                    15.979749011316223,
+                    NaN
+                ]
+            ],
+            [
+                [
+                    NaN,
+                    18.619637424735842,
+                    26.108453431085938
+                ],
+                [
+                    19.103379329309597,
+                    NaN,
+                    26.108453431085938
+                ],
+                [
+                    19.103379329309597,
+                    18.619637424735842,
+                    NaN
+                ]
+            ]
+        ],
+        "avg_pairwise_power": [
+            [
+                NaN,
+                17.299693218026032,
+                23.266184639957793
+            ],
+            [
+                22.21941994663088,
+                NaN,
+                23.266184639957793
+            ],
+            [
+                22.21941994663088,
+                17.299693218026032,
+                NaN
+            ]
+        ],
+        "avg_pairwise_inr_db": [
+            [
+                NaN,
+                13.167265522219404,
+                14.45065119911376
+            ],
+            [
+                11.378410845189057,
+                NaN,
+                11.561969715206866
+            ],
+            [
+                8.344603734019572,
+                7.235760175448121,
+                NaN
+            ]
+        ],
+        "avg_pairwise_share": [
+            [
+                NaN,
+                0.42645923449728224,
+                0.5735407655027178
+            ],
+            [
+                0.4884934508088791,
+                NaN,
+                0.5115065491911209
+            ],
+            [
+                0.5622449029676695,
+                0.4377550970323304,
+                NaN
+            ]
+        ],
+        "worst_block": 1
+    },
+    "final_interference_diag": {
+        "blocks_per_user": [
+            1,
+            2,
+            2
+        ],
+        "signal": [
+            [
+                20.370946414595593,
+                NaN
+            ],
+            [
+                17.80837220141829,
+                18.592616283495758
+            ],
+            [
+                22.243166167961228,
+                26.851848480287646
+            ]
+        ],
+        "total_interference": [
+            [
+                40.051538369379514,
+                NaN
+            ],
+            [
+                42.61411258255682,
+                47.222794894883236
+            ],
+            [
+                38.17931861601389,
+                38.96356269809135
+            ]
+        ],
+        "noise": [
+            [
+                0.818879042546182,
+                NaN
+            ],
+            [
+                1.597983294240164,
+                1.686695226590762
+            ],
+            [
+                3.189217948024549,
+                3.378284831538162
+            ]
+        ],
+        "sinr_db": [
+            [
+                -3.023978668356011,
+                NaN
+            ],
+            [
+                -3.94916879150085,
+                -4.200526289818476
+            ],
+            [
+                -2.6947355148363483,
+                -1.9779561607181328
+            ]
+        ],
+        "pairwise_block": [
+            [
+                [
+                    NaN,
+                    17.80837220141829,
+                    22.243166167961228
+                ],
+                [
+                    20.370946414595593,
+                    NaN,
+                    22.243166167961228
+                ],
+                [
+                    20.370946414595593,
+                    17.80837220141829,
+                    NaN
+                ]
+            ],
+            [
+                [
+                    NaN,
+                    NaN,
+                    NaN
+                ],
+                [
+                    20.370946414595593,
+                    NaN,
+                    26.851848480287646
+                ],
+                [
+                    20.370946414595593,
+                    18.592616283495758,
+                    NaN
+                ]
+            ]
+        ],
+        "avg_pairwise_power": [
+            [
+                NaN,
+                17.80837220141829,
+                22.243166167961228
+            ],
+            [
+                20.370946414595593,
+                NaN,
+                24.54750732412444
+            ],
+            [
+                20.370946414595593,
+                18.200494242457026,
+                NaN
+            ]
+        ],
+        "avg_pairwise_inr_db": [
+            [
+                NaN,
+                13.374044675777581,
+                14.339768498451269
+            ],
+            [
+                10.93865230638626,
+                NaN,
+                11.737589596700857
+            ],
+            [
+                7.930010132387953,
+                7.43803542121805,
+                NaN
+            ]
+        ],
+        "avg_pairwise_share": [
+            [
+                NaN,
+                0.4446364091481009,
+                0.5553635908518992
+            ],
+            [
+                0.45350952045430026,
+                NaN,
+                0.5464904795456997
+            ],
+            [
+                0.5281354823045962,
+                0.4718645176954039,
+                NaN
+            ]
+        ],
+        "worst_block": 0
+    },
+    "skipped_blocks_per_user": [
+        0,
+        0,
+        0
+    ],
+    "summary_metrics": {
+        "initial_total_latency": 0.0308,
+        "final_total_latency": 0.024533333333333334,
+        "initial_avg_latency": 0.010266666666666667,
+        "final_avg_latency": 0.008177777777777779,
+        "initial_max_latency": 0.0114,
+        "final_max_latency": 0.009866666666666666,
+        "initial_min_latency": 0.008866666666666667,
+        "final_min_latency": 0.006666666666666667,
+        "latency_reduction_per_user_percent": [
+            24.812030075187966,
+            24.050632911392405,
+            13.45029239766083
+        ],
+        "total_latency_reduction_percent": 20.346320346320347,
+        "initial_asynchronality_matrix": [
+            [
+                0.0,
+                0.001666666666666667,
+                0.0025333333333333336
+            ],
+            [
+                0.001666666666666667,
+                0.0,
+                0.0008666666666666666
+            ],
+            [
+                0.0025333333333333336,
+                0.0008666666666666666,
+                0.0
+            ]
+        ],
+        "final_asynchronality_matrix": [
+            [
+                0.0,
+                0.001333333333333333,
+                0.003199999999999999
+            ],
+            [
+                0.001333333333333333,
+                0.0,
+                0.0018666666666666658
+            ],
+            [
+                0.003199999999999999,
+                0.0018666666666666658,
+                0.0
+            ]
+        ],
+        "initial_asynchronality_pairs": [
+            {
+                "user_i": 0,
+                "user_j": 1,
+                "abs_latency_diff": 0.001666666666666667
+            },
+            {
+                "user_i": 0,
+                "user_j": 2,
+                "abs_latency_diff": 0.0025333333333333336
+            },
+            {
+                "user_i": 1,
+                "user_j": 2,
+                "abs_latency_diff": 0.0008666666666666666
+            }
+        ],
+        "final_asynchronality_pairs": [
+            {
+                "user_i": 0,
+                "user_j": 1,
+                "abs_latency_diff": 0.001333333333333333
+            },
+            {
+                "user_i": 0,
+                "user_j": 2,
+                "abs_latency_diff": 0.003199999999999999
+            },
+            {
+                "user_i": 1,
+                "user_j": 2,
+                "abs_latency_diff": 0.0018666666666666658
+            }
+        ],
+        "initial_asynchronality_sum": 0.005066666666666667,
+        "final_asynchronality_sum": 0.006399999999999998,
+        "asynchronality_reduction_percent": -26.315789473684152,
+        "initial_avg_snr_db": 11.022834300394324,
+        "final_avg_snr_db": 11.046829617799693,
+        "initial_avg_sinr_db": -3.2328891880606427,
+        "final_avg_sinr_db": -3.140256647686826,
+        "scenario_mode": "",
+        "target_bits_per_user": [
+            0,
+            0,
+            0
+        ],
+        "initial_unserved_bits_per_user": [
+            0,
+            0,
+            0
+        ],
+        "unserved_bits_per_user": [
+            0,
+            0,
+            0
+        ],
+        "partially_served_blocks_per_user": [
+            0,
+            0,
+            0
+        ],
+        "zero_service_blocks_per_user": [
+            0,
+            0,
+            0
+        ],
+        "skipped_blocks_per_user": [
+            0,
+            0,
+            0
+        ],
+        "per_user_summary": [
+            {
+                "user": 0,
+                "initial_latency": 0.008866666666666667,
+                "final_latency": 0.006666666666666667,
+                "latency_reduction_percent": 24.812030075187966,
+                "initial_snr_db": 14.258672300952055,
+                "final_snr_db": 13.95791449953747,
+                "initial_sinr_db": -2.7026028983404293,
+                "final_sinr_db": -3.023978668356011,
+                "blocks": 1,
+                "total_n": 100,
+                "target_bits": 0,
+                "initial_served_bits": 2400,
+                "served_bits": 2400,
+                "initial_unserved_bits": 0,
+                "unserved_bits": 0,
+                "partially_served_blocks": 0,
+                "zero_service_blocks": 0,
+                "skipped_blocks": 0
+            },
+            {
+                "user": 1,
+                "initial_latency": 0.010533333333333334,
+                "final_latency": 0.008,
+                "latency_reduction_percent": 24.050632911392405,
+                "initial_snr_db": 10.281832842524054,
+                "final_snr_db": 10.446203067085529,
+                "initial_sinr_db": -4.350458813565988,
+                "final_sinr_db": -4.079371867782528,
+                "blocks": 2,
+                "total_n": 120,
+                "target_bits": 0,
+                "initial_served_bits": 2400,
+                "served_bits": 2400,
+                "initial_unserved_bits": 0,
+                "unserved_bits": 0,
+                "partially_served_blocks": 0,
+                "zero_service_blocks": 0,
+                "skipped_blocks": 0
+            },
+            {
+                "user": 2,
+                "initial_latency": 0.0114,
+                "final_latency": 0.009866666666666666,
+                "latency_reduction_percent": 13.45029239766083,
+                "initial_snr_db": 8.527997757706864,
+                "final_snr_db": 8.736371286776073,
+                "initial_sinr_db": -2.6456058522755113,
+                "final_sinr_db": -2.3174194069219385,
+                "blocks": 2,
+                "total_n": 148,
+                "target_bits": 0,
+                "initial_served_bits": 2400,
+                "served_bits": 2400,
+                "initial_unserved_bits": 0,
+                "unserved_bits": 0,
+                "partially_served_blocks": 0,
+                "zero_service_blocks": 0,
+                "skipped_blocks": 0
+            }
+        ]
+    },
+    "experiment_cost": {
+        "core_wall_time_seconds_total": 30.844067500001984,
+        "core_wall_time_seconds_training": 30.844067500001984,
+        "core_wall_time_seconds_testing": 0.0,
+        "estimated_nn_training_flops": 0.0,
+        "estimated_nn_inference_flops": 21030048.0,
+        "estimated_nn_total_flops": 21030048.0,
+        "training_forward_backward_sample_equivalents": 0,
+        "inference_forward_calls": 137,
+        "optimizer_steps": 0,
+        "per_user_forward_flops": [
+            153504,
+            153504,
+            153504
+        ],
+        "workload_counters": {
+            "solver_calls": 0,
+            "solver_epochs_per_user": [
+                0,
+                0,
+                0
+            ],
+            "visited_candidate_n_states_per_user": [
+                1,
+                82,
+                54
+            ]
+        },
+        "notes": [
+            "FLOPs are estimated from the precoder MLP shapes and counted solver epochs; plotting and file export are excluded from wall time.",
+            "One uplink convergence solver epoch is counted as one forward/backward sample-equivalent on that user's precoder net."
+        ]
+    }
+}
