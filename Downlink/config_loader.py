@@ -227,6 +227,14 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
                 default=0.5,
             )
         ),
+        "downlink_precoder_net_scope": str(
+            _first_present(
+                sim_cfg_raw,
+                "downlink_precoder_net_scope",
+                "precoder_net_scope",
+                default="per_user_nets",
+            )
+        ).strip().lower(),
         "experiment_scenario": scenario_cfg,
         "experiment_scenario_mode": str(scenario_cfg["mode"]),
     }

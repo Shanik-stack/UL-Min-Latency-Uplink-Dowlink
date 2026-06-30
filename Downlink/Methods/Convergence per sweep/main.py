@@ -36,6 +36,7 @@ def main() -> None:
         run_meta["cfg_stem"],
         int(args.seed),
         objective_mode=objective_mode,
+        model_scope=sim_params.get("downlink_precoder_net_scope"),
     )
     output_dirs = build_downlink_result_dirs(METHOD_LABEL, result_tag)
     run_downlink_experiment(

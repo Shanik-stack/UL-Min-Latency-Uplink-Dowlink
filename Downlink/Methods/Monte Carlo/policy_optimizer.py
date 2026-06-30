@@ -29,11 +29,16 @@ from optimizer import (
 )
 from precoder_models import (
     DEVICE,
+    build_shared_bs_precoder_net_with_blocklength,
     build_user_precoder_net_with_blocklength,
     export_user_model_specs,
     export_user_model_states,
+    infer_raw_bs_precoders_numpy_with_blocklength,
+    infer_raw_bs_precoders_torch_with_blocklength,
     infer_raw_precoder_numpy_with_blocklength,
     infer_raw_precoder_torch_with_blocklength,
+    model_outputs_full_bs_precoder,
+    resolve_downlink_precoder_net_scope,
 )
 
 LOG2E_SQ = float(np.log2(np.e) ** 2)
@@ -76,6 +81,62 @@ def _rate_to_max_bits(n_kl: int, rate: float) -> int:
 def _zero_downlink_precoder(system: DownlinkSystem, user: int) -> np.ndarray:
     k = int(user)
     return np.zeros((int(system.Nb[k]), int(system.dk[k])), dtype=np.complex128)
+
+
+def _downlink_monte_carlo_precoder_parameterization(model_scope: str) -> str:
+    scope = resolve_downlink_precoder_net_scope(model_scope)
+    if scope == "bs_shared_net":
+        return "bs_shared_block_context_to_full_precoder_mlp"
+    return "per_user_block_context_to_precoder_mlp"
+
+
+def _build_training_user_models(
+    system_params: dict[str, Any],
+    sim_params: dict[str, Any],
+) -> list[torch.nn.Module]:
+    K = int(system_params["K"])
+    max_nr = int(np.max(system_params["Nr"]))
+    max_nb = int(np.max(system_params["Nb"]))
+    max_dk = int(np.max(system_params["dk"]))
+    model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
+    if model_scope == "bs_shared_net":
+        shared_model = build_shared_bs_precoder_net_with_blocklength(
+            k_count=K,
+            max_nr=max_nr,
+            max_nb=max_nb,
+            max_dk=max_dk,
+            device=DEVICE,
+        )
+        return [shared_model for _ in range(K)]
+
+    return [
+        build_user_precoder_net_with_blocklength(
+            int(system_params["Nr"][k]),
+            int(system_params["Nb"][k]),
+            int(system_params["dk"][k]),
+            k_count=K,
+            max_nr=max_nr,
+            max_nb=max_nb,
+            device=DEVICE,
+        )
+        for k in range(K)
+    ]
+
+
+def _unique_trainable_parameters(models: Sequence[torch.nn.Module]) -> list[torch.nn.Parameter]:
+    params: list[torch.nn.Parameter] = []
+    seen_model_ids: set[int] = set()
+    for model in models:
+        model_id = id(model)
+        if model_id in seen_model_ids:
+            continue
+        seen_model_ids.add(model_id)
+        params.extend(list(model.parameters()))
+    return params
+
+
+def _models_output_full_bs_precoder(models: Sequence[torch.nn.Module]) -> bool:
+    return len(models) > 0 and model_outputs_full_bs_precoder(models[0])
 
 
 def _q_inv_torch(epsilon: float, device: torch.device = DEVICE) -> torch.Tensor:
@@ -150,6 +211,60 @@ def _context_channels_for_block(system: DownlinkSystem, block: int) -> list[np.n
         else:
             channels.append(np.zeros((int(system.Nr[k]), int(system.Nb[k])), dtype=np.complex64))
     return channels
+
+
+def _shared_n_targets_for_block(
+    system: DownlinkSystem,
+    active_mask: Sequence[int | float],
+    *,
+    candidate_user: int | None = None,
+    candidate_n_kl: int | None = None,
+) -> list[int]:
+    n_targets: list[int] = []
+    for k in range(system.K):
+        if float(active_mask[int(k)]) <= 0.5:
+            n_targets.append(0)
+            continue
+        if candidate_user is not None and int(k) == int(candidate_user):
+            n_targets.append(int(candidate_n_kl if candidate_n_kl is not None else system.T[int(k)]))
+        else:
+            n_targets.append(int(system.T[int(k)]))
+    return n_targets
+
+
+def _shared_precoder_snapshot_for_targets(
+    system: DownlinkSystem,
+    model: torch.nn.Module,
+    block: int,
+    n_targets: Sequence[int],
+    active_mask: Sequence[int | float],
+    inference_counters: dict[str, Any] | None = None,
+) -> list[list[np.ndarray]]:
+    active_users = [int(k) for k, flag in enumerate(active_mask) if float(flag) > 0.5]
+    if inference_counters is not None:
+        inference_counters["total_forward_calls"] = int(inference_counters.get("total_forward_calls", 0)) + 1
+        per_user = inference_counters.get("per_user_forward_calls")
+        if isinstance(per_user, list):
+            for k in active_users:
+                if 0 <= int(k) < len(per_user):
+                    per_user[int(k)] = int(per_user[int(k)]) + 1
+
+    beams = infer_raw_bs_precoders_numpy_with_blocklength(
+        model,
+        _context_channels_for_block(system, int(block)),
+        list(n_targets),
+        active_mask,
+        np.asarray(system.sigma2, dtype=np.float32),
+        np.asarray(system.epsilon, dtype=np.float32),
+        system.Nb,
+        system.dk,
+        device=DEVICE,
+    )
+    snapshot = system.clone_precoders()
+    for k in active_users:
+        snapshot[int(k)][int(block)] = np.asarray(beams[int(k)], dtype=np.complex128)
+    system.project_block_precoders_to_power(snapshot, int(block), active_users=active_users)
+    return snapshot
 
 
 def _masked_precoder_snapshot(
@@ -228,34 +343,56 @@ def _scenario_forward_pass(
     required_rates = [0.0 for _ in range(K)]
     sum_rate = torch.zeros((), dtype=torch.float32, device=DEVICE)
 
-    for k in range(K):
-        if float(active_mask[k]) <= 0.5 or int(n_targets_list[k]) <= 0:
-            predicted_beams.append(
-                torch.zeros(
+    if _models_output_full_bs_precoder(user_models):
+        sigma2_t = torch.tensor(np.asarray(scenario["sigma2"]), dtype=torch.float32, device=DEVICE)
+        epsilon_t = torch.tensor(np.asarray(scenario["epsilon"]), dtype=torch.float32, device=DEVICE)
+        predicted_beams = infer_raw_bs_precoders_torch_with_blocklength(
+            user_models[0],
+            H_block_t,
+            torch.tensor(n_targets_list, dtype=torch.float32, device=DEVICE),
+            active_mask_t,
+            sigma2_t,
+            epsilon_t,
+            system_params["Nb"],
+            system_params["dk"],
+        )
+        for k in range(K):
+            if float(active_mask[k]) <= 0.5 or int(n_targets_list[k]) <= 0:
+                predicted_beams[k] = torch.zeros(
                     (int(system_params["Nb"][k]), int(system_params["dk"][k])),
                     dtype=torch.complex64,
                     device=DEVICE,
                 )
-            )
-            continue
+    else:
+        for k in range(K):
+            if float(active_mask[k]) <= 0.5 or int(n_targets_list[k]) <= 0:
+                predicted_beams.append(
+                    torch.zeros(
+                        (int(system_params["Nb"][k]), int(system_params["dk"][k])),
+                        dtype=torch.complex64,
+                        device=DEVICE,
+                    )
+                )
+                continue
 
-        noise_cov_input_t = torch.tensor(
-            np.asarray(scenario["input_noise_covariances"][k]),
-            dtype=torch.complex64,
-            device=DEVICE,
-        )
-        predicted_beams.append(
-            infer_raw_precoder_torch_with_blocklength(
-                user_models[k],
-                H_block_t,
-                int(n_targets_list[k]),
-                active_mask_t,
-                noise_cov_input_t,
-                float(scenario["epsilon"][k]),
-                int(system_params["Nb"][k]),
-                int(system_params["dk"][k]),
+            noise_cov_input_t = torch.tensor(
+                np.asarray(scenario["input_noise_covariances"][k]),
+                dtype=torch.complex64,
+                device=DEVICE,
             )
-        )
+            predicted_beams.append(
+                infer_raw_precoder_torch_with_blocklength(
+                    user_models[k],
+                    H_block_t,
+                    int(n_targets_list[k]),
+                    active_mask_t,
+                    noise_cov_input_t,
+                    float(scenario["epsilon"][k]),
+                    int(system_params["Nb"][k]),
+                    int(system_params["dk"][k]),
+                    user_index=int(k),
+                )
+            )
 
     predicted_beams = _project_predicted_beams_to_block_power_torch(
         predicted_beams,
@@ -834,23 +971,11 @@ def train_blocklength_aware_precoder_net(
 ) -> tuple[list[torch.nn.Module], dict[str, Any], list[int]]:
     K = int(system_params["K"])
     scenario_mode = str(sim_params.get("experiment_scenario_mode", PAYLOAD_COMPLETION_MODE))
-    max_nr = int(np.max(system_params["Nr"]))
-    max_nb = int(np.max(system_params["Nb"]))
+    model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
     dataset_summary = summarize_training_dataset(training_episodes)
-    models: list[torch.nn.Module] = [
-        build_user_precoder_net_with_blocklength(
-            int(system_params["Nr"][k]),
-            int(system_params["Nb"][k]),
-            int(system_params["dk"][k]),
-            k_count=K,
-            max_nr=max_nr,
-            max_nb=max_nb,
-            device=DEVICE,
-        )
-        for k in range(K)
-    ]
+    models = _build_training_user_models(system_params, sim_params)
     optimizer = torch.optim.Adam(
-        [param for model in models for param in model.parameters()],
+        _unique_trainable_parameters(models),
         lr=float(lr),
     )
     training_history = {
@@ -864,6 +989,7 @@ def train_blocklength_aware_precoder_net(
         "avg_rate_violation_over_users": [],
         "dataset_summary": dataset_summary,
         "epoch_rollout_query_summaries": [],
+        "downlink_precoder_net_scope": str(model_scope),
         "training_objective": (
             "rollout_lagrangian_sum_finite_blocklength_rate_with_fixed_target_bits_objective"
             if scenario_mode == FIXED_BLOCK_TARGETS_MODE
@@ -886,7 +1012,8 @@ def train_blocklength_aware_precoder_net(
         print(
             "\n================ DOWNLINK JOINT PRECODER NET TRAIN ================\n"
             f"Channel episodes: {len(training_episodes)} | epochs: {int(epochs)} | batch_size: {int(batch_size)}\n"
-            f"Channel episodes per user: {dataset_sizes}"
+            f"Channel episodes per user: {dataset_sizes}\n"
+            f"Precoder-net scope: {model_scope}"
         )
 
     if len(training_episodes) == 0:
@@ -1094,6 +1221,7 @@ def train_blocklength_aware_precoder_net(
 
     training_history["post_training_summary"] = {
         "epochs_requested": int(epochs),
+        "downlink_precoder_net_scope": str(model_scope),
         "train_target_bits_mode": (
             "fixed_block_targets_actual_bits"
             if scenario_mode == FIXED_BLOCK_TARGETS_MODE
@@ -1177,6 +1305,22 @@ def _precoder_net_beam_for_n(
 ) -> np.ndarray:
     k = int(user)
     l = int(block)
+    if model_outputs_full_bs_precoder(model):
+        snapshot = _shared_precoder_snapshot_for_targets(
+            system,
+            model,
+            l,
+            _shared_n_targets_for_block(
+                system,
+                active_mask,
+                candidate_user=k,
+                candidate_n_kl=int(n_kl),
+            ),
+            active_mask,
+            inference_counters=inference_counters,
+        )
+        return np.asarray(snapshot[k][l], dtype=np.complex128)
+
     if inference_counters is not None:
         inference_counters["total_forward_calls"] = int(inference_counters.get("total_forward_calls", 0)) + 1
         per_user = inference_counters.get("per_user_forward_calls")
@@ -1194,6 +1338,7 @@ def _precoder_net_beam_for_n(
         nb=int(system.Nb[k]),
         dk=int(system.dk[k]),
         device=DEVICE,
+        user_index=int(k),
     )
 
 
@@ -1394,7 +1539,11 @@ def _estimate_initial_latency_from_random_precoders_fixed_block_targets(
     scenario: dict[str, Any],
 ) -> tuple[list[float], dict[str, Any], dict[str, Any]]:
     baseline_system = DownlinkSystem(system.sc, seed=system.seed)
-    baseline_models = _build_user_precoder_models(baseline_system, init_seed=int(system.seed))
+    baseline_models = _build_user_precoder_models(
+        baseline_system,
+        init_seed=int(system.seed),
+        model_scope="per_user_nets",
+    )
     block_targets = np.asarray(scenario["block_bit_targets"], dtype=int)
     num_blocks = int(scenario["num_blocks"])
     n_plan: list[list[int]] = [[] for _ in range(baseline_system.K)]
@@ -1504,18 +1653,30 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
         for k in active_users:
             _ensure_user_block(system, working_F, k, block)
         active_mask = [1 for _ in range(system.K)]
-        input_snapshot = _masked_precoder_snapshot(system, working_F, block, active_mask)
-        for k in active_users:
-            working_F[k][block] = _precoder_net_beam_for_n(
+        if _models_output_full_bs_precoder(user_models):
+            joint_snapshot = _shared_precoder_snapshot_for_targets(
                 system,
-                user_models[int(k)],
-                int(k),
+                user_models[0],
                 int(block),
-                int(system.T[int(k)]),
+                _shared_n_targets_for_block(system, active_mask),
                 active_mask,
-                input_snapshot,
                 inference_counters=evaluation_cost_counters,
             )
+            for k in active_users:
+                working_F[int(k)][int(block)] = np.asarray(joint_snapshot[int(k)][int(block)], dtype=np.complex128)
+        else:
+            input_snapshot = _masked_precoder_snapshot(system, working_F, block, active_mask)
+            for k in active_users:
+                working_F[k][block] = _precoder_net_beam_for_n(
+                    system,
+                    user_models[int(k)],
+                    int(k),
+                    int(block),
+                    int(system.T[int(k)]),
+                    active_mask,
+                    input_snapshot,
+                    inference_counters=evaluation_cost_counters,
+                )
         system.project_block_precoders_to_power(working_F, int(block), active_users=[int(k) for k in active_users])
         for k in range(system.K):
             if int(block_targets[k, block]) <= 0 and int(block) < len(working_F[k]):
@@ -1717,13 +1878,15 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
 
     final_snr_db, final_sinr_db = system.get_snr_sinr_db()
     final_interference_diag = _collect_interference_diagnostics(system)
+    model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
 
     result = {
         "method_name": method_name,
         "objective_mode": "unweighted_sum_rate",
         "allocation_mode": "fixed_block_targets",
         "weight_strategy": "none",
-        "precoder_parameterization": "shared_user_block_context_to_precoder_mlp",
+        "precoder_parameterization": _downlink_monte_carlo_precoder_parameterization(model_scope),
+        "downlink_precoder_net_scope": str(model_scope),
         "user_model_specs": export_user_model_specs(
             system.Nr,
             system.Nb,
@@ -1732,6 +1895,8 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
             context_k=system.K,
             context_max_nr=int(np.max(system.Nr)),
             context_max_nb=int(np.max(system.Nb)),
+            context_max_dk=int(np.max(system.dk)),
+            model_scope=model_scope,
         ),
         "n_kl": [list(map(int, v)) for v in n_plan],
         "B_kl": [list(map(int, v)) for v in B_plan],
@@ -1822,18 +1987,30 @@ def evaluate_downlink_precoder_net(
         for k in active_users:
             _ensure_user_block(system, working_F, k, block)
         active_mask = [1 if k in active_users else 0 for k in range(system.K)]
-        input_snapshot = _masked_precoder_snapshot(system, working_F, block, active_mask)
-        for k in active_users:
-            working_F[k][block] = _precoder_net_beam_for_n(
+        if _models_output_full_bs_precoder(user_models):
+            joint_snapshot = _shared_precoder_snapshot_for_targets(
                 system,
-                user_models[int(k)],
-                int(k),
+                user_models[0],
                 int(block),
-                int(system.T[int(k)]),
+                _shared_n_targets_for_block(system, active_mask),
                 active_mask,
-                input_snapshot,
                 inference_counters=evaluation_cost_counters,
             )
+            for k in active_users:
+                working_F[int(k)][int(block)] = np.asarray(joint_snapshot[int(k)][int(block)], dtype=np.complex128)
+        else:
+            input_snapshot = _masked_precoder_snapshot(system, working_F, block, active_mask)
+            for k in active_users:
+                working_F[k][block] = _precoder_net_beam_for_n(
+                    system,
+                    user_models[int(k)],
+                    int(k),
+                    int(block),
+                    int(system.T[int(k)]),
+                    active_mask,
+                    input_snapshot,
+                    inference_counters=evaluation_cost_counters,
+                )
         system.project_block_precoders_to_power(working_F, int(block), active_users=[int(k) for k in active_users])
 
         if verbose:
@@ -2047,13 +2224,15 @@ def evaluate_downlink_precoder_net(
 
     final_snr_db, final_sinr_db = system.get_snr_sinr_db()
     final_interference_diag = _collect_interference_diagnostics(system)
+    model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
 
     result = {
         "method_name": method_name,
         "objective_mode": "unweighted_sum_rate",
         "allocation_mode": "greedy",
         "weight_strategy": "none",
-        "precoder_parameterization": "shared_user_block_context_to_precoder_mlp",
+        "precoder_parameterization": _downlink_monte_carlo_precoder_parameterization(model_scope),
+        "downlink_precoder_net_scope": str(model_scope),
         "user_model_specs": export_user_model_specs(
             system.Nr,
             system.Nb,
@@ -2062,6 +2241,8 @@ def evaluate_downlink_precoder_net(
             context_k=system.K,
             context_max_nr=int(np.max(system.Nr)),
             context_max_nb=int(np.max(system.Nb)),
+            context_max_dk=int(np.max(system.dk)),
+            model_scope=model_scope,
         ),
         "n_kl": [list(map(int, v)) for v in n_plan],
         "B_kl": [list(map(int, v)) for v in B_plan],
@@ -2103,6 +2284,7 @@ def build_precoder_net_artifact(
     precoder_net_training_history: dict[str, Any],
     training_dataset_sizes: Sequence[int],
 ) -> dict[str, Any]:
+    model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
     return {
         "system_params": system_params,
         "sim_params": sim_params,
@@ -2123,9 +2305,12 @@ def build_precoder_net_artifact(
             context_k=int(system_params["K"]),
             context_max_nr=int(np.max(system_params["Nr"])),
             context_max_nb=int(np.max(system_params["Nb"])),
+            context_max_dk=int(np.max(system_params["dk"])),
+            model_scope=model_scope,
         ),
         "user_model_states": export_user_model_states(user_models),
-        "precoder_parameterization": "shared_user_block_context_to_precoder_mlp",
+        "precoder_parameterization": _downlink_monte_carlo_precoder_parameterization(model_scope),
+        "downlink_precoder_net_scope": str(model_scope),
         "training_objective": precoder_net_training_history.get(
             "training_objective",
             "lagrangian_sum_finite_blocklength_rate_with_fixed_target_bits_objective",

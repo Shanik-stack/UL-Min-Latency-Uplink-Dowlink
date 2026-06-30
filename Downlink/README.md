@@ -14,6 +14,8 @@ Shared experiment conventions in this cleaned folder:
 - testing summaries live under `testing/data/`
 - training artifacts and training summaries live under `training/data/`
 - the convergence baseline objective is controlled by `simulation.convergence_block_objective_mode`
+- the downlink precoder architecture scope is controlled by `simulation.downlink_precoder_net_scope`
+- valid downlink precoder scopes are `per_user_nets` and `bs_shared_net`
 - canonical convergence objectives are `unweighted_sum_rate`, `remaining_bits_weighted_sum_rate`, and `blended_network_rate`
 - `remaining_bits_weighted_sum_rate` means the user-rate sum is weighted by the current remaining-bit backlog in payload-completion experiments
 - legacy aliases are still accepted in configs: `user_rate -> unweighted_sum_rate`, `weighted_sum_rate -> remaining_bits_weighted_sum_rate`

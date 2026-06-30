@@ -1,0 +1,54 @@
+Downlink optimizer summary
+Method: convergence_per_epoch_baseline
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\downlink_payload_completion.yaml
+Seed: 3
+Objective mode: weighted_sum_rate
+Allocation mode: greedy
+Weight strategy: remaining_bits
+Precoder parameterization: shared_user_channel_to_precoder_mlp
+
+Latency summary
+Initial total latency: 0.076800
+Final total latency: 0.007000
+Total latency reduction (%): 90.8854
+Initial avg latency: 0.025600
+Final avg latency: 0.002333
+Initial min/max latency: 0.019800 / 0.033333
+Final min/max latency: 0.001400 / 0.003200
+
+Asynchronality summary
+Initial asynchronality sum: 0.027067
+Final asynchronality sum: 0.003600
+Asynchronality reduction (%): 86.6995
+
+Link quality summary
+Initial avg SNR (dB): 8.0000
+Final avg SNR (dB): 13.5175
+Initial avg block SINR (dB): -3.1814
+Final avg block SINR (dB): 7.6839
+
+Per-user details
+User 0 | init_lat=0.019800 | final_lat=0.001400 | lat_red=92.9293% | init_block_sinr=-3.8652 dB | final_block_sinr=9.3916 dB | blocks=1 | total_n=21 | served_bits=200 | skipped_blocks=0
+User 1 | init_lat=0.023667 | final_lat=0.002400 | lat_red=89.8592% | init_block_sinr=-3.5152 dB | final_block_sinr=5.6875 dB | blocks=1 | total_n=36 | served_bits=400 | skipped_blocks=0
+User 2 | init_lat=0.033333 | final_lat=0.003200 | lat_red=90.4000% | init_block_sinr=-2.3093 dB | final_block_sinr=7.9726 dB | blocks=1 | total_n=48 | served_bits=600 | skipped_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.003867 | final_diff=0.001000
+Users 0-2 | initial_diff=0.013533 | final_diff=0.001800
+Users 1-2 | initial_diff=0.009667 | final_diff=0.000800
+
+Experiment cost
+Core wall time total (s): 32.566472
+Core wall time training (s): 32.566472
+Core wall time testing (s): 0.000000
+Estimated NN training FLOPs: 2.838e+09
+Estimated NN inference FLOPs: 4.729e+08
+Estimated NN total FLOPs: 3.310e+09
+Training forward/backward sample-equivalents: 576
+Inference forward calls: 288
+Optimizer steps: 288
+Workload counters:
+{'joint_block_epochs': 96, 'constrained_joint_block_epochs': 96, 'unconstrained_joint_block_epochs': 0, 'user_update_steps_per_epoch': 1, 'updated_user_calls': 288}
+Notes:
+- FLOPs are estimated from the online per-user precoder MLP shapes and counted block-update epochs; plotting and file export are excluded from wall time.
+- A constrained downlink epoch includes the extra joint KKT loss evaluation after the per-user update passes.

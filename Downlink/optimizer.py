@@ -12,9 +12,14 @@ from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE, build_experiment_scen
 from precoder_models import (
     DEVICE,
     build_user_precoder_net,
+    build_shared_bs_precoder_net,
     export_user_model_specs,
+    infer_raw_bs_precoders_numpy,
+    infer_raw_bs_precoders_torch,
     infer_raw_precoder_numpy,
     infer_raw_precoder_torch,
+    model_outputs_full_bs_precoder,
+    resolve_downlink_precoder_net_scope,
 )
 LOG2E_SQ = float(np.log2(np.e) ** 2)
 USER_RATE_MODE = "user_rate"
@@ -119,12 +124,38 @@ def _clone_precoders(F_nested: List[List[np.ndarray]]) -> List[List[np.ndarray]]
     return [[np.array(F_kl, copy=True) for F_kl in user_F] for user_F in F_nested]
 
 
+def _downlink_precoder_parameterization(model_scope: str) -> str:
+    scope = resolve_downlink_precoder_net_scope(model_scope)
+    if scope == "bs_shared_net":
+        return "bs_shared_block_context_to_full_precoder_mlp"
+    return "per_user_channel_to_precoder_mlp"
+
+
+def _initial_baseline_model_scope() -> str:
+    # Keep the initial random baseline fixed across downlink architecture variants
+    # so comparisons at the same seed start from the same point.
+    return "per_user_nets"
+
+
 def _build_user_precoder_models(
     system: DownlinkSystem,
     *,
     init_seed: int | None = None,
+    model_scope: str = "per_user_nets",
 ) -> list[torch.nn.Module]:
+    resolved_scope = resolve_downlink_precoder_net_scope(model_scope)
+
     def _construct_models() -> list[torch.nn.Module]:
+        if resolved_scope == "bs_shared_net":
+            shared_model = build_shared_bs_precoder_net(
+                k_count=int(system.K),
+                max_nr=int(np.max(system.Nr)),
+                max_nb=int(np.max(system.Nb)),
+                max_dk=int(np.max(system.dk)),
+                device=DEVICE,
+            )
+            return [shared_model for _ in range(int(system.K))]
+
         models: list[torch.nn.Module] = []
         for k in range(int(system.K)):
             model = build_user_precoder_net(
@@ -161,10 +192,99 @@ def _build_user_precoder_models(
             torch.cuda.set_rng_state_all(cuda_states)
 
 
+def _build_user_model_optimizers(
+    user_models: list[torch.nn.Module],
+    *,
+    lr: float,
+) -> list[torch.optim.Optimizer]:
+    optimizers_by_model_id: dict[int, torch.optim.Optimizer] = {}
+    model_optimizers: list[torch.optim.Optimizer] = []
+    for model in user_models:
+        model_id = id(model)
+        if model_id not in optimizers_by_model_id:
+            optimizers_by_model_id[model_id] = torch.optim.Adam(model.parameters(), lr=float(lr))
+        model_optimizers.append(optimizers_by_model_id[model_id])
+    return model_optimizers
+
+
+def _user_models_output_full_bs_precoder(user_models: list[torch.nn.Module]) -> bool:
+    return len(user_models) > 0 and model_outputs_full_bs_precoder(user_models[0])
+
+
+def _active_mask_for_users(system: DownlinkSystem, active_users: List[int]) -> list[int]:
+    active_set = {int(k) for k in active_users}
+    return [1 if int(k) in active_set else 0 for k in range(int(system.K))]
+
+
+def _context_channels_for_block(system: DownlinkSystem, block: int) -> list[np.ndarray]:
+    channels: list[np.ndarray] = []
+    l = int(block)
+    for k in range(int(system.K)):
+        if l < len(system.H[k]):
+            channels.append(np.asarray(system.H[k][l], dtype=np.complex64))
+        else:
+            channels.append(np.zeros((int(system.Nr[k]), int(system.Nb[k])), dtype=np.complex64))
+    return channels
+
+
+def _infer_shared_block_precoders_numpy(
+    system: DownlinkSystem,
+    shared_model: torch.nn.Module,
+    block: int,
+    active_users: List[int],
+) -> dict[int, np.ndarray]:
+    beams = infer_raw_bs_precoders_numpy(
+        shared_model,
+        _context_channels_for_block(system, int(block)),
+        _active_mask_for_users(system, active_users),
+        system.Nb,
+        system.dk,
+        device=DEVICE,
+    )
+    return {int(k): np.asarray(beams[int(k)], dtype=np.complex128) for k in active_users}
+
+
+def _infer_shared_block_precoders_torch(
+    system: DownlinkSystem,
+    shared_model: torch.nn.Module,
+    block: int,
+    active_users: List[int],
+) -> dict[int, torch.Tensor]:
+    H_block = [
+        torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=DEVICE)
+        for H_kl in _context_channels_for_block(system, int(block))
+    ]
+    active_mask = torch.tensor(_active_mask_for_users(system, active_users), dtype=torch.float32, device=DEVICE)
+    beams = infer_raw_bs_precoders_torch(
+        shared_model,
+        H_block,
+        active_mask,
+        system.Nb,
+        system.dk,
+    )
+    return {int(k): beams[int(k)] for k in active_users}
+
+
 def _build_precoder_snapshot_from_models(
     system: DownlinkSystem,
     user_models: list[torch.nn.Module],
 ) -> List[List[np.ndarray]]:
+    if _user_models_output_full_bs_precoder(user_models):
+        snapshot: List[List[np.ndarray]] = [[] for _ in range(int(system.K))]
+        max_blocks = max((len(user_blocks) for user_blocks in system.H), default=0)
+        shared_model = user_models[0]
+        for l in range(max_blocks):
+            block_precoders = _infer_shared_block_precoders_numpy(
+                system,
+                shared_model,
+                int(l),
+                list(range(int(system.K))),
+            )
+            for k in range(int(system.K)):
+                snapshot[k].append(np.asarray(block_precoders[int(k)], dtype=np.complex128))
+            system.project_block_precoders_to_power(snapshot, l)
+        return snapshot
+
     snapshot: List[List[np.ndarray]] = []
     for k in range(int(system.K)):
         user_blocks: list[np.ndarray] = []
@@ -176,6 +296,7 @@ def _build_precoder_snapshot_from_models(
                     nb=int(system.Nb[k]),
                     dk=int(system.dk[k]),
                     device=DEVICE,
+                    user_index=int(k),
                 )
             )
         snapshot.append(user_blocks)
@@ -193,6 +314,21 @@ def _refresh_block_precoders_from_models(
     block: int,
 ) -> None:
     l = int(block)
+    if _user_models_output_full_bs_precoder(user_models):
+        block_precoders = _infer_shared_block_precoders_numpy(
+            system,
+            user_models[0],
+            l,
+            active_users,
+        )
+        for k in active_users:
+            k_int = int(k)
+            if l >= len(working_F[k_int]):
+                raise ValueError(f"User {k_int} has no precoder slot for block {l}.")
+            working_F[k_int][l] = np.asarray(block_precoders[k_int], dtype=np.complex128)
+        system.project_block_precoders_to_power(working_F, l, active_users=[int(k) for k in active_users])
+        return
+
     for k in active_users:
         k_int = int(k)
         if l >= len(working_F[k_int]):
@@ -203,6 +339,7 @@ def _refresh_block_precoders_from_models(
             nb=int(system.Nb[k_int]),
             dk=int(system.dk[k_int]),
             device=DEVICE,
+            user_index=int(k_int),
         )
     system.project_block_precoders_to_power(working_F, l, active_users=[int(k) for k in active_users])
 
@@ -362,6 +499,35 @@ def _evaluate_update_objective_numpy(
     return total
 
 
+def _evaluate_network_objective_numpy(
+    system: DownlinkSystem,
+    working_F: List[List[np.ndarray]],
+    active_users: List[int],
+    block: int,
+    objective_mode: str,
+    user_weights: dict[int, float],
+    network_weight_beta: float,
+    n_kl_overrides: dict[int, int] | None = None,
+) -> float:
+    canonical_mode = resolve_objective_mode_alias(objective_mode)
+    snapshot = _clone_precoders(working_F)
+    system.project_block_precoders_to_power(snapshot, int(block), active_users=[int(k) for k in active_users])
+
+    total_rate = 0.0
+    weighted_total = 0.0
+    for k in active_users:
+        n_k = _resolve_user_n_kl(system, int(k), n_kl_overrides)
+        rate_k = float(system.compute_block_rate(int(k), int(block), n_k, F_override=snapshot))
+        total_rate += rate_k
+        weighted_total += float(user_weights.get(int(k), 1.0)) * rate_k
+
+    if canonical_mode == REMAINING_BITS_WEIGHTED_SUM_RATE_MODE:
+        return weighted_total
+    if canonical_mode == BLENDED_NETWORK_RATE_MODE:
+        return total_rate + float(network_weight_beta) * weighted_total
+    return total_rate
+
+
 def _block_rate_torch_from_precoders(
     system: DownlinkSystem,
     active_users: List[int],
@@ -430,22 +596,31 @@ def _evaluate_constrained_block_state(
     update_user_set = {int(k) for k in update_users}
 
     precoders: dict[int, torch.Tensor] = {}
-    for k in active_users:
-        k_int = int(k)
-        if k_int in update_user_set:
-            H_kl = torch.tensor(system.H[k_int][int(block)], dtype=torch.complex64, device=DEVICE)
-            precoders[k_int] = infer_raw_precoder_torch(
-                user_models[k_int],
-                H_kl,
-                nb=int(system.Nb[k_int]),
-                dk=int(system.dk[k_int]),
-            )
-        else:
-            precoders[k_int] = torch.tensor(
-                working_F[k_int][int(block)],
-                dtype=torch.complex64,
-                device=DEVICE,
-            )
+    if _user_models_output_full_bs_precoder(user_models) and len(update_user_set) > 0:
+        precoders = _infer_shared_block_precoders_torch(
+            system,
+            user_models[0],
+            int(block),
+            active_users,
+        )
+    else:
+        for k in active_users:
+            k_int = int(k)
+            if k_int in update_user_set:
+                H_kl = torch.tensor(system.H[k_int][int(block)], dtype=torch.complex64, device=DEVICE)
+                precoders[k_int] = infer_raw_precoder_torch(
+                    user_models[k_int],
+                    H_kl,
+                    nb=int(system.Nb[k_int]),
+                    dk=int(system.dk[k_int]),
+                    user_index=int(k_int),
+                )
+            else:
+                precoders[k_int] = torch.tensor(
+                    working_F[k_int][int(block)],
+                    dtype=torch.complex64,
+                    device=DEVICE,
+                )
     precoders = _project_active_precoders_to_block_power(system, precoders, active_users)
 
     rates: dict[int, torch.Tensor] = {}
@@ -633,6 +808,103 @@ def _build_user_weights(
     return weights
 
 
+def _optimize_shared_block_precoders(
+    system: DownlinkSystem,
+    working_F: List[List[np.ndarray]],
+    active_users: List[int],
+    user_weights: dict[int, float],
+    block: int,
+    sim_params: dict[str, Any],
+    objective_mode: str,
+    shared_model: torch.nn.Module,
+    shared_optimizer: torch.optim.Optimizer,
+    n_kl_overrides: dict[int, int] | None = None,
+) -> dict[int, np.ndarray]:
+    steps = max(1, int(sim_params.get("user_update_steps", 1)))
+    network_weight_beta = float(sim_params.get("network_rate_weight", 0.15))
+    canonical_mode = resolve_objective_mode_alias(objective_mode)
+
+    best_model_state = _copy_model_state(shared_model)
+    best_snapshot = _clone_precoders(working_F)
+    best_objective = _evaluate_network_objective_numpy(
+        system,
+        best_snapshot,
+        active_users,
+        int(block),
+        objective_mode,
+        user_weights,
+        network_weight_beta,
+        n_kl_overrides,
+    )
+
+    for _ in range(steps):
+        shared_optimizer.zero_grad()
+        precoders = _infer_shared_block_precoders_torch(
+            system,
+            shared_model,
+            int(block),
+            active_users,
+        )
+        precoders = _project_active_precoders_to_block_power(system, precoders, active_users)
+
+        total_rate = torch.zeros((), dtype=torch.float32, device=DEVICE)
+        weighted_total = torch.zeros((), dtype=torch.float32, device=DEVICE)
+        for j in active_users:
+            n_j = _resolve_user_n_kl(system, int(j), n_kl_overrides)
+            rate_j = _block_rate_torch_from_precoders(
+                system,
+                active_users,
+                int(block),
+                int(j),
+                n_j,
+                precoders,
+            )
+            total_rate = total_rate + rate_j
+            weighted_total = weighted_total + (
+                torch.tensor(float(user_weights.get(int(j), 1.0)), dtype=torch.float32, device=DEVICE) * rate_j
+            )
+
+        if canonical_mode == REMAINING_BITS_WEIGHTED_SUM_RATE_MODE:
+            objective = weighted_total
+        elif canonical_mode == BLENDED_NETWORK_RATE_MODE:
+            objective = total_rate + float(network_weight_beta) * weighted_total
+        else:
+            objective = total_rate
+        (-objective).backward()
+        shared_optimizer.step()
+
+        block_precoders = _infer_shared_block_precoders_numpy(
+            system,
+            shared_model,
+            int(block),
+            active_users,
+        )
+        snapshot = _clone_precoders(working_F)
+        for j in active_users:
+            snapshot[int(j)][int(block)] = np.asarray(block_precoders[int(j)], dtype=np.complex128)
+        system.project_block_precoders_to_power(snapshot, int(block), active_users=[int(j) for j in active_users])
+        objective_np = _evaluate_network_objective_numpy(
+            system,
+            snapshot,
+            active_users,
+            int(block),
+            objective_mode,
+            user_weights,
+            network_weight_beta,
+            n_kl_overrides,
+        )
+        if objective_np > best_objective:
+            best_objective = float(objective_np)
+            best_model_state = _copy_model_state(shared_model)
+            best_snapshot = snapshot
+
+    shared_model.load_state_dict(best_model_state)
+    return {
+        int(k): np.asarray(best_snapshot[int(k)][int(block)], dtype=np.complex128)
+        for k in active_users
+    }
+
+
 def _optimize_user_block_precoder(
     system: DownlinkSystem,
     working_F: List[List[np.ndarray]],
@@ -677,6 +949,7 @@ def _optimize_user_block_precoder(
             H_kl,
             nb=int(system.Nb[k]),
             dk=int(system.dk[k]),
+            user_index=int(k),
         )
         precoders = {
             int(j): (
@@ -724,6 +997,7 @@ def _optimize_user_block_precoder(
             nb=int(system.Nb[k]),
             dk=int(system.dk[k]),
             device=DEVICE,
+            user_index=int(k),
         )
         beam_snapshot = _clone_precoders(working_F)
         beam_snapshot[k][l] = beam_np
@@ -796,6 +1070,7 @@ def _optimize_user_block_precoder_constrained(
         nb=int(system.Nb[k]),
         dk=int(system.dk[k]),
         device=DEVICE,
+        user_index=int(k),
     )
     beam_snapshot = _clone_precoders(working_F)
     beam_snapshot[k][l] = np.asarray(beam_np, dtype=np.complex128)
@@ -1319,7 +1594,8 @@ def optimize_precoders_for_block(
         return history
 
     weights = user_weights or {int(k): 1.0 for k in active_users}
-    update_users = [int(k) for k in (users_to_update or active_users)]
+    shared_bs_scope = _user_models_output_full_bs_precoder(user_models)
+    update_users = [int(k) for k in (active_users if shared_bs_scope else (users_to_update or active_users))]
     print_every = max(1, int(sim_params.get("print_every_epoch", 1)))
     tol = float(sim_params.get("precoder_tol", 1e-4))
     canonical_mode = resolve_objective_mode_alias(objective_mode)
@@ -1334,22 +1610,39 @@ def optimize_precoders_for_block(
     for epoch_idx in range(int(sim_params["max_precoder_epochs"])):
         before_beams = {k: np.array(working_F[k][block], copy=True) for k in update_users}
 
-        for k in update_users:
-            beam_k = _optimize_user_block_precoder(
+        if shared_bs_scope:
+            block_precoders = _optimize_shared_block_precoders(
                 system,
                 working_F,
                 active_users,
                 weights,
-                k,
-                block,
+                int(block),
                 sim_params,
                 objective_mode,
-                user_models[int(k)],
-                model_optimizers[int(k)],
+                user_models[0],
+                model_optimizers[0],
                 n_kl_overrides,
             )
-            working_F[k][block] = np.array(beam_k, copy=True)
+            for k in active_users:
+                working_F[int(k)][int(block)] = np.asarray(block_precoders[int(k)], dtype=np.complex128)
             system.project_block_precoders_to_power(working_F, int(block), active_users=[int(j) for j in active_users])
+        else:
+            for k in update_users:
+                beam_k = _optimize_user_block_precoder(
+                    system,
+                    working_F,
+                    active_users,
+                    weights,
+                    k,
+                    block,
+                    sim_params,
+                    objective_mode,
+                    user_models[int(k)],
+                    model_optimizers[int(k)],
+                    n_kl_overrides,
+                )
+                working_F[k][block] = np.array(beam_k, copy=True)
+                system.project_block_precoders_to_power(working_F, int(block), active_users=[int(j) for j in active_users])
 
         user_rates = []
         user_sinr_db = []
@@ -1438,7 +1731,8 @@ def optimize_precoders_for_block_constrained(
         }
 
     weights = user_weights or {int(k): 1.0 for k in active_users}
-    update_users = [int(k) for k in (users_to_update or active_users)]
+    shared_bs_scope = _user_models_output_full_bs_precoder(user_models)
+    update_users = [int(k) for k in (active_users if shared_bs_scope else (users_to_update or active_users))]
     print_every = max(1, int(sim_params.get("print_every_epoch", 1)))
     max_epochs = max(1, int(max_epochs if max_epochs is not None else sim_params["max_epochs"]))
     lr_rate = float(sim_params.get("lr_rate_constraint", 1e-2))
@@ -1479,35 +1773,67 @@ def optimize_precoders_for_block_constrained(
     for epoch_idx in range(max_epochs):
         before_beams = {k: np.array(working_F[k][block], copy=True) for k in update_users}
 
-        for k in update_users:
-            beam_k = _optimize_user_block_precoder_constrained(
+        if shared_bs_scope:
+            shared_optimizer = model_optimizers[0]
+            for _ in range(max(1, int(sim_params.get("user_update_steps", 1)))):
+                shared_optimizer.zero_grad()
+                shared_step_state = _evaluate_constrained_block_state(
+                    system,
+                    working_F,
+                    user_models,
+                    active_users,
+                    active_users,
+                    block,
+                    requested_bits,
+                    sim_params,
+                    objective_mode,
+                    weights,
+                    lambda_rate,
+                    lambda_power_block,
+                    n_kl_overrides=n_kl_overrides,
+                )
+                shared_step_state["loss"].backward()
+                shared_optimizer.step()
+            block_precoders = _infer_shared_block_precoders_numpy(
                 system,
-                working_F,
-                user_models,
+                user_models[0],
+                int(block),
                 active_users,
-                requested_bits,
-                weights,
-                k,
-                block,
-                sim_params,
-                objective_mode,
-                user_models[int(k)],
-                model_optimizers[int(k)],
-                lambda_rate,
-                lambda_power_block,
-                n_kl_overrides,
             )
-            working_F[int(k)][block] = np.array(beam_k, copy=True)
+            for k in active_users:
+                working_F[int(k)][int(block)] = np.asarray(block_precoders[int(k)], dtype=np.complex128)
             system.project_block_precoders_to_power(working_F, int(block), active_users=[int(j) for j in active_users])
+            shared_optimizer.zero_grad()
+        else:
+            for k in update_users:
+                beam_k = _optimize_user_block_precoder_constrained(
+                    system,
+                    working_F,
+                    user_models,
+                    active_users,
+                    requested_bits,
+                    weights,
+                    k,
+                    block,
+                    sim_params,
+                    objective_mode,
+                    user_models[int(k)],
+                    model_optimizers[int(k)],
+                    lambda_rate,
+                    lambda_power_block,
+                    n_kl_overrides,
+                )
+                working_F[int(k)][block] = np.array(beam_k, copy=True)
+                system.project_block_precoders_to_power(working_F, int(block), active_users=[int(j) for j in active_users])
 
-        for k in update_users:
-            model_optimizers[int(k)].zero_grad()
+            for k in update_users:
+                model_optimizers[int(k)].zero_grad()
         state = _evaluate_constrained_block_state(
             system,
             working_F,
             user_models,
             active_users,
-            update_users,
+            active_users if shared_bs_scope else update_users,
             block,
             requested_bits,
             sim_params,
@@ -1841,8 +2167,13 @@ def estimate_initial_latency_from_random_precoders(
 ) -> tuple[list[float], dict[str, Any], dict[str, Any]]:
     baseline_system = DownlinkSystem(system.sc, seed=system.seed)
     # Keep the initial random-precoder baseline tied only to the experiment seed,
-    # not to whichever RNG state training happened to leave behind.
-    baseline_models = _build_user_precoder_models(baseline_system, init_seed=int(system.seed))
+    # not to whichever RNG state training happened to leave behind, and not to the
+    # selected downlink precoder-net scope.
+    baseline_models = _build_user_precoder_models(
+        baseline_system,
+        init_seed=int(system.seed),
+        model_scope=_initial_baseline_model_scope(),
+    )
     remaining = np.asarray(baseline_system.B, dtype=int).copy()
     n_plan: List[List[int]] = [[] for _ in range(baseline_system.K)]
     B_plan: List[List[int]] = [[] for _ in range(baseline_system.K)]
@@ -1916,7 +2247,11 @@ def _estimate_initial_latency_from_random_precoders_fixed_block_targets(
     scenario: dict[str, Any],
 ) -> tuple[list[float], dict[str, Any], dict[str, Any]]:
     baseline_system = DownlinkSystem(system.sc, seed=system.seed)
-    baseline_models = _build_user_precoder_models(baseline_system, init_seed=int(system.seed))
+    baseline_models = _build_user_precoder_models(
+        baseline_system,
+        init_seed=int(system.seed),
+        model_scope=_initial_baseline_model_scope(),
+    )
     block_targets = np.asarray(scenario["block_bit_targets"], dtype=int)
     num_blocks = int(scenario["num_blocks"])
     n_plan: List[List[int]] = [[] for _ in range(baseline_system.K)]
@@ -1982,17 +2317,18 @@ def _run_safe_sweep(
     weight_strategy: str = "remaining_bits",
 ) -> dict[str, Any]:
     objective_mode = resolve_objective_mode_alias(objective_mode)
+    model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
     initial_snr_db, initial_sinr_db = system.get_snr_sinr_db()
     initial_latency, initial_plan, initial_interference_diag = estimate_initial_latency_from_random_precoders(
         system,
         sim_params,
         allocation_mode="greedy",
     )
-    user_models = _build_user_precoder_models(system)
-    model_optimizers = [
-        torch.optim.Adam(model.parameters(), lr=float(sim_params.get("user_update_lr", 5e-3)))
-        for model in user_models
-    ]
+    user_models = _build_user_precoder_models(system, model_scope=model_scope)
+    model_optimizers = _build_user_model_optimizers(
+        user_models,
+        lr=float(sim_params.get("user_update_lr", 5e-3)),
+    )
 
     remaining = np.asarray(system.B, dtype=int).copy()
     n_plan: List[List[int]] = [[] for _ in range(system.K)]
@@ -2212,8 +2548,18 @@ def _run_safe_sweep(
         "objective_mode": objective_display_name(objective_mode),
         "allocation_mode": allocation_mode,
         "weight_strategy": objective_weight_strategy_name(objective_mode, weight_strategy),
-        "precoder_parameterization": "shared_user_channel_to_precoder_mlp",
-        "user_model_specs": export_user_model_specs(system.Nr, system.Nb, system.dk),
+        "precoder_parameterization": _downlink_precoder_parameterization(model_scope),
+        "downlink_precoder_net_scope": str(model_scope),
+        "user_model_specs": export_user_model_specs(
+            system.Nr,
+            system.Nb,
+            system.dk,
+            model_scope=model_scope,
+            context_k=int(system.K),
+            context_max_nr=int(np.max(system.Nr)),
+            context_max_nb=int(np.max(system.Nb)),
+            context_max_dk=int(np.max(system.dk)),
+        ),
         "n_kl": copy.deepcopy(n_plan),
         "B_kl": copy.deepcopy(B_plan),
         "R_fbl": [list(map(float, user_rates)) for user_rates in system.R_fbl],
@@ -2252,11 +2598,12 @@ def _run_safe_sweep_fixed_block_targets(
         sim_params,
         scenario,
     )
-    user_models = _build_user_precoder_models(system)
-    model_optimizers = [
-        torch.optim.Adam(model.parameters(), lr=float(sim_params.get("user_update_lr", 5e-3)))
-        for model in user_models
-    ]
+    model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
+    user_models = _build_user_precoder_models(system, model_scope=model_scope)
+    model_optimizers = _build_user_model_optimizers(
+        user_models,
+        lr=float(sim_params.get("user_update_lr", 5e-3)),
+    )
 
     n_plan: List[List[int]] = [[] for _ in range(system.K)]
     B_plan: List[List[int]] = [[] for _ in range(system.K)]
@@ -2478,8 +2825,18 @@ def _run_safe_sweep_fixed_block_targets(
         "objective_mode": objective_display_name(objective_mode),
         "allocation_mode": "fixed_block_targets",
         "weight_strategy": objective_weight_strategy_name(objective_mode, "uniform_active_user_weight"),
-        "precoder_parameterization": "shared_user_channel_to_precoder_mlp",
-        "user_model_specs": export_user_model_specs(system.Nr, system.Nb, system.dk),
+        "precoder_parameterization": _downlink_precoder_parameterization(model_scope),
+        "downlink_precoder_net_scope": str(model_scope),
+        "user_model_specs": export_user_model_specs(
+            system.Nr,
+            system.Nb,
+            system.dk,
+            model_scope=model_scope,
+            context_k=int(system.K),
+            context_max_nr=int(np.max(system.Nr)),
+            context_max_nb=int(np.max(system.Nb)),
+            context_max_dk=int(np.max(system.dk)),
+        ),
         "n_kl": copy.deepcopy(n_plan),
         "B_kl": copy.deepcopy(B_plan),
         "R_fbl": [list(map(float, user_rates)) for user_rates in system.R_fbl],

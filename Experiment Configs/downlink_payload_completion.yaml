@@ -36,6 +36,8 @@ test:
 
 simulation:
   # Per-user precoder updates inside one synchronized block epoch
+  # downlink_precoder_net_scope: per_user_nets
+  downlink_precoder_net_scope: bs_shared_net
   max_epochs: 500
   print_every_epoch: 5
   user_update_steps: 1
@@ -52,7 +54,7 @@ simulation:
   augmented_lagrangian_rho_power: 1.0
   kkt_primal_tol: 1.0e-5
   kkt_complementarity_tol: 1.0e-5
-  kkt_stationarity_tol: 6.0e-3
+  kkt_stationarity_tol: 6.0e-4
 
   # Reduced-n_kl repair behavior
   n_kl_reduction_update_scope: infeasible_users_only
@@ -63,8 +65,8 @@ simulation:
   monte_carlo_training_n_kl_coarse_step: 5
 
   # Downlink block objective and payload weighting
-  convergence_block_objective_mode: weighted_sum_rate
-  # convergence_block_objective_mode: unweighted_sum_rate
+  # convergence_block_objective_mode: weighted_sum_rate
+  convergence_block_objective_mode: unweighted_sum_rate
   remaining_bits_weight_power: 1.0
   minimum_user_weight: 0.25
   network_rate_weight: 0.15

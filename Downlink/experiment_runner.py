@@ -51,10 +51,14 @@ def build_result_tag(
     seed: int,
     *,
     objective_mode: str | None = None,
+    model_scope: str | None = None,
 ) -> str:
     method_tag = method_name
     if objective_mode:
         method_tag = f"{method_name}_{convergence_objective_tag(objective_mode)}"
+    if model_scope:
+        scope_tag = str(model_scope).strip().lower().replace(" ", "_").replace("-", "_")
+        method_tag = f"{method_tag}_scope_{scope_tag}"
     return make_method_result_tag(method_tag, cfg_stem, seed=seed)
 
 
@@ -348,6 +352,7 @@ def run_downlink_experiment(
         run_meta["cfg_stem"],
         seed,
         objective_mode=objective_mode_tag,
+        model_scope=sim_params.get("downlink_precoder_net_scope"),
     )
     if output_root is None:
         output_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs", result_tag)
@@ -396,6 +401,7 @@ def run_downlink_experiment(
         f"Objective mode: {result.get('objective_mode', 'unknown')}",
         f"Allocation mode: {result.get('allocation_mode', 'unknown')}",
         f"Weight strategy: {result.get('weight_strategy', 'n/a')}",
+        f"Downlink precoder-net scope: {result.get('downlink_precoder_net_scope', 'unknown')}",
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
         "",
         "Latency summary",

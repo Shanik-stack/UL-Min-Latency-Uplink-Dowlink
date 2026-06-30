@@ -97,6 +97,7 @@ def _build_post_training_summary_lines(post_training_summary: dict[str, object])
     lines = [
         "Downlink post-training summary",
         f"Epochs requested: {int(post_training_summary.get('epochs_requested', 0))}",
+        f"Downlink precoder-net scope: {post_training_summary.get('downlink_precoder_net_scope', 'unknown')}",
         f"Train target-bits mode: {post_training_summary.get('train_target_bits_mode', 'unknown')}",
         f"Train target bits summary: {post_training_summary.get('train_target_bits_summary', {})}",
         f"Final avg sum rate: {float(post_training_summary.get('final_avg_sum_rate', 0.0)):.6f}",
@@ -159,6 +160,7 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
         f"Objective mode: {result.get('objective_mode', 'unknown')}",
         f"Allocation mode: {result.get('allocation_mode', 'unknown')}",
         f"Weight strategy: {result.get('weight_strategy', 'n/a')}",
+        f"Downlink precoder-net scope: {result.get('downlink_precoder_net_scope', 'unknown')}",
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
         f"Training objective: {result.get('training_objective', 'unknown')}",
         "",
@@ -298,7 +300,12 @@ def main() -> None:
         build_experiment_scenario_summary(scenario)
         for scenario in build_experiment_scenarios_for_seeds(system_params, sim_params, train_seeds)
     ]
-    result_tag = make_method_result_tag("monte_carlo_precoder_net_train_test", run_meta["cfg_stem"], seed=args.test_seed)
+    scope_tag = str(sim_params.get("downlink_precoder_net_scope", "per_user_nets")).strip().lower().replace(" ", "_").replace("-", "_")
+    result_tag = make_method_result_tag(
+        f"monte_carlo_precoder_net_train_test_scope_{scope_tag}",
+        run_meta["cfg_stem"],
+        seed=args.test_seed,
+    )
     output_dirs = build_downlink_result_dirs("Monte Carlo", result_tag)
     output_root = output_dirs["experiment_root"]
 

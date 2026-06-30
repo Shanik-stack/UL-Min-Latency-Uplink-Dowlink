@@ -3,7 +3,7 @@ Monte Carlo precoder-net train/test
 This folder adds the direct offline downlink path:
 
 - build a raw Monte Carlo dataset of channel blocks and block-level service targets
-- train one user precoder net `F_{k,l} = f_{\theta_k}(H_l, n_{k,l}, active_mask, noise/interference, epsilon)`
+- train either one precoder net per user or one shared BS precoder net, selected by `simulation.downlink_precoder_net_scope`
 - optimize all user precoder nets jointly with a Lagrangian objective based on sum finite-blocklength rate
 - reduce the current `n_{k,l}` frontier during training only when the joint precoder nets make the 1-bit feasibility condition hold
 - test with precoder-net forward passes plus the same outer linear search over `n_kl`
@@ -11,6 +11,8 @@ This folder adds the direct offline downlink path:
 Notes:
 
 - no expert-label collection or MSE imitation is used
+- `per_user_nets` means one separate model instance for each user beam
+- `bs_shared_net` means one shared model instance is reused across all downlink users and the full BS precoder is assembled from those user-specific forward passes
 - the dataset stays simple; smaller `n_{k,l}` values are introduced by rollout frontier search during training rather than by a separate expert-label pass
 
 The original online convergence baseline is kept separately:
