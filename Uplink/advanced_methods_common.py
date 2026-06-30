@@ -11,6 +11,7 @@ from uplink_rate_model import build_uplink_rate_covariance
 
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 LOG2E_SQ = float(np.log2(np.e) ** 2)
+POWER_PROJECTION_SAFETY_MARGIN = 1e-6
 
 
 def clone_nested_arrays(nested: Sequence[Sequence[np.ndarray]]) -> List[List[np.ndarray]]:
@@ -375,7 +376,7 @@ def _estimate_initial_random_precoder_schedule_fixed_block_targets(
 
             initial_n_kl[k].append(int(best_n))
             initial_B_kl[k].append(int(B_used))
-            initial_R_fbl[k].append(float(best_R) if int(B_used) > 0 else 0.0)
+            initial_R_fbl[k].append(float(best_R))
             initial_F[k].append(
                 np.array(F_kl, copy=True) if int(B_used) > 0 else np.zeros_like(F_kl, dtype=np.complex64)
             )
@@ -473,7 +474,10 @@ def project_power_complex_torch(F: torch.Tensor, P: float, eps: float = 1e-12) -
     power = (torch.linalg.norm(F, ord="fro") ** 2).real
     if float(power.detach().cpu()) <= float(P):
         return F
-    scale = torch.sqrt(torch.tensor(float(P), device=F.device, dtype=torch.float32) / (power + eps))
+    scale = (
+        torch.sqrt(torch.tensor(float(P), device=F.device, dtype=torch.float32) / (power + eps))
+        * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
+    )
     return F * scale.to(F.dtype)
 
 

@@ -32,8 +32,8 @@ from precoder_models import (
     build_user_precoder_net_with_blocklength,
     export_user_model_specs,
     export_user_model_states,
-    infer_precoder_numpy_with_blocklength,
-    infer_precoder_torch_with_blocklength,
+    infer_raw_precoder_numpy_with_blocklength,
+    infer_raw_precoder_torch_with_blocklength,
 )
 
 LOG2E_SQ = float(np.log2(np.e) ** 2)
@@ -181,6 +181,33 @@ def _scenario_input_noise_covariances(
     return covariances
 
 
+def _project_predicted_beams_to_block_power_torch(
+    predicted_beams: Sequence[torch.Tensor],
+    active_mask: Sequence[int | float] | np.ndarray,
+    block_power_budget: float,
+    eps: float = 1e-12,
+) -> list[torch.Tensor]:
+    active = np.asarray(active_mask, dtype=np.float32)
+    total_power = torch.zeros((), dtype=torch.float32, device=DEVICE)
+    for k, beam in enumerate(predicted_beams):
+        if k >= len(active) or float(active[k]) <= 0.5:
+            continue
+        total_power = total_power + (torch.linalg.norm(beam, ord="fro") ** 2).real
+    if float(total_power.detach().cpu()) <= float(eps):
+        return [beam for beam in predicted_beams]
+
+    scale = torch.sqrt(
+        torch.tensor(float(block_power_budget), dtype=torch.float32, device=DEVICE) / (total_power + eps)
+    )
+    projected: list[torch.Tensor] = []
+    for k, beam in enumerate(predicted_beams):
+        if k < len(active) and float(active[k]) > 0.5:
+            projected.append(beam * scale.to(beam.dtype))
+        else:
+            projected.append(beam)
+    return projected
+
+
 def _scenario_forward_pass(
     system_params: dict[str, Any],
     scenario: dict[str, Any],
@@ -218,7 +245,7 @@ def _scenario_forward_pass(
             device=DEVICE,
         )
         predicted_beams.append(
-            infer_precoder_torch_with_blocklength(
+            infer_raw_precoder_torch_with_blocklength(
                 user_models[k],
                 H_block_t,
                 int(n_targets_list[k]),
@@ -227,9 +254,16 @@ def _scenario_forward_pass(
                 float(scenario["epsilon"][k]),
                 int(system_params["Nb"][k]),
                 int(system_params["dk"][k]),
-                float(scenario["P"][k]),
             )
         )
+
+    predicted_beams = _project_predicted_beams_to_block_power_torch(
+        predicted_beams,
+        active_mask,
+        float(scenario["block_power_budget"]),
+    )
+
+    block_power = torch.zeros((), dtype=torch.float32, device=DEVICE)
 
     for k in range(K):
         if float(active_mask[k]) <= 0.5 or int(n_targets_list[k]) <= 0:
@@ -254,6 +288,14 @@ def _scenario_forward_pass(
         powers[k] = power
         required_rates[k] = required_rate
         sum_rate = sum_rate + rate
+        block_power = block_power + power
+
+    block_power_gap = block_power - torch.tensor(
+        float(scenario["block_power_budget"]),
+        dtype=torch.float32,
+        device=DEVICE,
+    )
+    block_power_violation = torch.relu(block_power_gap)
 
     return {
         "active_mask": active_mask,
@@ -263,6 +305,9 @@ def _scenario_forward_pass(
         "powers": powers,
         "required_rates": required_rates,
         "sum_rate": sum_rate,
+        "block_power": block_power,
+        "block_power_gap": block_power_gap,
+        "block_power_violation": block_power_violation,
     }
 
 
@@ -293,8 +338,10 @@ def _scenario_metrics_with_models(
         rate_values[k] = rate_val
         required_rates[k] = required_rate
         rate_margins[k] = margin
-        if margin < -1e-9:
+        if margin < 0.0:
             feasible = False
+    if float(forward["block_power_gap"].detach().cpu()) > 0.0:
+        feasible = False
 
     active_margins = [rate_margins[k] for k in active_users]
     return {
@@ -305,6 +352,7 @@ def _scenario_metrics_with_models(
         "rate_margins": rate_margins,
         "min_rate_margin": float(min(active_margins)) if active_margins else 0.0,
         "sum_rate": float(forward["sum_rate"].detach().cpu()),
+        "block_power_gap": float(forward["block_power_gap"].detach().cpu()),
     }
 
 
@@ -757,6 +805,7 @@ def build_training_dataset(
                     "active_mask": [int(v > 0.5) for v in active_mask.tolist()],
                     "max_n_targets": [int(system.T[int(k)]) if float(active_mask[int(k)]) > 0.5 else 0 for k in range(K)],
                     "target_bits": [int(v) for v in target_bits],
+                    "block_power_budget": float(system.block_power_budget),
                     "P": [float(v) for v in system.P.tolist()],
                     "sigma2": [float(v) for v in system.sigma2.tolist()],
                     "epsilon": [float(v) for v in system.epsilon.tolist()],
@@ -810,10 +859,9 @@ def train_blocklength_aware_precoder_net(
         "sum_rate": [],
         "avg_user_rate": [],
         "avg_rate_violation": [[] for _ in range(K)],
-        "avg_power_violation": [[] for _ in range(K)],
+        "avg_block_power_violation": [],
         "avg_lagrangian": [],
         "avg_rate_violation_over_users": [],
-        "avg_power_violation_over_users": [],
         "dataset_summary": dataset_summary,
         "epoch_rollout_query_summaries": [],
         "training_objective": (
@@ -830,7 +878,7 @@ def train_blocklength_aware_precoder_net(
     augmented_lagrangian_rho_rate = float(sim_params.get("augmented_lagrangian_rho_rate", 0.0))
     augmented_lagrangian_rho_power = float(sim_params.get("augmented_lagrangian_rho_power", 0.0))
     lambda_rate = np.full(K, float(sim_params.get("initial_lambda_rate_constraint", 0.1)), dtype=float)
-    lambda_power = np.full(K, float(sim_params.get("initial_lambda_power_constraint", 0.01)), dtype=float)
+    lambda_power_block = float(sim_params.get("initial_lambda_power_constraint", 0.01))
     lr_rate = float(sim_params.get("lr_rate_constraint", 1e-2))
     lr_power = float(sim_params.get("lr_power_constraint", 1e-3))
 
@@ -904,24 +952,23 @@ def train_blocklength_aware_precoder_net(
         epoch_sum_rate_sums = 0.0
         epoch_sum_rate_weight = 0.0
         epoch_rate_violation_sums = np.zeros(K, dtype=float)
-        epoch_power_violation_sums = np.zeros(K, dtype=float)
+        epoch_block_power_violation_sum = 0.0
 
         if len(rollout_queries) == 0:
             for k in range(K):
                 training_history["per_user_lagrangian"][k].append(0.0)
                 training_history["per_user_rate"][k].append(0.0)
                 training_history["avg_rate_violation"][k].append(0.0)
-                training_history["avg_power_violation"][k].append(0.0)
             training_history["sum_rate"].append(0.0)
             training_history["avg_user_rate"].append(0.0)
             training_history["avg_lagrangian"].append(0.0)
             training_history["avg_rate_violation_over_users"].append(0.0)
-            training_history["avg_power_violation_over_users"].append(0.0)
+            training_history["avg_block_power_violation"].append(0.0)
             if verbose:
                 print(
                     f"Joint precoder-net epoch {epoch + 1}/{int(epochs)}: "
                     "rollout_queries=0 | sum_rate=0.000000 | avg_user_rate=0.000000 | "
-                    "avg_lagrangian=0.000000 | avg_rate_violation=0.000000 | avg_power_violation=0.000000"
+                    "avg_lagrangian=0.000000 | avg_rate_violation=0.000000 | avg_block_power_violation=0.000000"
                 )
             continue
 
@@ -931,8 +978,9 @@ def train_blocklength_aware_precoder_net(
 
             loss = torch.zeros((), dtype=torch.float32, device=DEVICE)
             batch_rate_violation = np.zeros(K, dtype=float)
-            batch_power_violation = np.zeros(K, dtype=float)
             batch_active_counts = np.zeros(K, dtype=float)
+            batch_block_power_violation = 0.0
+            batch_block_count = 0.0
             total_active_weight = 0.0
 
             for idx in batch_idx:
@@ -945,6 +993,8 @@ def train_blocklength_aware_precoder_net(
                     scenario["n_targets"],
                 )
                 active_mask = forward["active_mask"]
+                scenario_term = torch.zeros((), dtype=torch.float32, device=DEVICE)
+                scenario_has_active_user = False
                 for k in range(K):
                     rate = forward["rates"][k]
                     power = forward["powers"][k]
@@ -953,30 +1003,34 @@ def train_blocklength_aware_precoder_net(
 
                     required_rate = float(forward["required_rates"][k])
                     rate_violation = torch.tensor(required_rate, dtype=torch.float32, device=DEVICE) - rate
-                    power_violation = power - float(scenario["P"][k])
                     rate_violation_pos = _constraint_violation_activation(rate_violation, constraint_loss_form)
-                    power_violation_pos = _constraint_violation_activation(power_violation, constraint_loss_form)
                     term = (
                         -rate
                         + float(lambda_rate[k]) * rate_violation_pos
-                        + float(lambda_power[k]) * power_violation_pos
                     )
                     if constraint_loss_form == "augmented_lagrangian":
-                        term = (
-                            term
-                            + 0.5 * augmented_lagrangian_rho_rate * rate_violation_pos.pow(2)
-                            + 0.5 * augmented_lagrangian_rho_power * power_violation_pos.pow(2)
-                        )
-                    loss = loss + (float(query_weight) * term)
+                        term = term + 0.5 * augmented_lagrangian_rho_rate * rate_violation_pos.pow(2)
+                    scenario_term = scenario_term + term
                     batch_rate_violation[k] += float(query_weight) * float(rate_violation_pos.detach().cpu())
-                    batch_power_violation[k] += float(query_weight) * float(power_violation_pos.detach().cpu())
                     batch_active_counts[k] += float(query_weight)
                     total_active_weight += float(query_weight)
                     epoch_term_sums[k] += float(query_weight) * float(term.detach().cpu())
                     epoch_term_counts[k] += float(query_weight)
                     epoch_rate_sums[k] += float(query_weight) * float(rate.detach().cpu())
                     epoch_rate_violation_sums[k] += float(query_weight) * float(rate_violation_pos.detach().cpu())
-                    epoch_power_violation_sums[k] += float(query_weight) * float(power_violation_pos.detach().cpu())
+                    scenario_has_active_user = True
+                block_power_violation = forward["block_power_violation"]
+                scenario_term = scenario_term + float(lambda_power_block) * block_power_violation
+                if constraint_loss_form == "augmented_lagrangian":
+                    scenario_term = (
+                        scenario_term
+                        + 0.5 * augmented_lagrangian_rho_power * block_power_violation.pow(2)
+                    )
+                loss = loss + (float(query_weight) * scenario_term)
+                if scenario_has_active_user:
+                    batch_block_power_violation += float(query_weight) * float(block_power_violation.detach().cpu())
+                    batch_block_count += float(query_weight)
+                    epoch_block_power_violation_sum += float(query_weight) * float(block_power_violation.detach().cpu())
                 if float(np.sum(active_mask)) > 0.0:
                     epoch_sum_rate_sums += float(query_weight) * float(forward["sum_rate"].detach().cpu())
                     epoch_sum_rate_weight += float(query_weight)
@@ -993,9 +1047,10 @@ def train_blocklength_aware_precoder_net(
                 if batch_active_counts[k] <= 0.0:
                     continue
                 lambda_rate[k] = max(0.0, float(lambda_rate[k]) + lr_rate * (batch_rate_violation[k] / batch_active_counts[k]))
-                lambda_power[k] = max(
+            if batch_block_count > 0.0:
+                lambda_power_block = max(
                     0.0,
-                    float(lambda_power[k]) + lr_power * (batch_power_violation[k] / batch_active_counts[k]),
+                    float(lambda_power_block) + lr_power * (batch_block_power_violation / batch_block_count),
                 )
 
         for model in models:
@@ -1003,20 +1058,17 @@ def train_blocklength_aware_precoder_net(
         epoch_lagrangians = []
         epoch_rates = []
         epoch_rate_violations = []
-        epoch_power_violations = []
+        avg_block_power_violation = float(epoch_block_power_violation_sum / max(epoch_sum_rate_weight, 1.0))
         for k in range(K):
             avg_term = float(epoch_term_sums[k] / max(epoch_term_counts[k], 1.0))
             avg_rate = float(epoch_rate_sums[k] / max(epoch_term_counts[k], 1.0))
             avg_rate_violation = float(epoch_rate_violation_sums[k] / max(epoch_term_counts[k], 1.0))
-            avg_power_violation = float(epoch_power_violation_sums[k] / max(epoch_term_counts[k], 1.0))
             training_history["per_user_lagrangian"][k].append(avg_term)
             training_history["per_user_rate"][k].append(avg_rate)
             training_history["avg_rate_violation"][k].append(avg_rate_violation)
-            training_history["avg_power_violation"][k].append(avg_power_violation)
             epoch_lagrangians.append(avg_term)
             epoch_rates.append(avg_rate)
             epoch_rate_violations.append(avg_rate_violation)
-            epoch_power_violations.append(avg_power_violation)
         avg_sum_rate = float(epoch_sum_rate_sums / max(epoch_sum_rate_weight, 1.0))
         training_history["sum_rate"].append(avg_sum_rate)
         training_history["avg_user_rate"].append(float(np.mean(epoch_rates)) if epoch_rates else 0.0)
@@ -1024,9 +1076,7 @@ def train_blocklength_aware_precoder_net(
         training_history["avg_rate_violation_over_users"].append(
             float(np.mean(epoch_rate_violations)) if epoch_rate_violations else 0.0
         )
-        training_history["avg_power_violation_over_users"].append(
-            float(np.mean(epoch_power_violations)) if epoch_power_violations else 0.0
-        )
+        training_history["avg_block_power_violation"].append(avg_block_power_violation)
         if verbose:
             print(
                 f"Joint precoder-net epoch {epoch + 1}/{int(epochs)}: "
@@ -1035,11 +1085,11 @@ def train_blocklength_aware_precoder_net(
                 f"avg_user_rate={training_history['avg_user_rate'][-1]:.6f} | "
                 f"avg_lagrangian={training_history['avg_lagrangian'][-1]:.6f} | "
                 f"avg_rate_violation={training_history['avg_rate_violation_over_users'][-1]:.6f} | "
-                f"avg_power_violation={training_history['avg_power_violation_over_users'][-1]:.6f} | "
+                f"avg_block_power_violation={training_history['avg_block_power_violation'][-1]:.6f} | "
                 f"per_user_rate={epoch_rates} | "
                 f"per_user_lagrangian={epoch_lagrangians} | "
                 f"per_user_rate_violation={epoch_rate_violations} | "
-                f"per_user_power_violation={epoch_power_violations}"
+                f"block_power_violation={avg_block_power_violation:.6f}"
             )
 
     training_history["post_training_summary"] = {
@@ -1063,9 +1113,6 @@ def train_blocklength_aware_precoder_net(
         "per_user_final_rate_violation": [
             float(history[-1]) if len(history) > 0 else 0.0 for history in training_history["avg_rate_violation"]
         ],
-        "per_user_final_power_violation": [
-            float(history[-1]) if len(history) > 0 else 0.0 for history in training_history["avg_power_violation"]
-        ],
         "final_avg_sum_rate": float(training_history["sum_rate"][-1]) if training_history["sum_rate"] else 0.0,
         "best_avg_sum_rate": float(max(training_history["sum_rate"])) if training_history["sum_rate"] else 0.0,
         "final_avg_user_rate": (
@@ -1086,14 +1133,14 @@ def train_blocklength_aware_precoder_net(
             if training_history["avg_rate_violation_over_users"]
             else 0.0
         ),
-        "final_avg_power_violation": (
-            float(training_history["avg_power_violation_over_users"][-1])
-            if training_history["avg_power_violation_over_users"]
+        "final_avg_block_power_violation": (
+            float(training_history["avg_block_power_violation"][-1])
+            if training_history["avg_block_power_violation"]
             else 0.0
         ),
-        "best_avg_power_violation": (
-            float(min(training_history["avg_power_violation_over_users"]))
-            if training_history["avg_power_violation_over_users"]
+        "best_avg_block_power_violation": (
+            float(min(training_history["avg_block_power_violation"]))
+            if training_history["avg_block_power_violation"]
             else 0.0
         ),
         "final_feasible_rollout_query_fraction": (
@@ -1137,7 +1184,7 @@ def _precoder_net_beam_for_n(
             per_user[k] = int(per_user[k]) + 1
     H_block = _context_channels_for_block(system, l)
     input_noise_cov = system.get_interference_plus_noise_covariance(k, l, F_override=input_precoders)
-    return infer_precoder_numpy_with_blocklength(
+    return infer_raw_precoder_numpy_with_blocklength(
         model,
         H_block,
         int(n_kl),
@@ -1146,7 +1193,6 @@ def _precoder_net_beam_for_n(
         float(system.epsilon[k]),
         nb=int(system.Nb[k]),
         dk=int(system.dk[k]),
-        power_limit=float(system.P[k]),
         device=DEVICE,
     )
 
@@ -1225,6 +1271,8 @@ def _allocate_bits_for_user_block_precoder_net(
     )
     snapshot_T = _clone_precoders(frozen_F)
     snapshot_T[k][l] = np.array(F_T, copy=True)
+    active_users = [int(user_id) for user_id, flag in enumerate(active_mask) if float(flag) > 0.5]
+    system.project_block_precoders_to_power(snapshot_T, l, active_users=active_users)
     R_T = float(system.compute_block_rate(k, l, T_k, F_override=snapshot_T))
     B_max = max(_rate_to_max_bits(T_k, R_T), 0)
     if B_max <= 0:
@@ -1254,6 +1302,7 @@ def _allocate_bits_for_user_block_precoder_net(
             )
             candidate_snapshot = _clone_precoders(frozen_F)
             candidate_snapshot[k][l] = np.array(F_candidate, copy=True)
+            system.project_block_precoders_to_power(candidate_snapshot, l, active_users=active_users)
             R_candidate = float(system.compute_block_rate(k, l, int(candidate), F_override=candidate_snapshot))
             if (float(B_used) / float(candidate)) <= R_candidate:
                 chosen_n = int(candidate)
@@ -1301,6 +1350,8 @@ def _allocate_fixed_target_for_user_block_precoder_net(
     )
     snapshot_T = _clone_precoders(frozen_F)
     snapshot_T[k][l] = np.array(F_T, copy=True)
+    active_users = [int(user_id) for user_id, flag in enumerate(active_mask) if float(flag) > 0.5]
+    system.project_block_precoders_to_power(snapshot_T, l, active_users=active_users)
     R_T = float(system.compute_block_rate(k, l, T_k, F_override=snapshot_T))
     B_max = max(_rate_to_max_bits(T_k, R_T), 0)
     B_used = int(min(int(target_bits), B_max))
@@ -1325,6 +1376,7 @@ def _allocate_fixed_target_for_user_block_precoder_net(
             )
             candidate_snapshot = _clone_precoders(frozen_F)
             candidate_snapshot[k][l] = np.array(F_candidate, copy=True)
+            system.project_block_precoders_to_power(candidate_snapshot, l, active_users=active_users)
             R_candidate = float(system.compute_block_rate(k, l, int(candidate), F_override=candidate_snapshot))
             if (float(target_bits) / float(max(int(candidate), 1))) <= R_candidate:
                 chosen_n = int(candidate)
@@ -1464,9 +1516,15 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
                 input_snapshot,
                 inference_counters=evaluation_cost_counters,
             )
+        system.project_block_precoders_to_power(working_F, int(block), active_users=[int(k) for k in active_users])
         for k in range(system.K):
             if int(block_targets[k, block]) <= 0 and int(block) < len(working_F[k]):
                 _zero_block_precoder(system, working_F, k, block)
+        system.project_block_precoders_to_power(
+            working_F,
+            int(block),
+            active_users=[int(k) for k in active_users if int(block_targets[k, block]) > 0],
+        )
 
         if verbose:
             print(
@@ -1579,9 +1637,9 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
                 "user_weights": [1.0 for _ in active_users],
                 "max_precoder_delta": 0.0,
                 "sum_rate": float(sum(user_rates)),
-                "weighted_sum_rate": float(sum(user_rates)),
+                "unweighted_sum_rate": float(sum(user_rates)),
                 "blended_objective": float(sum(user_rates)),
-                "objective_mode": "precoder_net_forward_pass",
+                "objective_mode": "unweighted_sum_rate",
             }
         )
 
@@ -1662,9 +1720,9 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
 
     result = {
         "method_name": method_name,
-        "objective_mode": "precoder_net_forward_pass",
+        "objective_mode": "unweighted_sum_rate",
         "allocation_mode": "fixed_block_targets",
-        "weight_strategy": "fixed_block_targets",
+        "weight_strategy": "none",
         "precoder_parameterization": "shared_user_block_context_to_precoder_mlp",
         "user_model_specs": export_user_model_specs(
             system.Nr,
@@ -1776,6 +1834,7 @@ def evaluate_downlink_precoder_net(
                 input_snapshot,
                 inference_counters=evaluation_cost_counters,
             )
+        system.project_block_precoders_to_power(working_F, int(block), active_users=[int(k) for k in active_users])
 
         if verbose:
             print(
@@ -1785,6 +1844,7 @@ def evaluate_downlink_precoder_net(
 
         transmit_users = list(active_users)
         skipped_users: list[int] = []
+        skipped_user_rates: dict[int, float] = {}
         while len(transmit_users) > 0:
             current_eval = _evaluate_block_candidate(system, working_F, transmit_users, block)
             infeasible_users = [
@@ -1794,7 +1854,12 @@ def evaluate_downlink_precoder_net(
             ]
             if len(infeasible_users) == 0:
                 break
+            current_eval_rates = {
+                int(user_id): float(rate_val)
+                for user_id, rate_val in zip(current_eval["user_ids"], current_eval["user_rates"])
+            }
             for k in infeasible_users:
+                skipped_user_rates[int(k)] = float(current_eval_rates.get(int(k), 0.0))
                 _zero_block_precoder(system, working_F, k, block)
                 skipped_users.append(int(k))
             transmit_users = [k for k in transmit_users if int(k) not in infeasible_users]
@@ -1809,7 +1874,7 @@ def evaluate_downlink_precoder_net(
                 block_plans[int(k)] = {
                     "B_used": 0,
                     "n_used": int(system.T[int(k)]),
-                    "R_used": float(system.compute_block_rate(int(k), int(block), int(system.T[int(k)]), F_override=allocation_snapshot)),
+                    "R_used": float(skipped_user_rates.get(int(k), 0.0)),
                     "F_used": np.zeros((int(system.Nb[int(k)]), int(system.dk[int(k)])), dtype=np.complex128),
                     "skipped": True,
                 }
@@ -1912,9 +1977,9 @@ def evaluate_downlink_precoder_net(
                 "user_weights": [1.0 for _ in active_users],
                 "max_precoder_delta": 0.0,
                 "sum_rate": float(sum(user_rates)),
-                "weighted_sum_rate": float(sum(user_rates)),
+                "unweighted_sum_rate": float(sum(user_rates)),
                 "blended_objective": float(sum(user_rates)),
-                "objective_mode": "precoder_net_forward_pass",
+                "objective_mode": "unweighted_sum_rate",
             }
         )
 
@@ -1985,9 +2050,9 @@ def evaluate_downlink_precoder_net(
 
     result = {
         "method_name": method_name,
-        "objective_mode": "precoder_net_forward_pass",
+        "objective_mode": "unweighted_sum_rate",
         "allocation_mode": "greedy",
-        "weight_strategy": "remaining_bits",
+        "weight_strategy": "none",
         "precoder_parameterization": "shared_user_block_context_to_precoder_mlp",
         "user_model_specs": export_user_model_specs(
             system.Nr,

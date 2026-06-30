@@ -107,8 +107,8 @@ def _build_post_training_summary_lines(post_training_summary: dict[str, object])
         f"Best avg lagrangian: {float(post_training_summary.get('best_avg_lagrangian', 0.0)):.6f}",
         f"Final avg rate violation: {float(post_training_summary.get('final_avg_rate_violation', 0.0)):.6f}",
         f"Best avg rate violation: {float(post_training_summary.get('best_avg_rate_violation', 0.0)):.6f}",
-        f"Final avg power violation: {float(post_training_summary.get('final_avg_power_violation', 0.0)):.6f}",
-        f"Best avg power violation: {float(post_training_summary.get('best_avg_power_violation', 0.0)):.6f}",
+        f"Final avg block-power violation: {float(post_training_summary.get('final_avg_block_power_violation', 0.0)):.6f}",
+        f"Best avg block-power violation: {float(post_training_summary.get('best_avg_block_power_violation', 0.0)):.6f}",
         (
             "Final feasible rollout-query fraction: "
             f"{float(post_training_summary.get('final_feasible_rollout_query_fraction', 0.0)):.6f}"
@@ -117,7 +117,6 @@ def _build_post_training_summary_lines(post_training_summary: dict[str, object])
         f"Per-user best lagrangian: {post_training_summary.get('per_user_best_lagrangian', [])}",
         f"Per-user final rate: {post_training_summary.get('per_user_final_rate', [])}",
         f"Per-user final rate violation: {post_training_summary.get('per_user_final_rate_violation', [])}",
-        f"Per-user final power violation: {post_training_summary.get('per_user_final_power_violation', [])}",
         "Global active-user rollout queries by n_kl over all epochs:",
         f"{post_training_summary.get('cumulative_rollout_queries_by_n_kl', {}).get('global_active_user_rollout_queries_by_n_kl_over_all_epochs', {})}",
         "Per-user active-user rollout queries by n_kl over all epochs:",
@@ -185,11 +184,10 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
                 f"Final epoch avg user rate: {float(avg_user_rate_hist[-1]):.6f}" if avg_user_rate_hist else "Final epoch avg user rate: n/a",
                 f"Final epoch avg lagrangian: {float(training_history.get('avg_lagrangian', [])[-1]):.6f}" if training_history.get("avg_lagrangian") else "Final epoch avg lagrangian: n/a",
                 f"Final epoch avg rate violation: {float(training_history.get('avg_rate_violation_over_users', [])[-1]):.6f}" if training_history.get("avg_rate_violation_over_users") else "Final epoch avg rate violation: n/a",
-                f"Final epoch avg power violation: {float(training_history.get('avg_power_violation_over_users', [])[-1]):.6f}" if training_history.get("avg_power_violation_over_users") else "Final epoch avg power violation: n/a",
+                f"Final epoch avg block-power violation: {float(training_history.get('avg_block_power_violation', [])[-1]):.6f}" if training_history.get("avg_block_power_violation") else "Final epoch avg block-power violation: n/a",
                 f"Final epoch per-user rates: {training_history.get('per_user_rate', []) and [float(row[-1]) if len(row) > 0 else 0.0 for row in training_history.get('per_user_rate', [])]}",
                 f"Final epoch per-user lagrangian: {training_history.get('per_user_lagrangian', []) and [float(row[-1]) if len(row) > 0 else 0.0 for row in training_history.get('per_user_lagrangian', [])]}",
                 f"Final epoch per-user rate violation: {training_history.get('avg_rate_violation', []) and [float(row[-1]) if len(row) > 0 else 0.0 for row in training_history.get('avg_rate_violation', [])]}",
-                f"Final epoch per-user power violation: {training_history.get('avg_power_violation', []) and [float(row[-1]) if len(row) > 0 else 0.0 for row in training_history.get('avg_power_violation', [])]}",
                 (
                     f"Final feasible rollout-query fraction: "
                     f"{float(post_training_summary.get('final_feasible_rollout_query_fraction', 0.0)):.6f}"

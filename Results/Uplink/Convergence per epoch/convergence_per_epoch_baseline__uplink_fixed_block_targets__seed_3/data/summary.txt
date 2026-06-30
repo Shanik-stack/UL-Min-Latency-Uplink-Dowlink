@@ -1,0 +1,55 @@
+Uplink optimizer summary
+Method: convergence_per_epoch_baseline
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\uplink_fixed_block_targets.yaml
+Seed: 3
+Experiment scenario mode: fixed_block_targets
+Precoder parameterization: shared_user_channel_sigma_epsilon_to_precoder_mlp_online_convergence
+Initial schedule source: random_precoder_baseline
+
+Latency summary
+Initial total latency: 0.033133
+Final total latency: 0.027333
+Total latency reduction (%): 17.5050
+Initial avg latency: 0.011044
+Final avg latency: 0.009111
+Initial min/max latency: 0.006467 / 0.015533
+Final min/max latency: 0.005267 / 0.013400
+
+Asynchronality summary
+Initial asynchronality sum: 0.018133
+Final asynchronality sum: 0.016267
+Asynchronality reduction (%): 10.2941
+
+Link quality summary
+Initial avg SNR (dB): 8.2474
+Final avg SNR (dB): 8.3750
+Initial avg SINR (dB): -3.3488
+Final avg SINR (dB): -3.3439
+
+Per-user details
+User 0 | init_lat=0.006467 | final_lat=0.005267 | lat_red=18.5567% | init_snr=8.3013 dB | final_snr=8.3223 dB | init_sinr=-2.6471 dB | final_sinr=-2.7325 dB | blocks=5 | total_n=79 | served_bits=1000 | skipped_blocks=0 | target_bits=1000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 1 | init_lat=0.011133 | final_lat=0.008667 | lat_red=22.1557% | init_snr=8.1797 dB | final_snr=8.2182 dB | init_sinr=-4.3285 dB | final_sinr=-4.4358 dB | blocks=5 | total_n=130 | served_bits=2000 | skipped_blocks=0 | target_bits=2000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 2 | init_lat=0.015533 | final_lat=0.013400 | lat_red=13.7339% | init_snr=8.2612 dB | final_snr=8.5846 dB | init_sinr=-3.0708 dB | final_sinr=-2.8633 dB | blocks=5 | total_n=201 | served_bits=3000 | skipped_blocks=0 | target_bits=3000 | init_unserved_bits=0 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.004667 | final_diff=0.003400
+Users 0-2 | initial_diff=0.009067 | final_diff=0.008133
+Users 1-2 | initial_diff=0.004400 | final_diff=0.004733
+
+Experiment cost
+Core wall time total (s): 97.228153
+Core wall time training (s): 97.228153
+Testing-phase wall time (s): 0.000000
+Forward+backward NN FLOPs: 1.574e+09
+Forward-only NN FLOPs: 8.519e+07
+Total NN FLOPs: 1.659e+09
+Total forward+backward NN evaluations: 3417
+Forward-only beam evaluations: 555
+Actual optimizer updates: 2862
+Extra gradient evaluations used to check the current constrained joint state: 555
+Workload counters:
+{'solver_calls': 555, 'solver_calls_per_user': [176, 175, 204], 'solver_epochs_per_user': [1286, 1097, 1034], 'optimizer_updates_per_user': [1110, 922, 830], 'visited_candidate_n_states_per_user': [176, 175, 204]}
+Notes:
+- Forward+backward NN FLOPs count the online solver epochs that optimize the uplink precoder net.
+- Forward-only NN FLOPs count forward-only beam evaluations inside the same online convergence routine, not a separate testing phase.
+- Testing-phase wall time is 0.0 for convergence because there is no separate train/test split.

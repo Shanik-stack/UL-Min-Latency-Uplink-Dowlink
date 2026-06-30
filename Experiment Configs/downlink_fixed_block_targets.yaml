@@ -47,11 +47,12 @@ simulation:
   lr_rate_constraint: 0.01
   lr_power_constraint: 0.001
   constraint_loss_form: plain_lagrangian
+  # constraint_loss_form: augmented_lagrangian
   augmented_lagrangian_rho_rate: 1.0
   augmented_lagrangian_rho_power: 1.0
   kkt_primal_tol: 1.0e-5
   kkt_complementarity_tol: 1.0e-5
-  kkt_stationarity_tol: 3.0e-3
+  kkt_stationarity_tol: 6.0e-3
 
   # Reduced-n_kl repair behavior
   n_kl_reduction_update_scope: infeasible_users_only
@@ -62,7 +63,8 @@ simulation:
   monte_carlo_training_n_kl_coarse_step: 5
 
   # Downlink block objective and payload weighting
-  convergence_block_objective_mode: weighted_sum_rate
+  convergence_block_objective_mode: unweighted_sum_rate
+  # convergence_block_objective_mode: weighted_sum_rate
   remaining_bits_weight_power: 1.0
   minimum_user_weight: 0.25
   network_rate_weight: 0.15
@@ -78,7 +80,7 @@ simulation:
     skip_block_adds_full_T_latency: true
     track_skipped_blocks: true
     fixed_block_targets:
-      num_blocks: 10
+      num_blocks: 5
       generation_mode: constant
 
   # Allowed blocklength search range

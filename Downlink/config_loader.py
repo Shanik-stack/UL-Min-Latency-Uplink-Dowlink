@@ -25,6 +25,18 @@ def _as_array(values: Any, K: int, name: str, dtype) -> np.ndarray:
     return arr
 
 
+def _resolve_downlink_block_power_budget(power_values: np.ndarray) -> float:
+    if power_values.size <= 0:
+        raise ValueError("Downlink P must contain at least one value.")
+    budget = float(power_values[0])
+    if not np.allclose(power_values, budget, rtol=1e-6, atol=1e-9):
+        raise ValueError(
+            "Downlink uses one BS block power budget for the full precoder F_b, "
+            "so test.P must be a scalar or repeated identical values."
+        )
+    return budget
+
+
 def _resolve_config_path(cfg_name: str) -> str:
     if not cfg_name.endswith(".yaml"):
         cfg_name = f"{cfg_name}.yaml"
@@ -79,6 +91,7 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
             test_cfg["initial_bits_per_symbol"], K, "initial_bits_per_symbol", float
         ),
     }
+    system_params["block_power_budget"] = _resolve_downlink_block_power_budget(system_params["P"])
     system_params["initial_latency"] = (
         system_params["B"] / system_params["initial_bits_per_symbol"]
     ) / system_params["fs"]
@@ -179,7 +192,7 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
                 "safe_sweep_objective_mode",
                 "downlink_safe_sweep_objective_mode",
                 "objective_mode",
-                default="user_rate",
+                default="unweighted_sum_rate",
             )
         ).strip().lower(),
         "remaining_bits_weight_power": float(

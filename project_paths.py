@@ -35,12 +35,14 @@ def build_uplink_result_dirs(method_name: str, experiment_name: str) -> dict[str
         "test_latency_asynchronality": testing_root / "latency_asynchronality",
         "test_link_quality": testing_root / "link_quality",
         "test_interference": testing_root / "interference",
+        "test_schedule_details": testing_root / "schedule_details",
         "data": testing_root / "data",
         "optimization_history": testing_root / "optimization_history",
         "user_config": testing_root / "user_config",
         "latency_asynchronality": testing_root / "latency_asynchronality",
         "link_quality": testing_root / "link_quality",
         "interference": testing_root / "interference",
+        "schedule_details": testing_root / "schedule_details",
     }
     for path in dirs.values():
         Path(path).mkdir(parents=True, exist_ok=True)
@@ -55,6 +57,7 @@ def build_uplink_convergence_result_dirs(method_name: str, experiment_name: str)
     latency_root = root / "latency_asynchronality"
     link_root = root / "link_quality"
     interference_root = root / "interference"
+    schedule_root = root / "schedule_details"
     dirs = {
         "experiment_root": root,
         "training_root": root,
@@ -75,6 +78,8 @@ def build_uplink_convergence_result_dirs(method_name: str, experiment_name: str)
         "link_quality": link_root,
         "test_interference": interference_root,
         "interference": interference_root,
+        "test_schedule_details": schedule_root,
+        "schedule_details": schedule_root,
     }
     for path in dirs.values():
         Path(path).mkdir(parents=True, exist_ok=True)

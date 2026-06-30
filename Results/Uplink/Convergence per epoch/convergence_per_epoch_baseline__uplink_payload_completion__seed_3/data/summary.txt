@@ -7,47 +7,49 @@ Precoder parameterization: shared_user_channel_sigma_epsilon_to_precoder_mlp_onl
 Initial schedule source: random_precoder_baseline
 
 Latency summary
-Initial total latency: 0.030800
-Final total latency: 0.024533
-Total latency reduction (%): 20.3463
-Initial avg latency: 0.010267
-Final avg latency: 0.008178
-Initial min/max latency: 0.008867 / 0.011400
-Final min/max latency: 0.006667 / 0.009867
+Initial total latency: 0.030733
+Final total latency: 0.024667
+Total latency reduction (%): 19.7397
+Initial avg latency: 0.010244
+Final avg latency: 0.008222
+Initial min/max latency: 0.005867 / 0.014200
+Final min/max latency: 0.004533 / 0.012200
 
 Asynchronality summary
-Initial asynchronality sum: 0.005067
-Final asynchronality sum: 0.006400
-Asynchronality reduction (%): -26.3158
+Initial asynchronality sum: 0.016667
+Final asynchronality sum: 0.015333
+Asynchronality reduction (%): 8.0000
 
 Link quality summary
-Initial avg SNR (dB): 11.0228
-Final avg SNR (dB): 11.0468
-Initial avg SINR (dB): -3.2329
-Final avg SINR (dB): -3.1403
+Initial avg SNR (dB): 8.1078
+Final avg SNR (dB): 8.4074
+Initial avg SINR (dB): -3.3939
+Final avg SINR (dB): -3.3062
 
 Per-user details
-User 0 | init_lat=0.008867 | final_lat=0.006667 | lat_red=24.8120% | init_snr=14.2587 dB | final_snr=13.9579 dB | init_sinr=-2.7026 dB | final_sinr=-3.0240 dB | blocks=1 | total_n=100 | served_bits=2400 | skipped_blocks=0
-User 1 | init_lat=0.010533 | final_lat=0.008000 | lat_red=24.0506% | init_snr=10.2818 dB | final_snr=10.4462 dB | init_sinr=-4.3505 dB | final_sinr=-4.0794 dB | blocks=2 | total_n=120 | served_bits=2400 | skipped_blocks=0
-User 2 | init_lat=0.011400 | final_lat=0.009867 | lat_red=13.4503% | init_snr=8.5280 dB | final_snr=8.7364 dB | init_sinr=-2.6456 dB | final_sinr=-2.3174 dB | blocks=2 | total_n=148 | served_bits=2400 | skipped_blocks=0
+User 0 | init_lat=0.005867 | final_lat=0.004533 | lat_red=22.7273% | init_snr=7.7197 dB | final_snr=7.9347 dB | init_sinr=-3.3592 dB | final_sinr=-3.1310 dB | blocks=2 | total_n=68 | served_bits=1000 | skipped_blocks=0
+User 1 | init_lat=0.010667 | final_lat=0.007933 | lat_red=25.6250% | init_snr=7.8043 dB | final_snr=8.4349 dB | init_sinr=-4.6492 dB | final_sinr=-4.1327 dB | blocks=2 | total_n=119 | served_bits=2000 | skipped_blocks=0
+User 2 | init_lat=0.014200 | final_lat=0.012200 | lat_red=14.0845% | init_snr=8.7994 dB | final_snr=8.8527 dB | init_sinr=-2.1732 dB | final_sinr=-2.6548 dB | blocks=3 | total_n=183 | served_bits=3000 | skipped_blocks=0
 
 Per-pair asynchronality
-Users 0-1 | initial_diff=0.001667 | final_diff=0.001333
-Users 0-2 | initial_diff=0.002533 | final_diff=0.003200
-Users 1-2 | initial_diff=0.000867 | final_diff=0.001867
+Users 0-1 | initial_diff=0.004800 | final_diff=0.003400
+Users 0-2 | initial_diff=0.008333 | final_diff=0.007667
+Users 1-2 | initial_diff=0.003533 | final_diff=0.004267
 
 Experiment cost
-Core wall time total (s): 30.844068
-Core wall time training (s): 30.844068
-Core wall time testing (s): 0.000000
-Estimated NN training FLOPs: 0.000e+00
-Estimated NN inference FLOPs: 2.103e+07
-Estimated NN total FLOPs: 2.103e+07
-Training forward/backward sample-equivalents: 0
-Inference forward calls: 137
-Optimizer steps: 0
+Core wall time total (s): 36.350277
+Core wall time training (s): 36.350277
+Testing-phase wall time (s): 0.000000
+Forward+backward NN FLOPs: 4.522e+08
+Forward-only NN FLOPs: 1.489e+07
+Total NN FLOPs: 4.671e+08
+Total forward+backward NN evaluations: 982
+Forward-only beam evaluations: 97
+Actual optimizer updates: 885
+Extra gradient evaluations used to check the current constrained joint state: 97
 Workload counters:
-{'solver_calls': 0, 'solver_epochs_per_user': [0, 0, 0], 'visited_candidate_n_states_per_user': [1, 82, 54]}
+{'solver_calls': 97, 'solver_calls_per_user': [34, 3, 60], 'solver_epochs_per_user': [288, 188, 506], 'optimizer_updates_per_user': [254, 185, 446], 'visited_candidate_n_states_per_user': [34, 3, 60]}
 Notes:
-- FLOPs are estimated from the precoder MLP shapes and counted solver epochs; plotting and file export are excluded from wall time.
-- One uplink convergence solver epoch is counted as one forward/backward sample-equivalent on that user's precoder net.
+- Forward+backward NN FLOPs count the online solver epochs that optimize the uplink precoder net.
+- Forward-only NN FLOPs count forward-only beam evaluations inside the same online convergence routine, not a separate testing phase.
+- Testing-phase wall time is 0.0 for convergence because there is no separate train/test split.

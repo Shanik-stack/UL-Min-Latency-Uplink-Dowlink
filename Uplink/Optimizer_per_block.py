@@ -20,6 +20,7 @@ from precoder_models import (
 from uplink_rate_model import build_uplink_rate_covariance
 LOG2E_SQ = (np.log2(np.e)) ** 2
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
+POWER_PROJECTION_SAFETY_MARGIN = 1e-6
 
 # ============================================================
 # Utils
@@ -67,7 +68,7 @@ def project_power(Fmat: torch.Tensor, P: float, eps: float = 1e-12, delta: float
         / (power + eps)
     )
 
-    # scale = scale * (1.0 - delta)
+    scale = scale * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
 
     return Fmat * scale.to(Fmat.dtype)
 
@@ -201,7 +202,15 @@ class LagrangianLoss(nn.Module):
                 + 0.5 * float(self.augmented_lagrangian_rho_power) * power_violation_pos.pow(2)
             )
 
-        return loss, R, F_power, rate_violation_pos, power_violation_pos
+        return (
+            loss,
+            R,
+            F_power,
+            rate_violation,
+            power_violation,
+            rate_violation_pos,
+            power_violation_pos,
+        )
 
 # ============================================================
 # Optimize precoder for a fixed n_kl
@@ -255,7 +264,7 @@ def optimize_precoder_for_nl(
         )
 
         optimizer.zero_grad()
-        loss, R, F_power, rv_pos, pv_pos = loss_fn(Fmat, lambda_rate, lambda_power)
+        loss, R, F_power, rv_raw, pv_raw, rv_pos, pv_pos = loss_fn(Fmat, lambda_rate, lambda_power)
         loss.backward()
 
         r_p = max(float(rv_pos.detach().cpu()), float(pv_pos.detach().cpu()))
@@ -274,7 +283,10 @@ def optimize_precoder_for_nl(
                 1e-12,
             )
             r_s = float(delta_num / delta_den)
-        feasible = r_p <= float(kkt_primal_tol)
+        exact_feasible = (
+            float(rv_raw.detach().cpu()) <= 0.0
+            and float(pv_raw.detach().cpu()) <= 0.0
+        )
         losses.append(float(loss.detach().cpu()))
         kkt_history.append(
             {
@@ -282,6 +294,8 @@ def optimize_precoder_for_nl(
                 "primal_residual": float(r_p),
                 "complementarity_residual": float(r_c),
                 "stationarity_residual": float(r_s),
+                "rate_gap": float(rv_raw.detach().cpu()),
+                "power_gap": float(pv_raw.detach().cpu()),
                 "rate_violation": float(rv_pos.detach().cpu()),
                 "power_violation": float(pv_pos.detach().cpu()),
                 "rate": float(R.detach().cpu()),
@@ -306,7 +320,7 @@ def optimize_precoder_for_nl(
             best_primal_lambda_rate = float(lambda_rate)
             best_primal_lambda_power = float(lambda_power)
 
-        if feasible and float(R.detach().cpu()) >= best_feasible_rate:
+        if exact_feasible and float(R.detach().cpu()) >= best_feasible_rate:
             best_feasible_rate = float(R.detach().cpu())
             best_feasible_model_state = {
                 key: value.detach().cpu().clone()
@@ -357,7 +371,7 @@ def optimize_precoder_for_nl(
             dk,
             loss_fn.P,
         )
-        loss, R, F_power, rv_pos, pv_pos = loss_fn(F_final, lambda_rate, lambda_power)
+        loss, R, F_power, rv_raw, pv_raw, rv_pos, pv_pos = loss_fn(F_final, lambda_rate, lambda_power)
 
     return {
         "F": F_final.detach(),
@@ -365,6 +379,8 @@ def optimize_precoder_for_nl(
         "lambda_power": float(lambda_power),
         "R_fbl": float(R.detach().item()),
         "F_power": float(F_power.detach().item()),
+        "rate_gap": float(rv_raw.detach().item()),
+        "power_gap": float(pv_raw.detach().item()),
         "rate_violation": float(rv_pos.detach().item()),
         "power_violation": float(pv_pos.detach().item()),
         "loss_curve": losses,
@@ -490,28 +506,43 @@ def optimize_subblocklength_precoder(
         kkt_stationarity_tol=kkt_stationarity_tol,
     )
 
+    step_a_diagnostics = {
+        "achieved_R_fbl": float(out["R_fbl"]),
+        "F": out["F"],
+        "F_power": float(out["F_power"]),
+        "lambda_rate": float(out["lambda_rate"]),
+        "lambda_power": float(out["lambda_power"]),
+        "rate_gap": float(out["rate_gap"]),
+        "power_gap": float(out["power_gap"]),
+        "loss_curve": out["loss_curve"],
+        "kkt_history": copy.deepcopy(out.get("kkt_history", [])),
+        "solve_status": out.get("solve_status", "unknown"),
+        "final_primal_residual": float(out.get("final_primal_residual", 0.0)),
+        "final_complementarity_residual": float(out.get("final_complementarity_residual", 0.0)),
+    }
+
     lambda_rate = out["lambda_rate"]
     lambda_power = out["lambda_power"]
 
     print(f"R_fbl: {out['R_fbl']}")
     print(f"F_power: {out['F_power']}")
-    print(f"Rate violation: {out['rate_violation']}")
-    print(f"Power violation: {out['power_violation']}")
+    print(f"Rate gap: {out['rate_gap']}")
+    print(f"Power gap: {out['power_gap']}")
 
-    if out["power_violation"] > kkt_primal_tol:
+    if out["power_gap"] > 0.0:
         print(">>> Power constraint violated at n = T. STOP.")
-        return [], 0
+        return [], 0, step_a_diagnostics
 
     B_max_T = max(int(np.floor(float(n_kl_max) * float(out["R_fbl"]))), 0)
     B_used = int(min(B_initial, B_max_T))
-    fully_feasible_at_T = out["rate_violation"] <= kkt_primal_tol
+    fully_feasible_at_T = out["rate_gap"] <= 0.0
 
     if B_used <= 0:
         if is_fixed_target_block:
             print(">>> No feasible service at n = T for this block target.")
         else:
             print(">>> No feasible service at n = T for this payload.")
-        return [], 0
+        return [], 0, step_a_diagnostics
 
     if fully_feasible_at_T:
         print(">>> Requested bits are feasible at n = T.")
@@ -526,12 +557,15 @@ def optimize_subblocklength_precoder(
         "n": int(n_kl_max),
         "B_l": int(B_used),
         "Bits per sub-block length B/n_kl": float(B_used) / float(n_kl_max),
+        "required_R_fbl": float(B_initial) / float(max(int(n_kl_max), 1)),
+        "achieved_R_fbl": float(out["R_fbl"]),
         "F": out["F"],
         "R_fbl": float(out["R_fbl"]),
         "F_power": float(out["F_power"]),
         "lambda_rate": float(lambda_rate),
         "lambda_power": float(lambda_power),
         "loss_curve": out["loss_curve"],
+        "kkt_history": copy.deepcopy(out.get("kkt_history", [])),
         "solve_status": out.get("solve_status", "unknown"),
         "final_primal_residual": float(out.get("final_primal_residual", 0.0)),
         "final_complementarity_residual": float(out.get("final_complementarity_residual", 0.0)),
@@ -600,10 +634,10 @@ def optimize_subblocklength_precoder(
 
         if should_print_candidate:
             print(f"R_fbl: {out['R_fbl']}")
-            print(f"Rate violation: {out['rate_violation']}")
-            print(f"Power violation: {out['power_violation']}")
+            print(f"Rate gap: {out['rate_gap']}")
+            print(f"Power gap: {out['power_gap']}")
 
-        feasible = (out["rate_violation"] <= kkt_primal_tol) and (out["power_violation"] <= kkt_primal_tol)
+        feasible = (out["rate_gap"] <= 0.0) and (out["power_gap"] <= 0.0)
         if not feasible:
             precoder_net.load_state_dict(model_checkpoint)
             optimizer.load_state_dict(optimizer_checkpoint)
@@ -619,12 +653,15 @@ def optimize_subblocklength_precoder(
             "n": int(n_kl),
             "B_l": int(B_used),
             "Bits per sub-block length B/n_kl": float(B_used) / float(n_kl),
+            "required_R_fbl": float(B_used) / float(max(int(n_kl), 1)),
+            "achieved_R_fbl": float(out["R_fbl"]),
             "F": out["F"],
             "R_fbl": float(out["R_fbl"]),
             "F_power": float(out["F_power"]),
             "lambda_rate": float(lambda_rate),
             "lambda_power": float(lambda_power),
             "loss_curve": out["loss_curve"],
+            "kkt_history": copy.deepcopy(out.get("kkt_history", [])),
             "solve_status": out.get("solve_status", "unknown"),
             "final_primal_residual": float(out.get("final_primal_residual", 0.0)),
             "final_complementarity_residual": float(out.get("final_complementarity_residual", 0.0)),
@@ -639,7 +676,7 @@ def optimize_subblocklength_precoder(
     print_result(results, "lambda_rate")
     print_result(results, "lambda_power")
 
-    return results, int(B_used)
+    return results, int(B_used), step_a_diagnostics
 
 # ============================================================
 # Training loop (per user, per block) - same outputs as before
@@ -732,7 +769,7 @@ def dynamic_subblocklength_precoder_training(
             # This function already performs:
             #  Step A: optimize once at n=T and clip to feasible served bits
             #  Step B: if this is the tail block, decrease n_kl and re-optimize
-            S, B_used = optimize_subblocklength_precoder(
+            S, B_used, _ = optimize_subblocklength_precoder(
                 uplinksystem=uplinksystem,
                 user=k,
                 block=ell,
@@ -866,7 +903,7 @@ def dynamic_fixed_target_precoder_training(
 
             target_bits = int(block_targets[k, ell])
             print(f"\n--- FIXED-TARGET User {k}, Block {ell}, target_bits={target_bits} ---")
-            S, B_used = optimize_subblocklength_precoder(
+            S, B_used, step_a_diagnostics = optimize_subblocklength_precoder(
                 uplinksystem=uplinksystem,
                 user=k,
                 block=ell,
@@ -890,12 +927,20 @@ def dynamic_fixed_target_precoder_training(
                     "n": int(uplinksystem.T[k]),
                     "B_l": 0,
                     "Bits per sub-block length B/n_kl": 0.0,
+                    "required_R_fbl": float(target_bits) / float(max(int(uplinksystem.T[k]), 1)),
+                    "achieved_R_fbl": float(step_a_diagnostics.get("achieved_R_fbl", 0.0)),
                     "F": torch.tensor(F_zero, dtype=torch.complex64),
-                    "R_fbl": 0.0,
+                    "R_fbl": float(step_a_diagnostics.get("achieved_R_fbl", 0.0)),
                     "F_power": 0.0,
-                    "lambda_rate": float(lambda_rate_user),
-                    "lambda_power": float(lambda_power_user),
-                    "loss_curve": [],
+                    "lambda_rate": float(step_a_diagnostics.get("lambda_rate", lambda_rate_user)),
+                    "lambda_power": float(step_a_diagnostics.get("lambda_power", lambda_power_user)),
+                    "loss_curve": list(step_a_diagnostics.get("loss_curve", [])),
+                    "kkt_history": list(step_a_diagnostics.get("kkt_history", [])),
+                    "solve_status": step_a_diagnostics.get("solve_status", "unknown"),
+                    "final_primal_residual": float(step_a_diagnostics.get("final_primal_residual", 0.0)),
+                    "final_complementarity_residual": float(
+                        step_a_diagnostics.get("final_complementarity_residual", 0.0)
+                    ),
                     "target_bits": int(target_bits),
                     "unserved_bits": int(target_bits),
                     "skipped": True,
@@ -964,9 +1009,9 @@ def _Q_inv_np(eps: float) -> float:
 
 def _project_power_np(F: np.ndarray, P: float, eps: float = 1e-12) -> np.ndarray:
     p = np.linalg.norm(F, "fro") ** 2
-    # if p <= P:
-    #     return F
-    return F * np.sqrt(P / (p + eps))
+    if p <= float(P):
+        return F
+    return F * (np.sqrt(P / (p + eps)) * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN)))
 
 
 def _build_precoder_snapshot_from_models(

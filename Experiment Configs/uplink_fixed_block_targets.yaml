@@ -9,20 +9,20 @@ test:
     - 4
     - 4
   T:
-    - 100
-    - 100
-    - 100
+    - 50 
+    - 60 
+    - 80
   B:
+    - 200
     - 400
-    - 400
-    - 400
+    - 600
   P:
-    - 20
-    - 20
-    - 20
+    - 30
+    - 30
+    - 30
   snr_db:
-    - 15
-    - 10
+    - 8
+    - 8
     - 8
   fs:
     - 15000.0
@@ -68,7 +68,7 @@ simulation:
     skip_block_adds_full_T_latency: true
     track_skipped_blocks: true
     fixed_block_targets:
-      num_blocks: 10
+      num_blocks: 5
       generation_mode: constant
 
   # Allowed blocklength search range

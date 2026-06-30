@@ -49,6 +49,10 @@ def save_test_results_to_txt(
         np.array(test_uplinksystem.n_kl[user], dtype=np.float64)
         for user in range(test_uplinksystem.K)
     ]
+    final_Rfbl = [
+        list(map(float, values))
+        for values in test_data_dict.get("R_star_test", test_uplinksystem.R_fbl)
+    ]
     _, final_snr_db = test_uplinksystem.get_SNR()
     _, final_sinr_db = test_uplinksystem.get_SINR()
     with open(file_path, "w", encoding="utf-8") as f:
@@ -68,7 +72,7 @@ def save_test_results_to_txt(
             f.write(f"\n|| ---------------- USER {user_idx} ---------------- ||\n")
             f.write(
                 f"R-fsbl_kl:    Initial {initial_Rfbl[user_idx]} "
-                f"->      Final {test_uplinksystem.R_fbl[user_idx]}\n"
+                f"->      Final {final_Rfbl[user_idx]}\n"
             )
             f.write(
                 f"n_kl:   Initial {initial_n_kl[user_idx]} "
@@ -181,7 +185,8 @@ def save_test_results_to_txt(
         "initial_n_kl": initial_n_kl,
         "final_n_kl": test_uplinksystem.n_kl,
         "initial_Rfbl": initial_Rfbl,
-        "final_Rfbl": test_uplinksystem.R_fbl,
+        "final_Rfbl": final_Rfbl,
+        "committed_final_Rfbl": test_uplinksystem.R_fbl,
         "initial_B_kl": initial_B_kl,
         "target_snr_db": list(test_uplinksystem.snr_db),
         "initial_snr_db": list(initial_snr_db),

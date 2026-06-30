@@ -4,6 +4,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
+from matplotlib.lines import Line2D
+from matplotlib.transforms import blended_transform_factory
 
 from advanced_methods_common import collect_uplink_interference_diagnostics
 
@@ -88,6 +90,8 @@ def plot_optimization_result_summary_dict(
 
     n_star = post_training_data_dict.get("n_star", None)
     R_star = post_training_data_dict.get("R_star", None)
+    achieved_R_star = post_training_data_dict.get("achieved_R_star", None)
+    required_R_star = post_training_data_dict.get("required_R_star", None)
 
     if n_star is None or R_star is None:
         raise KeyError("post_training_data_dict must contain keys: 'n_star' and 'R_star'")
@@ -100,6 +104,46 @@ def plot_optimization_result_summary_dict(
     title_prefix = phase_label or ("Training" if train else "Testing")
     file_prefix = filename_prefix or ("training" if train else "testing")
 
+    if achieved_R_star is None or required_R_star is None:
+        block_results = (
+            post_training_data_dict.get("all_user_block_results")
+            or post_training_data_dict.get("all_user_block_results_train")
+            or post_training_data_dict.get("all_user_block_results_test")
+        )
+        if block_results is not None:
+            derived_achieved = []
+            derived_required = []
+            for user_blocks in block_results:
+                user_achieved = []
+                user_required = []
+                for block_states in user_blocks:
+                    if block_states is None or len(block_states) == 0:
+                        user_achieved.append(np.nan)
+                        user_required.append(np.nan)
+                        continue
+                    final_state = block_states[-1]
+                    n_val = float(max(int(final_state.get("n_kl", final_state.get("n", 1))), 1))
+                    served_rate = float(final_state.get("Bits per sub-block length B/n_kl", np.nan))
+                    target_bits = final_state.get("target_bits", None)
+                    required_rate = (
+                        float(final_state.get("required_R_fbl"))
+                        if "required_R_fbl" in final_state
+                        else (
+                            float(target_bits) / n_val
+                            if target_bits is not None
+                            else served_rate
+                        )
+                    )
+                    achieved_rate = float(final_state.get("achieved_R_fbl", final_state.get("R_fbl", np.nan)))
+                    user_achieved.append(achieved_rate)
+                    user_required.append(required_rate)
+                derived_achieved.append(user_achieved)
+                derived_required.append(user_required)
+            if achieved_R_star is None:
+                achieved_R_star = derived_achieved
+            if required_R_star is None:
+                required_R_star = derived_required
+
     for user_idx in range(len(n_star)):
         L = len(n_star[user_idx])
         if L == 0:
@@ -107,7 +151,22 @@ def plot_optimization_result_summary_dict(
 
         blocks = np.arange(L)
         t_vals = np.asarray(n_star[user_idx], dtype=np.float64)
-        r_vals = np.asarray(R_star[user_idx], dtype=np.float64)
+        achieved_vals = np.asarray(
+            (
+                achieved_R_star[user_idx]
+                if achieved_R_star is not None and user_idx < len(achieved_R_star)
+                else R_star[user_idx]
+            ),
+            dtype=np.float64,
+        )
+        required_vals = np.asarray(
+            (
+                required_R_star[user_idx]
+                if required_R_star is not None and user_idx < len(required_R_star)
+                else R_star[user_idx]
+            ),
+            dtype=np.float64,
+        )
 
         fig, ax1 = plt.subplots(figsize=(7, 4))
         ax2 = ax1.twinx()
@@ -117,8 +176,10 @@ def plot_optimization_result_summary_dict(
         ax1.set_ylabel("Chosen sub-blocklength n_kl")
         ax1.grid(True)
 
-        ax2.plot(blocks, r_vals, marker="s", label="R_fbl")
-        ax2.set_ylabel("Chosen R_fbl")
+        ax2.plot(blocks, achieved_vals, marker="s", label="Achieved R_fbl")
+        if np.any(np.isfinite(required_vals)):
+            ax2.plot(blocks, required_vals, marker="^", linestyle="--", label="Required R_fbl")
+        ax2.set_ylabel("Rate (bits / symbol)")
 
         ax1.set_title(f"{title_prefix} Result – User {user_idx}")
 
@@ -341,26 +402,36 @@ def plot_F_vs_n_for_all_subblocks(
             if not S:
                 continue
 
-            n_vals, R_vals = [], []
+            n_vals, achieved_vals, required_vals = [], [], []
 
             for item in S:
                 if "n_kl" not in item or "R_fbl" not in item:
                     continue
-                n_vals.append(int(item["n_kl"]))
-                R_vals.append(float(item["R_fbl"]))
+                n_val = int(item["n_kl"])
+                n_vals.append(n_val)
+                achieved_vals.append(float(item.get("achieved_R_fbl", item["R_fbl"])))
+                if "required_R_fbl" in item:
+                    required_vals.append(float(item["required_R_fbl"]))
+                elif "target_bits" in item:
+                    required_vals.append(float(item["target_bits"]) / float(max(n_val, 1)))
+                else:
+                    required_vals.append(float(item.get("Bits per sub-block length B/n_kl", np.nan)))
 
             if len(n_vals) == 0:
                 continue
 
             order = np.argsort(n_vals)
             n_vals = np.array(n_vals)[order]
-            R_vals = np.array(R_vals)[order]
+            achieved_vals = np.array(achieved_vals)[order]
+            required_vals = np.array(required_vals)[order]
 
-            plt.plot(n_vals, R_vals, marker="o", label=f"block {block_idx}")
+            plt.plot(n_vals, achieved_vals, marker="o", label=f"block {block_idx} achieved")
+            if np.any(np.isfinite(required_vals)):
+                plt.plot(n_vals, required_vals, linestyle="--", alpha=0.65, label=f"block {block_idx} required")
 
         plt.xlabel(r"$n_{k,\ell}$")
-        plt.ylabel(r"$R_{\mathrm{fbl}}$")
-        plt.title(f"User {user_idx}: Rate vs n")
+        plt.ylabel(r"Rate (bits / symbol)")
+        plt.title(f"User {user_idx}: Achieved vs required rate")
         plt.grid(True)
         plt.legend()
 
@@ -399,23 +470,43 @@ def plot_optimization_result(
                 continue
 
             t_vals = np.asarray([d["n_kl"] for d in block_result], dtype=np.float64)
-            bits_per_blk = np.asarray(
+            served_rate_vals = np.asarray(
                 [d["Bits per sub-block length B/n_kl"] for d in block_result],
                 dtype=np.float64
             )
-            r_fbl_vals = np.asarray([d["R_fbl"] for d in block_result], dtype=np.float64)
+            achieved_rate_vals = np.asarray(
+                [d.get("achieved_R_fbl", d["R_fbl"]) for d in block_result],
+                dtype=np.float64,
+            )
+            required_rate_vals = np.asarray(
+                [
+                    (
+                        d["required_R_fbl"]
+                        if "required_R_fbl" in d
+                        else (
+                            float(d["target_bits"]) / float(max(int(d["n_kl"]), 1))
+                            if "target_bits" in d
+                            else d["Bits per sub-block length B/n_kl"]
+                        )
+                    )
+                    for d in block_result
+                ],
+                dtype=np.float64,
+            )
 
             fig = plt.figure(figsize=(6, 4))
-            plt.plot(t_vals, bits_per_blk, marker="o", label="B/n_kl")
-            plt.plot(t_vals, r_fbl_vals, marker="s", label="R_fbl")
+            plt.plot(t_vals, served_rate_vals, marker="o", label="Served bits / n_kl")
+            if np.any(np.isfinite(required_rate_vals)):
+                plt.plot(t_vals, required_rate_vals, marker="^", linestyle="--", label="Required R_fbl")
+            plt.plot(t_vals, achieved_rate_vals, marker="s", label="Achieved R_fbl")
 
             t_final = t_vals[-1]
-            b_final = bits_per_blk[-1]
-            r_final = r_fbl_vals[-1]
+            served_final = served_rate_vals[-1]
+            achieved_final = achieved_rate_vals[-1]
 
             plt.annotate(
-                f"B/n_kl: {b_final:.4f}",
-                (t_final, b_final),
+                f"served: {served_final:.4f}",
+                (t_final, served_final),
                 xytext=(0, -15),
                 textcoords="offset points",
                 ha="center",
@@ -424,8 +515,8 @@ def plot_optimization_result(
             )
 
             plt.annotate(
-                f"R_fbl: {r_final:.4f}",
-                (t_final, r_final),
+                f"achieved: {achieved_final:.4f}",
+                (t_final, achieved_final),
                 xytext=(0, 15),
                 textcoords="offset points",
                 ha="center",
@@ -450,6 +541,89 @@ def plot_optimization_result(
 
             fig.savefig(save_path, dpi=300, bbox_inches="tight")
             plt.close(fig)
+
+
+def plot_per_user_schedule_details(result, figs_dir):
+    K = len(result.get("n_kl", result.get("final_n_kl", [])))
+    if K == 0:
+        return
+
+    os.makedirs(figs_dir, exist_ok=True)
+    initial_n = result.get("initial_n_kl", [[] for _ in range(K)])
+    initial_b = result.get("initial_B_kl", [[] for _ in range(K)])
+    final_latency = np.asarray(result.get("final_latency", [0.0] * K), dtype=float)
+    initial_latency = np.asarray(result.get("initial_latency", [0.0] * K), dtype=float)
+    final_n = result.get("n_kl", result.get("final_n_kl", [[] for _ in range(K)]))
+    final_b = result.get("B_kl", [[] for _ in range(K)])
+    final_rates = result.get("final_R_fbl", result.get("R_fbl", [[] for _ in range(K)]))
+    scenario_mode = str(result.get("scenario_mode", result.get("experiment_scenario_mode", ""))).strip().lower()
+    scenario_block_targets = np.asarray(result.get("scenario_block_targets", []), dtype=int)
+
+    fig, axes = plt.subplots(K, 2, figsize=(14, max(4 * K, 6)), squeeze=False)
+    for k in range(K):
+        blocks = np.arange(len(final_n[k]))
+        bits = np.asarray(final_b[k], dtype=float) if k < len(final_b) else np.asarray([], dtype=float)
+        n_vals = np.asarray(final_n[k], dtype=float) if k < len(final_n) else np.asarray([], dtype=float)
+        rates = np.asarray(final_rates[k], dtype=float) if k < len(final_rates) else np.asarray([], dtype=float)
+
+        if (
+            scenario_mode == "fixed_block_targets"
+            and scenario_block_targets.ndim == 2
+            and k < scenario_block_targets.shape[0]
+        ):
+            target_bits = np.asarray(scenario_block_targets[k], dtype=float)
+            target_bits = target_bits[: len(n_vals)]
+            required = target_bits / np.maximum(n_vals[: len(target_bits)], 1.0)
+            if len(required) < len(n_vals):
+                fallback = bits[len(required):] / np.maximum(n_vals[len(required):], 1.0)
+                required = np.concatenate([required, fallback])
+        else:
+            required = bits / np.maximum(n_vals, 1.0)
+        margins = rates - required
+
+        init_blocks = np.arange(len(initial_n[k])) if k < len(initial_n) else np.asarray([], dtype=int)
+        init_bits = np.asarray(initial_b[k], dtype=float) if k < len(initial_b) else np.asarray([], dtype=float)
+        init_n_vals = np.asarray(initial_n[k], dtype=float) if k < len(initial_n) else np.asarray([], dtype=float)
+
+        ax_left = axes[k, 0]
+        ax_left.set_title(
+            f"User {k} schedule | init={initial_latency[k]:.4e}s final={final_latency[k]:.4e}s"
+        )
+        if len(init_blocks) > 0:
+            ax_left.bar(init_blocks - 0.18, init_bits, width=0.36, alpha=0.35, label="Initial bits")
+        if len(blocks) > 0:
+            ax_left.bar(blocks + 0.18, bits, width=0.36, alpha=0.8, label="Optimized bits")
+        ax_left.set_xlabel("Block index")
+        ax_left.set_ylabel("Bits")
+        ax_left.grid(True, axis="y", alpha=0.3)
+
+        ax_left_r = ax_left.twinx()
+        if len(init_blocks) > 0:
+            ax_left_r.plot(init_blocks, init_n_vals, "o--", color="tab:orange", alpha=0.6, label="Initial n_kl")
+        if len(blocks) > 0:
+            ax_left_r.plot(blocks, n_vals, "o-", color="tab:red", label="Optimized n_kl")
+        ax_left_r.set_ylabel("Blocklength n_kl")
+
+        handles_l, labels_l = ax_left.get_legend_handles_labels()
+        handles_r, labels_r = ax_left_r.get_legend_handles_labels()
+        ax_left.legend(handles_l + handles_r, labels_l + labels_r, fontsize=8, loc="upper right")
+
+        ax_right = axes[k, 1]
+        if len(blocks) > 0:
+            ax_right.plot(blocks, rates, "o-", label="Achieved R_fbl", color="tab:blue")
+            ax_right.plot(blocks, required, "x--", label="Required rate", color="tab:green")
+            ax_right.bar(blocks, margins, alpha=0.25, color="tab:purple", label="Rate margin")
+        ax_right.axhline(0.0, color="black", linewidth=1, linestyle=":")
+        ax_right.set_title(f"User {k} per-block rate results")
+        ax_right.set_xlabel("Block index")
+        ax_right.set_ylabel("Rate (bits/channel-use)")
+        ax_right.grid(True, alpha=0.3)
+        ax_right.legend(fontsize=8, loc="best")
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(figs_dir, "per_user_schedule_details.png"), dpi=250)
+    plt.close(fig)
+
 
 def plot_user_config(system_params, extra_params=None, max_ticks=12):
     save_path=user_cfg_result_path
@@ -1298,6 +1472,191 @@ def plot_per_user_interference_before_after(result, figs_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(figs_dir, "per_user_interference_before_after.png"), dpi=250)
     plt.close(fig)
+
+
+def _kkt_status_color(status):
+    palette = {
+        "kkt_converged": "tab:green",
+        "stationary_infeasible": "tab:red",
+        "max_epochs_reached": "tab:orange",
+        "max_epochs_feasible_best": "tab:blue",
+        "max_epochs_best_primal": "tab:purple",
+        "unknown": "tab:gray",
+        "": "tab:gray",
+    }
+    return palette.get(str(status), "tab:gray")
+
+
+def _build_segmented_epoch_positions(rows, *, group_key, gap=1.5):
+    if len(rows) == 0:
+        return np.asarray([], dtype=float), []
+
+    positions = []
+    segments = []
+    cursor = 0.0
+    idx = 0
+    while idx < len(rows):
+        group_value = rows[idx].get(group_key)
+        segment_start = cursor + 1.0
+        local_epoch = 1
+        while idx < len(rows) and rows[idx].get(group_key) == group_value:
+            positions.append(cursor + float(local_epoch))
+            idx += 1
+            local_epoch += 1
+        segment_length = local_epoch - 1
+        segment_end = cursor + float(segment_length)
+        segments.append(
+            {
+                "group": group_value,
+                "start": float(segment_start),
+                "end": float(segment_end),
+                "length": int(segment_length),
+            }
+        )
+        cursor = segment_end + float(gap)
+    return np.asarray(positions, dtype=float), segments
+
+
+def _segmented_epoch_ticks(segments, max_labels_per_segment=4):
+    tick_positions = []
+    tick_labels = []
+    for segment in segments:
+        length = int(segment["length"])
+        if length <= 0:
+            continue
+        sample_count = min(max_labels_per_segment, length)
+        local_epochs = np.unique(np.linspace(1, length, sample_count, dtype=int))
+        for local_epoch in local_epochs:
+            tick_positions.append(float(segment["start"]) + float(local_epoch - 1))
+            tick_labels.append(str(int(local_epoch)))
+    return tick_positions, tick_labels
+
+
+def _draw_epoch_segment_guides(ax, segments, *, label_prefix, show_segment_labels=False):
+    for segment in segments:
+        ax.axvline(
+            float(segment["start"]) - 0.5,
+            color="black",
+            linestyle="--",
+            linewidth=0.9,
+            alpha=0.25,
+        )
+
+    if not show_segment_labels or len(segments) == 0:
+        return
+
+    stride = max(1, int(np.ceil(len(segments) / 16.0)))
+    transform = blended_transform_factory(ax.transData, ax.transAxes)
+    for idx, segment in enumerate(segments):
+        if idx % stride != 0:
+            continue
+        center = 0.5 * (float(segment["start"]) + float(segment["end"]))
+        ax.text(
+            center,
+            1.02,
+            f"{label_prefix} {segment['group']}",
+            transform=transform,
+            ha="center",
+            va="bottom",
+            fontsize=8,
+            color="black",
+        )
+
+
+def plot_kkt_residual_history(
+    result,
+    train=False,
+    save_dir=None,
+    phase_label=None,
+    filename_prefix=None,
+):
+    save_dir = _get_result_save_dir(train=train, save_dir=save_dir)
+    epoch_history = [
+        row for row in list(result.get("epoch_history", []))
+        if "kkt_primal_residual" in row
+        and "kkt_complementarity_residual" in row
+        and "kkt_stationarity_residual" in row
+    ]
+    if len(epoch_history) == 0:
+        return
+
+    tol_cfg = result.get("kkt_tolerances", {})
+    residual_specs = [
+        ("kkt_primal_residual", "r_p", float(tol_cfg.get("primal", np.nan))),
+        ("kkt_complementarity_residual", "r_c", float(tol_cfg.get("complementarity", np.nan))),
+        ("kkt_stationarity_residual", "r_s", float(tol_cfg.get("stationarity", np.nan))),
+    ]
+    file_prefix = filename_prefix or ("training" if train else "testing")
+    title_prefix = phase_label or ("Training" if train else "Testing")
+
+    user_ids = sorted({int(row.get("user", 0)) for row in epoch_history})
+    for user_id in user_ids:
+        user_rows = [row for row in epoch_history if int(row.get("user", 0)) == user_id]
+        if len(user_rows) == 0:
+            continue
+
+        epoch_positions, segments = _build_segmented_epoch_positions(user_rows, group_key="block")
+        status_markers = [
+            (float(epoch_positions[idx]), str(row.get("solve_status", "unknown")))
+            for idx, row in enumerate(user_rows)
+            if bool(row.get("solve_segment_end", False))
+        ]
+
+        fig, axes = plt.subplots(3, 1, figsize=(12, 10), sharex=True)
+        for ax, (field, label, tol_value) in zip(axes, residual_specs):
+            values = np.asarray([float(row.get(field, np.nan)) for row in user_rows], dtype=float)
+            finite_positive = np.where(np.isfinite(values), np.maximum(values, 1e-12), np.nan)
+            ax.semilogy(epoch_positions, finite_positive, color="tab:blue", linewidth=1.5)
+            if np.isfinite(tol_value) and tol_value > 0.0:
+                ax.axhline(float(tol_value), color="black", linestyle="--", linewidth=1.0, alpha=0.8)
+            for marker_epoch, status in status_markers:
+                ax.axvline(
+                    marker_epoch,
+                    color=_kkt_status_color(status),
+                    linestyle=":",
+                    linewidth=1.0,
+                    alpha=0.35,
+                )
+            _draw_epoch_segment_guides(
+                ax,
+                segments,
+                label_prefix="Block",
+                show_segment_labels=(ax is axes[0]),
+            )
+            ax.set_ylabel(label)
+            ax.grid(True, which="both", alpha=0.3)
+            ax.set_title(f"User {user_id} {label} residual history")
+
+        tick_positions, tick_labels = _segmented_epoch_ticks(segments)
+        axes[-1].set_xticks(tick_positions)
+        axes[-1].set_xticklabels(tick_labels)
+        axes[-1].set_xlabel("Epoch within block (restarts at each block)")
+        present_statuses = []
+        for _, status in status_markers:
+            if status not in present_statuses:
+                present_statuses.append(status)
+        legend_handles = [
+            Line2D([0], [0], color="tab:blue", linewidth=1.8, label="residual"),
+            Line2D([0], [0], color="black", linestyle="--", linewidth=1.5, label="tolerance"),
+        ]
+        for status in present_statuses:
+            legend_handles.append(
+                Line2D([0], [0], color=_kkt_status_color(status), linestyle=":", linewidth=2.0, label=status)
+            )
+        axes[0].legend(
+            handles=legend_handles,
+            fontsize=8,
+            loc="upper right",
+            ncol=min(3, max(1, len(legend_handles))),
+        )
+        fig.suptitle(f"{title_prefix} user {user_id} KKT residual convergence history", fontsize=14)
+        fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.97))
+        plt.savefig(
+            os.path.join(save_dir, f"{file_prefix}_user{user_id}_kkt_residual_history.png"),
+            dpi=300,
+            bbox_inches="tight",
+        )
+        plt.close(fig)
 
 # ============================================================
 # Optimization plots (make them consistent with NEW pipeline)

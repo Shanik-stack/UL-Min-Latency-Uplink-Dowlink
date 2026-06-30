@@ -25,6 +25,7 @@ from plotting import (
     plot_blocks,
     plot_interference_before_after_heatmaps,
     plot_interference_heatmaps,
+    plot_kkt_residual_history,
     plot_latency,
     plot_link_quality,
     plot_optimization_history,
@@ -71,26 +72,64 @@ def _pairwise_latency_diffs(latencies: list[float]) -> tuple[list[list[float]], 
     return matrix, pair_details, float(async_sum)
 
 
-def _mean_valid_rows(values: object, K: int) -> tuple[list[float], float, bool]:
+def _metric_matrix(values: object) -> np.ndarray:
     arr = np.asarray(values, dtype=float)
     if arr.ndim == 0:
         arr = arr.reshape(1, 1)
     elif arr.ndim == 1:
         arr = arr.reshape(arr.shape[0], 1)
+    return arr
+
+
+def _positive_bits_mask(bits_by_user: object, K: int, max_blocks: int) -> np.ndarray:
+    mask = np.zeros((K, max_blocks), dtype=bool)
+    if not isinstance(bits_by_user, list):
+        return mask
+    for k in range(min(K, len(bits_by_user))):
+        row = bits_by_user[k]
+        if not isinstance(row, list):
+            continue
+        for l, bits in enumerate(row[:max_blocks]):
+            mask[k, l] = float(bits) > 0.0
+    return mask
+
+
+def _mean_valid_rows(
+    values: object,
+    K: int,
+    *,
+    include_mask: np.ndarray | None = None,
+) -> tuple[list[float], float, list[int], int, bool]:
+    arr = _metric_matrix(values)
+    if include_mask is not None:
+        mask = np.asarray(include_mask, dtype=bool)
+        if mask.ndim == 1:
+            mask = mask.reshape(mask.shape[0], 1)
+        if mask.shape != arr.shape:
+            aligned = np.zeros_like(arr, dtype=bool)
+            rows = min(mask.shape[0], arr.shape[0])
+            cols = min(mask.shape[1], arr.shape[1])
+            aligned[:rows, :cols] = mask[:rows, :cols]
+            mask = aligned
+    else:
+        mask = np.ones_like(arr, dtype=bool)
 
     per_user = [0.0 for _ in range(K)]
+    per_user_counts = [0 for _ in range(K)]
     global_values: list[float] = []
     has_any = False
     for k in range(K):
         row = arr[k] if k < arr.shape[0] else np.asarray([], dtype=float)
-        valid = row[np.isfinite(row)]
+        row_mask = mask[k] if k < mask.shape[0] else np.asarray([], dtype=bool)
+        valid = row[np.isfinite(row) & row_mask]
         if valid.size > 0:
             per_user[k] = float(np.mean(valid))
+            per_user_counts[k] = int(valid.size)
             global_values.extend(valid.tolist())
             has_any = True
 
     global_mean = float(np.mean(global_values)) if global_values else 0.0
-    return per_user, global_mean, has_any
+    return per_user, global_mean, per_user_counts, int(len(global_values)), has_any
 
 
 def _compute_summary_metrics(result: dict) -> dict:
@@ -130,20 +169,69 @@ def _compute_summary_metrics(result: dict) -> dict:
     blocks_per_user = [int(v) for v in result.get("blocks_per_user", [0 for _ in range(K)])]
     final_sinr_db_raw = [float(x) for x in result.get("final_sinr_db", [0.0 for _ in range(K)])]
     initial_sinr_db_raw = [float(x) for x in result.get("initial_sinr_db", [0.0 for _ in range(K)])]
-    initial_block_sinr_db, initial_avg_block_sinr_db, has_initial_block_sinr = _mean_valid_rows(
-        result.get("initial_interference_diag", {}).get("sinr_db", []),
+    initial_sinr_matrix = _metric_matrix(result.get("initial_interference_diag", {}).get("sinr_db", []))
+    final_sinr_matrix = _metric_matrix(result.get("final_interference_diag", {}).get("sinr_db", []))
+    initial_block_sinr_db_all, initial_avg_block_sinr_db_all, _, _, has_initial_block_sinr_all = _mean_valid_rows(
+        initial_sinr_matrix,
         K,
     )
-    final_block_sinr_db, final_avg_block_sinr_db, has_final_block_sinr = _mean_valid_rows(
-        result.get("final_interference_diag", {}).get("sinr_db", []),
+    final_block_sinr_db_all, final_avg_block_sinr_db_all, _, _, has_final_block_sinr_all = _mean_valid_rows(
+        final_sinr_matrix,
         K,
+    )
+    initial_served_mask = _positive_bits_mask(
+        result.get("initial_plan", {}).get("B_kl", [[] for _ in range(K)]),
+        K,
+        int(initial_sinr_matrix.shape[1]),
+    )
+    final_served_mask = _positive_bits_mask(
+        result.get("B_kl", [[] for _ in range(K)]),
+        K,
+        int(final_sinr_matrix.shape[1]),
+    )
+    (
+        initial_block_sinr_db,
+        initial_avg_block_sinr_db,
+        initial_served_block_counts,
+        initial_total_served_blocks,
+        has_initial_block_sinr,
+    ) = _mean_valid_rows(
+        initial_sinr_matrix,
+        K,
+        include_mask=initial_served_mask,
+    )
+    (
+        final_block_sinr_db,
+        final_avg_block_sinr_db,
+        final_served_block_counts,
+        final_total_served_blocks,
+        has_final_block_sinr,
+    ) = _mean_valid_rows(
+        final_sinr_matrix,
+        K,
+        include_mask=final_served_mask,
     )
     if not has_initial_block_sinr:
         initial_block_sinr_db = list(initial_sinr_db_raw)
         initial_avg_block_sinr_db = float(sum(initial_sinr_db_raw) / max(len(initial_sinr_db_raw), 1))
+        initial_served_block_counts = [0 for _ in range(K)]
+        initial_total_served_blocks = 0
     if not has_final_block_sinr:
         final_block_sinr_db = list(final_sinr_db_raw)
         final_avg_block_sinr_db = float(sum(final_sinr_db_raw) / max(len(final_sinr_db_raw), 1))
+        final_served_block_counts = [0 for _ in range(K)]
+        final_total_served_blocks = 0
+    if not has_initial_block_sinr_all:
+        initial_block_sinr_db_all = list(initial_sinr_db_raw)
+        initial_avg_block_sinr_db_all = float(sum(initial_sinr_db_raw) / max(len(initial_sinr_db_raw), 1))
+    if not has_final_block_sinr_all:
+        final_block_sinr_db_all = list(final_sinr_db_raw)
+        final_avg_block_sinr_db_all = float(sum(final_sinr_db_raw) / max(len(final_sinr_db_raw), 1))
+    for k in range(K):
+        if int(initial_served_block_counts[k]) <= 0:
+            initial_block_sinr_db[k] = float(initial_block_sinr_db_all[k])
+        if int(final_served_block_counts[k]) <= 0:
+            final_block_sinr_db[k] = float(final_block_sinr_db_all[k])
     scenario_mode = str(result.get("scenario_mode", ""))
     scenario_block_targets = np.asarray(result.get("scenario_block_targets", []), dtype=int)
     target_bits_per_user = [0 for _ in range(K)]
@@ -175,8 +263,12 @@ def _compute_summary_metrics(result: dict) -> dict:
                 "latency_reduction_percent": latency_reduction_per_user_percent[k],
                 "initial_sinr_db": initial_block_sinr_db[k],
                 "final_sinr_db": final_block_sinr_db[k],
+                "initial_sinr_db_all_blocks": initial_block_sinr_db_all[k],
+                "final_sinr_db_all_blocks": final_block_sinr_db_all[k],
                 "initial_sinr_db_raw": initial_sinr_db_raw[k],
                 "final_sinr_db_raw": final_sinr_db_raw[k],
+                "initial_served_blocks": int(initial_served_block_counts[k]),
+                "final_served_blocks": int(final_served_block_counts[k]),
                 "blocks": blocks_per_user[k],
                 "total_n": n_totals[k],
                 "target_bits": int(target_bits_per_user[k]),
@@ -208,10 +300,18 @@ def _compute_summary_metrics(result: dict) -> dict:
         "asynchronality_reduction_percent": float(async_reduction_percent),
         "initial_avg_sinr_db": float(initial_avg_block_sinr_db),
         "final_avg_sinr_db": float(final_avg_block_sinr_db),
+        "initial_avg_sinr_db_all_blocks": float(initial_avg_block_sinr_db_all),
+        "final_avg_sinr_db_all_blocks": float(final_avg_block_sinr_db_all),
         "initial_avg_sinr_db_raw": float(sum(initial_sinr_db_raw) / max(len(initial_sinr_db_raw), 1)),
         "final_avg_sinr_db_raw": float(sum(final_sinr_db_raw) / max(len(final_sinr_db_raw), 1)),
         "initial_sinr_db_per_user": initial_block_sinr_db,
         "final_sinr_db_per_user": final_block_sinr_db,
+        "initial_sinr_db_per_user_all_blocks": initial_block_sinr_db_all,
+        "final_sinr_db_per_user_all_blocks": final_block_sinr_db_all,
+        "initial_served_block_counts": initial_served_block_counts,
+        "final_served_block_counts": final_served_block_counts,
+        "initial_total_served_blocks": int(initial_total_served_blocks),
+        "final_total_served_blocks": int(final_total_served_blocks),
         "initial_avg_snr_db": float(sum(result.get("initial_snr_db", [])) / max(len(result.get("initial_snr_db", [])), 1)),
         "final_avg_snr_db": float(sum(result.get("final_snr_db", [])) / max(len(result.get("final_snr_db", [])), 1)),
         "scenario_mode": scenario_mode,
@@ -276,6 +376,7 @@ def run_downlink_experiment(
     plot_blocks(result, output_dirs["schedule_details"])
     plot_rate_violation_heatmap(result, output_dirs["optimization_history"])
     plot_optimization_history(result, output_dirs["optimization_history"])
+    plot_kkt_residual_history(result, output_dirs["optimization_history"])
     plot_per_user_schedule_details(result, output_dirs["schedule_details"])
     plot_per_user_convergence(result, output_dirs["optimization_history"])
     plot_blocklength_feasibility_curves(system, result, output_dirs["optimization_history"])
@@ -314,8 +415,10 @@ def run_downlink_experiment(
         "Link quality summary",
         f"Initial avg SNR (dB): {metrics['initial_avg_snr_db']:.4f}",
         f"Final avg SNR (dB): {metrics['final_avg_snr_db']:.4f}",
-        f"Initial avg block SINR (dB): {metrics['initial_avg_sinr_db']:.4f}",
-        f"Final avg block SINR (dB): {metrics['final_avg_sinr_db']:.4f}",
+        f"Initial avg served-block SINR (dB): {metrics['initial_avg_sinr_db']:.4f}",
+        f"Final avg served-block SINR (dB): {metrics['final_avg_sinr_db']:.4f}",
+        f"Initial avg all-block SINR (dB): {metrics['initial_avg_sinr_db_all_blocks']:.4f}",
+        f"Final avg all-block SINR (dB): {metrics['final_avg_sinr_db_all_blocks']:.4f}",
         "",
         "Per-user details",
     ]
@@ -325,8 +428,11 @@ def run_downlink_experiment(
             f"init_lat={row['initial_latency']:.6f}",
             f"final_lat={row['final_latency']:.6f}",
             f"lat_red={row['latency_reduction_percent']:.4f}%",
-            f"init_block_sinr={row['initial_sinr_db']:.4f} dB",
-            f"final_block_sinr={row['final_sinr_db']:.4f} dB",
+            f"init_served_block_sinr={row['initial_sinr_db']:.4f} dB",
+            f"final_served_block_sinr={row['final_sinr_db']:.4f} dB",
+            f"init_all_block_sinr={row['initial_sinr_db_all_blocks']:.4f} dB",
+            f"final_all_block_sinr={row['final_sinr_db_all_blocks']:.4f} dB",
+            f"served_blocks={row['final_served_blocks']}",
             f"blocks={row['blocks']}",
             f"total_n={row['total_n']}",
             f"served_bits={row['served_bits']}",

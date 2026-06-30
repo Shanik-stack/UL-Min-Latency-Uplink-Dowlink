@@ -208,7 +208,7 @@ def _estimate_initial_random_precoder_schedule_fixed_block_targets(
 
             initial_n_kl[k].append(int(best_n))
             initial_B_kl[k].append(int(B_used))
-            initial_R_fbl[k].append(float(best_R) if int(B_used) > 0 else 0.0)
+            initial_R_fbl[k].append(float(best_R))
             initial_F[k].append(
                 np.array(F_kl, copy=True) if int(B_used) > 0 else _zero_uplink_precoder(baseline_system, k)
             )
@@ -1159,8 +1159,10 @@ def _evaluate_blocklength_precoder_net_fixed_block_targets(
                         "Bits per sub-block length B/n_kl": (
                             float(B_used) / float(max(int(T_ref), 1)) if int(B_used) > 0 else 0.0
                         ),
+                        "required_R_fbl": float(target_bits) / float(max(int(T_ref), 1)),
+                        "achieved_R_fbl": float(R_T),
                         "F": torch.tensor(F_T if int(B_used) > 0 else zero_precoder, dtype=torch.complex64),
-                        "R_fbl": float(R_T if int(B_used) > 0 else 0.0),
+                        "R_fbl": float(R_T),
                         "F_power": float(np.linalg.norm(F_T, "fro") ** 2) if int(B_used) > 0 else 0.0,
                         "lambda_rate": 0.0,
                         "lambda_power": 0.0,
@@ -1174,7 +1176,7 @@ def _evaluate_blocklength_precoder_net_fixed_block_targets(
                 all_user_block_results[k].append(S_block)
                 n_star[k].append(int(T_ref))
                 F_star[k].append(np.array(F_T if int(B_used) > 0 else zero_precoder, copy=True))
-                R_star[k].append(float(R_T if int(B_used) > 0 else 0.0))
+                R_star[k].append(float(R_T))
                 B_used_star[k].append(int(B_used))
                 B_kl_star[k].append(int(B_used))
                 unserved_bits_star[k].append(int(max(int(target_bits) - int(B_used), 0)))
@@ -1191,6 +1193,8 @@ def _evaluate_blocklength_precoder_net_fixed_block_targets(
                     "n": int(T_ref),
                     "B_l": int(target_bits),
                     "Bits per sub-block length B/n_kl": float(target_bits) / float(max(int(T_ref), 1)),
+                    "required_R_fbl": float(target_bits) / float(max(int(T_ref), 1)),
+                    "achieved_R_fbl": float(R_T),
                     "F": torch.tensor(F_T, dtype=torch.complex64),
                     "R_fbl": float(R_T),
                     "F_power": float(np.linalg.norm(F_T, "fro") ** 2),
@@ -1240,6 +1244,8 @@ def _evaluate_blocklength_precoder_net_fixed_block_targets(
                         "n": int(n_kl),
                         "B_l": int(target_bits),
                         "Bits per sub-block length B/n_kl": float(target_bits) / float(max(int(n_kl), 1)),
+                        "required_R_fbl": float(target_bits) / float(max(int(n_kl), 1)),
+                        "achieved_R_fbl": float(R_n),
                         "F": torch.tensor(F_n, dtype=torch.complex64),
                         "R_fbl": float(R_n),
                         "F_power": float(np.linalg.norm(F_n, "fro") ** 2),

@@ -8,6 +8,7 @@ import torch.nn as nn
 
 
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+POWER_PROJECTION_SAFETY_MARGIN = 1e-6
 
 
 def net_output_to_precoder(F_out: torch.Tensor, Nt: int, dk: int) -> torch.Tensor:
@@ -25,10 +26,14 @@ def project_precoder_power(Fmat: torch.Tensor, P: float, eps: float = 1e-12) -> 
         fallback[:diag_dim, :diag_dim] = torch.eye(diag_dim, dtype=Fmat.dtype, device=Fmat.device)
         fro = torch.linalg.norm(fallback, ord="fro").real
         return fallback * (
-            torch.sqrt(torch.tensor(float(P), device=Fmat.device, dtype=torch.float32)) / (fro + eps)
+            (
+                torch.sqrt(torch.tensor(float(P), device=Fmat.device, dtype=torch.float32)) / (fro + eps)
+            ) * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
         ).to(Fmat.dtype)
 
-    scale = torch.sqrt(torch.tensor(float(P), device=Fmat.device, dtype=torch.float32)) / (fro + eps)
+    scale = (
+        torch.sqrt(torch.tensor(float(P), device=Fmat.device, dtype=torch.float32)) / (fro + eps)
+    ) * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
     return Fmat * scale.to(Fmat.dtype)
 
 

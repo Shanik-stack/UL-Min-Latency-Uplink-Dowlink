@@ -23,6 +23,53 @@ def _pairwise_latency_diffs(latencies: Sequence[float]) -> tuple[list[list[float
     return matrix, pair_details, float(async_sum)
 
 
+def _flatten_uplink_epoch_history(all_user_block_results: Sequence[Sequence[Sequence[dict[str, Any]]]]) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    rows: list[dict[str, Any]] = []
+    status_counts: dict[str, int] = {}
+    segment_id = 0
+
+    for user_idx, user_blocks in enumerate(all_user_block_results or []):
+        for block_idx, block_results in enumerate(user_blocks or []):
+            for solve_idx, solve_result in enumerate(block_results or []):
+                kkt_history = list(solve_result.get("kkt_history", []))
+                if len(kkt_history) == 0:
+                    continue
+                segment_id += 1
+                solve_status = str(solve_result.get("solve_status", "unknown"))
+                status_counts[solve_status] = int(status_counts.get(solve_status, 0)) + 1
+                n_kl = int(solve_result.get("n_kl", solve_result.get("n", 0)))
+                transmitted_bits = int(solve_result.get("B_l", 0))
+
+                for epoch_row_idx, epoch_row in enumerate(kkt_history):
+                    is_segment_end = bool(epoch_row_idx == (len(kkt_history) - 1))
+                    rows.append(
+                        {
+                            "user": int(user_idx),
+                            "block": int(block_idx),
+                            "solve_index": int(solve_idx),
+                            "solve_segment_id": int(segment_id),
+                            "epoch": int(epoch_row.get("epoch", epoch_row_idx + 1)),
+                            "n_kl": int(n_kl),
+                            "transmitted_bits": int(transmitted_bits),
+                            "kkt_primal_residual": float(epoch_row.get("primal_residual", np.nan)),
+                            "kkt_complementarity_residual": float(epoch_row.get("complementarity_residual", np.nan)),
+                            "kkt_stationarity_residual": float(epoch_row.get("stationarity_residual", np.nan)),
+                            "rate_gap": float(epoch_row.get("rate_gap", np.nan)),
+                            "power_gap": float(epoch_row.get("power_gap", np.nan)),
+                            "rate_violation": float(epoch_row.get("rate_violation", np.nan)),
+                            "power_violation": float(epoch_row.get("power_violation", np.nan)),
+                            "rate": float(epoch_row.get("rate", np.nan)),
+                            "power": float(epoch_row.get("power", np.nan)),
+                            "lambda_rate": float(epoch_row.get("lambda_rate", np.nan)),
+                            "lambda_power": float(epoch_row.get("lambda_power", np.nan)),
+                            "solve_status": solve_status if is_segment_end else "",
+                            "solve_segment_end": bool(is_segment_end),
+                        }
+                    )
+
+    return rows, status_counts
+
+
 def compute_summary_metrics(result: dict[str, Any]) -> dict[str, Any]:
     initial_latency = [float(x) for x in result["initial_latency"]]
     final_latency = [float(x) for x in result["final_latency"]]
@@ -187,6 +234,13 @@ def build_precoder_net_result(
         / np.asarray(test_uplinksystem.n_kl[user], dtype=np.float64)
         for user in range(test_uplinksystem.K)
     ]
+    achieved_final_r_fbl = [
+        list(map(float, values))
+        for values in test_data_dict.get("R_star_test", test_uplinksystem.R_fbl)
+    ]
+    epoch_history, kkt_status_counts = _flatten_uplink_epoch_history(
+        test_data_dict.get("all_user_block_results_test", [])
+    )
 
     result = {
         "method_name": method_name,
@@ -229,7 +283,8 @@ def build_precoder_net_result(
         "final_n_kl": [list(map(int, v)) for v in test_uplinksystem.n_kl],
         "initial_B_kl": [list(map(int, values)) for values in (initial_B_kl or [[] for _ in range(test_uplinksystem.K)])],
         "initial_R_fbl": [np.asarray(v).tolist() for v in initial_R_fbl],
-        "final_R_fbl": [np.asarray(v).tolist() for v in test_uplinksystem.R_fbl],
+        "final_R_fbl": achieved_final_r_fbl,
+        "committed_final_R_fbl": [np.asarray(v).tolist() for v in test_uplinksystem.R_fbl],
         "initial_snr_db": list(map(float, initial_snr_db)),
         "final_snr_db": list(map(float, final_snr_db)),
         "initial_sinr_db": list(map(float, initial_sinr_db)),
@@ -249,6 +304,8 @@ def build_precoder_net_result(
         "scenario_block_targets": test_data_dict.get("scenario_block_targets", []),
         "initial_interference_diag": initial_interference_diag,
         "final_interference_diag": final_interference_diag,
+        "epoch_history": epoch_history,
+        "kkt_solve_status_counts": kkt_status_counts,
         "skipped_blocks_per_user": [
             int(v)
             for v in test_data_dict.get(
@@ -294,6 +351,7 @@ def build_convergence_result(
     initial_bits_per_symbol_by_block: Sequence[Sequence[float]] | None = None,
     initial_interference_diag: dict[str, Any] | None = None,
     final_interference_diag: dict[str, Any] | None = None,
+    sim_cfg: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     _, final_snr_db = uplinksystem.get_SNR()
     _, final_sinr_db = uplinksystem.get_SINR()
@@ -304,6 +362,13 @@ def build_convergence_result(
         / np.asarray(uplinksystem.n_kl[user], dtype=np.float64)
         for user in range(uplinksystem.K)
     ]
+    achieved_final_r_fbl = [
+        list(map(float, values))
+        for values in convergence_data_dict.get("R_star", uplinksystem.R_fbl)
+    ]
+    epoch_history, kkt_status_counts = _flatten_uplink_epoch_history(
+        convergence_data_dict.get("all_user_block_results_train", [])
+    )
 
     result = {
         "method_name": method_name,
@@ -318,7 +383,8 @@ def build_convergence_result(
         "final_n_kl": [list(map(int, values)) for values in uplinksystem.n_kl],
         "initial_B_kl": [list(map(int, values)) for values in (initial_B_kl or [[] for _ in range(uplinksystem.K)])],
         "initial_R_fbl": [np.asarray(v).tolist() for v in initial_R_fbl],
-        "final_R_fbl": [np.asarray(v).tolist() for v in uplinksystem.R_fbl],
+        "final_R_fbl": achieved_final_r_fbl,
+        "committed_final_R_fbl": [np.asarray(v).tolist() for v in uplinksystem.R_fbl],
         "initial_snr_db": list(map(float, initial_snr_db)),
         "final_snr_db": list(map(float, final_snr_db)),
         "initial_sinr_db": list(map(float, initial_sinr_db)),
@@ -338,6 +404,13 @@ def build_convergence_result(
         "scenario_block_targets": convergence_data_dict.get("scenario_block_targets", []),
         "initial_interference_diag": initial_interference_diag,
         "final_interference_diag": final_interference_diag,
+        "epoch_history": epoch_history,
+        "kkt_solve_status_counts": kkt_status_counts,
+        "kkt_tolerances": {
+            "primal": float(sim_cfg.get("kkt_primal_tol", np.nan)) if sim_cfg is not None else np.nan,
+            "complementarity": float(sim_cfg.get("kkt_complementarity_tol", np.nan)) if sim_cfg is not None else np.nan,
+            "stationarity": float(sim_cfg.get("kkt_stationarity_tol", np.nan)) if sim_cfg is not None else np.nan,
+        },
         "skipped_blocks_per_user": [
             int(v)
             for v in convergence_data_dict.get(

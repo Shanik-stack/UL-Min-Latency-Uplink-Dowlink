@@ -29,10 +29,12 @@ from plotting import (
     plot_F_vs_n_for_all_subblocks,
     plot_interference_before_after_heatmaps,
     plot_interference_heatmaps,
+    plot_kkt_residual_history,
     plot_latency_and_asynchronality_from_json,
     plot_link_quality_from_json,
     plot_optimization_result,
     plot_optimization_result_summary_dict,
+    plot_per_user_schedule_details,
     plot_per_user_interference_before_after,
     plot_per_user_interference_profiles,
     plot_user_config,
@@ -116,6 +118,7 @@ def run_convergence_experiment(
             list(values) for values in initial_baseline["initial_bits_per_symbol_by_block"]
         ],
         initial_interference_diag=initial_baseline.get("initial_interference_diag"),
+        sim_cfg=sim_cfg,
     )
     result["scenario_mode"] = convergence_data.get(
         "scenario_mode",
@@ -160,6 +163,7 @@ def main() -> None:
     convergence_plot_dict = {
         "n_star": convergence_data["n_star"],
         "R_star": convergence_data["R_star"],
+        "all_user_block_results": convergence_data["all_user_block_results_train"],
     }
     convergence_raw_dict = {
         "B_kl_star_test": convergence_data["B_kl_star"],
@@ -207,6 +211,13 @@ def main() -> None:
         save_dir="F_vs_n",
         base_dir=result_dirs["optimization_history"],
     )
+    plot_kkt_residual_history(
+        result,
+        train=False,
+        save_dir=result_dirs["optimization_history"],
+        phase_label="Convergence",
+        filename_prefix="convergence",
+    )
     plot_latency_and_asynchronality_from_json(
         json_path=os.path.join(result_dirs["data"], "convergence_results.json"),
         save_dir=result_dirs["latency_asynchronality"],
@@ -219,6 +230,7 @@ def main() -> None:
     )
 
     save_json(result, os.path.join(result_dirs["data"], "result.json"))
+    plot_per_user_schedule_details(result, result_dirs["schedule_details"])
     plot_interference_before_after_heatmaps(result, result_dirs["interference"])
     plot_per_user_interference_before_after(result, result_dirs["interference"])
     plot_interference_heatmaps(report_system, result_dirs["interference"])

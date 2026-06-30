@@ -9,20 +9,20 @@ test:
     - 4
     - 4
   T:
-    - 100
-    - 100
-    - 100
+    - 50 
+    - 60
+    - 80
   B:
-    - 2400
-    - 2400
-    - 2400
+    - 1000
+    - 2000
+    - 3000
   P:
-    - 20
-    - 20
-    - 20
+    - 30
+    - 30
+    - 30
   snr_db:
-    - 15
-    - 10
+    - 8
+    - 8
     - 8
   fs:
     - 15000.0
@@ -49,7 +49,7 @@ simulation:
   # KKT-based stopping
   kkt_primal_tol: 1.0e-5
   kkt_complementarity_tol: 1.0e-5
-  kkt_stationarity_tol: 5.0e-5
+  kkt_stationarity_tol: 1.0e-4
   reduced_n_kl_log_interval: 10
 
   # Monte Carlo training data

@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.lines import Line2D
+from matplotlib.transforms import blended_transform_factory
 
 from downlink_system import DownlinkSystem
 
@@ -194,6 +195,192 @@ def _epoch_history_rows(result: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _row_epoch(row: dict[str, Any]) -> int:
     return int(row.get("epoch", row.get("sweep", 0)))
+
+
+def _build_segmented_epoch_positions(
+    rows: list[dict[str, Any]],
+    *,
+    group_key: str,
+    gap: float = 1.5,
+) -> tuple[np.ndarray, list[dict[str, Any]]]:
+    if len(rows) == 0:
+        return np.asarray([], dtype=float), []
+
+    positions: list[float] = []
+    segments: list[dict[str, Any]] = []
+    cursor = 0.0
+    idx = 0
+    while idx < len(rows):
+        group_value = rows[idx].get(group_key)
+        segment_start = cursor + 1.0
+        local_epoch = 1
+        while idx < len(rows) and rows[idx].get(group_key) == group_value:
+            positions.append(cursor + float(local_epoch))
+            idx += 1
+            local_epoch += 1
+        segment_length = local_epoch - 1
+        segment_end = cursor + float(segment_length)
+        segments.append(
+            {
+                "group": group_value,
+                "start": float(segment_start),
+                "end": float(segment_end),
+                "length": int(segment_length),
+            }
+        )
+        cursor = segment_end + float(gap)
+    return np.asarray(positions, dtype=float), segments
+
+
+def _segmented_epoch_ticks(segments: list[dict[str, Any]], max_labels_per_segment: int = 4) -> tuple[list[float], list[str]]:
+    tick_positions: list[float] = []
+    tick_labels: list[str] = []
+    for segment in segments:
+        length = int(segment["length"])
+        if length <= 0:
+            continue
+        sample_count = min(max_labels_per_segment, length)
+        local_epochs = np.unique(np.linspace(1, length, sample_count, dtype=int))
+        for local_epoch in local_epochs:
+            tick_positions.append(float(segment["start"]) + float(local_epoch - 1))
+            tick_labels.append(str(int(local_epoch)))
+    return tick_positions, tick_labels
+
+
+def _draw_epoch_segment_guides(
+    ax: plt.Axes,
+    segments: list[dict[str, Any]],
+    *,
+    label_prefix: str,
+    show_segment_labels: bool = False,
+) -> None:
+    for segment in segments:
+        ax.axvline(
+            float(segment["start"]) - 0.5,
+            color="black",
+            linestyle="--",
+            linewidth=0.9,
+            alpha=0.25,
+        )
+
+    if not show_segment_labels or len(segments) == 0:
+        return
+
+    stride = max(1, int(np.ceil(len(segments) / 16.0)))
+    transform = blended_transform_factory(ax.transData, ax.transAxes)
+    for idx, segment in enumerate(segments):
+        if idx % stride != 0:
+            continue
+        center = 0.5 * (float(segment["start"]) + float(segment["end"]))
+        ax.text(
+            center,
+            1.02,
+            f"{label_prefix} {segment['group']}",
+            transform=transform,
+            ha="center",
+            va="bottom",
+            fontsize=8,
+            color="black",
+        )
+
+
+def _kkt_status_color(status: str) -> str:
+    palette = {
+        "kkt_converged": "tab:green",
+        "stationary_infeasible": "tab:red",
+        "max_epochs_reached": "tab:orange",
+        "max_epochs_feasible_best": "tab:blue",
+        "max_epochs_best_primal": "tab:purple",
+        "unknown": "tab:gray",
+        "": "tab:gray",
+    }
+    return palette.get(str(status), "tab:gray")
+
+
+def plot_kkt_residual_history(result: dict[str, Any], figs_dir: str) -> None:
+    epoch_history = [
+        row
+        for row in _epoch_history_rows(result)
+        if "kkt_primal_residual" in row
+        and "kkt_complementarity_residual" in row
+        and "kkt_stationarity_residual" in row
+    ]
+    if len(epoch_history) == 0:
+        return
+
+    epoch_positions, segments = _build_segmented_epoch_positions(epoch_history, group_key="block")
+    residual_specs = [
+        ("kkt_primal_residual", "r_p", float(result.get("sim_params", {}).get("kkt_primal_tol", np.nan))),
+        (
+            "kkt_complementarity_residual",
+            "r_c",
+            float(result.get("sim_params", {}).get("kkt_complementarity_tol", np.nan)),
+        ),
+        (
+            "kkt_stationarity_residual",
+            "r_s",
+            float(result.get("sim_params", {}).get("kkt_stationarity_tol", np.nan)),
+        ),
+    ]
+    status_markers = [
+        (float(epoch_positions[idx]), str(row.get("solve_status", "unknown")))
+        for idx, row in enumerate(epoch_history)
+        if bool(row.get("solve_segment_end", False))
+    ]
+
+    fig, axes = plt.subplots(3, 1, figsize=(12, 10), sharex=True)
+    for ax, (field, label, tol_value) in zip(axes, residual_specs):
+        values = np.asarray([float(row.get(field, np.nan)) for row in epoch_history], dtype=float)
+        finite_positive = np.where(np.isfinite(values), np.maximum(values, 1e-12), np.nan)
+        ax.semilogy(epoch_positions, finite_positive, color="tab:blue", linewidth=1.5)
+        if np.isfinite(tol_value) and tol_value > 0.0:
+            ax.axhline(float(tol_value), color="black", linestyle="--", linewidth=1.0, alpha=0.8)
+        for marker_epoch, status in status_markers:
+            ax.axvline(
+                marker_epoch,
+                color=_kkt_status_color(status),
+                linestyle=":",
+                linewidth=1.0,
+                alpha=0.35,
+            )
+        _draw_epoch_segment_guides(
+            ax,
+            segments,
+            label_prefix="Block",
+            show_segment_labels=(ax is axes[0]),
+        )
+        ax.set_ylabel(label)
+        ax.grid(True, which="both", alpha=0.3)
+        ax.set_title(f"{label} residual history")
+
+    tick_positions, tick_labels = _segmented_epoch_ticks(segments)
+    axes[-1].set_xticks(tick_positions)
+    axes[-1].set_xticklabels(tick_labels)
+    axes[-1].set_xlabel("Epoch within block (restarts at each block)")
+    status_handles = []
+    present_statuses = []
+    for _, status in status_markers:
+        if status not in present_statuses:
+            present_statuses.append(status)
+    for status in present_statuses:
+        status_handles.append(
+            Line2D(
+                [0],
+                [0],
+                color=_kkt_status_color(status),
+                linestyle=":",
+                linewidth=2.0,
+                label=status,
+            )
+        )
+    tol_handle = Line2D([0], [0], color="black", linestyle="--", linewidth=1.5, label="tolerance")
+    line_handle = Line2D([0], [0], color="tab:blue", linewidth=1.8, label="residual")
+    legend_handles = [line_handle, tol_handle] + status_handles
+    axes[0].legend(handles=legend_handles, fontsize=8, loc="upper right", ncol=min(3, max(1, len(legend_handles))))
+    fig.suptitle("KKT residual convergence history", fontsize=14)
+    fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.97))
+    plt.savefig(os.path.join(figs_dir, "kkt_residual_history.png"), dpi=250)
+    plt.close(fig)
 
 
 def plot_user_config(system_params: dict[str, Any], figs_dir: str) -> None:
@@ -492,24 +679,26 @@ def plot_optimization_history(result: dict[str, Any], figs_dir: str) -> None:
     fig, axes = plt.subplots(3, 1, figsize=(10, 11))
 
     if len(epoch_history) > 0:
-        epoch_idx = np.arange(1, len(epoch_history) + 1)
+        epoch_positions, segments = _build_segmented_epoch_positions(epoch_history, group_key="block")
         sum_rate = np.asarray([row["sum_rate"] for row in epoch_history], dtype=float)
         max_delta = np.asarray([row["max_precoder_delta"] for row in epoch_history], dtype=float)
-        block_ids = np.asarray([row["block"] for row in epoch_history], dtype=int)
 
-        axes[0].plot(epoch_idx, sum_rate, marker="o", markersize=3)
-        for boundary in np.where(np.diff(block_ids) != 0)[0]:
-            axes[0].axvline(boundary + 1.5, color="gray", linestyle=":", alpha=0.4)
+        axes[0].plot(epoch_positions, sum_rate, marker="o", markersize=3)
+        _draw_epoch_segment_guides(axes[0], segments, label_prefix="Block", show_segment_labels=True)
+        tick_positions, tick_labels = _segmented_epoch_ticks(segments)
+        axes[0].set_xticks(tick_positions)
+        axes[0].set_xticklabels(tick_labels)
         axes[0].set_title("Sum-rate during precoder optimization")
-        axes[0].set_xlabel("Epoch index")
+        axes[0].set_xlabel("Epoch within block (restarts at each block)")
         axes[0].set_ylabel("Sum R_fbl at n=T")
         axes[0].grid(True, alpha=0.3)
 
-        axes[1].semilogy(epoch_idx, np.maximum(max_delta, 1e-12), marker="o", markersize=3)
-        for boundary in np.where(np.diff(block_ids) != 0)[0]:
-            axes[1].axvline(boundary + 1.5, color="gray", linestyle=":", alpha=0.4)
+        axes[1].semilogy(epoch_positions, np.maximum(max_delta, 1e-12), marker="o", markersize=3)
+        _draw_epoch_segment_guides(axes[1], segments, label_prefix="Block", show_segment_labels=False)
         axes[1].set_title("Maximum relative precoder change")
-        axes[1].set_xlabel("Epoch index")
+        axes[1].set_xticks(tick_positions)
+        axes[1].set_xticklabels(tick_labels)
+        axes[1].set_xlabel("Epoch within block (restarts at each block)")
         axes[1].set_ylabel("Max delta")
         axes[1].grid(True, alpha=0.3)
 
@@ -790,15 +979,44 @@ def plot_per_user_schedule_details(result: dict[str, Any], figs_dir: str) -> Non
     initial_b = initial_plan.get("B_kl", [[] for _ in range(K)])
     final_latency = np.asarray(result.get("final_latency", [0.0] * K), dtype=float)
     initial_latency = np.asarray(result.get("initial_latency", [0.0] * K), dtype=float)
+    rate_points = list(result.get("rate_points", []))
+    per_user_points: dict[int, list[dict[str, Any]]] = {int(k): [] for k in range(K)}
+    for point in rate_points:
+        user_id = int(point.get("user", -1))
+        if 0 <= user_id < K:
+            per_user_points[user_id].append(dict(point))
+    for user_id in range(K):
+        per_user_points[user_id].sort(key=lambda point: int(point.get("block", 0)))
 
     fig, axes = plt.subplots(K, 2, figsize=(14, max(4 * K, 6)), squeeze=False)
     for k in range(K):
-        blocks = np.arange(len(result["n_kl"][k]))
-        bits = np.asarray(result["B_kl"][k], dtype=float)
-        n_vals = np.asarray(result["n_kl"][k], dtype=float)
-        rates = np.asarray(result["R_fbl"][k], dtype=float)
-        required = bits / np.maximum(n_vals, 1.0)
-        margins = rates - required
+        user_points = per_user_points.get(int(k), [])
+        if len(user_points) > 0:
+            blocks = np.asarray([int(point.get("block", idx)) for idx, point in enumerate(user_points)], dtype=int)
+            bits = np.asarray([float(point.get("B_kl", 0.0)) for point in user_points], dtype=float)
+            n_vals = np.asarray([float(point.get("n_kl", 0.0)) for point in user_points], dtype=float)
+            rates = np.asarray([float(point.get("achieved_rate", 0.0)) for point in user_points], dtype=float)
+            required = np.asarray(
+                [
+                    float(point.get("required_rate", float(point.get("B_kl", 0.0)) / float(max(int(point.get("n_kl", 1)), 1))))
+                    for point in user_points
+                ],
+                dtype=float,
+            )
+            margins = np.asarray(
+                [
+                    float(point.get("rate_margin", rates[idx] - required[idx]))
+                    for idx, point in enumerate(user_points)
+                ],
+                dtype=float,
+            )
+        else:
+            blocks = np.arange(len(result["n_kl"][k]))
+            bits = np.asarray(result["B_kl"][k], dtype=float)
+            n_vals = np.asarray(result["n_kl"][k], dtype=float)
+            rates = np.asarray(result["R_fbl"][k], dtype=float)
+            required = bits / np.maximum(n_vals, 1.0)
+            margins = rates - required
 
         init_blocks = np.arange(len(initial_n[k]))
         init_bits = np.asarray(initial_b[k], dtype=float) if k < len(initial_b) else np.asarray([], dtype=float)

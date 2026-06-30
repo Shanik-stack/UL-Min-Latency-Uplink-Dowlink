@@ -6,65 +6,81 @@ Train seeds: [0, 1, 2]
 Experiment scenario mode: payload_completion
 Training channel-episode counts per user: [12, 12, 12]
 Training dataset total channel episodes: 36
-Precoder parameterization: shared_user_channel_n_interference_epsilon_to_precoder_mlp
+Precoder parameterization: shared_user_channel_n_sigma_epsilon_to_precoder_mlp
 Training objective: rollout_lagrangian_user_finite_blocklength_rate_with_fixed_min_bits_objective
 Initial schedule source: random_precoder_baseline
 
 Training summary
 Train target-bits mode: minimum_required_bits_fallback
 Train target bits summary: {'1': 36}
-Final avg user rate: 16.627249
-Best avg user rate: 17.030343
-Final avg lagrangian: -16.627249
-Best avg lagrangian: -17.030343
-Final avg rate violation: 0.000000
-Final avg power violation: 0.000001
-Per-user final rate: [20.9882482583972, 16.07114433038114, 12.822354382688895]
-Per-user final lagrangian: [-20.9882482583972, -16.07114433038114, -12.822354382688895]
-Per-user final rate violation: [0.0, 0.0, 0.0]
-Per-user final power violation: [3.3171280570652173e-07, 1.3871626420454546e-06, 2.879016804245283e-07]
-Cumulative rollout queries by n_kl: {'65': 1, '69': 1, '70': 3, '74': 2, '75': 11, '77': 4, '78': 5, '79': 8, '80': 34, '81': 1, '82': 3, '83': 6, '84': 23, '85': 89, '87': 3, '88': 14, '89': 55, '90': 209, '91': 12, '92': 25, '93': 52, '94': 120, '95': 542, '96': 13, '97': 33, '98': 119, '99': 333, '100': 1440}
-Cumulative frontier rollout queries by n_kl: {'65': 1, '70': 3, '75': 5, '77': 4, '78': 5, '79': 1, '80': 20, '81': 1, '82': 3, '83': 5, '84': 3, '85': 58, '87': 3, '88': 14, '89': 11, '90': 111, '91': 12, '92': 23, '93': 40, '94': 27, '95': 286, '96': 13, '97': 29, '98': 106, '99': 86, '100': 1112}
-Train-eval initial blocks per user: [1, 1, 1]
-Train-eval final blocks per user: [1, 1, 1]
-Train-eval initial total n per user: [29, 37, 43]
-Train-eval final total n per user: [23, 30, 36]
-Train-eval total latency reduction (%): 18.3486
-Train-eval initial selected n_kl summary: {'global_selected_examples_by_n_kl': {'29': 1, '37': 1, '43': 1}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'29': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'37': 1}}, {'user': 2, 'selected_examples_by_n_kl': {'43': 1}}]}
-Train-eval final selected n_kl summary: {'global_selected_examples_by_n_kl': {'23': 1, '30': 1, '36': 1}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'23': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'30': 1}}, {'user': 2, 'selected_examples_by_n_kl': {'36': 1}}]}
+Final avg user rate: 14.461842
+Best avg user rate: 14.461842
+Final avg lagrangian: -14.461842
+Best avg lagrangian: -14.465204
+Final avg rate violation: -0.143998
+Final avg power violation: -0.000001
+Per-user final rate: [14.661562580050845, 14.004047681123783, 14.719915834127688]
+Per-user final lagrangian: [-14.661562580050845, -14.004047681123783, -14.719915834127688]
+Per-user final rate violation: [-0.1459012640019258, -0.13940921048514354, -0.14668377342761732]
+Per-user final power violation: [-5.794293809740889e-07, -5.857760954360203e-07, -5.839852584429929e-07]
+Cumulative rollout queries by n_kl: {'5': 1440, '10': 1440, '15': 1440, '20': 1440, '25': 1440, '30': 1440, '35': 1440, '40': 1440, '45': 1440, '50': 1440, '55': 960, '60': 960, '65': 480, '70': 480, '75': 480, '80': 480}
+Cumulative frontier rollout queries by n_kl: {'5': 1440}
+Train-eval initial blocks per user: [2, 3, 3]
+Train-eval final blocks per user: [2, 3, 3]
+Train-eval initial total n per user: [80, 169, 239]
+Train-eval final total n per user: [62, 132, 181]
+Train-eval total latency reduction (%): 23.1557
+Train-eval initial selected n_kl summary: {'global_selected_examples_by_n_kl': {'30': 1, '49': 1, '50': 1, '60': 2, '79': 1, '80': 2}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'30': 1, '50': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'49': 1, '60': 2}}, {'user': 2, 'selected_examples_by_n_kl': {'79': 1, '80': 2}}]}
+Train-eval final selected n_kl summary: {'global_selected_examples_by_n_kl': {'12': 2, '21': 1, '50': 1, '60': 2, '80': 2}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'12': 1, '50': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'12': 1, '60': 2}}, {'user': 2, 'selected_examples_by_n_kl': {'21': 1, '80': 2}}]}
 
 Testing summary
 Initial latency source: random_precoder_baseline
 
 Latency summary
-Initial total latency: 0.006800
-Final total latency: 0.006267
-Total latency reduction (%): 7.8431
-Initial avg latency: 0.002267
-Final avg latency: 0.002089
-Initial min/max latency: 0.002000 / 0.002533
-Final min/max latency: 0.001667 / 0.002533
+Initial total latency: 0.030733
+Final total latency: 0.024733
+Total latency reduction (%): 19.5228
+Initial avg latency: 0.010244
+Final avg latency: 0.008244
+Initial min/max latency: 0.005867 / 0.014200
+Final min/max latency: 0.004400 / 0.012133
 
 Asynchronality summary
-Initial asynchronality sum: 0.001067
-Final asynchronality sum: 0.001733
-Asynchronality reduction (%): -62.5000
+Initial asynchronality sum: 0.016667
+Final asynchronality sum: 0.015467
+Asynchronality reduction (%): 7.2000
 
 Link quality summary
-Initial avg SNR (dB): 10.9899
-Final avg SNR (dB): 10.8078
-Initial avg SINR (dB): -3.2572
-Final avg SINR (dB): -3.2130
+Initial avg SNR (dB): 8.1078
+Final avg SNR (dB): 8.1574
+Initial avg SINR (dB): -3.3939
+Final avg SINR (dB): -3.3853
 
 Per-user details
-User 0 | init_lat=0.002000 | final_lat=0.001667 | lat_red=16.6667% | init_snr=14.9051 dB | final_snr=13.7475 dB | init_sinr=-1.6708 dB | final_sinr=-2.9577 dB | blocks=1 | total_n=25 | served_bits=400 | skipped_blocks=0
-User 1 | init_lat=0.002267 | final_lat=0.002067 | lat_red=8.8235% | init_snr=10.0000 dB | final_snr=11.0185 dB | init_sinr=-4.7182 dB | final_sinr=-2.9456 dB | blocks=1 | total_n=31 | served_bits=400 | skipped_blocks=0
-User 2 | init_lat=0.002533 | final_lat=0.002533 | lat_red=0.0000% | init_snr=8.0645 dB | final_snr=7.6573 dB | init_sinr=-3.3826 dB | final_sinr=-3.7358 dB | blocks=1 | total_n=38 | served_bits=400 | skipped_blocks=0
+User 0 | init_lat=0.005867 | final_lat=0.004400 | lat_red=25.0000% | init_snr=7.7197 dB | final_snr=7.7797 dB | init_sinr=-3.3592 dB | final_sinr=-3.1589 dB | blocks=2 | total_n=66 | served_bits=1000 | skipped_blocks=0
+User 1 | init_lat=0.010667 | final_lat=0.008200 | lat_red=23.1250% | init_snr=7.8043 dB | final_snr=8.3902 dB | init_sinr=-4.6492 dB | final_sinr=-3.8852 dB | blocks=3 | total_n=123 | served_bits=2000 | skipped_blocks=0
+User 2 | init_lat=0.014200 | final_lat=0.012133 | lat_red=14.5540% | init_snr=8.7994 dB | final_snr=8.3023 dB | init_sinr=-2.1732 dB | final_sinr=-3.1119 dB | blocks=3 | total_n=182 | served_bits=3000 | skipped_blocks=0
 
 Per-pair asynchronality
-Users 0-1 | initial_diff=0.000267 | final_diff=0.000400
-Users 0-2 | initial_diff=0.000533 | final_diff=0.000867
-Users 1-2 | initial_diff=0.000267 | final_diff=0.000467
+Users 0-1 | initial_diff=0.004800 | final_diff=0.003800
+Users 0-2 | initial_diff=0.008333 | final_diff=0.007733
+Users 1-2 | initial_diff=0.003533 | final_diff=0.003933
+
+Experiment cost
+Core wall time total (s): 413.154579
+Core wall time training (s): 392.647416
+Testing-phase wall time (s): 20.507163
+Forward+backward NN FLOPs: 8.428e+09
+Forward-only NN FLOPs: 4.774e+07
+Total NN FLOPs: 8.476e+09
+Total forward+backward NN evaluations: 18240
+Forward-only NN evaluations: 310
+Optimizer steps: 600
+Workload counters:
+{'training_rollout_queries_per_user': [4800, 5760, 7680], 'train_eval_candidate_n_states_per_user': [40, 51, 62], 'batch_size': 32, 'test_candidate_n_states_per_user': [36, 60, 61]}
+Notes:
+- Training FLOPs are estimated from rollout-query counts and precoder MLP shapes; plotting and file export are excluded from wall time.
+- Inference forward calls include both the post-training train-eval pass and the held-out test pass.
 
 Terminology
 - channel episode: one (seed, user, block) channel realization stored in the base dataset

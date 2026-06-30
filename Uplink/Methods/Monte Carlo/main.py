@@ -50,6 +50,7 @@ from plotting import (
     plot_optimization_result_summary_dict,
     plot_latency_and_asynchronality_from_json,
     plot_link_quality_from_json,
+    plot_per_user_schedule_details,
     plot_per_user_interference_before_after,
     plot_per_user_interference_profiles,
     plot_user_config,
@@ -161,7 +162,11 @@ def _run_precoder_net_test(
     if do_plots:
         plot_optimization_result(test_data_dict["all_user_block_results_test"], train=False)
         plot_optimization_result_summary_dict(
-            {"n_star": test_data_dict["n_star_test"], "R_star": test_data_dict["R_star_test"]},
+            {
+                "n_star": test_data_dict["n_star_test"],
+                "R_star": test_data_dict["R_star_test"],
+                "all_user_block_results": test_data_dict["all_user_block_results_test"],
+            },
             train=False,
         )
         if int(test_uplinksystem.K) > 1:
@@ -207,6 +212,7 @@ def _run_precoder_net_test(
     }
     save_json(result, os.path.join(result_dirs["test_data"], "result.json"))
     if do_plots:
+        plot_per_user_schedule_details(result, result_dirs["schedule_details"])
         plot_interference_before_after_heatmaps(result, result_dirs["interference"])
         plot_per_user_interference_before_after(result, result_dirs["interference"])
         plot_interference_heatmaps(test_uplinksystem, result_dirs["interference"])

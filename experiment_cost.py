@@ -76,22 +76,53 @@ def _summed_nested_state_count(all_user_block_results: Sequence[Sequence[Sequenc
     return per_user_counts
 
 
-def _summed_uplink_solver_epochs(
+def _is_nonstring_sequence(value: Any) -> bool:
+    return isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray))
+
+
+def _uplink_state_epoch_count(state: Mapping[str, Any]) -> int:
+    kkt_history = state.get("kkt_history")
+    if _is_nonstring_sequence(kkt_history):
+        return int(len(kkt_history))
+
+    loss_curve = state.get("loss_curve")
+    if _is_nonstring_sequence(loss_curve):
+        return int(len(loss_curve))
+
+    return 0
+
+
+def _summed_uplink_solver_work(
     all_user_block_results: Sequence[Sequence[Sequence[dict[str, Any]]]],
-) -> tuple[list[int], int]:
+) -> tuple[list[int], list[int], list[int], int]:
     per_user_epochs: list[int] = []
+    per_user_optimizer_updates: list[int] = []
+    per_user_solver_calls: list[int] = []
     total_solver_calls = 0
     for user_blocks in all_user_block_results:
         user_epochs = 0
+        user_optimizer_updates = 0
+        user_solver_calls = 0
         for block_states in user_blocks:
             for state in block_states:
-                if isinstance(state, Mapping) and isinstance(state.get("kkt_history"), Sequence):
-                    epochs = len(state.get("kkt_history", []))
-                    if epochs > 0:
-                        total_solver_calls += 1
-                    user_epochs += int(epochs)
+                if not isinstance(state, Mapping):
+                    continue
+                epochs = _uplink_state_epoch_count(state)
+                if epochs <= 0:
+                    continue
+                total_solver_calls += 1
+                user_solver_calls += 1
+                user_epochs += int(epochs)
+                user_optimizer_updates += max(int(epochs) - 1, 0)
         per_user_epochs.append(int(user_epochs))
-    return per_user_epochs, int(total_solver_calls)
+        per_user_optimizer_updates.append(int(user_optimizer_updates))
+        per_user_solver_calls.append(int(user_solver_calls))
+    return (
+        per_user_epochs,
+        per_user_optimizer_updates,
+        per_user_solver_calls,
+        int(total_solver_calls),
+    )
 
 
 def _uplink_model_forward_flops_from_spec(spec: Mapping[str, Any]) -> int:
@@ -194,11 +225,17 @@ def format_experiment_cost_lines(experiment_cost: Mapping[str, Any] | None) -> l
         f"Forward-only NN FLOPs: {_format_large_number(_safe_float(experiment_cost.get('estimated_nn_inference_flops')))}",
         f"Total NN FLOPs: {_format_large_number(_safe_float(experiment_cost.get('estimated_nn_total_flops')))}",
         (
-            "Forward+backward NN evaluations: "
+            "Total forward+backward NN evaluations: "
             f"{_safe_int(experiment_cost.get('training_forward_backward_sample_equivalents'))}"
         ),
-        f"Forward-only NN evaluations: {_safe_int(experiment_cost.get('inference_forward_calls'))}",
     ]
+
+    if "forward_only_beam_evaluations" in experiment_cost:
+        lines.append(
+            f"Forward-only beam evaluations: {_safe_int(experiment_cost.get('forward_only_beam_evaluations'))}"
+        )
+    else:
+        lines.append(f"Forward-only NN evaluations: {_safe_int(experiment_cost.get('inference_forward_calls'))}")
 
     if "actual_optimizer_updates" in experiment_cost:
         lines.append(
@@ -211,11 +248,6 @@ def format_experiment_cost_lines(experiment_cost: Mapping[str, Any] | None) -> l
         lines.append(
             "Extra gradient evaluations used to check the current constrained joint state: "
             f"{_safe_int(experiment_cost.get('extra_gradient_evaluations'))}"
-        )
-
-    if "forward_only_beam_evaluations" in experiment_cost:
-        lines.append(
-            f"Forward-only beam evaluations: {_safe_int(experiment_cost.get('forward_only_beam_evaluations'))}"
         )
 
     workload = experiment_cost.get("workload_counters", {})
@@ -241,10 +273,17 @@ def build_uplink_convergence_cost(
     model_specs = build_uplink_sigma_context_specs(system_params)
     per_user_forward_flops = build_forward_flops_per_user(model_specs, link="uplink")
     block_results = convergence_data.get("all_user_block_results_train", [])
-    solver_epochs_per_user, solver_calls = _summed_uplink_solver_epochs(block_results)
+    (
+        solver_epochs_per_user,
+        optimizer_updates_per_user,
+        solver_calls_per_user,
+        solver_calls,
+    ) = _summed_uplink_solver_work(block_results)
     visited_states_per_user = _summed_nested_state_count(block_results)
 
     training_forward_backward_equivalents = int(sum(solver_epochs_per_user))
+    actual_optimizer_updates = int(sum(optimizer_updates_per_user))
+    extra_gradient_evaluations = int(training_forward_backward_equivalents - actual_optimizer_updates)
     inference_forward_calls = int(sum(visited_states_per_user))
     estimated_training_flops = float(
         sum(
@@ -268,16 +307,21 @@ def build_uplink_convergence_cost(
         "estimated_nn_total_flops": float(estimated_training_flops + estimated_inference_flops),
         "training_forward_backward_sample_equivalents": int(training_forward_backward_equivalents),
         "inference_forward_calls": int(inference_forward_calls),
-        "optimizer_steps": int(training_forward_backward_equivalents),
+        "optimizer_steps": int(actual_optimizer_updates),
+        "actual_optimizer_updates": int(actual_optimizer_updates),
+        "extra_gradient_evaluations": int(extra_gradient_evaluations),
+        "forward_only_beam_evaluations": int(inference_forward_calls),
         "per_user_forward_flops": [int(v) for v in per_user_forward_flops],
         "workload_counters": {
             "solver_calls": int(solver_calls),
+            "solver_calls_per_user": [int(v) for v in solver_calls_per_user],
             "solver_epochs_per_user": [int(v) for v in solver_epochs_per_user],
+            "optimizer_updates_per_user": [int(v) for v in optimizer_updates_per_user],
             "visited_candidate_n_states_per_user": [int(v) for v in visited_states_per_user],
         },
         "notes": [
             "Forward+backward NN FLOPs count the online solver epochs that optimize the uplink precoder net.",
-            "Forward-only NN FLOPs count the forward-only beam evaluations inside the same convergence routine.",
+            "Forward-only NN FLOPs count forward-only beam evaluations inside the same online convergence routine, not a separate testing phase.",
             "Testing-phase wall time is 0.0 for convergence because there is no separate train/test split.",
         ],
     }
