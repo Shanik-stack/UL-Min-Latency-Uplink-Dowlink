@@ -270,6 +270,7 @@ def build_uplink_convergence_cost(
     *,
     core_wall_time_seconds_total: float,
 ) -> dict[str, Any]:
+    update_mode = str(convergence_data.get("convergence_precoder_update_mode", "precoder_net")).strip().lower()
     model_specs = build_uplink_sigma_context_specs(system_params)
     per_user_forward_flops = build_forward_flops_per_user(model_specs, link="uplink")
     block_results = convergence_data.get("all_user_block_results_train", [])
@@ -285,18 +286,32 @@ def build_uplink_convergence_cost(
     actual_optimizer_updates = int(sum(optimizer_updates_per_user))
     extra_gradient_evaluations = int(training_forward_backward_equivalents - actual_optimizer_updates)
     inference_forward_calls = int(sum(visited_states_per_user))
-    estimated_training_flops = float(
-        sum(
-            FORWARD_BACKWARD_FLOP_FACTOR * per_user_forward_flops[k] * solver_epochs_per_user[k]
-            for k in range(min(len(per_user_forward_flops), len(solver_epochs_per_user)))
+    if update_mode == "direct_precoder":
+        estimated_training_flops = 0.0
+        estimated_inference_flops = 0.0
+        per_user_forward_flops = []
+        notes = [
+            "This convergence run used direct complex-precoder optimization, so NN FLOP counters are reported as 0.0.",
+            "Testing-phase wall time is 0.0 for convergence because there is no separate train/test split.",
+        ]
+    else:
+        estimated_training_flops = float(
+            sum(
+                FORWARD_BACKWARD_FLOP_FACTOR * per_user_forward_flops[k] * solver_epochs_per_user[k]
+                for k in range(min(len(per_user_forward_flops), len(solver_epochs_per_user)))
+            )
         )
-    )
-    estimated_inference_flops = float(
-        sum(
-            per_user_forward_flops[k] * visited_states_per_user[k]
-            for k in range(min(len(per_user_forward_flops), len(visited_states_per_user)))
+        estimated_inference_flops = float(
+            sum(
+                per_user_forward_flops[k] * visited_states_per_user[k]
+                for k in range(min(len(per_user_forward_flops), len(visited_states_per_user)))
+            )
         )
-    )
+        notes = [
+            "Forward+backward NN FLOPs count the online solver epochs that optimize the uplink precoder net.",
+            "Forward-only NN FLOPs count forward-only beam evaluations inside the same online convergence routine, not a separate testing phase.",
+            "Testing-phase wall time is 0.0 for convergence because there is no separate train/test split.",
+        ]
 
     return {
         "core_wall_time_seconds_total": float(core_wall_time_seconds_total),
@@ -319,11 +334,7 @@ def build_uplink_convergence_cost(
             "optimizer_updates_per_user": [int(v) for v in optimizer_updates_per_user],
             "visited_candidate_n_states_per_user": [int(v) for v in visited_states_per_user],
         },
-        "notes": [
-            "Forward+backward NN FLOPs count the online solver epochs that optimize the uplink precoder net.",
-            "Forward-only NN FLOPs count forward-only beam evaluations inside the same online convergence routine, not a separate testing phase.",
-            "Testing-phase wall time is 0.0 for convergence because there is no separate train/test split.",
-        ],
+        "notes": notes,
     }
 
 
@@ -334,6 +345,7 @@ def build_downlink_convergence_cost(
     *,
     core_wall_time_seconds_total: float,
 ) -> dict[str, Any]:
+    update_mode = str(result.get("convergence_precoder_update_mode", sim_params.get("convergence_precoder_update_mode", "precoder_net"))).strip().lower()
     model_specs = build_downlink_channel_only_specs(system_params)
     per_user_forward_flops = build_forward_flops_per_user(model_specs, link="downlink")
     epoch_history = result.get("epoch_history", [])
@@ -359,18 +371,32 @@ def build_downlink_convergence_cost(
         else:
             unconstrained_epochs += 1
             extra_joint_eval_factor = 0
-        for user_id in updated_user_ids:
-            if user_id < 0 or user_id >= len(per_user_forward_flops):
-                continue
-            forward_flops = per_user_forward_flops[user_id]
-            training_equivalents = user_update_steps + extra_joint_eval_factor
-            training_forward_backward_equivalents += int(training_equivalents)
-            optimizer_steps += int(user_update_steps)
-            extra_gradient_evaluations += int(extra_joint_eval_factor)
-            inference_forward_calls += 1
-            forward_only_beam_evaluations += 1
-            estimated_training_flops += FORWARD_BACKWARD_FLOP_FACTOR * float(forward_flops) * float(training_equivalents)
-            estimated_inference_flops += float(forward_flops)
+        training_forward_backward_equivalents += int(len(updated_user_ids) * user_update_steps + extra_joint_eval_factor)
+        optimizer_steps += int(len(updated_user_ids) * user_update_steps)
+        extra_gradient_evaluations += int(extra_joint_eval_factor)
+        inference_forward_calls += 1
+        forward_only_beam_evaluations += 1
+        if update_mode != "direct_precoder":
+            for user_id in updated_user_ids:
+                if user_id < 0 or user_id >= len(per_user_forward_flops):
+                    continue
+                forward_flops = per_user_forward_flops[user_id]
+                training_equivalents = user_update_steps + extra_joint_eval_factor
+                estimated_training_flops += FORWARD_BACKWARD_FLOP_FACTOR * float(forward_flops) * float(training_equivalents)
+                estimated_inference_flops += float(forward_flops)
+
+    if update_mode == "direct_precoder":
+        per_user_forward_flops = []
+        notes = [
+            "This convergence run used direct active-block precoder optimization, so NN FLOP counters are reported as 0.0.",
+            "Testing-phase wall time is 0.0 for convergence because there is no separate train/test split.",
+        ]
+    else:
+        notes = [
+            "Forward+backward NN FLOPs count the optimizer updates plus the extra gradient evaluations used to check the current constrained joint state.",
+            "Forward-only NN FLOPs count the forward-only beam evaluations inside the same convergence routine.",
+            "Testing-phase wall time is 0.0 for convergence because there is no separate train/test split.",
+        ]
 
     return {
         "core_wall_time_seconds_total": float(core_wall_time_seconds_total),
@@ -393,11 +419,7 @@ def build_downlink_convergence_cost(
             "user_update_steps_per_epoch": int(user_update_steps),
             "updated_user_calls": int(sum(_safe_int(entry.get("updated_users", 0)) for entry in epoch_history if isinstance(entry, Mapping))),
         },
-        "notes": [
-            "Forward+backward NN FLOPs count the optimizer updates plus the extra gradient evaluations used to check the current constrained joint state.",
-            "Forward-only NN FLOPs count the forward-only beam evaluations inside the same convergence routine.",
-            "Testing-phase wall time is 0.0 for convergence because there is no separate train/test split.",
-        ],
+        "notes": notes,
     }
 
 

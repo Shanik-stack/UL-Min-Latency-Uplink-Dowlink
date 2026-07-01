@@ -128,6 +128,9 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
         ),
         "lr_rate_constraint": sim_cfg.get("lr_rate_constraint", lr_cfg.get("rate_constraint", 1e-2)),
         "lr_power_constraint": sim_cfg.get("lr_power_constraint", lr_cfg.get("power_constraint", 1e-3)),
+        "convergence_precoder_update_mode": str(
+            sim_cfg.get("convergence_precoder_update_mode", "precoder_net")
+        ).strip().lower(),
         "constraint_loss_form": str(sim_cfg.get("constraint_loss_form", "plain_lagrangian")).strip().lower(),
         "augmented_lagrangian_rho_rate": float(sim_cfg.get("augmented_lagrangian_rho_rate", 0.0)),
         "augmented_lagrangian_rho_power": float(sim_cfg.get("augmented_lagrangian_rho_power", 0.0)),

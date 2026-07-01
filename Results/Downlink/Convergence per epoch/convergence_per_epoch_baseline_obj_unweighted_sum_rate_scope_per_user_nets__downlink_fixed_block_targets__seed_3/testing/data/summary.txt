@@ -41,8 +41,8 @@ Users 0-2 | initial_diff=0.010000 | final_diff=0.001933
 Users 1-2 | initial_diff=0.006667 | final_diff=0.003533
 
 Experiment cost
-Core wall time total (s): 3698.136180
-Core wall time training (s): 3698.136180
+Core wall time total (s): 786.563088
+Core wall time training (s): 786.563088
 Testing-phase wall time (s): 0.000000
 Forward+backward NN FLOPs: 7.954e+10
 Forward-only NN FLOPs: 1.326e+10

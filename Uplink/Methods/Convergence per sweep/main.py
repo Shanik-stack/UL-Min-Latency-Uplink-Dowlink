@@ -22,7 +22,14 @@ from advanced_methods_common import (
 from config_loader import _resolve_config_path, get_config
 from experiment_cost import build_uplink_convergence_cost
 from experiment_report import build_convergence_result, build_convergence_summary_lines
-from experiment_utils import make_method_result_tag, save_json, save_text
+from experiment_utils import (
+    compact_method_tag,
+    compact_update_mode_tag,
+    join_compact_tag_parts,
+    make_method_result_tag,
+    save_json,
+    save_text,
+)
 from optimizer import dynamic_subblocklength_precoder_training_baseline
 from plotting import (
     initialize_plot_globals,
@@ -39,7 +46,7 @@ from plotting import (
     plot_per_user_interference_profiles,
     plot_user_config,
 )
-from project_paths import build_uplink_convergence_result_dirs
+from project_paths import build_uplink_convergence_result_dirs, mirror_experiment_root_to_scenario_layout
 from terminal_logging import format_latency_log_line
 from UplinkSystem import UplinkSystem
 from utils import save_test_results_to_txt
@@ -156,7 +163,13 @@ def main() -> None:
     args = parser.parse_args()
 
     run_seed = _resolve_run_seed(args)
-    result_tag = make_method_result_tag(METHOD_NAME, args.cfg_name, seed=run_seed)
+    _, sim_cfg = get_config(args.cfg_name)
+    update_mode = str(sim_cfg.get("convergence_precoder_update_mode", "precoder_net")).strip().lower()
+    result_tag = make_method_result_tag(
+        join_compact_tag_parts(compact_method_tag(METHOD_NAME), compact_update_mode_tag(update_mode)),
+        args.cfg_name,
+        seed=run_seed,
+    )
     result_dirs = build_uplink_convergence_result_dirs(METHOD_LABEL, result_tag)
     initialize_plot_globals(result_tag, result_dirs)
 
@@ -246,6 +259,13 @@ def main() -> None:
     plot_interference_heatmaps(report_system, result_dirs["interference"])
     plot_per_user_interference_profiles(report_system, result_dirs["interference"])
     save_text(build_convergence_summary_lines(result), os.path.join(result_dirs["data"], "summary.txt"))
+    mirror_root = mirror_experiment_root_to_scenario_layout(
+        link_name="Uplink",
+        scenario_mode=str(sim_cfg.get("experiment_scenario_mode", "payload_completion")),
+        method_name=METHOD_LABEL,
+        source_experiment_root=result_dirs["experiment_root"],
+    )
+    print(f"Mirrored uplink convergence results to: {mirror_root}")
     print(f"Saved uplink convergence results to: {result_dirs['experiment_root']}")
 
 

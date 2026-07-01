@@ -1,40 +1,25 @@
 {
-    "total_channel_episodes": 9,
+    "total_channel_episodes": 3,
     "channel_episodes_by_seed": {
-        "0": 3,
-        "1": 3,
-        "2": 3
+        "0": 1,
+        "1": 1,
+        "2": 1
     },
     "channel_episodes_by_block": {
-        "0": 3,
-        "1": 3,
-        "2": 3
+        "0": 3
     },
     "channel_episodes_by_active_user_count": {
-        "3": 9
+        "3": 3
     },
     "channel_episodes_by_active_mask": {
-        "111": 9
+        "111": 3
     },
     "channel_episodes_per_user": [
-        9,
-        9,
-        9
+        3,
+        3,
+        3
     ],
-    "global_active_user_cases_by_target_bits": {
-        "1": 27
-    },
-    "per_user_active_user_cases_by_target_bits": [
-        {
-            "1": 9
-        },
-        {
-            "1": 9
-        },
-        {
-            "1": 9
-        }
-    ],
+    "base_dataset_kind": "channel_episodes_only",
     "scenario_modes": [
         "payload_completion"
     ]

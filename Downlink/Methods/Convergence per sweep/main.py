@@ -16,7 +16,7 @@ for path in (LINK_ROOT, PROJECT_ROOT):
 from config_loader import load_config
 from experiment_runner import build_result_tag, run_downlink_experiment
 from optimizer import resolve_convergence_objective_mode
-from project_paths import build_downlink_result_dirs
+from project_paths import build_downlink_result_dirs, mirror_experiment_root_to_scenario_layout
 
 METHOD_NAME = "convergence_per_epoch_baseline"
 METHOD_LABEL = "Convergence per epoch"
@@ -37,6 +37,7 @@ def main() -> None:
         int(args.seed),
         objective_mode=objective_mode,
         model_scope=sim_params.get("downlink_precoder_net_scope"),
+        solver_mode=sim_params.get("convergence_precoder_update_mode"),
     )
     output_dirs = build_downlink_result_dirs(METHOD_LABEL, result_tag)
     run_downlink_experiment(
@@ -46,6 +47,13 @@ def main() -> None:
         verbose=not args.quiet,
         output_root=output_dirs["testing_root"],
     )
+    mirror_root = mirror_experiment_root_to_scenario_layout(
+        link_name="Downlink",
+        scenario_mode=str(sim_params.get("experiment_scenario_mode", "payload_completion")),
+        method_name=METHOD_LABEL,
+        source_experiment_root=output_dirs["experiment_root"],
+    )
+    print(f"Mirrored downlink convergence results to: {mirror_root}")
 
 
 if __name__ == "__main__":

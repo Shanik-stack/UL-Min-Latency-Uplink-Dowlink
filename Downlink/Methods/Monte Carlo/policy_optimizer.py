@@ -40,7 +40,7 @@ from precoder_models import (
     model_outputs_full_bs_precoder,
     resolve_downlink_precoder_net_scope,
 )
-from terminal_logging import format_log_line, format_latency_log_line
+from terminal_logging import format_log_line, format_latency_log_line, format_progress_log_line
 
 LOG2E_SQ = float(np.log2(np.e) ** 2)
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
@@ -52,6 +52,36 @@ def _to_complex_numpy(x) -> np.ndarray:
     if hasattr(x, "detach"):
         return x.detach().cpu().numpy().astype(np.complex64, copy=False)
     return np.asarray(x, dtype=np.complex64)
+
+
+def _clone_model_states(models: Sequence[torch.nn.Module]) -> list[dict[str, torch.Tensor]]:
+    return [
+        {
+            key: value.detach().cpu().clone()
+            for key, value in model.state_dict().items()
+        }
+        for model in models
+    ]
+
+
+def _relative_model_state_change(
+    models: Sequence[torch.nn.Module],
+    previous_states: Sequence[dict[str, torch.Tensor]] | None,
+) -> float:
+    if previous_states is None:
+        return float("inf")
+    delta_norm_sq = 0.0
+    reference_norm_sq = 0.0
+    for model, model_state in zip(models, previous_states):
+        current_state = model.state_dict()
+        for key, current_value in current_state.items():
+            current_cpu = current_value.detach().cpu()
+            previous_cpu = model_state[key]
+            delta_norm_sq += float(torch.sum((current_cpu - previous_cpu).pow(2)).item())
+            reference_norm_sq += float(torch.sum(previous_cpu.pow(2)).item())
+    delta_norm = float(np.sqrt(max(delta_norm_sq, 0.0)))
+    reference_norm = float(np.sqrt(max(reference_norm_sq, 0.0)))
+    return float(delta_norm / max(reference_norm, 1e-12))
 
 
 def _serialize_nested_history(value: Any) -> Any:
@@ -194,12 +224,6 @@ def _constraint_violation_activation(value: torch.Tensor, loss_form: str) -> tor
     return torch.relu(value)
 
 
-def _training_block_ids(sim_params: dict[str, Any]) -> list[int]:
-    max_total_blocks = max(1, int(sim_params.get("max_total_blocks", 1)))
-    blocks_per_seed = max(1, int(sim_params.get("monte_carlo_training_blocks_per_seed", 1)))
-    return list(range(min(max_total_blocks, blocks_per_seed)))
-
-
 def _zero_precoder(system: DownlinkSystem, user: int) -> np.ndarray:
     return np.zeros((int(system.Nb[int(user)]), int(system.dk[int(user)])), dtype=np.complex128)
 
@@ -329,10 +353,18 @@ def _scenario_forward_pass(
     scenario: dict[str, Any],
     user_models: Sequence[torch.nn.Module],
     n_targets: Sequence[int],
+    anchor_bits: Sequence[int] | None = None,
 ) -> dict[str, Any]:
     K = int(system_params["K"])
     active_mask = np.asarray(scenario["active_mask"], dtype=np.float32)
     n_targets_list = [int(v) for v in n_targets]
+    anchor_bits_list = (
+        [int(v) for v in anchor_bits]
+        if anchor_bits is not None
+        else [int(v) for v in scenario.get("rollout_anchor_bits", [0 for _ in range(K)])]
+    )
+    if len(anchor_bits_list) < K:
+        anchor_bits_list = anchor_bits_list + [0 for _ in range(K - len(anchor_bits_list))]
     active_mask_t = torch.tensor(active_mask, dtype=torch.float32, device=DEVICE)
     H_block_t = [
         torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=DEVICE)
@@ -421,7 +453,12 @@ def _scenario_forward_pass(
             noise_plus_interference_cov=noise_cov_joint,
         )
         power = (torch.linalg.norm(predicted_beams[k], ord="fro") ** 2).real
-        required_rate = float(scenario["target_bits"][k]) / float(max(int(n_targets_list[k]), 1))
+        required_bits = int(anchor_bits_list[k]) if int(k) < len(anchor_bits_list) else 0
+        required_rate = (
+            float(required_bits) / float(max(int(n_targets_list[k]), 1))
+            if required_bits > 0
+            else 0.0
+        )
         rates[k] = rate
         powers[k] = power
         required_rates[k] = required_rate
@@ -441,6 +478,7 @@ def _scenario_forward_pass(
         "predicted_beams": predicted_beams,
         "rates": rates,
         "powers": powers,
+        "rollout_anchor_bits": [int(v) for v in anchor_bits_list],
         "required_rates": required_rates,
         "sum_rate": sum_rate,
         "block_power": block_power,
@@ -449,16 +487,25 @@ def _scenario_forward_pass(
     }
 
 
-def _scenario_metrics_with_models(
-    system_params: dict[str, Any],
-    scenario: dict[str, Any],
-    user_models: Sequence[torch.nn.Module],
-    n_targets: Sequence[int],
-) -> dict[str, Any]:
-    K = int(system_params["K"])
-    with torch.no_grad():
-        forward = _scenario_forward_pass(system_params, scenario, user_models, n_targets)
+def _resolve_downlink_rollout_anchor_bits_from_forward(forward: dict[str, Any]) -> list[int]:
+    anchor_bits = [0 for _ in range(len(forward["n_targets"]))]
+    for k, rate_t in enumerate(forward["rates"]):
+        if rate_t is None:
+            continue
+        if float(forward["active_mask"][k]) <= 0.5 or int(forward["n_targets"][k]) <= 0:
+            continue
+        achievable_bits = int(
+            np.floor(
+                max(float(rate_t.detach().cpu()), 0.0)
+                * float(max(int(forward["n_targets"][k]), 1))
+            )
+        )
+        anchor_bits[int(k)] = max(1, achievable_bits)
+    return anchor_bits
 
+
+def _scenario_metrics_from_forward(forward: dict[str, Any]) -> dict[str, Any]:
+    K = int(len(forward["rates"]))
     rate_values = [0.0 for _ in range(K)]
     required_rates = [0.0 for _ in range(K)]
     rate_margins = [0.0 for _ in range(K)]
@@ -488,10 +535,23 @@ def _scenario_metrics_with_models(
         "rate_values": rate_values,
         "required_rates": required_rates,
         "rate_margins": rate_margins,
+        "rollout_anchor_bits": [int(v) for v in forward.get("rollout_anchor_bits", [0 for _ in range(K)])],
         "min_rate_margin": float(min(active_margins)) if active_margins else 0.0,
         "sum_rate": float(forward["sum_rate"].detach().cpu()),
         "block_power_gap": float(forward["block_power_gap"].detach().cpu()),
     }
+
+
+def _scenario_metrics_with_models(
+    system_params: dict[str, Any],
+    scenario: dict[str, Any],
+    user_models: Sequence[torch.nn.Module],
+    n_targets: Sequence[int],
+    anchor_bits: Sequence[int] | None = None,
+) -> dict[str, Any]:
+    with torch.no_grad():
+        forward = _scenario_forward_pass(system_params, scenario, user_models, n_targets, anchor_bits=anchor_bits)
+    return _scenario_metrics_from_forward(forward)
 
 
 def _best_joint_n_target_transition(
@@ -499,6 +559,7 @@ def _best_joint_n_target_transition(
     scenario: dict[str, Any],
     user_models: Sequence[torch.nn.Module],
     current_n_targets: Sequence[int],
+    anchor_bits: Sequence[int],
     *,
     n_min: int,
     n_step: int,
@@ -526,6 +587,7 @@ def _best_joint_n_target_transition(
                 scenario,
                 user_models,
                 candidate_n_targets,
+                anchor_bits=anchor_bits,
             )
             candidate = {
                 "reduced_users": [int(k) for k in subset],
@@ -552,6 +614,7 @@ def _build_rollout_query_from_downlink_state(
     scenario: dict[str, Any],
     n_targets: Sequence[int],
     metrics: dict[str, Any],
+    rollout_anchor_bits: Sequence[int],
     *,
     rollout_stage: str,
     frontier_query: bool,
@@ -560,6 +623,7 @@ def _build_rollout_query_from_downlink_state(
     return {
         **scenario,
         "n_targets": [int(v) for v in n_targets],
+        "rollout_anchor_bits": [int(v) for v in rollout_anchor_bits],
         "rollout_stage": str(rollout_stage),
         "frontier_query": bool(frontier_query),
         "rollout_feasible": bool(metrics["feasible"]),
@@ -587,7 +651,21 @@ def _generate_rollout_queries_for_downlink(
         visited_states: set[tuple[int, ...]] = set()
         episode_queries: list[dict[str, Any]] = []
         current_n_targets = [int(v) for v in episode["max_n_targets"]]
-        initial_metrics = _scenario_metrics_with_models(system_params, episode, user_models, current_n_targets)
+        initial_forward = _scenario_forward_pass(
+            system_params,
+            episode,
+            user_models,
+            current_n_targets,
+            anchor_bits=None,
+        )
+        rollout_anchor_bits = _resolve_downlink_rollout_anchor_bits_from_forward(initial_forward)
+        initial_metrics = _scenario_metrics_with_models(
+            system_params,
+            episode,
+            user_models,
+            current_n_targets,
+            anchor_bits=rollout_anchor_bits,
+        )
         state_key = tuple(int(v) for v in current_n_targets)
         visited_states.add(state_key)
         episode_queries.append(
@@ -595,6 +673,7 @@ def _generate_rollout_queries_for_downlink(
                 episode,
                 current_n_targets,
                 initial_metrics,
+                rollout_anchor_bits,
                 rollout_stage="coarse",
                 frontier_query=not bool(initial_metrics["feasible"]),
             )
@@ -609,6 +688,7 @@ def _generate_rollout_queries_for_downlink(
                         episode,
                         user_models,
                         current_n_targets,
+                        rollout_anchor_bits,
                         n_min=n_min,
                         n_step=int(step_size),
                     )
@@ -624,6 +704,7 @@ def _generate_rollout_queries_for_downlink(
                                         episode,
                                         rejected["candidate_n_targets"],
                                         rejected["metrics"],
+                                        rollout_anchor_bits,
                                         rollout_stage=stage_name,
                                         frontier_query=True,
                                     )
@@ -640,6 +721,7 @@ def _generate_rollout_queries_for_downlink(
                             episode,
                             current_n_targets,
                             accepted["metrics"],
+                            rollout_anchor_bits,
                             rollout_stage=stage_name,
                             frontier_query=False,
                         )
@@ -830,42 +912,9 @@ def _summarize_training_cases_with_n_kl(
     return summary
 
 
-def _summarize_training_cases_with_target_bits(training_cases: Sequence[dict[str, Any]]) -> dict[str, Any]:
-    if len(training_cases) == 0:
-        return {
-            "global_active_user_cases_by_target_bits": {},
-            "per_user_active_user_cases_by_target_bits": [],
-        }
-
-    K = len(training_cases[0]["active_mask"])
-    global_counts: dict[int, int] = {}
-    per_user_counts: list[dict[int, int]] = [{} for _ in range(K)]
-    for training_case in training_cases:
-        active_mask = [int(v) for v in training_case["active_mask"]]
-        target_bits = [int(v) for v in training_case.get("target_bits", training_case.get("min_bits_required", []))]
-        for k, is_active in enumerate(active_mask):
-            if int(is_active) <= 0:
-                continue
-            bits_val = int(target_bits[int(k)])
-            per_user_counts[int(k)][bits_val] = per_user_counts[int(k)].get(bits_val, 0) + 1
-            global_counts[bits_val] = global_counts.get(bits_val, 0) + 1
-
-    return {
-        "global_active_user_cases_by_target_bits": {
-            str(int(k)): int(v) for k, v in sorted(global_counts.items())
-        },
-        "per_user_active_user_cases_by_target_bits": [
-            {str(int(k)): int(v) for k, v in sorted(user_counts.items())}
-            for user_counts in per_user_counts
-        ],
-    }
-
-
 def summarize_training_dataset(training_episodes: Sequence[dict[str, Any]]) -> dict[str, Any]:
     summary = _summarize_channel_episode_structure(training_episodes)
-    summary.update(
-        _summarize_training_cases_with_target_bits(training_episodes)
-    )
+    summary["base_dataset_kind"] = "channel_episodes_only"
     summary["scenario_modes"] = sorted(
         {str(case.get("scenario_mode", PAYLOAD_COMPLETION_MODE)) for case in training_episodes}
     )
@@ -902,60 +951,55 @@ def build_training_dataset(
 ) -> list[dict[str, Any]]:
     K = int(system_params["K"])
     scenario_mode = str(sim_params.get("experiment_scenario_mode", PAYLOAD_COMPLETION_MODE))
-    block_ids = _training_block_ids(sim_params)
-    min_bits_floor = max(1, int(sim_params.get("monte_carlo_training_fallback_target_bits", 1)))
     episodes: list[dict[str, Any]] = []
+    blocks_per_seed = max(1, int(sim_params.get("monte_carlo_training_blocks_per_seed", 1)))
+    if verbose and blocks_per_seed != 1:
+        print(
+            "[DL Monte Carlo Train] Base dataset now uses one joint channel episode per seed; "
+            "ignoring monte_carlo_training_blocks_per_seed during training-data construction."
+        )
 
     for seed in train_seeds:
         if verbose:
-            print(f"\n================ DOWNLINK RAW TRAINING DATA seed={int(seed)} ================")
+            print(
+                format_log_line(
+                    "[DL Monte Carlo Dataset]",
+                    phase="collect",
+                    seed=int(seed),
+                    base_dataset="channel_episode_only",
+                )
+            )
         configure_determinism(int(seed))
         system = DownlinkSystem(system_params, seed=int(seed))
-        scenario = build_experiment_scenario(system_params, sim_params, seed=int(seed))
-        block_targets = (
-            np.asarray(scenario.get("block_bit_targets", []), dtype=int)
-            if str(scenario.get("mode", PAYLOAD_COMPLETION_MODE)) == FIXED_BLOCK_TARGETS_MODE
-            else None
+        block = 0
+        active_mask = np.ones(K, dtype=np.float32)
+        for k in range(K):
+            system.ensure_block(k, int(block))
+        H_block = _context_channels_for_block(system, int(block))
+        input_snapshot = system.clone_precoders()
+        for k in range(K):
+            if int(block) < len(input_snapshot[k]):
+                input_snapshot[k][int(block)] = _zero_precoder(system, k)
+        episodes.append(
+            {
+                "seed": int(seed),
+                "block": int(block),
+                "H_block": [np.asarray(H_kl, dtype=np.complex64) for H_kl in H_block],
+                "active_mask": [int(v > 0.5) for v in active_mask.tolist()],
+                "max_n_targets": [int(system.T[int(k)]) for k in range(K)],
+                "block_power_budget": float(system.block_power_budget),
+                "P": [float(v) for v in system.P.tolist()],
+                "sigma2": [float(v) for v in system.sigma2.tolist()],
+                "epsilon": [float(v) for v in system.epsilon.tolist()],
+                "input_noise_covariances": _scenario_input_noise_covariances(
+                    system,
+                    input_snapshot,
+                    int(block),
+                    active_mask,
+                ),
+                "scenario_mode": scenario_mode,
+            }
         )
-        fixed_block_ids = (
-            list(range(min(len(block_ids), int(block_targets.shape[1]))))
-            if block_targets is not None and block_targets.ndim == 2
-            else list(block_ids)
-        )
-        for block in fixed_block_ids:
-            for k in range(K):
-                system.ensure_block(k, int(block))
-            working_F = system.clone_precoders()
-            H_block = _context_channels_for_block(system, int(block))
-            if scenario_mode == FIXED_BLOCK_TARGETS_MODE and block_targets is not None:
-                active_mask = np.ones(K, dtype=np.float32)
-                target_bits = [int(block_targets[int(k), int(block)]) for k in range(K)]
-            else:
-                active_mask = np.ones(K, dtype=np.float32)
-                target_bits = [int(min_bits_floor) for _ in range(K)]
-
-            input_snapshot = _masked_precoder_snapshot(system, working_F, int(block), active_mask)
-            episodes.append(
-                {
-                    "seed": int(seed),
-                    "block": int(block),
-                    "H_block": [np.asarray(H_kl, dtype=np.complex64) for H_kl in H_block],
-                    "active_mask": [int(v > 0.5) for v in active_mask.tolist()],
-                    "max_n_targets": [int(system.T[int(k)]) if float(active_mask[int(k)]) > 0.5 else 0 for k in range(K)],
-                    "target_bits": [int(v) for v in target_bits],
-                    "block_power_budget": float(system.block_power_budget),
-                    "P": [float(v) for v in system.P.tolist()],
-                    "sigma2": [float(v) for v in system.sigma2.tolist()],
-                    "epsilon": [float(v) for v in system.epsilon.tolist()],
-                    "input_noise_covariances": _scenario_input_noise_covariances(
-                        system,
-                        input_snapshot,
-                        int(block),
-                        active_mask,
-                    ),
-                    "scenario_mode": scenario_mode,
-                }
-            )
 
     return episodes
 
@@ -971,7 +1015,6 @@ def train_blocklength_aware_precoder_net(
     verbose: bool = True,
 ) -> tuple[list[torch.nn.Module], dict[str, Any], list[int]]:
     K = int(system_params["K"])
-    scenario_mode = str(sim_params.get("experiment_scenario_mode", PAYLOAD_COMPLETION_MODE))
     model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
     dataset_summary = summarize_training_dataset(training_episodes)
     models = _build_training_user_models(system_params, sim_params)
@@ -991,11 +1034,7 @@ def train_blocklength_aware_precoder_net(
         "dataset_summary": dataset_summary,
         "epoch_rollout_query_summaries": [],
         "downlink_precoder_net_scope": str(model_scope),
-        "training_objective": (
-            "rollout_lagrangian_sum_finite_blocklength_rate_with_fixed_target_bits_objective"
-            if scenario_mode == FIXED_BLOCK_TARGETS_MODE
-            else "rollout_lagrangian_sum_finite_blocklength_rate_with_fixed_min_bits_objective"
-        ),
+        "training_objective": "rollout_lagrangian_sum_finite_blocklength_rate_with_online_full_block_anchor_bits",
     }
     dataset_sizes = [
         int(dataset_summary.get("channel_episodes_per_user", [0 for _ in range(K)])[k])
@@ -1011,10 +1050,16 @@ def train_blocklength_aware_precoder_net(
 
     if verbose:
         print(
-            "\n================ DOWNLINK JOINT PRECODER NET TRAIN ================\n"
-            f"Channel episodes: {len(training_episodes)} | epochs: {int(epochs)} | batch_size: {int(batch_size)}\n"
-            f"Channel episodes per user: {dataset_sizes}\n"
-            f"Precoder-net scope: {model_scope}"
+            format_log_line(
+                "[DL Monte Carlo Train]",
+                phase="start",
+                scope="joint",
+                channel_episodes=int(len(training_episodes)),
+                channel_episodes_per_user=[int(v) for v in dataset_sizes],
+                epochs=int(epochs),
+                batch_size=int(batch_size),
+                precoder_net_scope=str(model_scope),
+            )
         )
 
     if len(training_episodes) == 0:
@@ -1026,6 +1071,7 @@ def train_blocklength_aware_precoder_net(
     cumulative_frontier_query_global_counts: dict[int, int] = {}
     cumulative_frontier_query_per_user_counts: list[dict[int, int]] = [{} for _ in range(K)]
     final_epoch_rollout_summary: dict[str, Any] = {}
+    previous_epoch_model_states: list[dict[str, torch.Tensor]] | None = None
 
     for epoch in range(int(epochs)):
         for model in models:
@@ -1094,16 +1140,19 @@ def train_blocklength_aware_precoder_net(
             training_history["avg_block_power_violation"].append(0.0)
             if verbose:
                 print(
-                    format_log_line(
-                        "[DL Monte Carlo Train]",
+                    format_progress_log_line(
+                        "[DL Monte Carlo]",
+                        phase="train",
+                        method="monte_carlo",
                         scope="joint",
                         epoch=f"{epoch + 1}/{int(epochs)}",
-                        rollout_queries=0,
+                        objective=0.0,
                         sum_rate=0.0,
                         avg_user_rate=0.0,
-                        avg_lagrangian=0.0,
-                        avg_rate_violation=0.0,
-                        avg_block_power_violation=0.0,
+                        r_p=0.0,
+                        r_c=0.0,
+                        r_s=0.0,
+                        status="no_rollout_queries",
                     )
                 )
             continue
@@ -1213,34 +1262,45 @@ def train_blocklength_aware_precoder_net(
             float(np.mean(epoch_rate_violations)) if epoch_rate_violations else 0.0
         )
         training_history["avg_block_power_violation"].append(avg_block_power_violation)
+        epoch_r_p = float(max(max(epoch_rate_violations, default=0.0), max(avg_block_power_violation, 0.0)))
+        epoch_r_c = float(
+            max(
+                max(
+                    (
+                        abs(float(lambda_rate[k]) * max(float(epoch_rate_violations[k]), 0.0))
+                        for k in range(min(K, len(epoch_rate_violations)))
+                    ),
+                    default=0.0,
+                ),
+                abs(float(lambda_power_block) * max(avg_block_power_violation, 0.0)),
+            )
+        )
+        epoch_r_s = _relative_model_state_change(models, previous_epoch_model_states)
+        previous_epoch_model_states = _clone_model_states(models)
+        epoch_status = "epoch_budget_reached" if int(epoch + 1) >= int(epochs) else "running"
         if verbose:
             print(
-                format_log_line(
-                    "[DL Monte Carlo Train]",
+                format_progress_log_line(
+                    "[DL Monte Carlo]",
+                    phase="train",
+                    method="monte_carlo",
                     scope="joint",
                     epoch=f"{epoch + 1}/{int(epochs)}",
-                    rollout_queries=int(len(rollout_queries)),
+                    objective=float(training_history["avg_lagrangian"][-1]),
                     sum_rate=float(avg_sum_rate),
                     avg_user_rate=float(training_history["avg_user_rate"][-1]),
-                    avg_lagrangian=float(training_history["avg_lagrangian"][-1]),
-                    avg_rate_violation=float(training_history["avg_rate_violation_over_users"][-1]),
-                    avg_block_power_violation=float(training_history["avg_block_power_violation"][-1]),
-                    per_user_rate=[float(v) for v in epoch_rates],
-                    per_user_lagrangian=[float(v) for v in epoch_lagrangians],
-                    per_user_rate_violation=[float(v) for v in epoch_rate_violations],
+                    r_p=epoch_r_p,
+                    r_c=epoch_r_c,
+                    r_s=epoch_r_s,
+                    status=epoch_status,
                 )
             )
 
     training_history["post_training_summary"] = {
         "epochs_requested": int(epochs),
         "downlink_precoder_net_scope": str(model_scope),
-        "train_target_bits_mode": (
-            "fixed_block_targets_actual_bits"
-            if scenario_mode == FIXED_BLOCK_TARGETS_MODE
-            else "minimum_required_bits_fallback"
-        ),
-        "train_target_bits_summary": dataset_summary.get("global_active_user_cases_by_target_bits", {}),
-        "train_target_bits_per_user": dataset_summary.get("per_user_active_user_cases_by_target_bits", []),
+        "base_dataset_kind": dataset_summary.get("base_dataset_kind", "channel_episodes_only"),
+        "rollout_anchor_bits_mode": "derived_online_from_current_joint_full_block_rate",
         "per_user_final_lagrangian": [
             float(history[-1]) if len(history) > 0 else 0.0 for history in training_history["per_user_lagrangian"]
         ],
@@ -2385,7 +2445,7 @@ def build_precoder_net_artifact(
         "downlink_precoder_net_scope": str(model_scope),
         "training_objective": precoder_net_training_history.get(
             "training_objective",
-            "lagrangian_sum_finite_blocklength_rate_with_fixed_target_bits_objective",
+            "lagrangian_sum_finite_blocklength_rate_with_online_full_block_anchor_bits",
         ),
     }
 

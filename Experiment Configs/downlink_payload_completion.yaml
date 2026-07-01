@@ -36,6 +36,8 @@ test:
 
 simulation:
   # Per-user precoder updates inside one synchronized block epoch
+  convergence_precoder_update_mode: precoder_net
+  # convergence_precoder_update_mode: direct_precoder
   # downlink_precoder_net_scope: per_user_nets
   downlink_precoder_net_scope: bs_shared_net
   max_epochs: 500

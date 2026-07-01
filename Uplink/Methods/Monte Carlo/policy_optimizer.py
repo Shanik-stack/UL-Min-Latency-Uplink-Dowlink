@@ -39,7 +39,7 @@ from precoder_models import (
     infer_precoder_numpy_with_blocklength_and_sigma,
     infer_precoder_torch_with_blocklength_and_sigma,
 )
-from terminal_logging import format_log_line
+from terminal_logging import format_log_line, format_progress_log_line
 from uplink_rate_model import build_uplink_rate_covariance
 
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
@@ -277,23 +277,25 @@ def build_training_dataset(
     system_params, sim_cfg = get_config(cfg_name)
     K = int(system_params["K"])
     episodes_by_user: list[list[dict]] = [[] for _ in range(K)]
-    min_bits_required = max(1, int(sim_cfg.get("monte_carlo_training_fallback_target_bits", 1)))
     blocks_per_seed = max(1, int(sim_cfg.get("monte_carlo_training_blocks_per_seed", 1)))
     scenario_mode = str(sim_cfg.get("experiment_scenario_mode", PAYLOAD_COMPLETION_MODE))
+    if blocks_per_seed != 1:
+        print(
+            "[UL Monte Carlo Train] Base dataset now uses one channel episode per seed per user; "
+            "ignoring monte_carlo_training_blocks_per_seed during training-data construction."
+        )
 
     for seed in train_seeds:
-        print(f"\n================ RAW TRAINING DATA seed={seed} ================")
-        uplinksystem = UplinkSystem(system_params, seed=int(seed))
-        scenario = build_experiment_scenario(system_params, sim_cfg, seed=int(seed))
-        block_targets = (
-            np.asarray(scenario.get("block_bit_targets", []), dtype=int)
-            if str(scenario.get("mode", PAYLOAD_COMPLETION_MODE)) == FIXED_BLOCK_TARGETS_MODE
-            else None
+        print(
+            format_log_line(
+                "[UL Monte Carlo Dataset]",
+                phase="collect",
+                seed=int(seed),
+                base_dataset="channel_episode_only",
+            )
         )
-        max_blocks_for_seed = int(blocks_per_seed)
-        if block_targets is not None and block_targets.ndim == 2:
-            max_blocks_for_seed = min(max_blocks_for_seed, int(block_targets.shape[1]))
-        ensure_blocks_up_to(uplinksystem, int(max_blocks_for_seed) - 1)
+        uplinksystem = UplinkSystem(system_params, seed=int(seed))
+        ensure_blocks_up_to(uplinksystem, 0)
 
         for k in range(K):
             T_ref = int(uplinksystem.T[k])
@@ -301,69 +303,53 @@ def build_training_dataset(
             sigma2 = float(uplinksystem.sigma2[k])
             epsilon = float(uplinksystem.epsilon[k])
             dk_user = int(uplinksystem.dk[k])
-            max_blocks = min(int(max_blocks_for_seed), len(uplinksystem.H[k]))
-            for block in range(max_blocks):
-                H_block = np.asarray(uplinksystem.H[k][int(block)], dtype=np.complex64)
-                noise_plus_interference_cov = build_uplink_rate_covariance(
-                    uplinksystem,
-                    sim_cfg,
-                    k,
-                    int(block),
-                )
-                target_bits = (
-                    int(block_targets[k, int(block)])
-                    if block_targets is not None
-                    else int(min_bits_required)
-                )
-                episodes_by_user[k].append(
-                    {
-                        "seed": int(seed),
-                        "user": int(k),
-                        "block": int(block),
-                        "H": H_block,
-                        "T_ref": int(T_ref),
-                        "target_bits": int(target_bits),
-                        "P": float(P_user),
-                        "dk": int(dk_user),
-                        "sigma2": float(sigma2),
-                        "epsilon": float(epsilon),
-                        "noise_plus_interference_cov": (
-                            None
-                            if noise_plus_interference_cov is None
-                            else np.asarray(noise_plus_interference_cov, dtype=np.complex128)
-                        ),
-                        "scenario_mode": scenario_mode,
-                    }
-                )
+            block = 0
+            H_block = np.asarray(uplinksystem.H[k][int(block)], dtype=np.complex64)
+            noise_plus_interference_cov = build_uplink_rate_covariance(
+                uplinksystem,
+                sim_cfg,
+                k,
+                int(block),
+            )
+            episodes_by_user[k].append(
+                {
+                    "seed": int(seed),
+                    "user": int(k),
+                    "block": int(block),
+                    "H": H_block,
+                    "T_ref": int(T_ref),
+                    "P": float(P_user),
+                    "dk": int(dk_user),
+                    "sigma2": float(sigma2),
+                    "epsilon": float(epsilon),
+                    "noise_plus_interference_cov": (
+                        None
+                        if noise_plus_interference_cov is None
+                        else np.asarray(noise_plus_interference_cov, dtype=np.complex128)
+                    ),
+                    "scenario_mode": scenario_mode,
+                }
+            )
 
     return episodes_by_user
 
 
 def summarize_training_dataset(episodes_by_user: Sequence[Sequence[dict]]) -> dict:
     total_channel_episodes = int(sum(len(episodes) for episodes in episodes_by_user))
-    global_episodes_by_target_bits: dict[int, int] = {}
     episodes_by_seed: dict[int, int] = {}
     global_episodes_by_block: dict[int, int] = {}
     scenario_modes: set[str] = set()
     per_user_summary = []
 
     for user_idx, episodes in enumerate(episodes_by_user):
-        user_episodes_by_target_bits: dict[int, int] = {}
         user_episodes_by_seed: dict[int, int] = {}
         user_episodes_by_block: dict[int, int] = {}
         for episode in episodes:
-            target_bits = int(episode.get("target_bits", episode.get("min_bits_required", 1)))
             seed = int(episode["seed"])
             block = int(episode.get("block", 0))
             scenario_modes.add(str(episode.get("scenario_mode", PAYLOAD_COMPLETION_MODE)))
-            user_episodes_by_target_bits[target_bits] = (
-                user_episodes_by_target_bits.get(target_bits, 0) + 1
-            )
             user_episodes_by_seed[seed] = user_episodes_by_seed.get(seed, 0) + 1
             user_episodes_by_block[block] = user_episodes_by_block.get(block, 0) + 1
-            global_episodes_by_target_bits[target_bits] = (
-                global_episodes_by_target_bits.get(target_bits, 0) + 1
-            )
             episodes_by_seed[seed] = episodes_by_seed.get(seed, 0) + 1
             global_episodes_by_block[block] = global_episodes_by_block.get(block, 0) + 1
 
@@ -371,9 +357,6 @@ def summarize_training_dataset(episodes_by_user: Sequence[Sequence[dict]]) -> di
             {
                 "user": int(user_idx),
                 "total_channel_episodes": int(len(episodes)),
-                "episodes_by_target_bits": {
-                    str(int(k)): int(v) for k, v in sorted(user_episodes_by_target_bits.items())
-                },
                 "episodes_by_seed": {str(int(k)): int(v) for k, v in sorted(user_episodes_by_seed.items())},
                 "episodes_by_block": {str(int(k)): int(v) for k, v in sorted(user_episodes_by_block.items())},
             }
@@ -382,12 +365,10 @@ def summarize_training_dataset(episodes_by_user: Sequence[Sequence[dict]]) -> di
     return {
         "total_channel_episodes": int(total_channel_episodes),
         "num_users": int(len(episodes_by_user)),
+        "base_dataset_kind": "channel_episodes_only",
         "scenario_modes": sorted(scenario_modes),
         "episodes_by_seed": {str(int(k)): int(v) for k, v in sorted(episodes_by_seed.items())},
         "global_episodes_by_block": {str(int(k)): int(v) for k, v in sorted(global_episodes_by_block.items())},
-        "global_episodes_by_target_bits": {
-            str(int(k)): int(v) for k, v in sorted(global_episodes_by_target_bits.items())
-        },
         "per_user": per_user_summary,
     }
 
@@ -426,6 +407,37 @@ def _serialize_count_dict(counts: dict[int, int]) -> dict[str, int]:
     return {str(int(k)): int(v) for k, v in sorted(counts.items())}
 
 
+def _clone_model_state(model: torch.nn.Module) -> dict[str, torch.Tensor]:
+    return {
+        key: value.detach().cpu().clone()
+        for key, value in model.state_dict().items()
+    }
+
+
+def _relative_model_state_change(
+    model: torch.nn.Module,
+    previous_state: dict[str, torch.Tensor] | None,
+) -> float:
+    if previous_state is None:
+        return float("inf")
+    current_state = model.state_dict()
+    delta_norm_sq = 0.0
+    reference_norm_sq = 0.0
+    for key, current_value in current_state.items():
+        current_cpu = current_value.detach().cpu()
+        previous_cpu = previous_state[key]
+        delta_norm_sq += float(torch.sum((current_cpu - previous_cpu).pow(2)).item())
+        reference_norm_sq += float(torch.sum(previous_cpu.pow(2)).item())
+    delta_norm = float(np.sqrt(max(delta_norm_sq, 0.0)))
+    reference_norm = float(np.sqrt(max(reference_norm_sq, 0.0)))
+    return float(delta_norm / max(reference_norm, 1e-12))
+
+
+def _resolve_rollout_anchor_bits(rate: float, n_kl: int) -> int:
+    achievable_bits = int(np.floor(max(float(rate), 0.0) * float(max(int(n_kl), 1))))
+    return max(1, achievable_bits)
+
+
 def _evaluate_uplink_rollout_query_numpy(
     model: torch.nn.Module,
     episode: dict[str, Any],
@@ -457,16 +469,11 @@ def _evaluate_uplink_rollout_query_numpy(
             noise_cov,
         )
     )
-    required_rate = float(episode["target_bits"]) / float(max(int(n_kl), 1))
-    rate_margin = float(rate - required_rate)
     power_margin = float(episode["P"]) - float(power)
     return {
         "rate": rate,
         "power": power,
-        "required_rate": required_rate,
-        "rate_margin": rate_margin,
         "power_margin": power_margin,
-        "feasible": bool(rate_margin >= -1e-9 and power_margin >= -1e-9),
     }
 
 
@@ -484,6 +491,8 @@ def _generate_rollout_queries_for_user(
         T_ref = int(episode["T_ref"])
         visited_n: set[int] = set()
         episode_queries: list[dict[str, Any]] = []
+        full_n_metrics = _evaluate_uplink_rollout_query_numpy(model, episode, T_ref)
+        rollout_anchor_bits = _resolve_rollout_anchor_bits(float(full_n_metrics["rate"]), T_ref)
 
         def record_query(n_kl: int, stage: str) -> dict[str, Any]:
             n_val = int(n_kl)
@@ -491,17 +500,20 @@ def _generate_rollout_queries_for_user(
                 for existing in episode_queries:
                     if int(existing["n_kl"]) == n_val:
                         return existing
-            metrics = _evaluate_uplink_rollout_query_numpy(model, episode, n_val)
+            metrics = full_n_metrics if n_val == int(T_ref) else _evaluate_uplink_rollout_query_numpy(model, episode, n_val)
+            required_rate = float(rollout_anchor_bits) / float(max(int(n_val), 1))
+            rate_margin = float(metrics["rate"] - required_rate)
             query = {
                 **episode,
                 "n_kl": int(n_val),
                 "rollout_stage": str(stage),
+                "rollout_anchor_bits": int(rollout_anchor_bits),
                 "rate": float(metrics["rate"]),
                 "power": float(metrics["power"]),
-                "required_rate": float(metrics["required_rate"]),
-                "rate_margin": float(metrics["rate_margin"]),
+                "required_rate": float(required_rate),
+                "rate_margin": float(rate_margin),
                 "power_margin": float(metrics["power_margin"]),
-                "feasible": bool(metrics["feasible"]),
+                "feasible": bool(rate_margin >= -1e-9 and float(metrics["power_margin"]) >= -1e-9),
                 "frontier_query": False,
                 "query_weight": 1.0,
             }
@@ -666,16 +678,8 @@ def _build_post_training_summary(
     return {
         "train_eval_seed": int(train_eval_seed),
         "epochs_requested": int(epochs),
-        "train_target_bits_summary": dataset_summary.get("global_episodes_by_target_bits", {}),
-        "train_target_bits_per_user": [
-            user_summary.get("episodes_by_target_bits", {})
-            for user_summary in dataset_summary.get("per_user", [])
-        ],
-        "train_target_bits_mode": (
-            "fixed_block_targets_actual_bits"
-            if FIXED_BLOCK_TARGETS_MODE in dataset_summary.get("scenario_modes", [])
-            else "minimum_required_bits_fallback"
-        ),
+        "base_dataset_kind": dataset_summary.get("base_dataset_kind", "channel_episodes_only"),
+        "rollout_anchor_bits_mode": "derived_online_from_current_full_block_rate",
         "cumulative_rollout_queries_by_n_kl": training_history.get("cumulative_rollout_queries_by_n_kl", {}),
         "cumulative_frontier_rollout_queries_by_n_kl": training_history.get(
             "cumulative_frontier_rollout_queries_by_n_kl",
@@ -745,7 +749,6 @@ def train_blocklength_aware_precoder_net(
 ) -> dict:
     system_params, sim_cfg = get_config(cfg_name)
     K = int(system_params["K"])
-    scenario_mode = str(sim_cfg.get("experiment_scenario_mode", PAYLOAD_COMPLETION_MODE))
     episodes_by_user = build_training_dataset(cfg_name, train_seeds)
     dataset_summary = summarize_training_dataset(episodes_by_user)
     training_history = {
@@ -759,11 +762,7 @@ def train_blocklength_aware_precoder_net(
         "avg_power_violation_over_users": [],
         "dataset_summary": dataset_summary,
         "rollout_query_summaries_per_user": [[] for _ in range(K)],
-        "training_objective": (
-            "rollout_lagrangian_user_finite_blocklength_rate_with_fixed_target_bits_objective"
-            if scenario_mode == FIXED_BLOCK_TARGETS_MODE
-            else "rollout_lagrangian_user_finite_blocklength_rate_with_fixed_min_bits_objective"
-        ),
+        "training_objective": "rollout_lagrangian_user_finite_blocklength_rate_with_online_full_block_anchor_bits",
     }
 
     user_models = []
@@ -800,9 +799,16 @@ def train_blocklength_aware_precoder_net(
         rng = np.random.default_rng(int(train_seeds[0]) + 17 * (k + 1))
 
         print(
-            f"\n================ PRECODER NET TRAIN USER {k} ================\n"
-            f"Channel episodes: {len(episodes)} | epochs: {epochs} | batch_size: {batch_size}"
+            format_log_line(
+                "[UL Monte Carlo Train]",
+                phase="start",
+                user=int(k),
+                channel_episodes=int(len(episodes)),
+                epochs=int(epochs),
+                batch_size=int(batch_size),
+            )
         )
+        previous_epoch_model_state: dict[str, torch.Tensor] | None = None
 
         for epoch in range(int(epochs)):
             rollout_queries = _generate_rollout_queries_for_user(model, episodes, sim_cfg)
@@ -853,15 +859,18 @@ def train_blocklength_aware_precoder_net(
                 user_rate_violation_history.append(0.0)
                 user_power_violation_history.append(0.0)
                 print(
-                    format_log_line(
-                        "[UL Monte Carlo Train]",
+                    format_progress_log_line(
+                        "[UL Monte Carlo]",
+                        phase="train",
+                        method="monte_carlo",
                         user=int(k),
                         epoch=f"{epoch + 1}/{int(epochs)}",
-                        rollout_queries=0,
-                        avg_rate=0.0,
-                        avg_rate_violation=0.0,
-                        avg_power_violation=0.0,
-                        avg_lagrangian=0.0,
+                        objective=0.0,
+                        rate=0.0,
+                        r_p=0.0,
+                        r_c=0.0,
+                        r_s=0.0,
+                        status="no_rollout_queries",
                     )
                 )
                 continue
@@ -909,9 +918,7 @@ def train_blocklength_aware_precoder_net(
                         noise_plus_interference_cov=noise_cov_t,
                     )
                     power = (torch.linalg.norm(pred_t, ord="fro") ** 2).real
-                    required_rate = float(query.get("target_bits", query.get("min_bits_required", 1))) / float(
-                        max(int(query["n_kl"]), 1)
-                    )
+                    required_rate = float(query.get("required_rate", 0.0))
                     rate_violation = torch.tensor(required_rate, dtype=torch.float32, device=DEVICE) - rate
                     power_violation = power - float(query["P"])
                     rate_violation_pos = _constraint_violation_activation(rate_violation, constraint_loss_form)
@@ -950,20 +957,33 @@ def train_blocklength_aware_precoder_net(
             avg_rate = float(epoch_rate_sum / max(epoch_query_weight_sum, 1.0))
             avg_rate_violation = float(epoch_rate_violation_sum / max(epoch_query_weight_sum, 1.0))
             avg_power_violation = float(epoch_power_violation_sum / max(epoch_query_weight_sum, 1.0))
+            epoch_r_p = float(max(max(avg_rate_violation, 0.0), max(avg_power_violation, 0.0)))
+            epoch_r_c = float(
+                max(
+                    abs(float(lambda_rate) * max(avg_rate_violation, 0.0)),
+                    abs(float(lambda_power) * max(avg_power_violation, 0.0)),
+                )
+            )
+            epoch_r_s = _relative_model_state_change(model, previous_epoch_model_state)
+            previous_epoch_model_state = _clone_model_state(model)
+            epoch_status = "epoch_budget_reached" if int(epoch + 1) >= int(epochs) else "running"
             user_lagrangian_history.append(avg_lagrangian)
             user_rate_history.append(avg_rate)
             user_rate_violation_history.append(avg_rate_violation)
             user_power_violation_history.append(avg_power_violation)
             print(
-                format_log_line(
-                    "[UL Monte Carlo Train]",
+                format_progress_log_line(
+                    "[UL Monte Carlo]",
+                    phase="train",
+                    method="monte_carlo",
                     user=int(k),
                     epoch=f"{epoch + 1}/{int(epochs)}",
-                    rollout_queries=int(len(rollout_queries)),
-                    avg_rate=avg_rate,
-                    avg_rate_violation=avg_rate_violation,
-                    avg_power_violation=avg_power_violation,
-                    avg_lagrangian=avg_lagrangian,
+                    objective=avg_lagrangian,
+                    rate=avg_rate,
+                    r_p=epoch_r_p,
+                    r_c=epoch_r_c,
+                    r_s=epoch_r_s,
+                    status=epoch_status,
                 )
             )
 
@@ -1322,7 +1342,13 @@ def evaluate_blocklength_precoder_net(
     n_kl_step = int(sim_cfg["n_kl_step"])
 
     for k in range(K):
-        print(f"\n================ PRECODER NET EVAL USER {k} ================")
+        print(
+            format_log_line(
+                "[UL Monte Carlo Eval]",
+                phase="start",
+                user=int(k),
+            )
+        )
         B_rem = int(uplinksystem.B[k])
         ell = 0
 

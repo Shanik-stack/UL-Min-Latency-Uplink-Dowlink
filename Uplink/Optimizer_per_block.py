@@ -16,10 +16,11 @@ from precoder_models import (
     infer_precoder_torch_with_blocklength_and_sigma,
     load_user_precoder_models,
 )
-from terminal_logging import format_log_line
+from terminal_logging import format_log_line, format_progress_log_line
 from uplink_rate_model import build_uplink_rate_covariance
 LOG2E_SQ = (np.log2(np.e)) ** 2
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
+CONVERGENCE_PRECODER_UPDATE_MODES = {"precoder_net", "direct_precoder"}
 POWER_PROJECTION_SAFETY_MARGIN = 1e-6
 
 # ============================================================
@@ -43,6 +44,16 @@ def resolve_constraint_loss_form(raw_mode: str) -> str:
     if mode not in CONSTRAINT_LOSS_FORMS:
         known = ", ".join(sorted(CONSTRAINT_LOSS_FORMS))
         raise ValueError(f"Unknown constraint loss form '{raw_mode}'. Expected one of: {known}")
+    return mode
+
+
+def resolve_convergence_precoder_update_mode(raw_mode: str) -> str:
+    mode = str(raw_mode).strip().lower()
+    if mode not in CONVERGENCE_PRECODER_UPDATE_MODES:
+        known = ", ".join(sorted(CONVERGENCE_PRECODER_UPDATE_MODES))
+        raise ValueError(
+            f"Unknown convergence precoder update mode '{raw_mode}'. Expected one of: {known}"
+        )
     return mode
 
 
@@ -71,6 +82,16 @@ def project_power(Fmat: torch.Tensor, P: float, eps: float = 1e-12, delta: float
     scale = scale * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
 
     return Fmat * scale.to(Fmat.dtype)
+
+
+def _complex_to_ri_parameter(Fmat: np.ndarray, device=DEVICE) -> torch.nn.Parameter:
+    arr = np.asarray(Fmat, dtype=np.complex64)
+    stacked = np.stack([arr.real, arr.imag], axis=0)
+    return torch.nn.Parameter(torch.tensor(stacked, dtype=torch.float32, device=device))
+
+
+def _ri_to_complex_tensor(param: torch.Tensor) -> torch.Tensor:
+    return (param[0] + 1j * param[1]).to(torch.complex64)
 
 # ============================================================
 # Precoder MLP
@@ -207,7 +228,7 @@ class LagrangianLoss(nn.Module):
 # Optimize precoder for a fixed n_kl
 # ============================================================
 def optimize_precoder_for_nl(
-    precoder_net: nn.Module,
+    precoder_net: nn.Module | None,
     loss_fn: LagrangianLoss,
     Nt: int,
     dk: int,
@@ -223,7 +244,16 @@ def optimize_precoder_for_nl(
     print_every_epoch: int = 1,
     verbose: bool = True,
     log_context: dict[str, object] | None = None,
+    *,
+    precoder_param: torch.nn.Parameter | None = None,
+    update_mode: str = "precoder_net",
 ):
+    update_mode = resolve_convergence_precoder_update_mode(update_mode)
+    if update_mode == "precoder_net" and precoder_net is None:
+        raise ValueError("precoder_net must be provided when convergence_precoder_update_mode=precoder_net.")
+    if update_mode == "direct_precoder" and precoder_param is None:
+        raise ValueError("precoder_param must be provided when convergence_precoder_update_mode=direct_precoder.")
+
     losses = []
     max_epochs = max(1, int(max_epochs))
     print_every_epoch = max(1, int(print_every_epoch))
@@ -233,10 +263,13 @@ def optimize_precoder_for_nl(
     best_feasible_rate = -float("inf")
     solve_status = "max_epochs_reached"
 
-    best_primal_model_state = {
-        key: value.detach().cpu().clone()
-        for key, value in precoder_net.state_dict().items()
-    }
+    if update_mode == "precoder_net":
+        best_primal_model_state = {
+            key: value.detach().cpu().clone()
+            for key, value in precoder_net.state_dict().items()
+        }
+    else:
+        best_primal_model_state = None
     best_primal_optimizer_state = copy.deepcopy(optimizer.state_dict())
     best_primal_lambda_rate = float(lambda_rate)
     best_primal_lambda_power = float(lambda_power)
@@ -247,17 +280,27 @@ def optimize_precoder_for_nl(
     best_feasible_lambda_rate: float | None = None
     best_feasible_lambda_power: float | None = None
 
+    if update_mode == "direct_precoder":
+        best_primal_param_state = precoder_param.detach().cpu().clone()
+        best_feasible_param_state: torch.Tensor | None = None
+    else:
+        best_primal_param_state = None
+        best_feasible_param_state = None
+
     for epoch_idx in range(max_epochs):
-        Fmat = infer_precoder_torch_with_blocklength_and_sigma(
-            precoder_net,
-            loss_fn.H_kl,
-            int(loss_fn.n_kl),
-            loss_fn.sigma2,
-            loss_fn.epsilon,
-            Nt,
-            dk,
-            loss_fn.P,
-        )
+        if update_mode == "direct_precoder":
+            Fmat = project_power(_ri_to_complex_tensor(precoder_param), loss_fn.P)
+        else:
+            Fmat = infer_precoder_torch_with_blocklength_and_sigma(
+                precoder_net,
+                loss_fn.H_kl,
+                int(loss_fn.n_kl),
+                loss_fn.sigma2,
+                loss_fn.epsilon,
+                Nt,
+                dk,
+                loss_fn.P,
+            )
 
         optimizer.zero_grad()
         loss, R, F_power, rv_raw, pv_raw, rv_pos, pv_pos = loss_fn(Fmat, lambda_rate, lambda_power)
@@ -317,18 +360,21 @@ def optimize_precoder_for_nl(
             or epoch_status != "running"
         ):
             log_fields = dict(log_context or {})
-            log_fields.update(
-                {
-                    "epoch": f"{epoch_idx + 1}/{max_epochs}",
-                    "rate": float(R.detach().cpu()),
-                    "power": float(F_power.detach().cpu()),
-                    "r_p": float(r_p),
-                    "r_c": float(r_c),
-                    "r_s": float(r_s),
-                    "status": epoch_status,
-                }
+            print(
+                format_progress_log_line(
+                    "[UL Convergence]",
+                    phase="optimize",
+                    epoch=f"{epoch_idx + 1}/{max_epochs}",
+                    objective=float(loss.detach().cpu()),
+                    rate=float(R.detach().cpu()),
+                    power=float(F_power.detach().cpu()),
+                    r_p=float(r_p),
+                    r_c=float(r_c),
+                    r_s=float(r_s),
+                    status=epoch_status,
+                    **log_fields,
+                )
             )
-            print(format_log_line("[UL Convergence]", **log_fields))
 
         lambda_rate, lambda_power = update_lambdas(
             lambda_rate, lambda_power, rv_pos, pv_pos, lr_rate, lr_power
@@ -336,20 +382,26 @@ def optimize_precoder_for_nl(
 
         if r_p < best_primal_residual:
             best_primal_residual = float(r_p)
-            best_primal_model_state = {
-                key: value.detach().cpu().clone()
-                for key, value in precoder_net.state_dict().items()
-            }
+            if update_mode == "direct_precoder":
+                best_primal_param_state = precoder_param.detach().cpu().clone()
+            else:
+                best_primal_model_state = {
+                    key: value.detach().cpu().clone()
+                    for key, value in precoder_net.state_dict().items()
+                }
             best_primal_optimizer_state = copy.deepcopy(optimizer.state_dict())
             best_primal_lambda_rate = float(lambda_rate)
             best_primal_lambda_power = float(lambda_power)
 
         if exact_feasible and float(R.detach().cpu()) >= best_feasible_rate:
             best_feasible_rate = float(R.detach().cpu())
-            best_feasible_model_state = {
-                key: value.detach().cpu().clone()
-                for key, value in precoder_net.state_dict().items()
-            }
+            if update_mode == "direct_precoder":
+                best_feasible_param_state = precoder_param.detach().cpu().clone()
+            else:
+                best_feasible_model_state = {
+                    key: value.detach().cpu().clone()
+                    for key, value in precoder_net.state_dict().items()
+                }
             best_feasible_optimizer_state = copy.deepcopy(optimizer.state_dict())
             best_feasible_lambda_rate = float(lambda_rate)
             best_feasible_lambda_power = float(lambda_power)
@@ -365,8 +417,14 @@ def optimize_precoder_for_nl(
         if (epoch_idx + 1) < max_epochs:
             optimizer.step()
 
-    if best_feasible_model_state is not None:
-        precoder_net.load_state_dict(best_feasible_model_state)
+    if (update_mode == "direct_precoder" and best_feasible_param_state is not None) or (
+        update_mode == "precoder_net" and best_feasible_model_state is not None
+    ):
+        if update_mode == "direct_precoder":
+            with torch.no_grad():
+                precoder_param.copy_(best_feasible_param_state.to(device=DEVICE, dtype=precoder_param.dtype))
+        else:
+            precoder_net.load_state_dict(best_feasible_model_state)
         if best_feasible_optimizer_state is not None:
             optimizer.load_state_dict(best_feasible_optimizer_state)
         lambda_rate = float(best_feasible_lambda_rate)
@@ -374,7 +432,11 @@ def optimize_precoder_for_nl(
         if solve_status == "max_epochs_reached":
             solve_status = "max_epochs_feasible_best"
     else:
-        precoder_net.load_state_dict(best_primal_model_state)
+        if update_mode == "direct_precoder":
+            with torch.no_grad():
+                precoder_param.copy_(best_primal_param_state.to(device=DEVICE, dtype=precoder_param.dtype))
+        else:
+            precoder_net.load_state_dict(best_primal_model_state)
         optimizer.load_state_dict(best_primal_optimizer_state)
         lambda_rate = float(best_primal_lambda_rate)
         lambda_power = float(best_primal_lambda_power)
@@ -382,16 +444,19 @@ def optimize_precoder_for_nl(
             solve_status = "max_epochs_best_primal"
 
     with torch.no_grad():
-        F_final = infer_precoder_torch_with_blocklength_and_sigma(
-            precoder_net,
-            loss_fn.H_kl,
-            int(loss_fn.n_kl),
-            loss_fn.sigma2,
-            loss_fn.epsilon,
-            Nt,
-            dk,
-            loss_fn.P,
-        )
+        if update_mode == "direct_precoder":
+            F_final = project_power(_ri_to_complex_tensor(precoder_param), loss_fn.P)
+        else:
+            F_final = infer_precoder_torch_with_blocklength_and_sigma(
+                precoder_net,
+                loss_fn.H_kl,
+                int(loss_fn.n_kl),
+                loss_fn.sigma2,
+                loss_fn.epsilon,
+                Nt,
+                dk,
+                loss_fn.P,
+            )
         loss, R, F_power, rv_raw, pv_raw, rv_pos, pv_pos = loss_fn(F_final, lambda_rate, lambda_power)
 
     return {
@@ -427,11 +492,15 @@ def optimize_subblocklength_precoder(
     lambda_rate_0: float,
     lambda_power_0: float,
     sim_cfg: dict,
-    precoder_net: nn.Module,
+    precoder_net: nn.Module | None,
     optimizer: torch.optim.Optimizer,
+    precoder_param: torch.nn.Parameter | None = None,
     interference_F_snapshot=None,
     bit_budget_role: str = "payload_completion",
 ):
+    update_mode = resolve_convergence_precoder_update_mode(
+        sim_cfg.get("convergence_precoder_update_mode", "precoder_net")
+    )
     is_fixed_target_block = str(bit_budget_role).strip().lower() == "fixed_block_targets"
     bit_budget_label = "target_bits" if is_fixed_target_block else "B_rem"
 
@@ -542,6 +611,8 @@ def optimize_subblocklength_precoder(
         print_every_epoch=int(sim_cfg.get("print_every_epoch", 1)),
         verbose=True,
         log_context={"user": int(user), "block": int(block), "n_kl": int(n_kl_max)},
+        precoder_param=precoder_param,
+        update_mode=update_mode,
     )
 
     step_a_diagnostics = {
@@ -701,10 +772,13 @@ def optimize_subblocklength_precoder(
                     served_bits=int(B_used),
                 )
             )
-        model_checkpoint = {
-            key: value.detach().cpu().clone()
-            for key, value in precoder_net.state_dict().items()
-        }
+        if update_mode == "direct_precoder":
+            model_checkpoint = precoder_param.detach().cpu().clone()
+        else:
+            model_checkpoint = {
+                key: value.detach().cpu().clone()
+                for key, value in precoder_net.state_dict().items()
+            }
         optimizer_checkpoint = copy.deepcopy(optimizer.state_dict())
         lambda_rate_checkpoint = float(lambda_rate)
         lambda_power_checkpoint = float(lambda_power)
@@ -728,6 +802,8 @@ def optimize_subblocklength_precoder(
             print_every_epoch=int(sim_cfg.get("print_every_epoch", 1)),
             verbose=bool(should_print_candidate),
             log_context={"user": int(user), "block": int(block), "n_kl": int(n_kl)},
+            precoder_param=precoder_param,
+            update_mode=update_mode,
         )
         lambda_rate = out["lambda_rate"]
         lambda_power = out["lambda_power"]
@@ -747,7 +823,11 @@ def optimize_subblocklength_precoder(
                 )
             )
         if not feasible:
-            precoder_net.load_state_dict(model_checkpoint)
+            if update_mode == "direct_precoder":
+                with torch.no_grad():
+                    precoder_param.copy_(model_checkpoint.to(device=DEVICE, dtype=precoder_param.dtype))
+            else:
+                precoder_net.load_state_dict(model_checkpoint)
             optimizer.load_state_dict(optimizer_checkpoint)
             lambda_rate = float(lambda_rate_checkpoint)
             lambda_power = float(lambda_power_checkpoint)
@@ -832,6 +912,9 @@ def dynamic_subblocklength_precoder_training(
         - B_kl_star:   list[user][block] = bits actually transmitted in that block
     """
     K = int(uplinksystem.K)
+    update_mode = resolve_convergence_precoder_update_mode(
+        sim_cfg.get("convergence_precoder_update_mode", "precoder_net")
+    )
 
     L_out = [1] * K
     n_star = [[] for _ in range(K)]
@@ -850,7 +933,14 @@ def dynamic_subblocklength_precoder_training(
     user_precoder_models: list[nn.Module] = []
 
     for k in range(K):
-        print(f"\n================ TRAIN USER {k} ================")
+        print(
+            format_log_line(
+                "[UL Convergence Train]",
+                phase="start",
+                user=int(k),
+                mode="payload_completion",
+            )
+        )
 
         # ---- normalize user channel across all currently available blocks ----
         H_user = np.array(uplinksystem.H[k], dtype=np.complex64)
@@ -869,14 +959,16 @@ def dynamic_subblocklength_precoder_training(
         while len(uplinksystem.H[k]) < 1:
             uplinksystem.add_block(k)
 
-        user_model = build_user_precoder_net_with_blocklength_and_sigma(
-            Nr=int(uplinksystem.NR[k]),
-            Nt=int(uplinksystem.NT[k]),
-            dk=int(uplinksystem.dk[k]),
-            device=DEVICE,
-        )
-        user_optimizer = torch.optim.Adam(user_model.parameters(), lr=float(sim_cfg["lr_net"]))
-        user_precoder_models.append(user_model)
+        if update_mode == "precoder_net":
+            user_model = build_user_precoder_net_with_blocklength_and_sigma(
+                Nr=int(uplinksystem.NR[k]),
+                Nt=int(uplinksystem.NT[k]),
+                dk=int(uplinksystem.dk[k]),
+                device=DEVICE,
+            )
+            user_precoder_models.append(user_model)
+        else:
+            user_model = None
 
         # reset lambdas per user (or keep global if you prefer)
         lambda_rate_user = float(lambda_rate_0)
@@ -896,6 +988,14 @@ def dynamic_subblocklength_precoder_training(
                 )
             )
 
+            if update_mode == "direct_precoder":
+                initial_precoder = np.asarray(uplinksystem.F[k][ell], dtype=np.complex64)
+                precoder_param = _complex_to_ri_parameter(initial_precoder, device=DEVICE)
+                user_optimizer = torch.optim.Adam([precoder_param], lr=float(sim_cfg["lr_net"]))
+            else:
+                precoder_param = None
+                user_optimizer = torch.optim.Adam(user_model.parameters(), lr=float(sim_cfg["lr_net"]))
+
             # This function already performs:
             #  Step A: optimize once at n=T and clip to feasible served bits
             #  Step B: if this is the tail block, decrease n_kl and re-optimize
@@ -909,6 +1009,7 @@ def dynamic_subblocklength_precoder_training(
                 sim_cfg=sim_cfg,
                 precoder_net=user_model,
                 optimizer=user_optimizer,
+                precoder_param=precoder_param,
                 interference_F_snapshot=interference_F_snapshot,
             )
 
@@ -976,15 +1077,24 @@ def dynamic_subblocklength_precoder_training(
         "all_user_block_results_train": all_user_block_results,
         "B_used_star": B_used_star,
         "B_kl_star": B_kl_star,
-        "user_model_specs": export_user_model_specs(
-            uplinksystem.NR,
-            uplinksystem.NT,
-            uplinksystem.dk,
-            uses_blocklength_input=True,
-            input_mode="channel_sigma_epsilon_n",
+        "user_model_specs": (
+            export_user_model_specs(
+                uplinksystem.NR,
+                uplinksystem.NT,
+                uplinksystem.dk,
+                uses_blocklength_input=True,
+                input_mode="channel_sigma_epsilon_n",
+            )
+            if update_mode == "precoder_net"
+            else []
         ),
-        "user_model_states": export_user_model_states(user_precoder_models),
-        "precoder_parameterization": "shared_user_channel_n_sigma_epsilon_to_precoder_mlp",
+        "user_model_states": export_user_model_states(user_precoder_models) if update_mode == "precoder_net" else [],
+        "convergence_precoder_update_mode": str(update_mode),
+        "precoder_parameterization": (
+            "shared_user_channel_n_sigma_epsilon_to_precoder_mlp_online_convergence"
+            if update_mode == "precoder_net"
+            else "direct_complex_precoder_per_user_block_online_convergence"
+        ),
     }
     return post_training_data_dict
 
@@ -1003,6 +1113,9 @@ def dynamic_fixed_target_precoder_training(
     block_targets = np.asarray(scenario["block_bit_targets"], dtype=int)
     num_blocks = int(scenario["num_blocks"])
     K = int(uplinksystem.K)
+    update_mode = resolve_convergence_precoder_update_mode(
+        sim_cfg.get("convergence_precoder_update_mode", "precoder_net")
+    )
 
     L_out = [int(num_blocks)] * K
     n_star = [[] for _ in range(K)]
@@ -1021,7 +1134,14 @@ def dynamic_fixed_target_precoder_training(
     user_precoder_models: list[nn.Module] = []
 
     for k in range(K):
-        print(f"\n================ FIXED-TARGET TRAIN USER {k} ================")
+        print(
+            format_log_line(
+                "[UL Convergence Train]",
+                phase="start",
+                user=int(k),
+                mode="fixed_block_targets",
+            )
+        )
 
         while len(uplinksystem.H[k]) < num_blocks:
             uplinksystem.add_block(k)
@@ -1033,14 +1153,16 @@ def dynamic_fixed_target_precoder_training(
         if channel_norm:
             uplinksystem.H[k] = list((H_user - mean) / np.sqrt(var))
 
-        user_model = build_user_precoder_net_with_blocklength_and_sigma(
-            Nr=int(uplinksystem.NR[k]),
-            Nt=int(uplinksystem.NT[k]),
-            dk=int(uplinksystem.dk[k]),
-            device=DEVICE,
-        )
-        user_optimizer = torch.optim.Adam(user_model.parameters(), lr=float(sim_cfg["lr_net"]))
-        user_precoder_models.append(user_model)
+        if update_mode == "precoder_net":
+            user_model = build_user_precoder_net_with_blocklength_and_sigma(
+                Nr=int(uplinksystem.NR[k]),
+                Nt=int(uplinksystem.NT[k]),
+                dk=int(uplinksystem.dk[k]),
+                device=DEVICE,
+            )
+            user_precoder_models.append(user_model)
+        else:
+            user_model = None
 
         lambda_rate_user = float(lambda_rate_0)
         lambda_power_user = float(lambda_power_0)
@@ -1059,6 +1181,13 @@ def dynamic_fixed_target_precoder_training(
                     mode="fixed_block_targets",
                 )
             )
+            if update_mode == "direct_precoder":
+                initial_precoder = np.asarray(uplinksystem.F[k][ell], dtype=np.complex64)
+                precoder_param = _complex_to_ri_parameter(initial_precoder, device=DEVICE)
+                user_optimizer = torch.optim.Adam([precoder_param], lr=float(sim_cfg["lr_net"]))
+            else:
+                precoder_param = None
+                user_optimizer = torch.optim.Adam(user_model.parameters(), lr=float(sim_cfg["lr_net"]))
             S, B_used, step_a_diagnostics = optimize_subblocklength_precoder(
                 uplinksystem=uplinksystem,
                 user=k,
@@ -1069,6 +1198,7 @@ def dynamic_fixed_target_precoder_training(
                 sim_cfg=sim_cfg,
                 precoder_net=user_model,
                 optimizer=user_optimizer,
+                precoder_param=precoder_param,
                 interference_F_snapshot=interference_F_snapshot,
                 bit_budget_role="fixed_block_targets",
             )
@@ -1153,15 +1283,24 @@ def dynamic_fixed_target_precoder_training(
         "skipped_blocks_per_user": [int(v) for v in skipped_blocks_per_user],
         "scenario_mode": FIXED_BLOCK_TARGETS_MODE,
         "scenario_block_targets": block_targets.tolist(),
-        "user_model_specs": export_user_model_specs(
-            uplinksystem.NR,
-            uplinksystem.NT,
-            uplinksystem.dk,
-            uses_blocklength_input=True,
-            input_mode="channel_sigma_epsilon_n",
+        "user_model_specs": (
+            export_user_model_specs(
+                uplinksystem.NR,
+                uplinksystem.NT,
+                uplinksystem.dk,
+                uses_blocklength_input=True,
+                input_mode="channel_sigma_epsilon_n",
+            )
+            if update_mode == "precoder_net"
+            else []
         ),
-        "user_model_states": export_user_model_states(user_precoder_models),
-        "precoder_parameterization": "shared_user_channel_n_sigma_epsilon_to_precoder_mlp",
+        "user_model_states": export_user_model_states(user_precoder_models) if update_mode == "precoder_net" else [],
+        "convergence_precoder_update_mode": str(update_mode),
+        "precoder_parameterization": (
+            "shared_user_channel_n_sigma_epsilon_to_precoder_mlp_online_convergence"
+            if update_mode == "precoder_net"
+            else "direct_complex_precoder_per_user_block_online_convergence"
+        ),
     }
     return post_training_data_dict
 

@@ -134,6 +134,9 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
                 default=5e-3,
             )
         ),
+        "convergence_precoder_update_mode": str(
+            sim_cfg_raw.get("convergence_precoder_update_mode", "precoder_net")
+        ).strip().lower(),
         "initial_lambda_rate_constraint": float(sim_cfg_raw.get("initial_lambda_rate_constraint", 0.1)),
         "initial_lambda_power_constraint": float(sim_cfg_raw.get("initial_lambda_power_constraint", 0.01)),
         "lr_rate_constraint": float(sim_cfg_raw.get("lr_rate_constraint", 1e-2)),

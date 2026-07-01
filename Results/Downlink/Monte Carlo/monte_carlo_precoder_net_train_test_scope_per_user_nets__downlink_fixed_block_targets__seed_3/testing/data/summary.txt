@@ -4,78 +4,75 @@ Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment
 Test seed: 3
 Train seeds: [0, 1, 2]
 Experiment scenario mode: fixed_block_targets
-Training channel-episode counts per user: [9, 9, 9]
-Training dataset total channel episodes: 9
+Training channel-episode counts per user: [3, 3, 3]
+Training dataset total channel episodes: 3
 Objective mode: unweighted_sum_rate
 Allocation mode: fixed_block_targets
 Weight strategy: none
 Downlink precoder-net scope: per_user_nets
 Precoder parameterization: per_user_block_context_to_precoder_mlp
-Training objective: rollout_lagrangian_sum_finite_blocklength_rate_with_fixed_target_bits_objective
+Training objective: rollout_lagrangian_sum_finite_blocklength_rate_with_online_full_block_anchor_bits
 
 Training summary
-Train target-bits mode: fixed_block_targets_actual_bits
-Train target bits summary: {'200': 9, '400': 9, '600': 9}
-Final epoch avg sum rate: 33.958710
-Final epoch avg user rate: 11.319570
-Final epoch avg lagrangian: -7.717064
-Final epoch avg rate violation: 1.320261
-Final epoch avg block-power violation: 0.000002
-Final epoch per-user rates: [17.462229301189556, 11.572597569432752, 4.92388362559522]
-Final epoch per-user lagrangian: [-17.473050808084423, -11.593535324622845, 5.915395440726445]
-Final epoch per-user rate violation: [-0.12749986376228004, -0.045478940110428835, 4.133761035503242]
-Final feasible rollout-query fraction: 0.444444
-Global active-user rollout queries by n_kl over all epochs: {'13': 5, '14': 4, '15': 6, '16': 1, '17': 1, '18': 1, '19': 1, '20': 4, '21': 1, '22': 2, '23': 2, '24': 2, '25': 5, '26': 2, '27': 2, '28': 2, '29': 2, '30': 5, '31': 1, '32': 1, '33': 4, '34': 3, '35': 7, '36': 1, '37': 2, '38': 2, '39': 2, '40': 11, '41': 2, '42': 2, '43': 3, '44': 4, '45': 11, '46': 1, '47': 1, '48': 1, '49': 1, '50': 363, '51': 2, '52': 1, '53': 4, '54': 7, '55': 38, '56': 1, '57': 39, '58': 5, '59': 4, '60': 391, '61': 1, '62': 1, '63': 1, '64': 1, '65': 4, '67': 1, '68': 26, '69': 2, '70': 8, '71': 1, '72': 1, '73': 3, '74': 2, '75': 9, '76': 1, '77': 1, '78': 12, '79': 3, '80': 369}
-Per-user active-user rollout queries by n_kl over all epochs: [{'13': 5, '14': 4, '15': 6, '16': 1, '17': 1, '18': 1, '19': 1, '20': 4, '21': 1, '22': 2, '23': 2, '24': 2, '25': 5, '26': 2, '27': 2, '28': 2, '29': 2, '30': 5, '31': 1, '32': 1, '33': 4, '34': 3, '35': 7, '36': 1, '37': 2, '38': 2, '39': 2, '40': 11, '41': 2, '42': 2, '43': 3, '44': 4, '45': 11, '46': 1, '47': 1, '48': 1, '49': 1, '50': 362}, {'50': 1, '51': 2, '52': 1, '53': 4, '54': 5, '55': 29, '57': 38, '58': 4, '59': 3, '60': 383}, {'54': 2, '55': 9, '56': 1, '57': 1, '58': 1, '59': 1, '60': 8, '61': 1, '62': 1, '63': 1, '64': 1, '65': 4, '67': 1, '68': 26, '69': 2, '70': 8, '71': 1, '72': 1, '73': 3, '74': 2, '75': 9, '76': 1, '77': 1, '78': 12, '79': 3, '80': 369}]
-Per-user active-user frontier rollout queries by n_kl over all epochs: [{'13': 4, '14': 2, '15': 2, '20': 1, '22': 1, '23': 1, '25': 1, '26': 1, '27': 1, '33': 2, '35': 1, '37': 1, '38': 1, '40': 3, '43': 1, '44': 1, '45': 2, '50': 352}, {'50': 1, '51': 2, '53': 2, '54': 3, '55': 4, '57': 4, '58': 2, '60': 360}, {'54': 2, '55': 5, '56': 1, '57': 1, '60': 2, '61': 1, '67': 1, '68': 1, '69': 1, '70': 2, '73': 2, '75': 2, '78': 4, '80': 353}]
+Base training dataset: channel_episodes_only
+Rollout anchor-bits mode: derived_online_from_current_joint_full_block_rate
+Final epoch avg sum rate: 35.525554
+Final epoch avg user rate: 11.841851
+Final epoch avg lagrangian: -11.830250
+Final epoch per-user rates: [12.705221448625837, 13.947490283421107, 8.872842039380755]
+Final epoch per-user lagrangian: [-12.705232552119664, -13.947494779314313, -8.838021210261754]
+Final feasible rollout-query fraction: 0.285714
+Global active-user rollout queries by n_kl over all epochs: {'45': 3, '49': 4, '50': 271, '55': 1, '59': 1, '60': 276, '75': 75, '79': 74, '80': 129}
+Per-user active-user rollout queries by n_kl over all epochs: [{'45': 3, '49': 4, '50': 271}, {'55': 1, '59': 1, '60': 276}, {'75': 75, '79': 74, '80': 129}]
+Per-user active-user frontier rollout queries by n_kl over all epochs: [{'45': 3, '49': 4, '50': 271}, {'55': 1, '59': 1, '60': 276}, {'75': 75, '79': 74, '80': 129}]
 
 Latency summary
 Initial total latency: 0.063333
-Final total latency: 0.051000
-Total latency reduction (%): 19.4737
+Final total latency: 0.045733
+Total latency reduction (%): 27.7895
 Initial avg latency: 0.021111
-Final avg latency: 0.017000
+Final avg latency: 0.015244
 Initial min/max latency: 0.016667 / 0.026667
-Final min/max latency: 0.009667 / 0.026667
+Final min/max latency: 0.008933 / 0.023133
 
 Asynchronality summary
 Initial asynchronality sum: 0.020000
-Final asynchronality sum: 0.034000
-Asynchronality reduction (%): -70.0000
+Final asynchronality sum: 0.028400
+Asynchronality reduction (%): -42.0000
 
 Link quality summary
 Initial avg SNR (dB): 8.0000
-Final avg SNR (dB): -93.0850
+Final avg SNR (dB): 7.6692
 Initial avg block SINR (dB): -3.9905
-Final avg block SINR (dB): -2.2994
+Final avg block SINR (dB): -3.2937
 
 Per-user details
-User 0 | init_lat=0.016667 | final_lat=0.009667 | lat_red=42.0000% | init_block_sinr=-3.7698 dB | final_block_sinr=-8.8000 dB | blocks=5 | total_n=145 | served_bits=1000 | skipped_blocks=0 | target_bits=1000 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
-User 1 | init_lat=0.020000 | final_lat=0.014667 | lat_red=26.6667% | init_block_sinr=-3.9036 dB | final_block_sinr=4.2012 dB | blocks=5 | total_n=220 | served_bits=2000 | skipped_blocks=0 | target_bits=2000 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
-User 2 | init_lat=0.026667 | final_lat=0.026667 | lat_red=0.0000% | init_block_sinr=-4.2981 dB | final_block_sinr=-300.0000 dB | blocks=5 | total_n=400 | served_bits=0 | skipped_blocks=5 | target_bits=3000 | unserved_bits=3000 | partial_blocks=0 | zero_service_blocks=5
+User 0 | init_lat=0.016667 | final_lat=0.008933 | lat_red=46.4000% | init_block_sinr=-3.7698 dB | final_block_sinr=-5.4457 dB | blocks=5 | total_n=134 | served_bits=1000 | skipped_blocks=0 | target_bits=1000 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 1 | init_lat=0.020000 | final_lat=0.013667 | lat_red=31.6667% | init_block_sinr=-3.9036 dB | final_block_sinr=-3.4300 dB | blocks=5 | total_n=205 | served_bits=2000 | skipped_blocks=0 | target_bits=2000 | unserved_bits=0 | partial_blocks=0 | zero_service_blocks=0
+User 2 | init_lat=0.026667 | final_lat=0.023133 | lat_red=13.2500% | init_block_sinr=-4.2981 dB | final_block_sinr=-1.0055 dB | blocks=5 | total_n=347 | served_bits=2979 | skipped_blocks=0 | target_bits=3000 | unserved_bits=21 | partial_blocks=1 | zero_service_blocks=0
 
 Per-pair asynchronality
-Users 0-1 | initial_diff=0.003333 | final_diff=0.005000
-Users 0-2 | initial_diff=0.010000 | final_diff=0.017000
-Users 1-2 | initial_diff=0.006667 | final_diff=0.012000
+Users 0-1 | initial_diff=0.003333 | final_diff=0.004733
+Users 0-2 | initial_diff=0.010000 | final_diff=0.014200
+Users 1-2 | initial_diff=0.006667 | final_diff=0.009467
 
 Experiment cost
-Core wall time total (s): 126.066488
-Core wall time training (s): 121.929636
-Testing-phase wall time (s): 4.136852
+Core wall time total (s): 51.867818
+Core wall time training (s): 47.777468
+Testing-phase wall time (s): 4.090350
 Forward+backward NN FLOPs: 0.000e+00
-Forward-only NN FLOPs: 6.211e+08
-Total NN FLOPs: 6.211e+08
+Forward-only NN FLOPs: 9.283e+08
+Total NN FLOPs: 9.283e+08
 Total forward+backward NN evaluations: 0
-Forward-only NN evaluations: 277
-Optimizer steps: 41
+Forward-only NN evaluations: 414
+Optimizer steps: 40
 Workload counters:
-{'training_active_user_rollout_queries_per_user': [], 'batch_size': 32, 'test_forward_calls_per_user': [164, 103, 10], 'test_total_forward_calls': 277}
+{'training_active_user_rollout_queries_per_user': [], 'batch_size': 32, 'test_forward_calls_per_user': [194, 148, 72], 'test_total_forward_calls': 414}
 Notes:
 - Forward+backward NN FLOPs count the active-user rollout-query training passes that optimize the downlink precoder nets.
 - Forward-only NN FLOPs count the forward-only beam evaluations in the held-out downlink test pass.
 
 Terminology
-- channel episode: one (seed, block) block realization stored in the base dataset
+- channel episode: one (seed, block=0) block realization stored in the base dataset
 - active-user channel episode: one active user inside one stored channel episode
 - rollout query: one visited joint (episode, n_targets) state generated online from the current precoder nets

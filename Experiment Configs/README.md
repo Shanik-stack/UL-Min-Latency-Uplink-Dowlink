@@ -14,6 +14,10 @@ The configs now follow a simpler structure:
 - `simulation`
   - Optimization settings, one shared KKT stop budget `max_epochs`, Monte Carlo training-data settings, and scenario definition.
 
+For convergence runs, `simulation.convergence_precoder_update_mode` selects
+whether the solver updates a precoder net online (`precoder_net`) or directly
+updates the complex precoder variables (`direct_precoder`).
+
 The confusing legacy Monte Carlo names such as `precoder_net_train_*`,
 `curriculum_*`, and `policy_train_*` are no longer used in the canonical YAML
 files. The loaders still accept those old names as legacy aliases, but the

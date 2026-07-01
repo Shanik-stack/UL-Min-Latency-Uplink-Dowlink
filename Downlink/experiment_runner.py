@@ -11,9 +11,15 @@ from determinism import configure_determinism
 from downlink_system import DownlinkSystem
 from experiment_cost import build_downlink_convergence_cost, format_experiment_cost_lines
 from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE
-from experiment_utils import make_method_result_tag
+from experiment_utils import (
+    compact_method_tag,
+    compact_objective_tag,
+    compact_scope_tag,
+    compact_update_mode_tag,
+    join_compact_tag_parts,
+    make_method_result_tag,
+)
 from optimizer import (
-    convergence_objective_tag,
     optimize_downlink_convergence_epoch,
     resolve_convergence_objective_mode,
     optimize_downlink_safe_sweep,
@@ -52,13 +58,17 @@ def build_result_tag(
     *,
     objective_mode: str | None = None,
     model_scope: str | None = None,
+    solver_mode: str | None = None,
 ) -> str:
-    method_tag = method_name
+    method_parts = [compact_method_tag(method_name)]
     if objective_mode:
-        method_tag = f"{method_name}_{convergence_objective_tag(objective_mode)}"
-    if model_scope:
-        scope_tag = str(model_scope).strip().lower().replace(" ", "_").replace("-", "_")
-        method_tag = f"{method_tag}_scope_{scope_tag}"
+        method_parts.append(compact_objective_tag(objective_mode))
+    solver_tag = compact_update_mode_tag(solver_mode) if solver_mode else ""
+    if model_scope and solver_tag != "dir":
+        method_parts.append(compact_scope_tag(model_scope))
+    if solver_mode:
+        method_parts.append(solver_tag)
+    method_tag = join_compact_tag_parts(*method_parts)
     return make_method_result_tag(method_tag, cfg_stem, seed=seed)
 
 
@@ -353,6 +363,7 @@ def run_downlink_experiment(
         seed,
         objective_mode=objective_mode_tag,
         model_scope=sim_params.get("downlink_precoder_net_scope"),
+        solver_mode=sim_params.get("convergence_precoder_update_mode"),
     )
     if output_root is None:
         output_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs", result_tag)
@@ -401,6 +412,7 @@ def run_downlink_experiment(
         f"Objective mode: {result.get('objective_mode', 'unknown')}",
         f"Allocation mode: {result.get('allocation_mode', 'unknown')}",
         f"Weight strategy: {result.get('weight_strategy', 'n/a')}",
+        f"Convergence precoder update mode: {result.get('convergence_precoder_update_mode', 'unknown')}",
         f"Downlink precoder-net scope: {result.get('downlink_precoder_net_scope', 'unknown')}",
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
         "",

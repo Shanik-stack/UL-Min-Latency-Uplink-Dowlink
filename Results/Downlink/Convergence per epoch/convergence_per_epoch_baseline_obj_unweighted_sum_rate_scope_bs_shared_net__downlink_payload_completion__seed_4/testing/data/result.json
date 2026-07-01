@@ -131166,8 +131166,8 @@
         ]
     },
     "experiment_cost": {
-        "core_wall_time_seconds_total": 650.2700207000016,
-        "core_wall_time_seconds_training": 650.2700207000016,
+        "core_wall_time_seconds_total": 524.5632891999849,
+        "core_wall_time_seconds_training": 524.5632891999849,
         "core_wall_time_seconds_testing": 0.0,
         "estimated_nn_training_flops": 59677634304.0,
         "estimated_nn_inference_flops": 9946272384.0,

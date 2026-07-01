@@ -76,6 +76,11 @@ These parameters define the channel dimensions, payload, and timing.
 
 ### Constrained uplink solve
 
+- `convergence_precoder_update_mode`
+  - Chooses what the convergence uplink baseline updates inside each constrained solve.
+  - `precoder_net`: optimize the uplink precoder-net weights online, then extract the user precoder from the net.
+  - `direct_precoder`: directly optimize the complex user precoder for that user and block, without updating a neural network.
+
 - `initial_lambda_rate_constraint`
   - Initial rate dual variable.
   - Larger values push the solver harder toward rate feasibility from the start.
@@ -171,10 +176,20 @@ These parameters define the channel dimensions, payload, and timing.
 
 ### Per-user beam updates inside one epoch
 
+- `convergence_precoder_update_mode`
+  - Chooses what the convergence downlink baseline updates inside each constrained block solve.
+  - `precoder_net`: update the downlink precoder net online, then read the active-user precoders from that net.
+  - `direct_precoder`: directly update the active block precoders themselves, without updating a neural network.
+
 - `max_epochs`
   - Shared epoch ceiling used by the downlink constrained block solver.
   - The same cap is used for the first solve at the full blocklengths and for any reduced-`n_kl` repair solve.
   - The solver stops earlier if one epoch satisfies the KKT tolerances.
+
+- `downlink_precoder_net_scope`
+  - Selects whether the downlink net parameterization is per user or shared at the BS.
+  - This matters only when `convergence_precoder_update_mode: precoder_net`.
+  - In `direct_precoder` mode, the solver directly updates the active block precoders, so there is no neural-net scope to choose.
 
 - `print_every_epoch`
   - Logging interval for block epochs.

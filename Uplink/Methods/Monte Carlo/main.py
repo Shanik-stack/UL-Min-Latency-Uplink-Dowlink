@@ -29,7 +29,13 @@ from experiment_scenarios import (
     build_experiment_scenario_summary_lines,
     build_experiment_scenarios_for_seeds,
 )
-from experiment_utils import make_method_result_tag, parse_seed_list, save_json, save_text
+from experiment_utils import (
+    compact_method_tag,
+    make_method_result_tag,
+    parse_seed_list,
+    save_json,
+    save_text,
+)
 from experiment_report import (
     build_post_training_summary_lines,
     build_precoder_net_result,
@@ -57,7 +63,7 @@ from plotting import (
     plot_user_config,
 )
 from precoder_models import load_user_precoder_models
-from project_paths import build_uplink_result_dirs
+from project_paths import build_uplink_result_dirs, mirror_experiment_root_to_scenario_layout
 from utils import save_test_results_to_txt
 
 
@@ -254,7 +260,11 @@ def main():
         build_experiment_scenario_summary(scenario)
         for scenario in build_experiment_scenarios_for_seeds(system_params, sim_cfg, train_seeds)
     ]
-    result_tag = make_method_result_tag("monte_carlo_precoder_net_train_test", args.cfg_name, seed=args.test_seed)
+    result_tag = make_method_result_tag(
+        compact_method_tag("monte_carlo_precoder_net_train_test"),
+        args.cfg_name,
+        seed=args.test_seed,
+    )
     result_dirs = build_uplink_result_dirs("Monte Carlo", result_tag)
     initialize_plot_globals(result_tag, result_dirs)
 
@@ -335,6 +345,13 @@ def main():
         test_result["experiment_cost"] = total_cost
         save_json(test_result, os.path.join(result_dirs["test_data"], "result.json"))
         save_text(build_summary_lines(test_result), os.path.join(result_dirs["test_data"], "summary.txt"))
+    mirror_root = mirror_experiment_root_to_scenario_layout(
+        link_name="Uplink",
+        scenario_mode=str(sim_cfg.get("experiment_scenario_mode", "payload_completion")),
+        method_name="Monte Carlo",
+        source_experiment_root=result_dirs["experiment_root"],
+    )
+    print(f"Mirrored uplink precoder-net results to: {mirror_root}")
     print(f"Saved uplink precoder-net results to: {result_dirs['experiment_root']}")
 
 

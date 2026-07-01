@@ -35,6 +35,8 @@ test:
 
 simulation:
   # Constrained precoder solve
+  convergence_precoder_update_mode: precoder_net
+  # convergence_precoder_update_mode: direct_precoder
   initial_lambda_rate_constraint: 0.1
   initial_lambda_power_constraint: 0.01
   max_epochs: 1000

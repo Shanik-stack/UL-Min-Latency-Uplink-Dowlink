@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import re
+import shutil
 from pathlib import Path
 
+from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE, PAYLOAD_COMPLETION_MODE
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 RESULTS_ROOT = PROJECT_ROOT / "Results"
@@ -15,6 +17,51 @@ def _sanitize(value: str) -> str:
 
 def build_experiment_root(link_name: str, method_name: str, experiment_name: str) -> Path:
     return RESULTS_ROOT / link_name / method_name / _sanitize(experiment_name)
+
+
+def _scenario_folder_name(scenario_mode: str) -> str:
+    mode = str(scenario_mode).strip().lower()
+    if mode == PAYLOAD_COMPLETION_MODE:
+        return "Payload completion"
+    if mode == FIXED_BLOCK_TARGETS_MODE:
+        return "Fixed block targets"
+    return _sanitize(mode or PAYLOAD_COMPLETION_MODE)
+
+
+def build_scenario_experiment_root(
+    link_name: str,
+    scenario_mode: str,
+    method_name: str,
+    experiment_name: str,
+) -> Path:
+    return RESULTS_ROOT / link_name / _scenario_folder_name(scenario_mode) / method_name / _sanitize(experiment_name)
+
+
+def mirror_experiment_root_to_scenario_layout(
+    *,
+    link_name: str,
+    scenario_mode: str,
+    method_name: str,
+    source_experiment_root: str | Path,
+) -> str:
+    source_root = Path(source_experiment_root)
+    if not source_root.exists():
+        raise FileNotFoundError(f"Cannot mirror missing experiment root: {source_root}")
+
+    target_root = build_scenario_experiment_root(
+        link_name,
+        scenario_mode,
+        method_name,
+        source_root.name,
+    )
+    if source_root.resolve() == target_root.resolve():
+        return str(target_root)
+
+    target_root.parent.mkdir(parents=True, exist_ok=True)
+    if target_root.exists():
+        shutil.rmtree(target_root)
+    shutil.copytree(source_root, target_root)
+    return str(target_root)
 
 
 def build_uplink_result_dirs(method_name: str, experiment_name: str) -> dict[str, str]:

@@ -374,6 +374,7 @@ def build_convergence_result(
         "method_name": method_name,
         "cfg_path": cfg_path,
         "seed": int(seed),
+        "convergence_precoder_update_mode": convergence_data_dict.get("convergence_precoder_update_mode", "precoder_net"),
         "precoder_parameterization": convergence_data_dict.get("precoder_parameterization", "unknown"),
         "initial_latency": list(map(float, initial_latency)),
         "final_latency": list(map(float, uplinksystem.latency)),
@@ -431,6 +432,7 @@ def build_convergence_summary_lines(result: dict[str, Any]) -> list[str]:
         f"Config: {result.get('cfg_path', 'unknown')}",
         f"Seed: {int(result.get('seed', 0))}",
         f"Experiment scenario mode: {result.get('scenario_mode', 'unknown')}",
+        f"Convergence precoder update mode: {result.get('convergence_precoder_update_mode', 'unknown')}",
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
         f"Initial schedule source: {result.get('initial_schedule_source', 'unknown')}",
         "",
@@ -523,18 +525,14 @@ def build_summary_lines(result: dict[str, Any]) -> list[str]:
         lines.extend(
             [
                 "Training summary",
-                f"Train target-bits mode: {post_training_summary.get('train_target_bits_mode', 'unknown')}",
-                f"Train target bits summary: {post_training_summary.get('train_target_bits_summary', {})}",
+                f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}",
+                f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}",
                 f"Final avg user rate: {float(post_training_summary.get('final_avg_user_rate', 0.0)):.6f}",
                 f"Best avg user rate: {float(post_training_summary.get('best_avg_user_rate', 0.0)):.6f}",
                 f"Final avg lagrangian: {float(post_training_summary.get('final_avg_lagrangian', 0.0)):.6f}",
                 f"Best avg lagrangian: {float(post_training_summary.get('best_avg_lagrangian', 0.0)):.6f}",
-                f"Final avg rate violation: {float(post_training_summary.get('final_avg_rate_violation', 0.0)):.6f}",
-                f"Final avg power violation: {float(post_training_summary.get('final_avg_power_violation', 0.0)):.6f}",
                 f"Per-user final rate: {post_training_summary.get('per_user_final_rate', [])}",
                 f"Per-user final lagrangian: {post_training_summary.get('per_user_final_lagrangian', post_training_summary.get('per_user_final_loss', []))}",
-                f"Per-user final rate violation: {post_training_summary.get('per_user_final_rate_violation', [])}",
-                f"Per-user final power violation: {post_training_summary.get('per_user_final_power_violation', [])}",
                 f"Cumulative rollout queries by n_kl: {post_training_summary.get('cumulative_rollout_queries_by_n_kl', {}).get('global_rollout_queries_by_n_kl_over_all_epochs', {})}",
                 f"Cumulative frontier rollout queries by n_kl: {post_training_summary.get('cumulative_frontier_rollout_queries_by_n_kl', {}).get('global_frontier_rollout_queries_by_n_kl_over_all_epochs', {})}",
                 f"Train-eval initial blocks per user: {post_training_summary.get('train_eval_initial_blocks_per_user', [])}",
@@ -626,7 +624,7 @@ def build_summary_lines(result: dict[str, Any]) -> list[str]:
         [
             "",
             "Terminology",
-            "- channel episode: one (seed, user, block) channel realization stored in the base dataset",
+            "- channel episode: one (seed, user, block=0) channel realization stored in the base dataset",
             "- rollout query: one visited (episode, n_kl) state generated online from the current precoder net",
             "- initial schedule: the random-precoder baseline used for the before-optimization uplink latency",
         ]
@@ -638,10 +636,10 @@ def build_training_dataset_summary_lines(dataset_summary: dict[str, Any]) -> lis
     lines = [
         "Uplink training dataset summary",
         f"Total training channel episodes: {int(dataset_summary.get('total_channel_episodes', 0))}",
+        f"Base dataset kind: {dataset_summary.get('base_dataset_kind', 'unknown')}",
         f"Training scenario modes: {dataset_summary.get('scenario_modes', [])}",
         f"Training channel episodes by seed: {dataset_summary.get('episodes_by_seed', {})}",
         f"Training channel episodes by block: {dataset_summary.get('global_episodes_by_block', {})}",
-        f"Training channel episodes by target bits: {dataset_summary.get('global_episodes_by_target_bits', {})}",
         "",
         "Per-user channel-episode details",
     ]
@@ -652,7 +650,6 @@ def build_training_dataset_summary_lines(dataset_summary: dict[str, Any]) -> lis
                     f"User {int(user_summary.get('user', 0))}",
                     f"channel_episodes={int(user_summary.get('total_channel_episodes', 0))}",
                     f"channel_episodes_by_block={user_summary.get('episodes_by_block', {})}",
-                    f"channel_episodes_by_target_bits={user_summary.get('episodes_by_target_bits', {})}",
                     f"channel_episodes_by_seed={user_summary.get('episodes_by_seed', {})}",
                 ]
             )
@@ -661,7 +658,7 @@ def build_training_dataset_summary_lines(dataset_summary: dict[str, Any]) -> lis
         [
             "",
             "Terminology",
-            "- channel episode: one (seed, user, block) channel realization stored in the base dataset",
+            "- channel episode: one (seed, user, block=0) channel realization stored in the base dataset",
         ]
     )
     return lines
@@ -672,22 +669,16 @@ def build_post_training_summary_lines(post_training_summary: dict[str, Any]) -> 
         "Uplink post-training summary",
         f"Train-eval seed: {int(post_training_summary.get('train_eval_seed', 0))}",
         f"Epochs requested: {int(post_training_summary.get('epochs_requested', 0))}",
-        f"Train target-bits mode: {post_training_summary.get('train_target_bits_mode', 'unknown')}",
-        f"Train target bits summary: {post_training_summary.get('train_target_bits_summary', {})}",
+        f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}",
+        f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}",
         f"Per-user num epochs: {post_training_summary.get('per_user_num_epochs', [])}",
         f"Final avg user rate: {float(post_training_summary.get('final_avg_user_rate', 0.0)):.6f}",
         f"Best avg user rate: {float(post_training_summary.get('best_avg_user_rate', 0.0)):.6f}",
         f"Final avg lagrangian: {float(post_training_summary.get('final_avg_lagrangian', 0.0)):.6f}",
         f"Best avg lagrangian: {float(post_training_summary.get('best_avg_lagrangian', 0.0)):.6f}",
-        f"Final avg rate violation: {float(post_training_summary.get('final_avg_rate_violation', 0.0)):.6f}",
-        f"Best avg rate violation: {float(post_training_summary.get('best_avg_rate_violation', 0.0)):.6f}",
-        f"Final avg power violation: {float(post_training_summary.get('final_avg_power_violation', 0.0)):.6f}",
-        f"Best avg power violation: {float(post_training_summary.get('best_avg_power_violation', 0.0)):.6f}",
         f"Per-user final rate: {post_training_summary.get('per_user_final_rate', [])}",
         f"Per-user final lagrangian: {post_training_summary.get('per_user_final_lagrangian', post_training_summary.get('per_user_final_loss', []))}",
         f"Per-user best lagrangian: {post_training_summary.get('per_user_best_lagrangian', post_training_summary.get('per_user_best_loss', []))}",
-        f"Per-user final rate violation: {post_training_summary.get('per_user_final_rate_violation', [])}",
-        f"Per-user final power violation: {post_training_summary.get('per_user_final_power_violation', [])}",
         f"Cumulative rollout queries by n_kl: {post_training_summary.get('cumulative_rollout_queries_by_n_kl', {}).get('global_rollout_queries_by_n_kl_over_all_epochs', {})}",
         f"Cumulative frontier rollout queries by n_kl: {post_training_summary.get('cumulative_frontier_rollout_queries_by_n_kl', {}).get('global_frontier_rollout_queries_by_n_kl_over_all_epochs', {})}",
         f"Final epoch rollout query summary: {post_training_summary.get('final_epoch_rollout_query_summary', {})}",
@@ -716,7 +707,7 @@ def build_post_training_summary_lines(post_training_summary: dict[str, Any]) -> 
             "",
             "Terminology",
             "- train-eval: evaluation of the trained precoder nets on the first training seed",
-            "- channel episode: one (seed, user, block) channel realization stored in the base dataset",
+            "- channel episode: one (seed, user, block=0) channel realization stored in the base dataset",
             "- rollout query: one visited (episode, n_kl) state generated online from the current precoder net",
             "- initial schedule: the random-precoder baseline used for the before-training latency",
         ]

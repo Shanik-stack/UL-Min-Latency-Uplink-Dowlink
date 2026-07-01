@@ -32,7 +32,13 @@ from experiment_scenarios import (
     build_experiment_scenario_summary_lines,
     build_experiment_scenarios_for_seeds,
 )
-from experiment_utils import make_method_result_tag, parse_seed_list
+from experiment_utils import (
+    compact_method_tag,
+    compact_scope_tag,
+    join_compact_tag_parts,
+    make_method_result_tag,
+    parse_seed_list,
+)
 from experiment_runner import _compute_summary_metrics
 from policy_optimizer import (
     build_precoder_net_artifact,
@@ -56,7 +62,7 @@ from plotting import (
     plot_rate_violation_heatmap,
     plot_user_config,
 )
-from project_paths import build_downlink_result_dirs
+from project_paths import build_downlink_result_dirs, mirror_experiment_root_to_scenario_layout
 from utils import save_json, save_text
 
 
@@ -77,18 +83,16 @@ def _build_dataset_summary_lines(dataset_summary: dict[str, object]) -> list[str
     return [
         "Downlink training dataset summary",
         f"Total training channel episodes: {int(dataset_summary.get('total_channel_episodes', 0))}",
+        f"Base dataset kind: {dataset_summary.get('base_dataset_kind', 'unknown')}",
         f"Training scenario modes: {dataset_summary.get('scenario_modes', [])}",
         f"Training channel episodes by seed: {dataset_summary.get('channel_episodes_by_seed', {})}",
         f"Training channel episodes by block: {dataset_summary.get('channel_episodes_by_block', {})}",
         f"Training channel episodes by active user count: {dataset_summary.get('channel_episodes_by_active_user_count', {})}",
         f"Training channel episodes by active mask: {dataset_summary.get('channel_episodes_by_active_mask', {})}",
         f"Active-user channel episodes per user: {dataset_summary.get('channel_episodes_per_user', [])}",
-        f"Global active-user channel episodes by target bits: {dataset_summary.get('global_active_user_cases_by_target_bits', {})}",
-        "Per-user active-user channel episodes by target bits:",
-        f"{dataset_summary.get('per_user_active_user_cases_by_target_bits', [])}",
         "",
         "Terminology",
-        "- channel episode: one (seed, block) block realization stored in the base dataset",
+        "- channel episode: one (seed, block=0) block realization stored in the base dataset",
         "- active-user channel episode: one active user inside one stored channel episode",
     ]
 
@@ -98,18 +102,14 @@ def _build_post_training_summary_lines(post_training_summary: dict[str, object])
         "Downlink post-training summary",
         f"Epochs requested: {int(post_training_summary.get('epochs_requested', 0))}",
         f"Downlink precoder-net scope: {post_training_summary.get('downlink_precoder_net_scope', 'unknown')}",
-        f"Train target-bits mode: {post_training_summary.get('train_target_bits_mode', 'unknown')}",
-        f"Train target bits summary: {post_training_summary.get('train_target_bits_summary', {})}",
+        f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}",
+        f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}",
         f"Final avg sum rate: {float(post_training_summary.get('final_avg_sum_rate', 0.0)):.6f}",
         f"Best avg sum rate: {float(post_training_summary.get('best_avg_sum_rate', 0.0)):.6f}",
         f"Final avg user rate: {float(post_training_summary.get('final_avg_user_rate', 0.0)):.6f}",
         f"Best avg user rate: {float(post_training_summary.get('best_avg_user_rate', 0.0)):.6f}",
         f"Final avg lagrangian: {float(post_training_summary.get('final_avg_lagrangian', 0.0)):.6f}",
         f"Best avg lagrangian: {float(post_training_summary.get('best_avg_lagrangian', 0.0)):.6f}",
-        f"Final avg rate violation: {float(post_training_summary.get('final_avg_rate_violation', 0.0)):.6f}",
-        f"Best avg rate violation: {float(post_training_summary.get('best_avg_rate_violation', 0.0)):.6f}",
-        f"Final avg block-power violation: {float(post_training_summary.get('final_avg_block_power_violation', 0.0)):.6f}",
-        f"Best avg block-power violation: {float(post_training_summary.get('best_avg_block_power_violation', 0.0)):.6f}",
         (
             "Final feasible rollout-query fraction: "
             f"{float(post_training_summary.get('final_feasible_rollout_query_fraction', 0.0)):.6f}"
@@ -117,7 +117,6 @@ def _build_post_training_summary_lines(post_training_summary: dict[str, object])
         f"Per-user final lagrangian: {post_training_summary.get('per_user_final_lagrangian', [])}",
         f"Per-user best lagrangian: {post_training_summary.get('per_user_best_lagrangian', [])}",
         f"Per-user final rate: {post_training_summary.get('per_user_final_rate', [])}",
-        f"Per-user final rate violation: {post_training_summary.get('per_user_final_rate_violation', [])}",
         "Global active-user rollout queries by n_kl over all epochs:",
         f"{post_training_summary.get('cumulative_rollout_queries_by_n_kl', {}).get('global_active_user_rollout_queries_by_n_kl_over_all_epochs', {})}",
         "Per-user active-user rollout queries by n_kl over all epochs:",
@@ -134,7 +133,7 @@ def _build_post_training_summary_lines(post_training_summary: dict[str, object])
         [
             "",
             "Terminology",
-            "- channel episode: one (seed, block) block realization stored in the base dataset",
+            "- channel episode: one (seed, block=0) block realization stored in the base dataset",
             "- active-user channel episode: one active user inside one stored channel episode",
             "- rollout query: one visited joint (episode, n_targets) state generated online from the current precoder nets",
         ]
@@ -173,23 +172,20 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
         lines.extend(
             [
                 (
-                    f"Train target-bits mode: {post_training_summary.get('train_target_bits_mode', 'unknown')}"
+                    f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}"
                     if isinstance(post_training_summary, dict)
-                    else "Train target-bits mode: unknown"
+                    else "Base training dataset: unknown"
                 ),
                 (
-                    f"Train target bits summary: {post_training_summary.get('train_target_bits_summary', {})}"
+                    f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}"
                     if isinstance(post_training_summary, dict)
-                    else "Train target bits summary: {}"
+                    else "Rollout anchor-bits mode: unknown"
                 ),
                 f"Final epoch avg sum rate: {float(sum_rate_hist[-1]):.6f}",
                 f"Final epoch avg user rate: {float(avg_user_rate_hist[-1]):.6f}" if avg_user_rate_hist else "Final epoch avg user rate: n/a",
                 f"Final epoch avg lagrangian: {float(training_history.get('avg_lagrangian', [])[-1]):.6f}" if training_history.get("avg_lagrangian") else "Final epoch avg lagrangian: n/a",
-                f"Final epoch avg rate violation: {float(training_history.get('avg_rate_violation_over_users', [])[-1]):.6f}" if training_history.get("avg_rate_violation_over_users") else "Final epoch avg rate violation: n/a",
-                f"Final epoch avg block-power violation: {float(training_history.get('avg_block_power_violation', [])[-1]):.6f}" if training_history.get("avg_block_power_violation") else "Final epoch avg block-power violation: n/a",
                 f"Final epoch per-user rates: {training_history.get('per_user_rate', []) and [float(row[-1]) if len(row) > 0 else 0.0 for row in training_history.get('per_user_rate', [])]}",
                 f"Final epoch per-user lagrangian: {training_history.get('per_user_lagrangian', []) and [float(row[-1]) if len(row) > 0 else 0.0 for row in training_history.get('per_user_lagrangian', [])]}",
-                f"Final epoch per-user rate violation: {training_history.get('avg_rate_violation', []) and [float(row[-1]) if len(row) > 0 else 0.0 for row in training_history.get('avg_rate_violation', [])]}",
                 (
                     f"Final feasible rollout-query fraction: "
                     f"{float(post_training_summary.get('final_feasible_rollout_query_fraction', 0.0)):.6f}"
@@ -271,7 +267,7 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
         [
             "",
             "Terminology",
-            "- channel episode: one (seed, block) block realization stored in the base dataset",
+            "- channel episode: one (seed, block=0) block realization stored in the base dataset",
             "- active-user channel episode: one active user inside one stored channel episode",
             "- rollout query: one visited joint (episode, n_targets) state generated online from the current precoder nets",
         ]
@@ -300,9 +296,9 @@ def main() -> None:
         build_experiment_scenario_summary(scenario)
         for scenario in build_experiment_scenarios_for_seeds(system_params, sim_params, train_seeds)
     ]
-    scope_tag = str(sim_params.get("downlink_precoder_net_scope", "per_user_nets")).strip().lower().replace(" ", "_").replace("-", "_")
+    scope_tag = compact_scope_tag(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
     result_tag = make_method_result_tag(
-        f"monte_carlo_precoder_net_train_test_scope_{scope_tag}",
+        join_compact_tag_parts(compact_method_tag("monte_carlo_precoder_net_train_test"), scope_tag),
         run_meta["cfg_stem"],
         seed=args.test_seed,
     )
@@ -370,7 +366,7 @@ def main() -> None:
     result["training_experiment_scenarios"] = training_scenario_summaries
     result["training_objective"] = precoder_net_training_history.get(
         "training_objective",
-        "lagrangian_sum_finite_blocklength_rate_with_fixed_target_bits_objective",
+        "lagrangian_sum_finite_blocklength_rate_with_online_full_block_anchor_bits",
     )
     result["experiment_cost"] = build_downlink_monte_carlo_total_cost(
         artifact,
@@ -433,6 +429,13 @@ def main() -> None:
         build_experiment_scenario_summary_lines(test_scenario_summary),
         os.path.join(output_dirs["test_data"], "experiment_scenario.txt"),
     )
+    mirror_root = mirror_experiment_root_to_scenario_layout(
+        link_name="Downlink",
+        scenario_mode=str(sim_params.get("experiment_scenario_mode", "payload_completion")),
+        method_name="Monte Carlo",
+        source_experiment_root=output_root,
+    )
+    print(f"Mirrored downlink precoder-net results to: {mirror_root}")
     print(f"Saved downlink precoder-net results to: {output_root}")
 
 

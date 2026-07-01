@@ -47,3 +47,56 @@ def format_latency_log_line(prefix: str, latencies: Sequence[float], /, **fields
     augmented_fields["initial_min_latency"] = min(values) if values else 0.0
     augmented_fields["initial_max_latency"] = max(values) if values else 0.0
     return format_log_line(prefix, **augmented_fields)
+
+
+def format_progress_log_line(
+    prefix: str,
+    /,
+    *,
+    phase: Any = None,
+    method: Any = None,
+    scope: Any = None,
+    user: Any = None,
+    block: Any = None,
+    n_kl: Any = None,
+    epoch: Any = None,
+    active_users: Any = None,
+    updated_users: Any = None,
+    rollout_queries: Any = None,
+    objective: Any = None,
+    sum_rate: Any = None,
+    avg_user_rate: Any = None,
+    rate: Any = None,
+    power: Any = None,
+    r_p: Any = None,
+    r_c: Any = None,
+    r_s: Any = None,
+    status: Any = None,
+    **extra_fields: Any,
+) -> str:
+    ordered_fields: dict[str, Any] = {}
+    for key, value in (
+        ("phase", phase),
+        ("method", method),
+        ("scope", scope),
+        ("user", user),
+        ("block", block),
+        ("n_kl", n_kl),
+        ("epoch", epoch),
+        ("active_users", active_users),
+        ("updated_users", updated_users),
+        ("rollout_queries", rollout_queries),
+        ("objective", objective),
+        ("sum_rate", sum_rate),
+        ("avg_user_rate", avg_user_rate),
+        ("rate", rate),
+        ("power", power),
+        ("r_p", r_p),
+        ("r_c", r_c),
+        ("r_s", r_s),
+        ("status", status),
+    ):
+        if value is not None:
+            ordered_fields[key] = value
+    ordered_fields.update(extra_fields)
+    return format_log_line(prefix, **ordered_fields)

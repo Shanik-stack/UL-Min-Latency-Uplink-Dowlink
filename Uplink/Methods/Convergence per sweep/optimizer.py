@@ -40,7 +40,13 @@ def dynamic_subblocklength_precoder_training_baseline(
             interference_F_snapshot=interference_F_snapshot,
             commit_live_precoders=commit_live_precoders,
         )
-    convergence_data["precoder_parameterization"] = "shared_user_channel_n_sigma_epsilon_to_precoder_mlp_online_convergence"
+    update_mode = str(local_sim_cfg.get("convergence_precoder_update_mode", "precoder_net")).strip().lower()
+    convergence_data["convergence_precoder_update_mode"] = update_mode
+    convergence_data["precoder_parameterization"] = (
+        "shared_user_channel_n_sigma_epsilon_to_precoder_mlp_online_convergence"
+        if update_mode == "precoder_net"
+        else "direct_complex_precoder_per_user_block_online_convergence"
+    )
     convergence_data["method_name"] = "convergence_per_epoch_baseline"
     convergence_data["configured_max_epochs"] = int(effective_epochs)
     return convergence_data
