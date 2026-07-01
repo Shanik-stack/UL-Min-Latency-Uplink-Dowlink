@@ -37,8 +37,8 @@ Train-eval selected n_kl summary:
 {'global_selected_examples_by_n_kl': {'12': 2, '21': 1, '50': 1, '60': 2, '80': 2}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'12': 1, '50': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'12': 1, '60': 2}}, {'user': 2, 'selected_examples_by_n_kl': {'21': 1, '80': 2}}]}
 
 Experiment cost
-Core wall time total (s): 392.647416
-Core wall time training (s): 392.647416
+Core wall time total (s): 732.007896
+Core wall time training (s): 732.007896
 Testing-phase wall time (s): 0.000000
 Forward+backward NN FLOPs: 8.428e+09
 Forward-only NN FLOPs: 2.356e+07

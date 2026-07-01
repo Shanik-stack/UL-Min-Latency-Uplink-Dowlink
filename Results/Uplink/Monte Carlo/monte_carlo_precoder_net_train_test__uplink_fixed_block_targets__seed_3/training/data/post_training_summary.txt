@@ -1,0 +1,59 @@
+Uplink post-training summary
+Train-eval seed: 0
+Epochs requested: 40
+Train target-bits mode: fixed_block_targets_actual_bits
+Train target bits summary: {'200': 12, '400': 12, '600': 12}
+Per-user num epochs: [40, 40, 40]
+Final avg user rate: 15.336862
+Best avg user rate: 15.336867
+Final avg lagrangian: -15.165180
+Best avg lagrangian: -15.286443
+Final avg rate violation: 0.237148
+Best avg rate violation: -0.004132
+Final avg power violation: -0.000001
+Best avg power violation: -0.000001
+Per-user final rate: [15.11112651210621, 15.058841779365302, 15.840617041874753]
+Per-user final lagrangian: [-14.696540940758641, -15.00164364583744, -15.797355789851322]
+Per-user best lagrangian: [-15.020619739720852, -15.034216686805584, -15.820699048247242]
+Per-user final rate violation: [0.4332169530264379, 0.14914708836900753, 0.12907943340888337]
+Per-user final power violation: [-5.78611160652987e-07, -5.856211743446873e-07, -5.801837418543735e-07]
+Cumulative rollout queries by n_kl: {'10': 312, '12': 78, '13': 266, '14': 312, '15': 476, '16': 157, '17': 159, '18': 163, '19': 164, '20': 480, '21': 4, '22': 4, '23': 4, '24': 4, '25': 949, '26': 193, '27': 350, '28': 468, '29': 469, '30': 996, '31': 3, '32': 6, '33': 8, '34': 47, '35': 1271, '36': 79, '37': 119, '38': 236, '39': 275, '40': 1430, '41': 76, '42': 118, '43': 120, '44': 159, '45': 1436, '46': 4, '47': 4, '48': 4, '49': 6, '50': 1440, '51': 2, '52': 2, '53': 2, '54': 4, '55': 960, '60': 960, '65': 480, '70': 480, '75': 480, '80': 480}
+Cumulative frontier rollout queries by n_kl: {'10': 46, '12': 78, '13': 266, '14': 188, '15': 201, '16': 157, '17': 5, '18': 6, '19': 4, '20': 3, '21': 4, '22': 2, '25': 1, '26': 193, '27': 350, '28': 275, '29': 118, '30': 41, '31': 3, '32': 5, '33': 5, '34': 2, '35': 119, '36': 79, '37': 78, '38': 157, '39': 117, '40': 117, '41': 76, '42': 79, '43': 44, '44': 2, '45': 45, '46': 4, '50': 5, '51': 2, '52': 1, '55': 2}
+Final epoch rollout query summary: {'total_rollout_queries': 419, 'global_rollout_queries_by_n_kl': {'10': 8, '12': 2, '13': 7, '14': 8, '15': 12, '16': 4, '17': 4, '18': 4, '19': 4, '20': 12, '25': 24, '26': 5, '27': 9, '28': 12, '29': 12, '30': 25, '34': 1, '35': 32, '36': 2, '37': 3, '38': 6, '39': 7, '40': 36, '41': 2, '42': 3, '43': 3, '44': 4, '45': 36, '50': 36, '55': 24, '60': 24, '65': 12, '70': 12, '75': 12, '80': 12}, 'global_frontier_rollout_queries_by_n_kl': {'10': 1, '12': 2, '13': 7, '14': 5, '15': 5, '16': 4, '26': 5, '27': 9, '28': 7, '29': 3, '30': 1, '35': 3, '36': 2, '37': 2, '38': 4, '39': 3, '40': 3, '41': 2, '42': 2, '43': 1, '45': 1}, 'global_rollout_queries_by_feasibility': {'feasible': 353, 'infeasible': 66, 'frontier': 72}, 'per_user': [{'user': 0, 'total_rollout_queries': 137, 'rollout_queries_by_n_kl': {'10': 8, '12': 2, '13': 7, '14': 8, '15': 12, '16': 4, '17': 4, '18': 4, '19': 4, '20': 12, '25': 12, '30': 12, '35': 12, '40': 12, '45': 12, '50': 12}, 'frontier_rollout_queries_by_n_kl': {'10': 1, '12': 2, '13': 7, '14': 5, '15': 5, '16': 4}, 'feasible_rollout_queries': 117, 'infeasible_rollout_queries': 20, 'frontier_rollout_queries': 24}, {'user': 1, 'total_rollout_queries': 134, 'rollout_queries_by_n_kl': {'25': 12, '26': 5, '27': 9, '28': 12, '29': 12, '30': 12, '35': 12, '40': 12, '45': 12, '50': 12, '55': 12, '60': 12}, 'frontier_rollout_queries_by_n_kl': {'26': 5, '27': 9, '28': 7, '29': 3}, 'feasible_rollout_queries': 110, 'infeasible_rollout_queries': 24, 'frontier_rollout_queries': 24}, {'user': 2, 'total_rollout_queries': 148, 'rollout_queries_by_n_kl': {'30': 1, '34': 1, '35': 8, '36': 2, '37': 3, '38': 6, '39': 7, '40': 12, '41': 2, '42': 3, '43': 3, '44': 4, '45': 12, '50': 12, '55': 12, '60': 12, '65': 12, '70': 12, '75': 12, '80': 12}, 'frontier_rollout_queries_by_n_kl': {'30': 1, '35': 3, '36': 2, '37': 2, '38': 4, '39': 3, '40': 3, '41': 2, '42': 2, '43': 1, '45': 1}, 'feasible_rollout_queries': 126, 'infeasible_rollout_queries': 22, 'frontier_rollout_queries': 24}]}
+Train-eval initial latency: [0.0056, 0.011666666666666667, 0.016]
+Train-eval final latency: [0.0044666666666666665, 0.009466666666666667, 0.012866666666666667]
+Train-eval initial blocks per user: [5, 5, 5]
+Train-eval final blocks per user: [5, 5, 5]
+Train-eval initial total n per user: [84, 175, 240]
+Train-eval final total n per user: [67, 142, 193]
+Train-eval initial served bits per user: [1000, 2000, 3000]
+Train-eval final served bits per user: [1000, 2000, 3000]
+Train-eval initial skipped blocks per user: [0, 0, 0]
+Train-eval final skipped blocks per user: [0, 0, 0]
+Train-eval total latency reduction (%): 19.4389
+Train-eval initial selected n_kl summary:
+{'global_selected_examples_by_n_kl': {'16': 3, '17': 1, '19': 1, '32': 1, '35': 2, '36': 1, '37': 1, '43': 1, '45': 1, '48': 1, '49': 1, '55': 1}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'16': 3, '17': 1, '19': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'32': 1, '35': 2, '36': 1, '37': 1}}, {'user': 2, 'selected_examples_by_n_kl': {'43': 1, '45': 1, '48': 1, '49': 1, '55': 1}}]}
+Train-eval selected n_kl summary:
+{'global_selected_examples_by_n_kl': {'13': 3, '14': 2, '27': 1, '28': 1, '29': 3, '37': 1, '38': 1, '39': 2, '40': 1}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'13': 3, '14': 2}}, {'user': 1, 'selected_examples_by_n_kl': {'27': 1, '28': 1, '29': 3}}, {'user': 2, 'selected_examples_by_n_kl': {'37': 1, '38': 1, '39': 2, '40': 1}}]}
+
+Experiment cost
+Core wall time total (s): 687.963150
+Core wall time training (s): 687.963150
+Testing-phase wall time (s): 0.000000
+Forward+backward NN FLOPs: 7.716e+09
+Forward-only NN FLOPs: 8.671e+07
+Total NN FLOPs: 7.802e+09
+Total forward+backward NN evaluations: 16699
+Forward-only NN evaluations: 563
+Optimizer steps: 597
+Workload counters:
+{'training_rollout_queries_per_user': [5463, 5339, 5897], 'train_eval_candidate_n_states_per_user': [188, 163, 212], 'batch_size': 32}
+Notes:
+- Forward+backward NN FLOPs count the rollout-query training passes that optimize the uplink precoder net.
+- Forward-only NN FLOPs count the forward-only beam evaluations used in the post-training train-eval pass.
+
+Terminology
+- train-eval: evaluation of the trained precoder nets on the first training seed
+- channel episode: one (seed, user, block) channel realization stored in the base dataset
+- rollout query: one visited (episode, n_kl) state generated online from the current precoder net
+- initial schedule: the random-precoder baseline used for the before-training latency

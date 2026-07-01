@@ -41,6 +41,7 @@ from policy_optimizer import (
     evaluate_blocklength_precoder_net,
     train_blocklength_aware_precoder_net,
 )
+from terminal_logging import format_latency_log_line
 from plotting import (
     initialize_plot_globals,
     plot_F_vs_n_for_all_subblocks,
@@ -90,6 +91,15 @@ def _run_precoder_net_test(
         system_params,
         sim_cfg,
         seed=int(test_seed),
+    )
+    print(
+        format_latency_log_line(
+            "[UL Initial Baseline]",
+            initial_baseline["initial_latency"],
+            seed=int(test_seed),
+            scenario=str(test_scenario.get("mode", sim_cfg.get("experiment_scenario_mode", "unknown"))),
+            method="monte_carlo",
+        )
     )
     test_uplinksystem = UplinkSystem(system_params, seed=int(test_seed))
     initial_snr_db = list(initial_baseline["initial_snr_db"])

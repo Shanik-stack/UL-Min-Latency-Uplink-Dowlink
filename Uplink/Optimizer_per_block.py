@@ -8,15 +8,15 @@ from scipy.stats import norm
 from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE, build_experiment_scenario
 from precoder_models import (
     DEVICE,
-    build_user_precoder_net_with_sigma_context,
+    build_user_precoder_net_with_blocklength_and_sigma,
     export_user_model_specs,
     export_user_model_states,
+    infer_precoder_numpy_with_blocklength_and_sigma,
     infer_precoder_numpy_with_sigma_context,
-    infer_precoder_torch_with_sigma_context,
+    infer_precoder_torch_with_blocklength_and_sigma,
     load_user_precoder_models,
-    net_output_to_precoder,
-    project_precoder_power,
 )
+from terminal_logging import format_log_line
 from uplink_rate_model import build_uplink_rate_covariance
 LOG2E_SQ = (np.log2(np.e)) ** 2
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
@@ -71,15 +71,6 @@ def project_power(Fmat: torch.Tensor, P: float, eps: float = 1e-12, delta: float
     scale = scale * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
 
     return Fmat * scale.to(Fmat.dtype)
-
-def print_result(result_list, key: str):
-    print(f"\nResult {key}: ", end="")
-    for d in result_list[::-1]:
-        v = d.get(key, None)
-        if torch.is_tensor(v):
-            v = float(v.detach().cpu())
-        print(v, end=", ")
-    print()
 
 # ============================================================
 # Precoder MLP
@@ -229,9 +220,13 @@ def optimize_precoder_for_nl(
     kkt_primal_tol: float = 1e-5,
     kkt_complementarity_tol: float = 1e-5,
     kkt_stationarity_tol: float = 1e-5,
+    print_every_epoch: int = 1,
+    verbose: bool = True,
+    log_context: dict[str, object] | None = None,
 ):
     losses = []
     max_epochs = max(1, int(max_epochs))
+    print_every_epoch = max(1, int(print_every_epoch))
 
     kkt_history: list[dict[str, float]] = []
     best_primal_residual = float("inf")
@@ -253,9 +248,10 @@ def optimize_precoder_for_nl(
     best_feasible_lambda_power: float | None = None
 
     for epoch_idx in range(max_epochs):
-        Fmat = infer_precoder_torch_with_sigma_context(
+        Fmat = infer_precoder_torch_with_blocklength_and_sigma(
             precoder_net,
             loss_fn.H_kl,
+            int(loss_fn.n_kl),
             loss_fn.sigma2,
             loss_fn.epsilon,
             Nt,
@@ -306,6 +302,34 @@ def optimize_precoder_for_nl(
         )
         previous_precoder_eval = Fmat.detach().clone()
 
+        epoch_status = "running"
+        if (
+            r_p <= float(kkt_primal_tol)
+            and r_c <= float(kkt_complementarity_tol)
+            and r_s <= float(kkt_stationarity_tol)
+        ):
+            epoch_status = "kkt_converged"
+        elif r_s <= float(kkt_stationarity_tol) and r_p > float(kkt_primal_tol):
+            epoch_status = "stationary_infeasible"
+        if verbose and (
+            ((epoch_idx + 1) % print_every_epoch) == 0
+            or epoch_idx == 0
+            or epoch_status != "running"
+        ):
+            log_fields = dict(log_context or {})
+            log_fields.update(
+                {
+                    "epoch": f"{epoch_idx + 1}/{max_epochs}",
+                    "rate": float(R.detach().cpu()),
+                    "power": float(F_power.detach().cpu()),
+                    "r_p": float(r_p),
+                    "r_c": float(r_c),
+                    "r_s": float(r_s),
+                    "status": epoch_status,
+                }
+            )
+            print(format_log_line("[UL Convergence]", **log_fields))
+
         lambda_rate, lambda_power = update_lambdas(
             lambda_rate, lambda_power, rv_pos, pv_pos, lr_rate, lr_power
         )
@@ -330,15 +354,11 @@ def optimize_precoder_for_nl(
             best_feasible_lambda_rate = float(lambda_rate)
             best_feasible_lambda_power = float(lambda_power)
 
-        if (
-            r_p <= float(kkt_primal_tol)
-            and r_c <= float(kkt_complementarity_tol)
-            and r_s <= float(kkt_stationarity_tol)
-        ):
+        if epoch_status == "kkt_converged":
             solve_status = "kkt_converged"
             break
 
-        if previous_precoder_eval is not None and r_s <= float(kkt_stationarity_tol) and r_p > float(kkt_primal_tol):
+        if epoch_status == "stationary_infeasible":
             solve_status = "stationary_infeasible"
             break
 
@@ -362,9 +382,10 @@ def optimize_precoder_for_nl(
             solve_status = "max_epochs_best_primal"
 
     with torch.no_grad():
-        F_final = infer_precoder_torch_with_sigma_context(
+        F_final = infer_precoder_torch_with_blocklength_and_sigma(
             precoder_net,
             loss_fn.H_kl,
+            int(loss_fn.n_kl),
             loss_fn.sigma2,
             loss_fn.epsilon,
             Nt,
@@ -414,10 +435,15 @@ def optimize_subblocklength_precoder(
     is_fixed_target_block = str(bit_budget_role).strip().lower() == "fixed_block_targets"
     bit_budget_label = "target_bits" if is_fixed_target_block else "B_rem"
 
-    print(f"\n========== OptimizeSubBlocklength-Precoder ==========")
-    print(f"User: {user}, Block: {block}")
-    print(f"Initial {bit_budget_label}: {B_rem}")
-    print("-----------------------------------------------------")
+    print(
+        format_log_line(
+            "[UL Convergence Block]",
+            user=int(user),
+            block=int(block),
+            budget_mode=str(bit_budget_label),
+            requested_bits=int(B_rem),
+        )
+    )
 
     P = float(uplinksystem.P[user])
     Nr = int(uplinksystem.NR[user])
@@ -489,7 +515,16 @@ def optimize_subblocklength_precoder(
     # STEP A: Optimize once at n = T, then clip the served bits to the
     # maximum payload that the optimized beam can support.
     # ------------------------------------------------------------
-    print(f"\n--- Step A: Optimize at n = T = {n_kl_max} ---")
+    print(
+        format_log_line(
+            "[UL Convergence Solve]",
+            user=int(user),
+            block=int(block),
+            stage="n=T",
+            n_kl=int(n_kl_max),
+            requested_bits=int(B_rem),
+        )
+    )
     loss_fn.set_blocklength(n_kl_max)
     loss_fn.set_payload(float(B_rem))
     B_initial = int(B_rem)
@@ -504,6 +539,9 @@ def optimize_subblocklength_precoder(
         kkt_primal_tol=kkt_primal_tol,
         kkt_complementarity_tol=kkt_complementarity_tol,
         kkt_stationarity_tol=kkt_stationarity_tol,
+        print_every_epoch=int(sim_cfg.get("print_every_epoch", 1)),
+        verbose=True,
+        log_context={"user": int(user), "block": int(block), "n_kl": int(n_kl_max)},
     )
 
     step_a_diagnostics = {
@@ -524,13 +562,22 @@ def optimize_subblocklength_precoder(
     lambda_rate = out["lambda_rate"]
     lambda_power = out["lambda_power"]
 
-    print(f"R_fbl: {out['R_fbl']}")
-    print(f"F_power: {out['F_power']}")
-    print(f"Rate gap: {out['rate_gap']}")
-    print(f"Power gap: {out['power_gap']}")
+    print(
+        format_log_line(
+            "[UL Convergence Result]",
+            user=int(user),
+            block=int(block),
+            n_kl=int(n_kl_max),
+            achieved_rate=float(out["R_fbl"]),
+            power=float(out["F_power"]),
+            rate_gap=float(out["rate_gap"]),
+            power_gap=float(out["power_gap"]),
+            solve_status=str(out.get("solve_status", "unknown")),
+        )
+    )
 
     if out["power_gap"] > 0.0:
-        print(">>> Power constraint violated at n = T. STOP.")
+        print(format_log_line("[UL Convergence Result]", user=int(user), block=int(block), n_kl=int(n_kl_max), status="power_infeasible"))
         return [], 0, step_a_diagnostics
 
     B_max_T = max(int(np.floor(float(n_kl_max) * float(out["R_fbl"]))), 0)
@@ -539,18 +586,22 @@ def optimize_subblocklength_precoder(
 
     if B_used <= 0:
         if is_fixed_target_block:
-            print(">>> No feasible service at n = T for this block target.")
+            print(format_log_line("[UL Convergence Result]", user=int(user), block=int(block), n_kl=int(n_kl_max), status="zero_service_fixed_target"))
         else:
-            print(">>> No feasible service at n = T for this payload.")
+            print(format_log_line("[UL Convergence Result]", user=int(user), block=int(block), n_kl=int(n_kl_max), status="zero_service_payload"))
         return [], 0, step_a_diagnostics
 
-    if fully_feasible_at_T:
-        print(">>> Requested bits are feasible at n = T.")
-    else:
-        print(
-            f">>> Requested bits are not feasible at n = T. "
-            f"Serving the feasible payload B_used={B_used} without retry."
+    print(
+        format_log_line(
+            "[UL Convergence Allocation]",
+            user=int(user),
+            block=int(block),
+            n_kl=int(n_kl_max),
+            requested_bits=int(B_initial),
+            served_bits=int(B_used),
+            full_service=bool(fully_feasible_at_T),
         )
+    )
 
     results.append({
         "n_kl": int(n_kl_max),
@@ -574,28 +625,65 @@ def optimize_subblocklength_precoder(
     bits_left_after_current_request = int(B_initial - B_used)
     if is_fixed_target_block:
         print(
-            f"\n>>> Block target processed at n=T: B_used={B_used}, "
-            f"unserved_bits={bits_left_after_current_request}"
+            format_log_line(
+                "[UL Convergence Block]",
+                user=int(user),
+                block=int(block),
+                stage="post_T",
+                served_bits=int(B_used),
+                unserved_bits=int(bits_left_after_current_request),
+            )
         )
     else:
         print(
-            f"\n>>> Payload accepted at n=T: B_used={B_used}, "
-            f"remaining after this block would be B_rem={bits_left_after_current_request}"
+            format_log_line(
+                "[UL Convergence Block]",
+                user=int(user),
+                block=int(block),
+                stage="post_T",
+                served_bits=int(B_used),
+                remaining_bits=int(bits_left_after_current_request),
+            )
         )
 
     # ------------------------------------------------------------
     # STEP B: Reduce n while keeping B fixed. Each new n triggers a fresh
     # inner optimization warm-started from the last feasible solution.
     # ------------------------------------------------------------
-    print(f"\n--- Step B: Reduce n while keeping served bits B = {B_used} fixed ---")
+    print(
+        format_log_line(
+            "[UL Convergence Reduction]",
+            user=int(user),
+            block=int(block),
+            served_bits=int(B_used),
+            n_start=int(n_kl_max - n_kl_step),
+            n_min=int(n_kl_min),
+        )
+    )
     n_kl = n_kl_max - n_kl_step
 
     while n_kl >= n_kl_min:
         if bits_left_after_current_request != 0:
             if is_fixed_target_block:
-                print(f"\n Not reducing n_kl because the block target was only partially served (n_kl = {n_kl})")
+                print(
+                    format_log_line(
+                        "[UL Convergence Reduction]",
+                        user=int(user),
+                        block=int(block),
+                        n_kl=int(n_kl),
+                        status="stop_partial_fixed_target",
+                    )
+                )
             else:
-                print(f"\n Not reducing n_kl since not last sub-block (n_kl = {n_kl})")
+                print(
+                    format_log_line(
+                        "[UL Convergence Reduction]",
+                        user=int(user),
+                        block=int(block),
+                        n_kl=int(n_kl),
+                        status="stop_partial_payload",
+                    )
+                )
             break
         should_print_candidate = (
             n_kl == n_kl_max - n_kl_step
@@ -603,7 +691,16 @@ def optimize_subblocklength_precoder(
             or ((n_kl_max - n_kl) % max(int(n_kl_step) * int(reduced_n_kl_log_interval), 1) == 0)
         )
         if should_print_candidate:
-            print(f"\nRe-optimizing at n = {n_kl}")
+            print(
+                format_log_line(
+                    "[UL Convergence Solve]",
+                    user=int(user),
+                    block=int(block),
+                    stage="reduced_n",
+                    n_kl=int(n_kl),
+                    served_bits=int(B_used),
+                )
+            )
         model_checkpoint = {
             key: value.detach().cpu().clone()
             for key, value in precoder_net.state_dict().items()
@@ -628,26 +725,43 @@ def optimize_subblocklength_precoder(
             kkt_primal_tol=kkt_primal_tol,
             kkt_complementarity_tol=kkt_complementarity_tol,
             kkt_stationarity_tol=kkt_stationarity_tol,
+            print_every_epoch=int(sim_cfg.get("print_every_epoch", 1)),
+            verbose=bool(should_print_candidate),
+            log_context={"user": int(user), "block": int(block), "n_kl": int(n_kl)},
         )
         lambda_rate = out["lambda_rate"]
         lambda_power = out["lambda_power"]
 
-        if should_print_candidate:
-            print(f"R_fbl: {out['R_fbl']}")
-            print(f"Rate gap: {out['rate_gap']}")
-            print(f"Power gap: {out['power_gap']}")
-
         feasible = (out["rate_gap"] <= 0.0) and (out["power_gap"] <= 0.0)
+        if should_print_candidate:
+            print(
+                format_log_line(
+                    "[UL Convergence Candidate]",
+                    user=int(user),
+                    block=int(block),
+                    n_kl=int(n_kl),
+                    achieved_rate=float(out["R_fbl"]),
+                    rate_gap=float(out["rate_gap"]),
+                    power_gap=float(out["power_gap"]),
+                    status="accepted" if feasible else "rejected",
+                )
+            )
         if not feasible:
             precoder_net.load_state_dict(model_checkpoint)
             optimizer.load_state_dict(optimizer_checkpoint)
             lambda_rate = float(lambda_rate_checkpoint)
             lambda_power = float(lambda_power_checkpoint)
-            print(">>> Not feasible after re-optimization. Stop decreasing n.")
+            print(
+                format_log_line(
+                    "[UL Convergence Reduction]",
+                    user=int(user),
+                    block=int(block),
+                    n_kl=int(n_kl),
+                    status="stop_infeasible",
+                )
+            )
             break
 
-        if should_print_candidate:
-            print(">>> Feasible. Storing result.")
         results.append({
             "n_kl": int(n_kl),
             "n": int(n_kl),
@@ -669,12 +783,21 @@ def optimize_subblocklength_precoder(
 
         n_kl -= n_kl_step
 
-    print("\n>>> Finished OptimizeSubBlocklength-Precoder")
-    print_result(results, "n_kl")
-    print_result(results, "R_fbl")
-    print_result(results, "F_power")
-    print_result(results, "lambda_rate")
-    print_result(results, "lambda_power")
+    if len(results) > 0:
+        best_result = results[-1]
+        print(
+            format_log_line(
+                "[UL Convergence Final]",
+                user=int(user),
+                block=int(block),
+                feasible_points=int(len(results)),
+                chosen_n_kl=int(best_result["n_kl"]),
+                served_bits=int(B_used),
+                achieved_rate=float(best_result["R_fbl"]),
+                power=float(best_result["F_power"]),
+                solve_status=str(best_result.get("solve_status", "unknown")),
+            )
+        )
 
     return results, int(B_used), step_a_diagnostics
 
@@ -746,7 +869,7 @@ def dynamic_subblocklength_precoder_training(
         while len(uplinksystem.H[k]) < 1:
             uplinksystem.add_block(k)
 
-        user_model = build_user_precoder_net_with_sigma_context(
+        user_model = build_user_precoder_net_with_blocklength_and_sigma(
             Nr=int(uplinksystem.NR[k]),
             Nt=int(uplinksystem.NT[k]),
             dk=int(uplinksystem.dk[k]),
@@ -764,7 +887,14 @@ def dynamic_subblocklength_precoder_training(
             if ell >= len(uplinksystem.H[k]):
                 uplinksystem.add_block(k)
 
-            print(f"\n--- TRAIN User {k}, Block {ell}, B_rem={B_rem} ---")
+            print(
+                format_log_line(
+                    "[UL Convergence Train]",
+                    user=int(k),
+                    block=int(ell),
+                    remaining_bits=int(B_rem),
+                )
+            )
 
             # This function already performs:
             #  Step A: optimize once at n=T and clip to feasible served bits
@@ -783,7 +913,14 @@ def dynamic_subblocklength_precoder_training(
             )
 
             if len(S) == 0 or B_used <= 0:
-                print(f">>> STOP training user {k} at block {ell} (no feasible).")
+                print(
+                    format_log_line(
+                        "[UL Convergence Train]",
+                        user=int(k),
+                        block=int(ell),
+                        status="stop_no_feasible_service",
+                    )
+                )
                 break
 
             # Save trajectory for plotting (your plot_optimization_result_train expects this)
@@ -809,7 +946,17 @@ def dynamic_subblocklength_precoder_training(
             B_kl_star[k].append(int(B_kl))
 
             B_rem -= B_kl
-            print(f">>> Chosen: n_kl={n_opt}, B_used={B_used}, B_kl={B_kl}, remaining B_rem={B_rem}")
+            print(
+                format_log_line(
+                    "[UL Convergence Allocation]",
+                    user=int(k),
+                    block=int(ell),
+                    chosen_n_kl=int(n_opt),
+                    served_bits=int(B_used),
+                    committed_bits=int(B_kl),
+                    remaining_bits=int(B_rem),
+                )
+            )
 
             # advance block if bits remain
             if B_rem > 0:
@@ -833,10 +980,11 @@ def dynamic_subblocklength_precoder_training(
             uplinksystem.NR,
             uplinksystem.NT,
             uplinksystem.dk,
-            input_mode="channel_sigma_epsilon",
+            uses_blocklength_input=True,
+            input_mode="channel_sigma_epsilon_n",
         ),
         "user_model_states": export_user_model_states(user_precoder_models),
-        "precoder_parameterization": "shared_user_channel_sigma_epsilon_to_precoder_mlp",
+        "precoder_parameterization": "shared_user_channel_n_sigma_epsilon_to_precoder_mlp",
     }
     return post_training_data_dict
 
@@ -885,7 +1033,7 @@ def dynamic_fixed_target_precoder_training(
         if channel_norm:
             uplinksystem.H[k] = list((H_user - mean) / np.sqrt(var))
 
-        user_model = build_user_precoder_net_with_sigma_context(
+        user_model = build_user_precoder_net_with_blocklength_and_sigma(
             Nr=int(uplinksystem.NR[k]),
             Nt=int(uplinksystem.NT[k]),
             dk=int(uplinksystem.dk[k]),
@@ -902,7 +1050,15 @@ def dynamic_fixed_target_precoder_training(
                 uplinksystem.add_block(k)
 
             target_bits = int(block_targets[k, ell])
-            print(f"\n--- FIXED-TARGET User {k}, Block {ell}, target_bits={target_bits} ---")
+            print(
+                format_log_line(
+                    "[UL Convergence Train]",
+                    user=int(k),
+                    block=int(ell),
+                    target_bits=int(target_bits),
+                    mode="fixed_block_targets",
+                )
+            )
             S, B_used, step_a_diagnostics = optimize_subblocklength_precoder(
                 uplinksystem=uplinksystem,
                 user=k,
@@ -969,8 +1125,15 @@ def dynamic_fixed_target_precoder_training(
                 uplinksystem.F[k][ell] = F_opt.detach().cpu().numpy()
 
             print(
-                f">>> Fixed-target choice: n_kl={n_opt}, served_bits={int(B_used)}, "
-                f"unserved_bits={int(unserved_bits)}"
+                format_log_line(
+                    "[UL Convergence Allocation]",
+                    user=int(k),
+                    block=int(ell),
+                    chosen_n_kl=int(n_opt),
+                    served_bits=int(B_used),
+                    unserved_bits=int(unserved_bits),
+                    mode="fixed_block_targets",
+                )
             )
 
         uplinksystem.L[k] = int(num_blocks)
@@ -994,10 +1157,11 @@ def dynamic_fixed_target_precoder_training(
             uplinksystem.NR,
             uplinksystem.NT,
             uplinksystem.dk,
-            input_mode="channel_sigma_epsilon",
+            uses_blocklength_input=True,
+            input_mode="channel_sigma_epsilon_n",
         ),
         "user_model_states": export_user_model_states(user_precoder_models),
-        "precoder_parameterization": "shared_user_channel_sigma_epsilon_to_precoder_mlp",
+        "precoder_parameterization": "shared_user_channel_n_sigma_epsilon_to_precoder_mlp",
     }
     return post_training_data_dict
 
@@ -1022,18 +1186,34 @@ def _build_precoder_snapshot_from_models(
     for k in range(int(uplinksystem.K)):
         user_blocks: list[np.ndarray] = []
         for l in range(len(uplinksystem.H[k])):
-            user_blocks.append(
-                infer_precoder_numpy_with_sigma_context(
-                    user_models[k],
-                    np.asarray(uplinksystem.H[k][l], dtype=np.complex64),
-                    sigma2=float(uplinksystem.sigma2[k]),
-                    epsilon=float(uplinksystem.epsilon[k]),
-                    Nt=int(uplinksystem.NT[k]),
-                    dk=int(uplinksystem.dk[k]),
-                    P=float(uplinksystem.P[k]),
-                    device=DEVICE,
+            H_kl = np.asarray(uplinksystem.H[k][l], dtype=np.complex64)
+            if bool(getattr(user_models[k], "uses_blocklength_input", False)):
+                user_blocks.append(
+                    infer_precoder_numpy_with_blocklength_and_sigma(
+                        user_models[k],
+                        H_kl,
+                        n_kl=int(uplinksystem.T[k]),
+                        sigma2=float(uplinksystem.sigma2[k]),
+                        epsilon=float(uplinksystem.epsilon[k]),
+                        Nt=int(uplinksystem.NT[k]),
+                        dk=int(uplinksystem.dk[k]),
+                        P=float(uplinksystem.P[k]),
+                        device=DEVICE,
+                    )
                 )
-            )
+            else:
+                user_blocks.append(
+                    infer_precoder_numpy_with_sigma_context(
+                        user_models[k],
+                        H_kl,
+                        sigma2=float(uplinksystem.sigma2[k]),
+                        epsilon=float(uplinksystem.epsilon[k]),
+                        Nt=int(uplinksystem.NT[k]),
+                        dk=int(uplinksystem.dk[k]),
+                        P=float(uplinksystem.P[k]),
+                        device=DEVICE,
+                    )
+                )
         snapshot.append(user_blocks)
     return snapshot
 
@@ -1304,7 +1484,7 @@ def dynamic_subblocklength_precoder_testing(
         "user_model_states": user_model_states,
         "precoder_parameterization": post_training_data_dict.get(
             "precoder_parameterization",
-            "per_block_precoders" if user_models is None else "shared_user_channel_sigma_epsilon_to_precoder_mlp",
+            "per_block_precoders" if user_models is None else "shared_user_channel_n_sigma_epsilon_to_precoder_mlp",
         ),
     }
     return test_data_dict

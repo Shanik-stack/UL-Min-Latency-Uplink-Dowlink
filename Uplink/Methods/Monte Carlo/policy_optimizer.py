@@ -23,6 +23,7 @@ from advanced_methods_common import (
     collect_uplink_interference_diagnostics,
     ensure_blocks_up_to,
     estimate_initial_random_precoder_schedule,
+    estimate_initial_random_precoder_schedule_for_scenario as shared_estimate_initial_random_precoder_schedule_for_scenario,
 )
 from config_loader import get_config
 from experiment_scenarios import (
@@ -38,6 +39,7 @@ from precoder_models import (
     infer_precoder_numpy_with_blocklength_and_sigma,
     infer_precoder_torch_with_blocklength_and_sigma,
 )
+from terminal_logging import format_log_line
 from uplink_rate_model import build_uplink_rate_covariance
 
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
@@ -261,18 +263,11 @@ def estimate_initial_random_precoder_schedule_for_scenario(
     *,
     seed: int,
 ) -> dict[str, Any]:
-    scenario = build_experiment_scenario(system_params, sim_cfg, seed=int(seed))
-    if str(scenario["mode"]) == FIXED_BLOCK_TARGETS_MODE:
-        return _estimate_initial_random_precoder_schedule_fixed_block_targets(
-            system_params,
-            sim_cfg,
-            seed=int(seed),
-            scenario=scenario,
-        )
-    baseline = estimate_initial_random_precoder_schedule(system_params, sim_cfg, seed=int(seed))
-    baseline["skipped_blocks_per_user"] = [0 for _ in range(int(system_params["K"]))]
-    baseline["scenario_mode"] = PAYLOAD_COMPLETION_MODE
-    return baseline
+    return shared_estimate_initial_random_precoder_schedule_for_scenario(
+        system_params,
+        sim_cfg,
+        seed=int(seed),
+    )
 
 
 def build_training_dataset(
@@ -858,10 +853,16 @@ def train_blocklength_aware_precoder_net(
                 user_rate_violation_history.append(0.0)
                 user_power_violation_history.append(0.0)
                 print(
-                    f"Precoder-net user {k} epoch {epoch + 1}/{epochs}: "
-                    f"rollout_queries=0 | avg_rate=0.000000e+00 | "
-                    f"avg_rate_violation=0.000000e+00 | avg_power_violation=0.000000e+00 | "
-                    f"lagrangian=0.000000e+00"
+                    format_log_line(
+                        "[UL Monte Carlo Train]",
+                        user=int(k),
+                        epoch=f"{epoch + 1}/{int(epochs)}",
+                        rollout_queries=0,
+                        avg_rate=0.0,
+                        avg_rate_violation=0.0,
+                        avg_power_violation=0.0,
+                        avg_lagrangian=0.0,
+                    )
                 )
                 continue
 
@@ -954,12 +955,16 @@ def train_blocklength_aware_precoder_net(
             user_rate_violation_history.append(avg_rate_violation)
             user_power_violation_history.append(avg_power_violation)
             print(
-                f"Precoder-net user {k} epoch {epoch + 1}/{epochs}: "
-                f"rollout_queries={len(rollout_queries)} | "
-                f"avg_rate={avg_rate:.6e} | "
-                f"avg_rate_violation={avg_rate_violation:.6e} | "
-                f"avg_power_violation={avg_power_violation:.6e} | "
-                f"lagrangian={avg_lagrangian:.6e}"
+                format_log_line(
+                    "[UL Monte Carlo Train]",
+                    user=int(k),
+                    epoch=f"{epoch + 1}/{int(epochs)}",
+                    rollout_queries=int(len(rollout_queries)),
+                    avg_rate=avg_rate,
+                    avg_rate_violation=avg_rate_violation,
+                    avg_power_violation=avg_power_violation,
+                    avg_lagrangian=avg_lagrangian,
+                )
             )
 
         user_models.append(model.eval())
@@ -1332,7 +1337,14 @@ def evaluate_blocklength_precoder_net(
 
             snapshot_full = _build_precoder_net_snapshot(uplinksystem, user_models, ell)
 
-            print(f"\n--- PRECODER NET User {k}, Block {ell}, B_rem={B_rem} ---")
+            print(
+                format_log_line(
+                    "[UL Monte Carlo Eval]",
+                    user=int(k),
+                    block=int(ell),
+                    remaining_bits=int(B_rem),
+                )
+            )
 
             S_block = []
 
@@ -1361,12 +1373,27 @@ def evaluate_blocklength_precoder_net(
             B_used = int(min(B_rem, B_max))
 
             print(
-                f"n=T={T_ref}, requested_bits={B_rem}, feasible_bits={B_max}, "
-                f"served_bits={B_used}, R_fbl={R_T}"
+                format_log_line(
+                    "[UL Monte Carlo Eval]",
+                    user=int(k),
+                    block=int(ell),
+                    n_kl=int(T_ref),
+                    requested_bits=int(B_rem),
+                    feasible_bits=int(B_max),
+                    served_bits=int(B_used),
+                    achieved_rate=float(R_T),
+                )
             )
 
             if B_used <= 0:
-                print(f">>> STOP precoder-net user {k} at block {ell}: no feasible T-point.")
+                print(
+                    format_log_line(
+                        "[UL Monte Carlo Eval]",
+                        user=int(k),
+                        block=int(ell),
+                        status="stop_no_feasible_T_point",
+                    )
+                )
                 break
 
             S_block.append(
@@ -1392,7 +1419,15 @@ def evaluate_blocklength_precoder_net(
             n_kl = int(T_ref) - int(n_kl_step)
             while n_kl >= int(n_kl_min):
                 if int(B_used) < int(B_rem):
-                    print(f"Not reducing n_kl since this block only served a partial payload (n_kl = {n_kl})")
+                    print(
+                        format_log_line(
+                            "[UL Monte Carlo Eval]",
+                            user=int(k),
+                            block=int(ell),
+                            n_kl=int(n_kl),
+                            status="stop_partial_payload",
+                        )
+                    )
                     break
                 F_n = infer_precoder_numpy_with_blocklength_and_sigma(
                     user_models[k],
@@ -1417,7 +1452,16 @@ def evaluate_blocklength_precoder_net(
                 R_n = _compute_r_fbl_np(H_kl, F_n, sigma2, epsilon, n_kl, cov_n)
                 rate_violation = (B_used / float(n_kl)) - R_n
 
-                print(f"Precoder-net test n_kl={n_kl}: R_fbl={R_n}, rate_violation={rate_violation}")
+                print(
+                    format_log_line(
+                        "[UL Monte Carlo Eval]",
+                        user=int(k),
+                        block=int(ell),
+                        n_kl=int(n_kl),
+                        achieved_rate=float(R_n),
+                        rate_violation=float(rate_violation),
+                    )
+                )
 
                 if rate_violation > 0.0:
                     break
@@ -1451,7 +1495,17 @@ def evaluate_blocklength_precoder_net(
             B_kl = min(B_rem, int(B_used))
             B_kl_star[k].append(int(B_kl))
             B_rem -= B_kl
-            print(f">>> Precoder-net chose n_kl={best_n}, B_used={B_used}, B_kl={B_kl}, remaining B_rem={B_rem}")
+            print(
+                format_log_line(
+                    "[UL Monte Carlo Allocation]",
+                    user=int(k),
+                    block=int(ell),
+                    chosen_n_kl=int(best_n),
+                    served_bits=int(B_used),
+                    committed_bits=int(B_kl),
+                    remaining_bits=int(B_rem),
+                )
+            )
 
             if B_rem > 0:
                 ell += 1

@@ -82,6 +82,8 @@ class ChannelAndSigmaToPrecoderNet(nn.Module):
         self.Nr = int(Nr)
         self.Nt = int(Nt)
         self.dk = int(dk)
+        self.uses_blocklength_input = False
+        self.input_mode = "channel_sigma_epsilon"
 
         in_dim = 2 * self.Nr * self.Nt + 2
         out_dim = 2 * self.Nt * self.dk
@@ -129,6 +131,8 @@ class ChannelAndInterferenceToPrecoderNet(nn.Module):
         self.Nr = int(Nr)
         self.Nt = int(Nt)
         self.dk = int(dk)
+        self.uses_blocklength_input = False
+        self.input_mode = "channel_noise_epsilon"
 
         in_dim = 2 * self.Nr * self.Nt + 2 * self.Nr * self.Nr + 1
         out_dim = 2 * self.Nt * self.dk
@@ -177,6 +181,8 @@ class ChannelAndBlocklengthToPrecoderNet(nn.Module):
         self.Nr = int(Nr)
         self.Nt = int(Nt)
         self.dk = int(dk)
+        self.uses_blocklength_input = True
+        self.input_mode = "channel_noise_epsilon_n"
 
         in_dim = 2 * self.Nr * self.Nt + 2 * self.Nr * self.Nr + 2
         out_dim = 2 * self.Nt * self.dk
@@ -227,6 +233,8 @@ class ChannelAndBlocklengthAndSigmaToPrecoderNet(nn.Module):
         self.Nr = int(Nr)
         self.Nt = int(Nt)
         self.dk = int(dk)
+        self.uses_blocklength_input = True
+        self.input_mode = "channel_sigma_epsilon_n"
 
         in_dim = 2 * self.Nr * self.Nt + 3
         out_dim = 2 * self.Nt * self.dk

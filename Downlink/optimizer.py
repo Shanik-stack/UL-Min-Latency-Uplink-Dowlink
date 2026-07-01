@@ -21,6 +21,7 @@ from precoder_models import (
     model_outputs_full_bs_precoder,
     resolve_downlink_precoder_net_scope,
 )
+from terminal_logging import format_log_line, format_latency_log_line
 LOG2E_SQ = float(np.log2(np.e) ** 2)
 USER_RATE_MODE = "user_rate"
 UNWEIGHTED_SUM_RATE_MODE = "unweighted_sum_rate"
@@ -1425,8 +1426,12 @@ def _reduce_blocklengths_with_reoptimization(
         )
         if verbose:
             print(
-                f"  block={block:02d} n_kl reduction epoch {epoch_idx + 1} "
-                f"over users {ordered_users}"
+                format_log_line(
+                    "[DL Convergence Reduction]",
+                    block=int(block),
+                    epoch=int(epoch_idx + 1),
+                    users=[int(k) for k in ordered_users],
+                )
             )
 
         for k_int in ordered_users:
@@ -1957,11 +1962,19 @@ def optimize_precoders_for_block_constrained(
 
         if verbose and (((epoch_idx + 1) % print_every) == 0 or epoch_idx == 0 or solve_status in {"kkt_converged", "stationary_infeasible"}):
             print(
-                f"[Block {block:02d} | KKT Epoch {epoch_idx + 1:03d}] "
-                f"active_users={len(active_users)} "
-                f"updated_users={len(update_users)} "
-                f"{objective_label}={objective_value:.4f} "
-                f"r_p={r_p:.6e} r_c={r_c:.6e} r_s={r_s:.6e}"
+                format_log_line(
+                    "[DL Convergence]",
+                    block=int(block),
+                    epoch=f"{epoch_idx + 1}/{max_epochs}",
+                    active_users=int(len(active_users)),
+                    updated_users=int(len(update_users)),
+                    objective=float(objective_value),
+                    sum_rate=float(total_rate),
+                    r_p=float(r_p),
+                    r_c=float(r_c),
+                    r_s=float(r_s),
+                    status=str(solve_status if solve_status != "max_epochs_reached" else "running"),
+                )
             )
 
         if solve_status in {"kkt_converged", "stationary_infeasible"}:
@@ -2307,6 +2320,24 @@ def _estimate_initial_latency_from_random_precoders_fixed_block_targets(
     )
 
 
+def estimate_initial_latency_from_random_precoders_for_scenario(
+    system: DownlinkSystem,
+    sim_params: dict[str, Any],
+    scenario: dict[str, Any],
+) -> tuple[list[float], dict[str, Any], dict[str, Any]]:
+    if str(scenario["mode"]) == FIXED_BLOCK_TARGETS_MODE:
+        return _estimate_initial_latency_from_random_precoders_fixed_block_targets(
+            system,
+            sim_params,
+            scenario,
+        )
+    return estimate_initial_latency_from_random_precoders(
+        system,
+        sim_params,
+        allocation_mode="greedy",
+    )
+
+
 def _run_safe_sweep(
     system: DownlinkSystem,
     sim_params: dict[str, Any],
@@ -2324,6 +2355,16 @@ def _run_safe_sweep(
         sim_params,
         allocation_mode="greedy",
     )
+    if verbose:
+        print(
+            format_latency_log_line(
+                "[DL Initial Baseline]",
+                initial_latency,
+                seed=int(system.seed),
+                scenario="payload_completion",
+                method="convergence",
+            )
+        )
     user_models = _build_user_precoder_models(system, model_scope=model_scope)
     model_optimizers = _build_user_model_optimizers(
         user_models,
@@ -2368,8 +2409,13 @@ def _run_safe_sweep(
         )
         if verbose:
             print(
-                f"\n=== Optimizing block {block} | active_users={len(active_users)} | "
-                f"remaining_bits={int(np.sum(remaining))} ==="
+                format_log_line(
+                    "[DL Convergence Block]",
+                    block=int(block),
+                    active_users=int(len(active_users)),
+                    remaining_bits=int(np.sum(remaining)),
+                    objective=str(objective_mode),
+                )
             )
             if objective_uses_user_weights(objective_mode):
                 weights_text = ", ".join(f"u{k}={queue_weights[k]:.3f}" for k in active_users)
@@ -2432,8 +2478,12 @@ def _run_safe_sweep(
             transmit_users = [k for k in transmit_users if int(k) not in infeasible_users]
             if verbose:
                 print(
-                    f"  block={block:02d} skipping users {infeasible_users}; "
-                    "re-optimizing remaining transmitters."
+                    format_log_line(
+                        "[DL Convergence Block]",
+                        block=int(block),
+                        skipped_users=[int(k) for k in infeasible_users],
+                        action="reoptimize_remaining",
+                    )
                 )
         final_plans: dict[int, dict[str, Any]] = {}
         if len(transmit_users) > 0:
@@ -2480,8 +2530,14 @@ def _run_safe_sweep(
                 )
                 if verbose:
                     print(
-                        f"  user={k:02d} block={block:02d} skipped "
-                        f"n_kl={int(system.T[k]):4d} R_fbl={skipped_rate:.4f}"
+                        format_log_line(
+                            "[DL Convergence Allocation]",
+                            user=int(k),
+                            block=int(block),
+                            status="skipped",
+                            n_kl=int(system.T[k]),
+                            achieved_rate=float(skipped_rate),
+                        )
                     )
                 continue
 
@@ -2511,10 +2567,16 @@ def _run_safe_sweep(
             )
             if verbose:
                 print(
-                    f"  user={k:02d} block={block:02d} "
-                    f"bits={B_used:4d} n_kl={n_used:4d} "
-                    f"required_rate={required_rate:.4f} "
-                    f"R_fbl={R_used:.4f} margin={rate_margin:.4f}"
+                    format_log_line(
+                        "[DL Convergence Allocation]",
+                        user=int(k),
+                        block=int(block),
+                        served_bits=int(B_used),
+                        n_kl=int(n_used),
+                        required_rate=float(required_rate),
+                        achieved_rate=float(R_used),
+                        rate_margin=float(rate_margin),
+                    )
                 )
 
         outer_history.append(
@@ -2533,8 +2595,13 @@ def _run_safe_sweep(
         )
         if verbose:
             print(
-                f"--- Block {block} allocation complete | "
-                f"allocated_bits={block_bits} remaining_bits={int(np.sum(remaining))} ---"
+                format_log_line(
+                    "[DL Convergence Block]",
+                    block=int(block),
+                    status="complete",
+                    allocated_bits=int(block_bits),
+                    remaining_bits=int(np.sum(remaining)),
+                )
             )
         block += 1
 
@@ -2598,6 +2665,16 @@ def _run_safe_sweep_fixed_block_targets(
         sim_params,
         scenario,
     )
+    if verbose:
+        print(
+            format_latency_log_line(
+                "[DL Initial Baseline]",
+                initial_latency,
+                seed=int(system.seed),
+                scenario="fixed_block_targets",
+                method="convergence",
+            )
+        )
     model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
     user_models = _build_user_precoder_models(system, model_scope=model_scope)
     model_optimizers = _build_user_model_optimizers(
@@ -2628,8 +2705,13 @@ def _run_safe_sweep_fixed_block_targets(
         queue_weights = {int(k): 1.0 for k in active_users}
         if verbose:
             print(
-                f"\n=== Optimizing fixed-target block {block} | active_users={len(active_users)} | "
-                f"target_bits={int(np.sum(block_targets[:, block]))} ==="
+                format_log_line(
+                    "[DL Convergence Block]",
+                    block=int(block),
+                    active_users=int(len(active_users)),
+                    target_bits=int(np.sum(block_targets[:, block])),
+                    objective=str(objective_mode),
+                )
             )
 
         transmit_users = list(active_users)
@@ -2748,8 +2830,14 @@ def _run_safe_sweep_fixed_block_targets(
                 )
                 if verbose:
                     print(
-                        f"  user={k:02d} block={block:02d} zero-service "
-                        f"target_bits={target_bits:4d} n_kl={int(system.T[k]):4d}"
+                        format_log_line(
+                            "[DL Convergence Allocation]",
+                            user=int(k),
+                            block=int(block),
+                            status="zero_service",
+                            target_bits=int(target_bits),
+                            n_kl=int(system.T[k]),
+                        )
                     )
                 continue
 
@@ -2787,9 +2875,17 @@ def _run_safe_sweep_fixed_block_targets(
             if verbose:
                 status = "partial" if 0 < int(B_used) < int(target_bits) else "full"
                 print(
-                    f"  user={k:02d} block={block:02d} target_bits={target_bits:4d} "
-                    f"served_bits={int(B_used):4d} unserved_bits={int(unserved_bits):4d} "
-                    f"n_kl={int(n_used):4d} R_fbl={float(R_used):.4f} status={status}"
+                    format_log_line(
+                        "[DL Convergence Allocation]",
+                        user=int(k),
+                        block=int(block),
+                        target_bits=int(target_bits),
+                        served_bits=int(B_used),
+                        unserved_bits=int(unserved_bits),
+                        n_kl=int(n_used),
+                        achieved_rate=float(R_used),
+                        status=str(status),
+                    )
                 )
 
         outer_history.append(
@@ -2811,8 +2907,13 @@ def _run_safe_sweep_fixed_block_targets(
         )
         if verbose:
             print(
-                f"--- Fixed-target block {block} complete | served_bits={int(block_bits)} "
-                f"unserved_bits={int(block_unserved_bits)} ---"
+                format_log_line(
+                    "[DL Convergence Block]",
+                    block=int(block),
+                    status="complete",
+                    served_bits=int(block_bits),
+                    unserved_bits=int(block_unserved_bits),
+                )
             )
 
     final_F = _expand_precoders_for_plan(system, working_F, n_plan)

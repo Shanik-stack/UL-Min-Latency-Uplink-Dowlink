@@ -1,0 +1,60 @@
+
+|| ---------------- USER 0 ---------------- ||
+R-fsbl_kl:    Initial [10.01972384 10.63958963 10.85683243 10.54547219 11.16733275] ->      Final [13.65974084823086, 13.54049643559559, 14.17591327993204, 12.918485690073954, 13.146511803820445]
+n_kl:   Initial [21, 19, 19, 20, 18] ->   Final [15, 15, 15, 16, 16]
+N_k:     Initial 97 ->  Final 77
+B^tx_kl:    Initial [200, 200, 200, 200, 200]->   Final  [200, 200, 200, 200, 200] 
+Bits per Symbol:    Initial avg 10.309278350515465, per block [9.523809523809524, 10.526315789473685, 10.526315789473685, 10.0, 11.11111111111111]->   Final [13.33333333 13.33333333 13.33333333 12.5        12.5       ] 
+SNR_dB: Initial 8.3013 -> Final 7.7966
+SINR_dB: Initial -2.6471 -> Final -3.3143
+Target bits per block: [200, 200, 200, 200, 200]
+Initial unserved bits per block: [0, 0, 0, 0, 0]
+Final unserved bits per block: [0, 0, 0, 0, 0]
+
+|| ---------------- USER 1 ---------------- ||
+R-fsbl_kl:    Initial [11.98300293 11.62666183 12.46949405 13.12993789 11.91705239] ->      Final [15.646111542161103, 15.170130379016555, 14.738174764361505, 15.266689370201469, 14.459597260515272]
+n_kl:   Initial [34, 35, 33, 31, 34] ->   Final [26, 27, 28, 27, 28]
+N_k:     Initial 167 ->  Final 136
+B^tx_kl:    Initial [400, 400, 400, 400, 400]->   Final  [400, 400, 400, 400, 400] 
+Bits per Symbol:    Initial avg 11.976047904191617, per block [11.764705882352942, 11.428571428571429, 12.121212121212121, 12.903225806451612, 11.764705882352942]->   Final [15.38461538 14.81481481 14.28571429 14.81481481 14.28571429] 
+SNR_dB: Initial 8.1797 -> Final 8.4183
+SINR_dB: Initial -4.3285 -> Final -3.9625
+Target bits per block: [400, 400, 400, 400, 400]
+Initial unserved bits per block: [0, 0, 0, 0, 0]
+Final unserved bits per block: [0, 0, 0, 0, 0]
+
+|| ---------------- USER 2 ---------------- ||
+R-fsbl_kl:    Initial [13.41409209 13.53759188 13.90594961 12.42613953 12.05575777] ->      Final [15.700773082068967, 16.153968068906245, 15.527895459261872, 16.018320279952903, 14.528467610779622]
+n_kl:   Initial [45, 45, 44, 49, 50] ->   Final [39, 38, 39, 38, 42]
+N_k:     Initial 233 ->  Final 196
+B^tx_kl:    Initial [600, 600, 600, 600, 600]->   Final  [600, 600, 600, 600, 600] 
+Bits per Symbol:    Initial avg 12.875536480686696, per block [13.333333333333334, 13.333333333333334, 13.636363636363637, 12.244897959183673, 12.0]->   Final [15.38461538 15.78947368 15.38461538 15.78947368 14.28571429] 
+SNR_dB: Initial 8.2612 -> Final 8.5489
+SINR_dB: Initial -3.0708 -> Final -2.7320
+Target bits per block: [600, 600, 600, 600, 600]
+Initial unserved bits per block: [0, 0, 0, 0, 0]
+Final unserved bits per block: [0, 0, 0, 0, 0]
+
+Initial Latency per user:
+[0.006466666666666667, 0.011133333333333334, 0.015533333333333333]
+
+Final Latency per user:
+[0.0051333333333333335, 0.009066666666666667, 0.013066666666666667]
+Latency reduction per user (%): [20.6185567  18.56287425 15.87982833]%
+ Total Latency Reduction(total_initial_latency/total_final_latency) (%): 17.70623742454728%
+
+Initial Asynchronality:
+User 0 - User 1: 0.004666666666666667
+User 0 - User 2: 0.009066666666666667
+User 1 - User 2: 0.004399999999999999
+
+Initial Sum of Asynchronality: 0.018133333333333335
+
+Final Asynchronality:
+User 0 - User 1: 0.003933333333333334
+User 0 - User 2: 0.007933333333333334
+User 1 - User 2: 0.004
+
+Final Sum of Asynchronality: 0.015866666666666668
+
+Asynchronality Reduction (%): 12.5%

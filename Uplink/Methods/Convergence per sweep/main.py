@@ -40,6 +40,7 @@ from plotting import (
     plot_user_config,
 )
 from project_paths import build_uplink_convergence_result_dirs
+from terminal_logging import format_latency_log_line
 from UplinkSystem import UplinkSystem
 from utils import save_test_results_to_txt
 
@@ -74,6 +75,15 @@ def run_convergence_experiment(
         system_params,
         sim_cfg,
         seed=int(seed),
+    )
+    print(
+        format_latency_log_line(
+            "[UL Initial Baseline]",
+            initial_baseline["initial_latency"],
+            seed=int(seed),
+            scenario=str(sim_cfg.get("experiment_scenario_mode", "payload_completion")),
+            method="convergence",
+        )
     )
 
     report_system = UplinkSystem(system_params, seed=int(seed))

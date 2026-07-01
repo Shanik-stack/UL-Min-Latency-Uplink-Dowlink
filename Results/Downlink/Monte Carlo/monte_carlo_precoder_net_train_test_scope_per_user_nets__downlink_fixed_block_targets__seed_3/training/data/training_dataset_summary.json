@@ -1,0 +1,43 @@
+{
+    "total_channel_episodes": 9,
+    "channel_episodes_by_seed": {
+        "0": 3,
+        "1": 3,
+        "2": 3
+    },
+    "channel_episodes_by_block": {
+        "0": 3,
+        "1": 3,
+        "2": 3
+    },
+    "channel_episodes_by_active_user_count": {
+        "3": 9
+    },
+    "channel_episodes_by_active_mask": {
+        "111": 9
+    },
+    "channel_episodes_per_user": [
+        9,
+        9,
+        9
+    ],
+    "global_active_user_cases_by_target_bits": {
+        "200": 9,
+        "400": 9,
+        "600": 9
+    },
+    "per_user_active_user_cases_by_target_bits": [
+        {
+            "200": 9
+        },
+        {
+            "400": 9
+        },
+        {
+            "600": 9
+        }
+    ],
+    "scenario_modes": [
+        "fixed_block_targets"
+    ]
+}

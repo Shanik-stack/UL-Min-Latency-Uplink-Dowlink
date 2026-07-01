@@ -110,7 +110,6 @@ class UplinkSystem:
         self.update_system()
         self.SNR_linear, self.SNR_db_measured = self.get_SNR()
         self.SINR_linear, self.SINR_db_measured = self.get_SINR()
-        print("Initial R_fbl after update system: ", self.R_fbl)
 
 
     # ============================================================

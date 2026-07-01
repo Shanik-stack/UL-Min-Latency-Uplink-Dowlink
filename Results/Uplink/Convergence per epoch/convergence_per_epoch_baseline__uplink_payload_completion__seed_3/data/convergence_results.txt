@@ -1,30 +1,30 @@
 
 || ---------------- USER 0 ---------------- ||
-R-fsbl_kl:    Initial [11.28064024 11.71477822] ->      Final [15.81742542 13.99523325]
+R-fsbl_kl:    Initial [11.28064024 11.71477822] ->      Final [15.215828895568848, 13.995243072509766]
 n_kl:   Initial [50, 38] ->   Final [50, 18]
 N_k:     Initial 88 ->  Final 68
 B^tx_kl:    Initial [564, 436]->   Final  [760, 240] 
 Bits per Symbol:    Initial avg 11.363636363636363, per block [11.28, 11.473684210526315]->   Final [15.2        13.33333333] 
-SNR_dB: Initial 7.7197 -> Final 7.9347
-SINR_dB: Initial -3.3592 -> Final -3.1310
+SNR_dB: Initial 7.7197 -> Final 8.0444
+SINR_dB: Initial -3.3592 -> Final -2.8954
 
 || ---------------- USER 1 ---------------- ||
-R-fsbl_kl:    Initial [12.72481545 12.3206684  12.7566461 ] ->      Final [16.93503727 16.4122374 ]
+R-fsbl_kl:    Initial [12.72481545 12.3206684  12.7566461 ] ->      Final [17.3118839263916, 16.412246704101562]
 n_kl:   Initial [60, 60, 40] ->   Final [60, 59]
 N_k:     Initial 160 ->  Final 119
 B^tx_kl:    Initial [763, 739, 498]->   Final  [1038, 962] 
 Bits per Symbol:    Initial avg 12.5, per block [12.716666666666667, 12.316666666666666, 12.45]->   Final [17.3        16.30508475] 
-SNR_dB: Initial 7.8043 -> Final 8.4349
-SINR_dB: Initial -4.6492 -> Final -4.1327
+SNR_dB: Initial 7.8043 -> Final 8.3633
+SINR_dB: Initial -4.6492 -> Final -4.1654
 
 || ---------------- USER 2 ---------------- ||
-R-fsbl_kl:    Initial [14.08889828 14.21465649 14.14800811] ->      Final [16.61303947 17.14037087 14.743633  ]
+R-fsbl_kl:    Initial [14.08889828 14.21465649 14.14800811] ->      Final [16.222688674926758, 17.140380859375, 14.743644714355469]
 n_kl:   Initial [80, 80, 53] ->   Final [80, 80, 23]
 N_k:     Initial 213 ->  Final 183
 B^tx_kl:    Initial [1127, 1137, 736]->   Final  [1297, 1371, 332] 
 Bits per Symbol:    Initial avg 14.084507042253522, per block [14.0875, 14.2125, 13.88679245283019]->   Final [16.2125     17.1375     14.43478261] 
-SNR_dB: Initial 8.7994 -> Final 8.8527
-SINR_dB: Initial -2.1732 -> Final -2.6548
+SNR_dB: Initial 8.7994 -> Final 8.5827
+SINR_dB: Initial -2.1732 -> Final -2.9286
 
 Initial Latency per user:
 [0.005866666666666667, 0.010666666666666666, 0.0142]

@@ -23,9 +23,9 @@ from optimizer import (
     _ensure_user_block,
     _evaluate_block_candidate,
     _expand_precoders_for_plan,
+    estimate_initial_latency_from_random_precoders_for_scenario as shared_estimate_initial_latency_from_random_precoders_for_scenario,
     _power_to_db,
     _zero_block_precoder,
-    estimate_initial_latency_from_random_precoders,
 )
 from precoder_models import (
     DEVICE,
@@ -40,6 +40,7 @@ from precoder_models import (
     model_outputs_full_bs_precoder,
     resolve_downlink_precoder_net_scope,
 )
+from terminal_logging import format_log_line, format_latency_log_line
 
 LOG2E_SQ = float(np.log2(np.e) ** 2)
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
@@ -1093,9 +1094,17 @@ def train_blocklength_aware_precoder_net(
             training_history["avg_block_power_violation"].append(0.0)
             if verbose:
                 print(
-                    f"Joint precoder-net epoch {epoch + 1}/{int(epochs)}: "
-                    "rollout_queries=0 | sum_rate=0.000000 | avg_user_rate=0.000000 | "
-                    "avg_lagrangian=0.000000 | avg_rate_violation=0.000000 | avg_block_power_violation=0.000000"
+                    format_log_line(
+                        "[DL Monte Carlo Train]",
+                        scope="joint",
+                        epoch=f"{epoch + 1}/{int(epochs)}",
+                        rollout_queries=0,
+                        sum_rate=0.0,
+                        avg_user_rate=0.0,
+                        avg_lagrangian=0.0,
+                        avg_rate_violation=0.0,
+                        avg_block_power_violation=0.0,
+                    )
                 )
             continue
 
@@ -1206,17 +1215,20 @@ def train_blocklength_aware_precoder_net(
         training_history["avg_block_power_violation"].append(avg_block_power_violation)
         if verbose:
             print(
-                f"Joint precoder-net epoch {epoch + 1}/{int(epochs)}: "
-                f"rollout_queries={len(rollout_queries)} | "
-                f"sum_rate={avg_sum_rate:.6f} | "
-                f"avg_user_rate={training_history['avg_user_rate'][-1]:.6f} | "
-                f"avg_lagrangian={training_history['avg_lagrangian'][-1]:.6f} | "
-                f"avg_rate_violation={training_history['avg_rate_violation_over_users'][-1]:.6f} | "
-                f"avg_block_power_violation={training_history['avg_block_power_violation'][-1]:.6f} | "
-                f"per_user_rate={epoch_rates} | "
-                f"per_user_lagrangian={epoch_lagrangians} | "
-                f"per_user_rate_violation={epoch_rate_violations} | "
-                f"block_power_violation={avg_block_power_violation:.6f}"
+                format_log_line(
+                    "[DL Monte Carlo Train]",
+                    scope="joint",
+                    epoch=f"{epoch + 1}/{int(epochs)}",
+                    rollout_queries=int(len(rollout_queries)),
+                    sum_rate=float(avg_sum_rate),
+                    avg_user_rate=float(training_history["avg_user_rate"][-1]),
+                    avg_lagrangian=float(training_history["avg_lagrangian"][-1]),
+                    avg_rate_violation=float(training_history["avg_rate_violation_over_users"][-1]),
+                    avg_block_power_violation=float(training_history["avg_block_power_violation"][-1]),
+                    per_user_rate=[float(v) for v in epoch_rates],
+                    per_user_lagrangian=[float(v) for v in epoch_lagrangians],
+                    per_user_rate_violation=[float(v) for v in epoch_rate_violations],
+                )
             )
 
     training_history["post_training_summary"] = {
@@ -1601,16 +1613,10 @@ def _estimate_initial_latency_from_random_precoders_for_scenario(
     sim_params: dict[str, Any],
     scenario: dict[str, Any],
 ) -> tuple[list[float], dict[str, Any], dict[str, Any]]:
-    if str(scenario["mode"]) == FIXED_BLOCK_TARGETS_MODE:
-        return _estimate_initial_latency_from_random_precoders_fixed_block_targets(
-            system,
-            sim_params,
-            scenario,
-        )
-    return estimate_initial_latency_from_random_precoders(
+    return shared_estimate_initial_latency_from_random_precoders_for_scenario(
         system,
         sim_params,
-        allocation_mode="greedy",
+        scenario,
     )
 
 
@@ -1632,6 +1638,16 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
         sim_params,
         scenario,
     )
+    if verbose:
+        print(
+            format_latency_log_line(
+                "[DL Initial Baseline]",
+                initial_latency,
+                seed=int(system.seed),
+                scenario="fixed_block_targets",
+                method="monte_carlo",
+            )
+        )
 
     block_targets = np.asarray(scenario["block_bit_targets"], dtype=int)
     num_blocks = int(scenario["num_blocks"])
@@ -1689,8 +1705,13 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
 
         if verbose:
             print(
-                f"\n=== Precoder-net fixed-target block {block} | active_users={len(active_users)} | "
-                f"target_bits={int(np.sum(block_targets[:, block]))} ==="
+                format_log_line(
+                    "[DL Monte Carlo Eval]",
+                    block=int(block),
+                    active_users=int(len(active_users)),
+                    target_bits=int(np.sum(block_targets[:, block])),
+                    mode="fixed_block_targets",
+                )
             )
 
         allocation_snapshot = _clone_precoders(working_F)
@@ -1844,15 +1865,27 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
             if verbose:
                 if bool(final_plan.get("skipped", False)):
                     print(
-                        f"  user={int(k):02d} block={int(block):02d} skipped "
-                        f"target_bits={int(final_plan.get('target_bits', 0)):4d}"
+                        format_log_line(
+                            "[DL Monte Carlo Allocation]",
+                            user=int(k),
+                            block=int(block),
+                            status="skipped",
+                            target_bits=int(final_plan.get("target_bits", 0)),
+                        )
                     )
                 else:
                     print(
-                        f"  user={int(k):02d} block={int(block):02d} "
-                        f"target_bits={int(final_plan.get('target_bits', 0)):4d} "
-                        f"served_bits={int(B_used):4d} unserved_bits={int(unserved_bits):4d} "
-                        f"n_kl={n_used:4d} required_rate={required_rate:.4f} R_fbl={R_used:.4f}"
+                        format_log_line(
+                            "[DL Monte Carlo Allocation]",
+                            user=int(k),
+                            block=int(block),
+                            target_bits=int(final_plan.get("target_bits", 0)),
+                            served_bits=int(B_used),
+                            unserved_bits=int(unserved_bits),
+                            n_kl=int(n_used),
+                            required_rate=float(required_rate),
+                            achieved_rate=float(R_used),
+                        )
                     )
 
         outer_history.append(
@@ -1962,6 +1995,16 @@ def evaluate_downlink_precoder_net(
         sim_params,
         scenario,
     )
+    if verbose:
+        print(
+            format_latency_log_line(
+                "[DL Initial Baseline]",
+                initial_latency,
+                seed=int(system.seed),
+                scenario="payload_completion",
+                method="monte_carlo",
+            )
+        )
 
     remaining = np.asarray(system.B, dtype=int).copy()
     n_plan: list[list[int]] = [[] for _ in range(system.K)]
@@ -2015,8 +2058,13 @@ def evaluate_downlink_precoder_net(
 
         if verbose:
             print(
-                f"\n=== Precoder-net block {block} | active_users={len(active_users)} | "
-                f"remaining_bits={int(np.sum(remaining))} ==="
+                format_log_line(
+                    "[DL Monte Carlo Eval]",
+                    block=int(block),
+                    active_users=int(len(active_users)),
+                    remaining_bits=int(np.sum(remaining)),
+                    mode="payload_completion",
+                )
             )
 
         transmit_users = list(active_users)
@@ -2041,7 +2089,13 @@ def evaluate_downlink_precoder_net(
                 skipped_users.append(int(k))
             transmit_users = [k for k in transmit_users if int(k) not in infeasible_users]
             if verbose:
-                print(f"  precoder-net block={block:02d} skipping users {infeasible_users}")
+                print(
+                    format_log_line(
+                        "[DL Monte Carlo Eval]",
+                        block=int(block),
+                        skipped_users=[int(k) for k in infeasible_users],
+                    )
+                )
 
         allocation_snapshot = _clone_precoders(working_F)
         transmit_mask = [1 if k in transmit_users else 0 for k in range(system.K)]
@@ -2190,12 +2244,25 @@ def evaluate_downlink_precoder_net(
             )
             if verbose:
                 if B_used <= 0:
-                    print(f"  user={int(k):02d} block={int(block):02d} skipped")
+                    print(
+                        format_log_line(
+                            "[DL Monte Carlo Allocation]",
+                            user=int(k),
+                            block=int(block),
+                            status="skipped",
+                        )
+                    )
                 else:
                     print(
-                        f"  user={int(k):02d} block={int(block):02d} "
-                        f"bits={B_used:4d} n_kl={n_used:4d} "
-                        f"required_rate={required_rate:.4f} R_fbl={R_used:.4f}"
+                        format_log_line(
+                            "[DL Monte Carlo Allocation]",
+                            user=int(k),
+                            block=int(block),
+                            served_bits=int(B_used),
+                            n_kl=int(n_used),
+                            required_rate=float(required_rate),
+                            achieved_rate=float(R_used),
+                        )
                     )
 
         outer_history.append(
@@ -2214,8 +2281,13 @@ def evaluate_downlink_precoder_net(
         )
         if verbose:
             print(
-                f"--- Precoder-net block {int(block)} complete | "
-                f"allocated_bits={int(block_bits)} remaining_bits={int(np.sum(remaining))} ---"
+                format_log_line(
+                    "[DL Monte Carlo Eval]",
+                    block=int(block),
+                    status="complete",
+                    allocated_bits=int(block_bits),
+                    remaining_bits=int(np.sum(remaining)),
+                )
             )
         block += 1
 
