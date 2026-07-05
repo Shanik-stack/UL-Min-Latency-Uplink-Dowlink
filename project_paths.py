@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import stat
 import shutil
 from pathlib import Path
 
@@ -79,10 +80,33 @@ def _mirror_tree(source_root: Path, target_root: Path) -> str:
     if source_root.resolve() == target_root.resolve():
         return str(target_root)
 
-    target_root.parent.mkdir(parents=True, exist_ok=True)
-    if target_root.exists():
-        shutil.rmtree(target_root)
-    shutil.copytree(source_root, target_root)
+    target_root.mkdir(parents=True, exist_ok=True)
+    mirror_errors: list[str] = []
+
+    for source_path in source_root.rglob("*"):
+        relative_path = source_path.relative_to(source_root)
+        target_path = target_root / relative_path
+        if source_path.is_dir():
+            target_path.mkdir(parents=True, exist_ok=True)
+            continue
+
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            shutil.copy2(source_path, target_path)
+        except OSError:
+            try:
+                if target_path.exists():
+                    target_path.chmod(stat.S_IWRITE)
+                    target_path.unlink()
+                shutil.copy2(source_path, target_path)
+            except OSError as exc:
+                mirror_errors.append(f"{relative_path}: {exc}")
+
+    if mirror_errors:
+        (target_root / "_mirror_warnings.txt").write_text(
+            "\n".join(mirror_errors),
+            encoding="utf-8",
+        )
     return str(target_root)
 
 

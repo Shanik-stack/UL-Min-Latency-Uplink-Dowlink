@@ -11,15 +11,6 @@
         "9": 1,
         "10": 1
     },
-    "channel_episodes_by_block": {
-        "0": 9
-    },
-    "channel_episodes_by_active_user_count": {
-        "3": 9
-    },
-    "channel_episodes_by_active_mask": {
-        "111": 9
-    },
     "channel_episodes_per_user": [
         9,
         9,

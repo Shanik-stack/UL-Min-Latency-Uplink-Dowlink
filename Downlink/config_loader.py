@@ -205,6 +205,27 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
                 default=5,
             )
         ),
+        "monte_carlo_training_full_block_weight": float(
+            _first_present(
+                sim_cfg_raw,
+                "monte_carlo_training_full_block_weight",
+                default=1.0,
+            )
+        ),
+        "monte_carlo_training_tail_feasible_weight": float(
+            _first_present(
+                sim_cfg_raw,
+                "monte_carlo_training_tail_feasible_weight",
+                default=1.0,
+            )
+        ),
+        "monte_carlo_training_tail_frontier_weight": float(
+            _first_present(
+                sim_cfg_raw,
+                "monte_carlo_training_tail_frontier_weight",
+                default=1.5,
+            )
+        ),
         "monte_carlo_training_fallback_target_bits": int(
             _first_present(
                 sim_cfg_raw,

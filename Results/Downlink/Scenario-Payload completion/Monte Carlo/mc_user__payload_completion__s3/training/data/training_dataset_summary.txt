@@ -1,12 +1,12 @@
 Downlink training dataset summary
-Total training channel episodes: 9
+Total training channel episodes: 2
 Base dataset kind: channel_episodes_only
 Training scenario modes: ['payload_completion']
-Training channel episodes by seed: {'1': 1, '2': 1, '4': 1, '5': 1, '6': 1, '7': 1, '8': 1, '9': 1, '10': 1}
-Training channel episodes by block: {'0': 9}
-Training channel episodes by active user count: {'3': 9}
-Training channel episodes by active mask: {'111': 9}
-Active-user channel episodes per user: [9, 9, 9]
+Training channel episodes by seed: {'1': 1, '2': 1}
+Training channel episodes by block: {}
+Training channel episodes by active user count: {}
+Training channel episodes by active mask: {}
+Active-user channel episodes per user: [2, 2, 2]
 
 Terminology
 - channel episode: one (seed, block=0) block realization stored in the base dataset

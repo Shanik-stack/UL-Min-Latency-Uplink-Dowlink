@@ -164,6 +164,18 @@ These parameters define the channel dimensions, payload, and timing.
   - Coarse step used when probing the feasible `n_kl` frontier during rollout query generation.
   - Larger values speed up data generation but sample the frontier more sparsely.
 
+- `monte_carlo_training_full_block_weight`
+  - Total episode-loss weight assigned to full-block states at `n_kl = T_k`.
+  - Use this to control how strongly Monte Carlo training emphasizes rate-maximizing full blocks.
+
+- `monte_carlo_training_tail_feasible_weight`
+  - Total episode-loss weight assigned to feasible reduced-`n_kl` tail states.
+  - Increase this if you want the precoder net to focus more on shortening the final blocklength after the bits become finishable.
+
+- `monte_carlo_training_tail_frontier_weight`
+  - Total episode-loss weight assigned to the first infeasible state just beyond the feasible reduced-`n_kl` frontier.
+  - Increase this if you want sharper frontier learning.
+
 ### Uplink experiment structure
 
 - `max_total_blocks`
@@ -273,6 +285,15 @@ These parameters define the channel dimensions, payload, and timing.
 - `monte_carlo_training_n_kl_coarse_step`
   - Coarse blocklength step used by rollout frontier probing.
   - Larger values reduce training-data generation cost.
+
+- `monte_carlo_training_full_block_weight`
+  - Total episode-loss weight assigned to full-block joint states.
+
+- `monte_carlo_training_tail_feasible_weight`
+  - Total episode-loss weight assigned to feasible reduced-`n_kl` joint tail states.
+
+- `monte_carlo_training_tail_frontier_weight`
+  - Total episode-loss weight assigned to the first infeasible reduced-`n_kl` joint tail state.
 
 ### Downlink objective shaping
 

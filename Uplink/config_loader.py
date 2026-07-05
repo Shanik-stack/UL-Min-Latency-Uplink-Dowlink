@@ -176,6 +176,27 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
                 default=5,
             )
         ),
+        "monte_carlo_training_full_block_weight": float(
+            _first_present(
+                sim_cfg,
+                "monte_carlo_training_full_block_weight",
+                default=1.0,
+            )
+        ),
+        "monte_carlo_training_tail_feasible_weight": float(
+            _first_present(
+                sim_cfg,
+                "monte_carlo_training_tail_feasible_weight",
+                default=1.0,
+            )
+        ),
+        "monte_carlo_training_tail_frontier_weight": float(
+            _first_present(
+                sim_cfg,
+                "monte_carlo_training_tail_frontier_weight",
+                default=1.5,
+            )
+        ),
         "monte_carlo_train_seeds": _first_present(
             sim_cfg,
             "monte_carlo_train_seeds",

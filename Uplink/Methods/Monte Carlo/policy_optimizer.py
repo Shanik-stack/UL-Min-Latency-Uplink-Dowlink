@@ -273,11 +273,9 @@ def estimate_initial_random_precoder_schedule_for_scenario(
 def build_training_dataset(
     cfg_name: str,
     train_seeds: Sequence[int],
-) -> list[list[dict]]:
+) -> list[dict[str, Any]]:
     system_params, sim_cfg = get_config(cfg_name)
-    K = int(system_params["K"])
-    episodes_by_user: list[list[dict]] = [[] for _ in range(K)]
-    scenario_mode = str(sim_cfg.get("experiment_scenario_mode", PAYLOAD_COMPLETION_MODE))
+    episodes: list[dict[str, Any]] = []
 
     for seed in train_seeds:
         print(
@@ -288,82 +286,37 @@ def build_training_dataset(
                 base_dataset="channel_episode_only",
             )
         )
-        uplinksystem = UplinkSystem(system_params, seed=int(seed))
-        ensure_blocks_up_to(uplinksystem, 0)
-
-        for k in range(K):
-            T_ref = int(uplinksystem.T[k])
-            P_user = float(uplinksystem.P[k])
-            sigma2 = float(uplinksystem.sigma2[k])
-            epsilon = float(uplinksystem.epsilon[k])
-            dk_user = int(uplinksystem.dk[k])
-            block = 0
-            H_block = np.asarray(uplinksystem.H[k][int(block)], dtype=np.complex64)
-            noise_plus_interference_cov = build_uplink_rate_covariance(
-                uplinksystem,
-                sim_cfg,
-                k,
-                int(block),
-            )
-            episodes_by_user[k].append(
-                {
-                    "seed": int(seed),
-                    "user": int(k),
-                    "block": int(block),
-                    "H": H_block,
-                    "T_ref": int(T_ref),
-                    "P": float(P_user),
-                    "dk": int(dk_user),
-                    "sigma2": float(sigma2),
-                    "epsilon": float(epsilon),
-                    "noise_plus_interference_cov": (
-                        None
-                        if noise_plus_interference_cov is None
-                        else np.asarray(noise_plus_interference_cov, dtype=np.complex128)
-                    ),
-                    "scenario_mode": scenario_mode,
-                }
-            )
-
-    return episodes_by_user
-
-
-def summarize_training_dataset(episodes_by_user: Sequence[Sequence[dict]]) -> dict:
-    total_channel_episodes = int(sum(len(episodes) for episodes in episodes_by_user))
-    episodes_by_seed: dict[int, int] = {}
-    global_episodes_by_block: dict[int, int] = {}
-    scenario_modes: set[str] = set()
-    per_user_summary = []
-
-    for user_idx, episodes in enumerate(episodes_by_user):
-        user_episodes_by_seed: dict[int, int] = {}
-        user_episodes_by_block: dict[int, int] = {}
-        for episode in episodes:
-            seed = int(episode["seed"])
-            block = int(episode.get("block", 0))
-            scenario_modes.add(str(episode.get("scenario_mode", PAYLOAD_COMPLETION_MODE)))
-            user_episodes_by_seed[seed] = user_episodes_by_seed.get(seed, 0) + 1
-            user_episodes_by_block[block] = user_episodes_by_block.get(block, 0) + 1
-            episodes_by_seed[seed] = episodes_by_seed.get(seed, 0) + 1
-            global_episodes_by_block[block] = global_episodes_by_block.get(block, 0) + 1
-
-        per_user_summary.append(
+        scenario = build_experiment_scenario(system_params, sim_cfg, seed=int(seed))
+        episodes.append(
             {
-                "user": int(user_idx),
-                "total_channel_episodes": int(len(episodes)),
-                "episodes_by_seed": {str(int(k)): int(v) for k, v in sorted(user_episodes_by_seed.items())},
-                "episodes_by_block": {str(int(k)): int(v) for k, v in sorted(user_episodes_by_block.items())},
+                "seed": int(seed),
+                "num_users": int(system_params["K"]),
+                "scenario_mode": str(scenario.get("mode", PAYLOAD_COMPLETION_MODE)),
+                "scenario": scenario,
             }
         )
 
+    return episodes
+
+
+def summarize_training_dataset(training_episodes: Sequence[dict[str, Any]]) -> dict:
+    if len(training_episodes) == 0:
+        return {
+            "total_channel_episodes": 0,
+            "num_users": 0,
+            "base_dataset_kind": "channel_episodes_only",
+            "scenario_modes": [],
+            "channel_episodes_by_seed": {},
+            "channel_episodes_per_user": [],
+        }
+    num_users = int(training_episodes[0].get("num_users", 0))
     return {
-        "total_channel_episodes": int(total_channel_episodes),
-        "num_users": int(len(episodes_by_user)),
+        "total_channel_episodes": int(len(training_episodes)),
+        "num_users": int(num_users),
         "base_dataset_kind": "channel_episodes_only",
-        "scenario_modes": sorted(scenario_modes),
-        "episodes_by_seed": {str(int(k)): int(v) for k, v in sorted(episodes_by_seed.items())},
-        "global_episodes_by_block": {str(int(k)): int(v) for k, v in sorted(global_episodes_by_block.items())},
-        "per_user": per_user_summary,
+        "scenario_modes": sorted({str(episode.get("scenario_mode", PAYLOAD_COMPLETION_MODE)) for episode in training_episodes}),
+        "channel_episodes_by_seed": {str(int(episode["seed"])): 1 for episode in training_episodes},
+        "channel_episodes_per_user": [int(len(training_episodes)) for _ in range(num_users)],
     }
 
 
@@ -471,102 +424,510 @@ def _evaluate_uplink_rollout_query_numpy(
     }
 
 
-def _generate_rollout_queries_for_user(
-    model: torch.nn.Module,
-    episodes: Sequence[dict[str, Any]],
-    sim_cfg: dict[str, Any],
+def _resolve_uplink_rollout_phase_weights(sim_cfg: dict[str, Any]) -> dict[str, float]:
+    return {
+        "full_block": float(sim_cfg.get("monte_carlo_training_full_block_weight", 1.0)),
+        "tail_feasible": float(sim_cfg.get("monte_carlo_training_tail_feasible_weight", 1.0)),
+        "tail_frontier": float(sim_cfg.get("monte_carlo_training_tail_frontier_weight", 1.5)),
+    }
+
+
+def _normalize_uplink_episode_query_weights(
+    episode_queries: Sequence[dict[str, Any]],
+    phase_weights: dict[str, float],
 ) -> list[dict[str, Any]]:
-    n_min = int(sim_cfg["n_kl_min"])
-    fine_step = max(1, int(sim_cfg["n_kl_step"]))
-    coarse_step = max(fine_step, int(sim_cfg.get("monte_carlo_training_n_kl_coarse_step", fine_step)))
-    rollout_queries: list[dict[str, Any]] = []
+    if len(episode_queries) == 0:
+        return []
+    phase_counts: dict[str, int] = {}
+    for query in episode_queries:
+        phase = str(query.get("rollout_phase", "full_block"))
+        phase_counts[phase] = phase_counts.get(phase, 0) + 1
 
-    for episode in episodes:
-        T_ref = int(episode["T_ref"])
-        visited_n: set[int] = set()
-        episode_queries: list[dict[str, Any]] = []
-        full_n_metrics = _evaluate_uplink_rollout_query_numpy(model, episode, T_ref)
-        rollout_anchor_bits = _resolve_rollout_anchor_bits(float(full_n_metrics["rate"]), T_ref)
+    normalized: list[dict[str, Any]] = []
+    for query in episode_queries:
+        phase = str(query.get("rollout_phase", "full_block"))
+        weight = float(phase_weights.get(phase, 1.0)) / float(max(phase_counts.get(phase, 1), 1))
+        updated = dict(query)
+        updated["query_weight"] = float(weight)
+        normalized.append(updated)
+    return normalized
 
-        def record_query(n_kl: int, stage: str) -> dict[str, Any]:
-            n_val = int(n_kl)
-            if n_val in visited_n:
-                for existing in episode_queries:
-                    if int(existing["n_kl"]) == n_val:
-                        return existing
-            metrics = full_n_metrics if n_val == int(T_ref) else _evaluate_uplink_rollout_query_numpy(model, episode, n_val)
-            required_rate = float(rollout_anchor_bits) / float(max(int(n_val), 1))
-            rate_margin = float(metrics["rate"] - required_rate)
-            query = {
-                **episode,
-                "n_kl": int(n_val),
-                "rollout_stage": str(stage),
-                "rollout_anchor_bits": int(rollout_anchor_bits),
-                "rate": float(metrics["rate"]),
-                "power": float(metrics["power"]),
-                "required_rate": float(required_rate),
-                "rate_margin": float(rate_margin),
-                "power_margin": float(metrics["power_margin"]),
-                "feasible": bool(rate_margin >= -1e-9 and float(metrics["power_margin"]) >= -1e-9),
-                "frontier_query": False,
-                "query_weight": 1.0,
+
+def _build_uplink_rollout_query(
+    *,
+    seed: int,
+    user: int,
+    block: int,
+    H: np.ndarray,
+    T_ref: int,
+    P: float,
+    dk: int,
+    sigma2: float,
+    epsilon: float,
+    noise_cov: np.ndarray | None,
+    n_kl: int,
+    required_bits: int,
+    metrics: dict[str, Any],
+    scenario_mode: str,
+    rollout_phase: str,
+    rollout_stage: str,
+    frontier_query: bool,
+) -> dict[str, Any]:
+    required_rate = (
+        float(required_bits) / float(max(int(n_kl), 1))
+        if int(required_bits) > 0
+        else 0.0
+    )
+    rate_margin = float(metrics["rate"] - required_rate)
+    return {
+        "seed": int(seed),
+        "user": int(user),
+        "block": int(block),
+        "H": np.asarray(H, dtype=np.complex64),
+        "T_ref": int(T_ref),
+        "P": float(P),
+        "dk": int(dk),
+        "sigma2": float(sigma2),
+        "epsilon": float(epsilon),
+        "noise_plus_interference_cov": (
+            None if noise_cov is None else np.asarray(noise_cov, dtype=np.complex128)
+        ),
+        "scenario_mode": str(scenario_mode),
+        "n_kl": int(n_kl),
+        "rollout_anchor_bits": int(required_bits),
+        "required_rate": float(required_rate),
+        "rate": float(metrics["rate"]),
+        "power": float(metrics["power"]),
+        "rate_margin": float(rate_margin),
+        "power_margin": float(metrics["power_margin"]),
+        "feasible": bool(rate_margin >= 0.0 and float(metrics["power_margin"]) >= 0.0),
+        "frontier_query": bool(frontier_query),
+        "rollout_phase": str(rollout_phase),
+        "rollout_stage": str(rollout_stage),
+        "query_weight": 1.0,
+    }
+
+
+def _collect_uplink_payload_rollout_queries_for_episode(
+    system_params: dict[str, Any],
+    sim_cfg: dict[str, Any],
+    training_episode: dict[str, Any],
+    user_models: Sequence[torch.nn.Module],
+) -> list[list[dict[str, Any]]]:
+    seed = int(training_episode["seed"])
+    scenario = dict(training_episode["scenario"])
+    K = int(system_params["K"])
+    system = UplinkSystem(system_params, seed=int(seed))
+    phase_weights = _resolve_uplink_rollout_phase_weights(sim_cfg)
+    remaining = np.asarray(scenario["payload_bits_per_user"], dtype=int).copy()
+    max_blocks = int(sim_cfg.get("max_total_blocks", 256))
+    queries_by_user: list[list[dict[str, Any]]] = [[] for _ in range(K)]
+    block = 0
+
+    while np.any(remaining > 0):
+        if block >= max_blocks:
+            raise RuntimeError(
+                f"Uplink Monte Carlo training rollout hit max_total_blocks={max_blocks} for seed={seed} with remaining bits {remaining.tolist()}."
+            )
+        ensure_blocks_up_to(system, int(block))
+        active_mask = [1 if int(remaining[int(k)]) > 0 else 0 for k in range(K)]
+        snapshot_full = _build_precoder_net_snapshot_for_active_mask(system, user_models, int(block), active_mask)
+
+        for k in range(K):
+            if int(active_mask[int(k)]) <= 0:
+                continue
+            H_kl = np.asarray(system.H[int(k)][int(block)], dtype=np.complex64)
+            T_ref = int(system.T[int(k)])
+            P = float(system.P[int(k)])
+            sigma2 = float(system.sigma2[int(k)])
+            epsilon = float(system.epsilon[int(k)])
+            dk = int(system.dk[int(k)])
+            F_T = infer_precoder_numpy_with_blocklength_and_sigma(
+                user_models[int(k)],
+                H_kl,
+                n_kl=T_ref,
+                sigma2=sigma2,
+                epsilon=epsilon,
+                Nt=int(system.NT[int(k)]),
+                dk=dk,
+                P=P,
+                device=DEVICE,
+            )
+            snapshot_candidate = copy.deepcopy(snapshot_full)
+            snapshot_candidate[int(k)][int(block)] = F_T
+            cov_T = build_uplink_rate_covariance(
+                system,
+                sim_cfg,
+                int(k),
+                int(block),
+                F_override=snapshot_candidate,
+            )
+            base_episode = {
+                "H": H_kl,
+                "sigma2": sigma2,
+                "epsilon": epsilon,
+                "P": P,
+                "dk": dk,
+                "noise_plus_interference_cov": cov_T,
             }
-            visited_n.add(int(n_val))
-            episode_queries.append(query)
-            return query
+            full_metrics = _evaluate_uplink_rollout_query_numpy(user_models[int(k)], base_episode, T_ref)
+            queries_by_user[int(k)].append(
+                _build_uplink_rollout_query(
+                    seed=seed,
+                    user=int(k),
+                    block=int(block),
+                    H=H_kl,
+                    T_ref=T_ref,
+                    P=P,
+                    dk=dk,
+                    sigma2=sigma2,
+                    epsilon=epsilon,
+                    noise_cov=cov_T,
+                    n_kl=T_ref,
+                    required_bits=0,
+                    metrics=full_metrics,
+                    scenario_mode=PAYLOAD_COMPLETION_MODE,
+                    rollout_phase="full_block",
+                    rollout_stage="full_block",
+                    frontier_query=False,
+                )
+            )
 
-        record_query(T_ref, "coarse")
-        last_feasible_n = T_ref if bool(episode_queries[-1]["feasible"]) else None
-        first_infeasible_n = None
+            supported_bits = max(int(np.floor(float(full_metrics["rate"]) * float(max(T_ref, 1)))), 0)
+            committed_bits = min(int(remaining[int(k)]), int(supported_bits))
+            if int(committed_bits) <= 0:
+                continue
+            if int(committed_bits) < int(remaining[int(k)]):
+                remaining[int(k)] = max(int(remaining[int(k)]) - int(committed_bits), 0)
+                continue
 
-        if last_feasible_n is not None:
+            queries_by_user[int(k)].append(
+                _build_uplink_rollout_query(
+                    seed=seed,
+                    user=int(k),
+                    block=int(block),
+                    H=H_kl,
+                    T_ref=T_ref,
+                    P=P,
+                    dk=dk,
+                    sigma2=sigma2,
+                    epsilon=epsilon,
+                    noise_cov=cov_T,
+                    n_kl=T_ref,
+                    required_bits=int(committed_bits),
+                    metrics=full_metrics,
+                    scenario_mode=PAYLOAD_COMPLETION_MODE,
+                    rollout_phase="tail_feasible",
+                    rollout_stage="full_block_commit",
+                    frontier_query=False,
+                )
+            )
+
+            n_min = int(sim_cfg["n_kl_min"])
+            fine_step = max(1, int(sim_cfg["n_kl_step"]))
+            coarse_step = max(fine_step, int(sim_cfg.get("monte_carlo_training_n_kl_coarse_step", fine_step)))
+            last_feasible_n = int(T_ref)
+            first_infeasible_query: dict[str, Any] | None = None
+
             candidate = int(T_ref) - int(coarse_step)
             while candidate >= int(n_min):
-                query = record_query(candidate, "coarse")
+                metrics = _evaluate_uplink_rollout_query_numpy(user_models[int(k)], base_episode, int(candidate))
+                query = _build_uplink_rollout_query(
+                    seed=seed,
+                    user=int(k),
+                    block=int(block),
+                    H=H_kl,
+                    T_ref=T_ref,
+                    P=P,
+                    dk=dk,
+                    sigma2=sigma2,
+                    epsilon=epsilon,
+                    noise_cov=cov_T,
+                    n_kl=int(candidate),
+                    required_bits=int(committed_bits),
+                    metrics=metrics,
+                    scenario_mode=PAYLOAD_COMPLETION_MODE,
+                    rollout_phase="tail_feasible",
+                    rollout_stage="coarse",
+                    frontier_query=False,
+                )
                 if bool(query["feasible"]):
+                    queries_by_user[int(k)].append(query)
                     last_feasible_n = int(candidate)
                     candidate -= int(coarse_step)
                     continue
-                first_infeasible_n = int(candidate)
+                query["rollout_phase"] = "tail_frontier"
+                query["frontier_query"] = True
+                first_infeasible_query = query
                 break
 
             if (
-                last_feasible_n is not None
-                and first_infeasible_n is not None
+                first_infeasible_query is not None
                 and int(fine_step) < int(coarse_step)
+                and int(last_feasible_n) - int(fine_step) > int(first_infeasible_query["n_kl"])
             ):
                 candidate = int(last_feasible_n) - int(fine_step)
+                first_infeasible_n = int(first_infeasible_query["n_kl"])
                 while candidate > int(first_infeasible_n):
-                    query = record_query(candidate, "fine")
+                    metrics = _evaluate_uplink_rollout_query_numpy(user_models[int(k)], base_episode, int(candidate))
+                    query = _build_uplink_rollout_query(
+                        seed=seed,
+                        user=int(k),
+                        block=int(block),
+                        H=H_kl,
+                        T_ref=T_ref,
+                        P=P,
+                        dk=dk,
+                        sigma2=sigma2,
+                        epsilon=epsilon,
+                        noise_cov=cov_T,
+                        n_kl=int(candidate),
+                        required_bits=int(committed_bits),
+                        metrics=metrics,
+                        scenario_mode=PAYLOAD_COMPLETION_MODE,
+                        rollout_phase="tail_feasible",
+                        rollout_stage="fine",
+                        frontier_query=False,
+                    )
                     if bool(query["feasible"]):
+                        queries_by_user[int(k)].append(query)
                         last_feasible_n = int(candidate)
                         candidate -= int(fine_step)
                         continue
-                    first_infeasible_n = int(candidate)
+                    query["rollout_phase"] = "tail_frontier"
+                    query["frontier_query"] = True
+                    first_infeasible_query = query
                     break
 
-        feasible_indices = [idx for idx, query in enumerate(episode_queries) if bool(query["feasible"])]
-        infeasible_indices = [idx for idx, query in enumerate(episode_queries) if not bool(query["feasible"])]
-        if feasible_indices:
-            episode_queries[feasible_indices[-1]]["frontier_query"] = True
-        if infeasible_indices:
-            feasible_cutoff = feasible_indices[-1] if feasible_indices else -1
-            frontier_infeasible_idx = next(
-                (idx for idx in infeasible_indices if idx > feasible_cutoff),
-                infeasible_indices[0],
+            if first_infeasible_query is not None:
+                queries_by_user[int(k)].append(first_infeasible_query)
+            remaining[int(k)] = max(int(remaining[int(k)]) - int(committed_bits), 0)
+        block += 1
+
+    return [
+        _normalize_uplink_episode_query_weights(user_queries, phase_weights)
+        for user_queries in queries_by_user
+    ]
+
+
+def _collect_uplink_fixed_target_rollout_queries_for_episode(
+    system_params: dict[str, Any],
+    sim_cfg: dict[str, Any],
+    training_episode: dict[str, Any],
+    user_models: Sequence[torch.nn.Module],
+) -> list[list[dict[str, Any]]]:
+    seed = int(training_episode["seed"])
+    scenario = dict(training_episode["scenario"])
+    block_targets = np.asarray(scenario["block_bit_targets"], dtype=int)
+    num_blocks = int(scenario["num_blocks"])
+    K = int(system_params["K"])
+    system = UplinkSystem(system_params, seed=int(seed))
+    phase_weights = _resolve_uplink_rollout_phase_weights(sim_cfg)
+    queries_by_user: list[list[dict[str, Any]]] = [[] for _ in range(K)]
+
+    for block in range(num_blocks):
+        ensure_blocks_up_to(system, int(block))
+        active_mask = [1 if int(block_targets[int(k), int(block)]) > 0 else 0 for k in range(K)]
+        snapshot_full = _build_precoder_net_snapshot_for_active_mask(system, user_models, int(block), active_mask)
+        for k in range(K):
+            target_bits = int(block_targets[int(k), int(block)])
+            if target_bits <= 0:
+                continue
+            H_kl = np.asarray(system.H[int(k)][int(block)], dtype=np.complex64)
+            T_ref = int(system.T[int(k)])
+            P = float(system.P[int(k)])
+            sigma2 = float(system.sigma2[int(k)])
+            epsilon = float(system.epsilon[int(k)])
+            dk = int(system.dk[int(k)])
+            F_T = infer_precoder_numpy_with_blocklength_and_sigma(
+                user_models[int(k)],
+                H_kl,
+                n_kl=T_ref,
+                sigma2=sigma2,
+                epsilon=epsilon,
+                Nt=int(system.NT[int(k)]),
+                dk=dk,
+                P=P,
+                device=DEVICE,
             )
-            episode_queries[frontier_infeasible_idx]["frontier_query"] = True
+            snapshot_candidate = copy.deepcopy(snapshot_full)
+            snapshot_candidate[int(k)][int(block)] = F_T
+            cov_T = build_uplink_rate_covariance(
+                system,
+                sim_cfg,
+                int(k),
+                int(block),
+                F_override=snapshot_candidate,
+            )
+            base_episode = {
+                "H": H_kl,
+                "sigma2": sigma2,
+                "epsilon": epsilon,
+                "P": P,
+                "dk": dk,
+                "noise_plus_interference_cov": cov_T,
+            }
+            full_metrics = _evaluate_uplink_rollout_query_numpy(user_models[int(k)], base_episode, T_ref)
+            queries_by_user[int(k)].append(
+                _build_uplink_rollout_query(
+                    seed=seed,
+                    user=int(k),
+                    block=int(block),
+                    H=H_kl,
+                    T_ref=T_ref,
+                    P=P,
+                    dk=dk,
+                    sigma2=sigma2,
+                    epsilon=epsilon,
+                    noise_cov=cov_T,
+                    n_kl=T_ref,
+                    required_bits=0,
+                    metrics=full_metrics,
+                    scenario_mode=FIXED_BLOCK_TARGETS_MODE,
+                    rollout_phase="full_block",
+                    rollout_stage="full_block",
+                    frontier_query=False,
+                )
+            )
 
-        for query in episode_queries:
-            weight = 1.0
-            if bool(query["frontier_query"]):
-                weight = 2.0
-            elif not bool(query["feasible"]):
-                weight = 1.25
-            query["query_weight"] = float(weight)
-            rollout_queries.append(query)
+            supported_bits = max(int(np.floor(float(full_metrics["rate"]) * float(max(T_ref, 1)))), 0)
+            if int(supported_bits) < int(target_bits):
+                continue
 
-    return rollout_queries
+            queries_by_user[int(k)].append(
+                _build_uplink_rollout_query(
+                    seed=seed,
+                    user=int(k),
+                    block=int(block),
+                    H=H_kl,
+                    T_ref=T_ref,
+                    P=P,
+                    dk=dk,
+                    sigma2=sigma2,
+                    epsilon=epsilon,
+                    noise_cov=cov_T,
+                    n_kl=T_ref,
+                    required_bits=int(target_bits),
+                    metrics=full_metrics,
+                    scenario_mode=FIXED_BLOCK_TARGETS_MODE,
+                    rollout_phase="tail_feasible",
+                    rollout_stage="full_block_commit",
+                    frontier_query=False,
+                )
+            )
+
+            n_min = int(sim_cfg["n_kl_min"])
+            fine_step = max(1, int(sim_cfg["n_kl_step"]))
+            coarse_step = max(fine_step, int(sim_cfg.get("monte_carlo_training_n_kl_coarse_step", fine_step)))
+            last_feasible_n = int(T_ref)
+            first_infeasible_query: dict[str, Any] | None = None
+
+            candidate = int(T_ref) - int(coarse_step)
+            while candidate >= int(n_min):
+                metrics = _evaluate_uplink_rollout_query_numpy(user_models[int(k)], base_episode, int(candidate))
+                query = _build_uplink_rollout_query(
+                    seed=seed,
+                    user=int(k),
+                    block=int(block),
+                    H=H_kl,
+                    T_ref=T_ref,
+                    P=P,
+                    dk=dk,
+                    sigma2=sigma2,
+                    epsilon=epsilon,
+                    noise_cov=cov_T,
+                    n_kl=int(candidate),
+                    required_bits=int(target_bits),
+                    metrics=metrics,
+                    scenario_mode=FIXED_BLOCK_TARGETS_MODE,
+                    rollout_phase="tail_feasible",
+                    rollout_stage="coarse",
+                    frontier_query=False,
+                )
+                if bool(query["feasible"]):
+                    queries_by_user[int(k)].append(query)
+                    last_feasible_n = int(candidate)
+                    candidate -= int(coarse_step)
+                    continue
+                query["rollout_phase"] = "tail_frontier"
+                query["frontier_query"] = True
+                first_infeasible_query = query
+                break
+
+            if (
+                first_infeasible_query is not None
+                and int(fine_step) < int(coarse_step)
+                and int(last_feasible_n) - int(fine_step) > int(first_infeasible_query["n_kl"])
+            ):
+                candidate = int(last_feasible_n) - int(fine_step)
+                first_infeasible_n = int(first_infeasible_query["n_kl"])
+                while candidate > int(first_infeasible_n):
+                    metrics = _evaluate_uplink_rollout_query_numpy(user_models[int(k)], base_episode, int(candidate))
+                    query = _build_uplink_rollout_query(
+                        seed=seed,
+                        user=int(k),
+                        block=int(block),
+                        H=H_kl,
+                        T_ref=T_ref,
+                        P=P,
+                        dk=dk,
+                        sigma2=sigma2,
+                        epsilon=epsilon,
+                        noise_cov=cov_T,
+                        n_kl=int(candidate),
+                        required_bits=int(target_bits),
+                        metrics=metrics,
+                        scenario_mode=FIXED_BLOCK_TARGETS_MODE,
+                        rollout_phase="tail_feasible",
+                        rollout_stage="fine",
+                        frontier_query=False,
+                    )
+                    if bool(query["feasible"]):
+                        queries_by_user[int(k)].append(query)
+                        last_feasible_n = int(candidate)
+                        candidate -= int(fine_step)
+                        continue
+                    query["rollout_phase"] = "tail_frontier"
+                    query["frontier_query"] = True
+                    first_infeasible_query = query
+                    break
+
+            if first_infeasible_query is not None:
+                queries_by_user[int(k)].append(first_infeasible_query)
+
+    return [
+        _normalize_uplink_episode_query_weights(user_queries, phase_weights)
+        for user_queries in queries_by_user
+    ]
+
+
+def _generate_rollout_queries_for_training_episodes(
+    system_params: dict[str, Any],
+    sim_cfg: dict[str, Any],
+    training_episodes: Sequence[dict[str, Any]],
+    user_models: Sequence[torch.nn.Module],
+) -> list[list[dict[str, Any]]]:
+    K = int(system_params["K"])
+    queries_by_user: list[list[dict[str, Any]]] = [[] for _ in range(K)]
+    for training_episode in training_episodes:
+        scenario_mode = str(training_episode.get("scenario_mode", PAYLOAD_COMPLETION_MODE))
+        if scenario_mode == FIXED_BLOCK_TARGETS_MODE:
+            episode_queries = _collect_uplink_fixed_target_rollout_queries_for_episode(
+                system_params,
+                sim_cfg,
+                training_episode,
+                user_models,
+            )
+        else:
+            episode_queries = _collect_uplink_payload_rollout_queries_for_episode(
+                system_params,
+                sim_cfg,
+                training_episode,
+                user_models,
+            )
+        for k in range(K):
+            queries_by_user[int(k)].extend(episode_queries[int(k)])
+    return queries_by_user
 
 
 def _summarize_rollout_queries_by_user(queries_by_user: Sequence[Sequence[dict[str, Any]]]) -> dict[str, Any]:
@@ -684,7 +1045,7 @@ def _build_post_training_summary(
         ],
         "base_dataset_kind": dataset_summary.get("base_dataset_kind", "channel_episodes_only"),
         "total_training_channel_episodes": int(dataset_summary.get("total_channel_episodes", 0)),
-        "rollout_anchor_bits_mode": "derived_online_from_current_full_block_rate",
+        "rollout_anchor_bits_mode": "derived_online_from_current_episode_served_bits",
         "cumulative_rollout_queries_by_n_kl": training_history.get("cumulative_rollout_queries_by_n_kl", {}),
         "cumulative_frontier_rollout_queries_by_n_kl": training_history.get(
             "cumulative_frontier_rollout_queries_by_n_kl",
@@ -801,8 +1162,8 @@ def train_blocklength_aware_precoder_net(
     kkt_stationarity_tol = float(
         sim_cfg.get("kkt_stationarity_tol", sim_cfg.get("convergence_precoder_tol", 1e-4))
     )
-    episodes_by_user = build_training_dataset(cfg_name, train_seeds)
-    dataset_summary = summarize_training_dataset(episodes_by_user)
+    training_episodes = build_training_dataset(cfg_name, train_seeds)
+    dataset_summary = summarize_training_dataset(training_episodes)
     training_history = {
         "per_user_lagrangian": [[] for _ in range(K)],
         "per_user_rate": [[] for _ in range(K)],
@@ -819,140 +1180,139 @@ def train_blocklength_aware_precoder_net(
         "dataset_summary": dataset_summary,
         "rollout_query_summaries_per_user": [[] for _ in range(K)],
         "configured_max_epochs": int(max_epochs),
-        "training_objective": "rollout_lagrangian_user_finite_blocklength_rate_with_online_full_block_anchor_bits",
+        "training_objective": "scenario_driven_episode_rollout_lagrangian_user_finite_blocklength_rate",
     }
-
-    user_models = []
+    user_models = [
+        build_user_precoder_net_with_blocklength_and_sigma(
+            Nr=int(system_params["NR"][k]),
+            Nt=int(system_params["NT"][k]),
+            dk=int(system_params["dk"][k]),
+            device=DEVICE,
+        )
+        for k in range(K)
+    ]
+    optimizers = [
+        torch.optim.Adam(user_models[k].parameters(), lr=float(lr))
+        for k in range(K)
+    ]
+    rngs = [
+        np.random.default_rng(int(train_seeds[0]) + 17 * (k + 1) if len(train_seeds) > 0 else (17 * (k + 1)))
+        for k in range(K)
+    ]
+    constraint_loss_form = _resolve_constraint_loss_form(sim_cfg)
+    augmented_lagrangian_rho_rate = float(sim_cfg.get("augmented_lagrangian_rho_rate", 0.0))
+    augmented_lagrangian_rho_power = float(sim_cfg.get("augmented_lagrangian_rho_power", 0.0))
+    lambda_rate = np.full(K, float(sim_cfg.get("initial_lambda_rate_constraint", 0.1)), dtype=float)
+    lambda_power = np.full(K, float(sim_cfg.get("initial_lambda_power_constraint", 0.01)), dtype=float)
+    lr_rate = float(sim_cfg.get("lr_rate_constraint", 1e-2))
+    lr_power = float(sim_cfg.get("lr_power_constraint", 1e-3))
     cumulative_rollout_query_global_counts: dict[int, int] = {}
     cumulative_rollout_query_per_user_counts: list[dict[int, int]] = [{} for _ in range(K)]
     cumulative_frontier_query_global_counts: dict[int, int] = {}
     cumulative_frontier_query_per_user_counts: list[dict[int, int]] = [{} for _ in range(K)]
     last_epoch_queries_by_user: list[list[dict[str, Any]]] = [[] for _ in range(K)]
+    previous_epoch_model_states: list[dict[str, torch.Tensor] | None] = [None for _ in range(K)]
+    best_primal_residual = [float("inf") for _ in range(K)]
+    best_feasible_rate = [-float("inf") for _ in range(K)]
+    best_primal_model_states = [_clone_model_state(model) for model in user_models]
+    best_primal_optimizer_states = [copy.deepcopy(optimizer.state_dict()) for optimizer in optimizers]
+    best_primal_lambda_rate = np.array(lambda_rate, copy=True)
+    best_primal_lambda_power = np.array(lambda_power, copy=True)
+    best_feasible_model_states: list[dict[str, torch.Tensor] | None] = [None for _ in range(K)]
+    best_feasible_optimizer_states: list[dict[str, Any] | None] = [None for _ in range(K)]
+    best_feasible_lambda_rate: list[float | None] = [None for _ in range(K)]
+    best_feasible_lambda_power: list[float | None] = [None for _ in range(K)]
+    per_user_solve_status = ["max_epochs_reached" for _ in range(K)]
+    epochs_completed = 0
 
-    for k in range(K):
-        Nr = int(system_params["NR"][k])
-        Nt = int(system_params["NT"][k])
-        dk = int(system_params["dk"][k])
-
-        model = build_user_precoder_net_with_blocklength_and_sigma(Nr=Nr, Nt=Nt, dk=dk, device=DEVICE)
-        optimizer = torch.optim.Adam(model.parameters(), lr=float(lr))
-        episodes = episodes_by_user[k]
-        user_lagrangian_history = training_history["per_user_lagrangian"][k]
-        user_rate_history = training_history["per_user_rate"][k]
-        user_rate_violation_history = training_history["avg_rate_violation"][k]
-        user_power_violation_history = training_history["avg_power_violation"][k]
-        constraint_loss_form = _resolve_constraint_loss_form(sim_cfg)
-        augmented_lagrangian_rho_rate = float(sim_cfg.get("augmented_lagrangian_rho_rate", 0.0))
-        augmented_lagrangian_rho_power = float(sim_cfg.get("augmented_lagrangian_rho_power", 0.0))
-        lambda_rate = float(sim_cfg.get("initial_lambda_rate_constraint", 0.1))
-        lambda_power = float(sim_cfg.get("initial_lambda_power_constraint", 0.01))
-        lr_rate = float(sim_cfg.get("lr_rate_constraint", 1e-2))
-        lr_power = float(sim_cfg.get("lr_power_constraint", 1e-3))
-
-        if len(episodes) == 0:
-            user_models.append(model.eval())
-            continue
-
-        rng = np.random.default_rng(int(train_seeds[0]) + 17 * (k + 1))
-
-        print(
-            format_log_line(
-                "[UL Monte Carlo Train]",
-                phase="start",
-                user=int(k),
-                channel_episodes=int(len(episodes)),
-                epochs=int(max_epochs),
-                batch_size=int(batch_size),
-            )
+    print(
+        format_log_line(
+            "[UL Monte Carlo Train]",
+            phase="start",
+            channel_episodes=int(len(training_episodes)),
+            epochs=int(max_epochs),
+            batch_size=int(batch_size),
         )
-        previous_epoch_model_state: dict[str, torch.Tensor] | None = None
-        best_primal_residual = float("inf")
-        best_feasible_rate = -float("inf")
-        best_primal_model_state = _clone_model_state(model)
-        best_primal_optimizer_state = copy.deepcopy(optimizer.state_dict())
-        best_primal_lambda_rate = float(lambda_rate)
-        best_primal_lambda_power = float(lambda_power)
-        best_feasible_model_state: dict[str, torch.Tensor] | None = None
-        best_feasible_optimizer_state: dict[str, Any] | None = None
-        best_feasible_lambda_rate: float | None = None
-        best_feasible_lambda_power: float | None = None
-        solve_status = "max_epochs_reached"
-        epochs_completed = 0
+    )
 
-        for epoch in range(int(max_epochs)):
-            epochs_completed = int(epoch + 1)
-            rollout_queries = _generate_rollout_queries_for_user(model, episodes, sim_cfg)
-            last_epoch_queries_by_user[k] = [dict(query) for query in rollout_queries]
-            rollout_summary = _summarize_rollout_queries_by_user([rollout_queries])
-            epoch_rollout_summary = (
-                dict(rollout_summary["per_user"][0])
-                if rollout_summary.get("per_user")
-                else {
-                    "user": int(k),
-                    "total_rollout_queries": 0,
-                    "rollout_queries_by_n_kl": {},
-                    "frontier_rollout_queries_by_n_kl": {},
-                    "feasible_rollout_queries": 0,
-                    "infeasible_rollout_queries": 0,
-                    "frontier_rollout_queries": 0,
-                }
+    for epoch in range(int(max_epochs)):
+        epochs_completed = int(epoch + 1)
+        rollout_queries_by_user = _generate_rollout_queries_for_training_episodes(
+            system_params,
+            sim_cfg,
+            training_episodes,
+            user_models,
+        )
+        last_epoch_queries_by_user = [
+            [dict(query) for query in user_queries]
+            for user_queries in rollout_queries_by_user
+        ]
+        rollout_summary = _summarize_rollout_queries_by_user(rollout_queries_by_user)
+
+        for n_key, count in rollout_summary.get("global_rollout_queries_by_n_kl", {}).items():
+            n_val = int(n_key)
+            cumulative_rollout_query_global_counts[n_val] = (
+                cumulative_rollout_query_global_counts.get(n_val, 0) + int(count)
             )
+        for user_idx, user_summary in enumerate(rollout_summary.get("per_user", [])):
+            epoch_rollout_summary = dict(user_summary)
             epoch_rollout_summary["epoch"] = int(epoch + 1)
-            training_history["rollout_query_summaries_per_user"][k].append(epoch_rollout_summary)
-
+            training_history["rollout_query_summaries_per_user"][int(user_idx)].append(epoch_rollout_summary)
             for n_key, count in epoch_rollout_summary.get("rollout_queries_by_n_kl", {}).items():
                 n_val = int(n_key)
-                cumulative_rollout_query_global_counts[n_val] = (
-                    cumulative_rollout_query_global_counts.get(n_val, 0) + int(count)
-                )
-                cumulative_rollout_query_per_user_counts[k][n_val] = (
-                    cumulative_rollout_query_per_user_counts[k].get(n_val, 0) + int(count)
+                cumulative_rollout_query_per_user_counts[int(user_idx)][n_val] = (
+                    cumulative_rollout_query_per_user_counts[int(user_idx)].get(n_val, 0) + int(count)
                 )
             for n_key, count in epoch_rollout_summary.get("frontier_rollout_queries_by_n_kl", {}).items():
                 n_val = int(n_key)
-                cumulative_frontier_query_global_counts[n_val] = (
-                    cumulative_frontier_query_global_counts.get(n_val, 0) + int(count)
+                cumulative_frontier_query_per_user_counts[int(user_idx)][n_val] = (
+                    cumulative_frontier_query_per_user_counts[int(user_idx)].get(n_val, 0) + int(count)
                 )
-                cumulative_frontier_query_per_user_counts[k][n_val] = (
-                    cumulative_frontier_query_per_user_counts[k].get(n_val, 0) + int(count)
-                )
+        for n_key, count in rollout_summary.get("global_frontier_rollout_queries_by_n_kl", {}).items():
+            n_val = int(n_key)
+            cumulative_frontier_query_global_counts[n_val] = (
+                cumulative_frontier_query_global_counts.get(n_val, 0) + int(count)
+            )
 
+        epoch_lagrangians: list[float] = []
+        epoch_rates: list[float] = []
+        epoch_rate_violations: list[float] = []
+        epoch_power_violations: list[float] = []
+        epoch_statuses: list[str] = []
+
+        for k in range(K):
+            model = user_models[int(k)]
+            optimizer = optimizers[int(k)]
+            rollout_queries = rollout_queries_by_user[int(k)]
+            Nt = int(system_params["NT"][k])
+            dk = int(system_params["dk"][k])
+            if len(rollout_queries) == 0:
+                training_history["per_user_lagrangian"][k].append(0.0)
+                training_history["per_user_rate"][k].append(0.0)
+                training_history["avg_rate_violation"][k].append(0.0)
+                training_history["avg_power_violation"][k].append(0.0)
+                training_history["per_user_kkt_primal_residual"][k].append(0.0)
+                training_history["per_user_kkt_complementarity_residual"][k].append(0.0)
+                training_history["per_user_kkt_stationarity_residual"][k].append(0.0)
+                training_history["per_user_training_epoch_status"][k].append("no_rollout_queries")
+                epoch_lagrangians.append(0.0)
+                epoch_rates.append(0.0)
+                epoch_rate_violations.append(0.0)
+                epoch_power_violations.append(0.0)
+                epoch_statuses.append("no_rollout_queries")
+                continue
+
+            model.train()
+            indices = np.arange(len(rollout_queries))
+            rngs[int(k)].shuffle(indices)
             epoch_term_sum = 0.0
             epoch_rate_sum = 0.0
             epoch_rate_violation_sum = 0.0
             epoch_power_violation_sum = 0.0
             epoch_query_weight_sum = 0.0
 
-            if len(rollout_queries) == 0:
-                user_lagrangian_history.append(0.0)
-                user_rate_history.append(0.0)
-                user_rate_violation_history.append(0.0)
-                user_power_violation_history.append(0.0)
-                training_history["per_user_kkt_primal_residual"][k].append(0.0)
-                training_history["per_user_kkt_complementarity_residual"][k].append(0.0)
-                training_history["per_user_kkt_stationarity_residual"][k].append(0.0)
-                training_history["per_user_training_epoch_status"][k].append("no_rollout_queries")
-                print(
-                    format_progress_log_line(
-                        "[UL Monte Carlo]",
-                        phase="train",
-                        method="monte_carlo",
-                        user=int(k),
-                        epoch=f"{epoch + 1}/{int(max_epochs)}",
-                        objective=0.0,
-                        rate=0.0,
-                        r_p=0.0,
-                        r_c=0.0,
-                        r_s=0.0,
-                        status="no_rollout_queries",
-                    )
-                )
-                continue
-
-            indices = np.arange(len(rollout_queries))
-            rng.shuffle(indices)
             for start in range(0, len(indices), max(int(batch_size), 1)):
-                batch_idx = indices[start:start + max(int(batch_size), 1)]
+                batch_idx = indices[start : start + max(int(batch_size), 1)]
                 optimizer.zero_grad()
                 loss = torch.zeros((), dtype=torch.float32, device=DEVICE)
                 batch_rate_violation = 0.0
@@ -972,7 +1332,6 @@ def train_blocklength_aware_precoder_net(
                             device=DEVICE,
                         )
                     )
-
                     pred_t = infer_precoder_torch_with_blocklength_and_sigma(
                         model,
                         H_t,
@@ -999,8 +1358,8 @@ def train_blocklength_aware_precoder_net(
                     power_violation_pos = _constraint_violation_activation(power_violation, constraint_loss_form)
                     term = (
                         -rate
-                        + float(lambda_rate) * rate_violation_pos
-                        + float(lambda_power) * power_violation_pos
+                        + float(lambda_rate[int(k)]) * rate_violation_pos
+                        + float(lambda_power[int(k)]) * power_violation_pos
                     )
                     if constraint_loss_form == "augmented_lagrangian":
                         term = (
@@ -1024,8 +1383,14 @@ def train_blocklength_aware_precoder_net(
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
                 optimizer.step()
-                lambda_rate = max(0.0, lambda_rate + lr_rate * (batch_rate_violation / float(batch_query_weight_sum)))
-                lambda_power = max(0.0, lambda_power + lr_power * (batch_power_violation / float(batch_query_weight_sum)))
+                lambda_rate[int(k)] = max(
+                    0.0,
+                    float(lambda_rate[int(k)]) + lr_rate * (batch_rate_violation / float(batch_query_weight_sum)),
+                )
+                lambda_power[int(k)] = max(
+                    0.0,
+                    float(lambda_power[int(k)]) + lr_power * (batch_power_violation / float(batch_query_weight_sum)),
+                )
 
             avg_lagrangian = float(epoch_term_sum / max(epoch_query_weight_sum, 1.0))
             avg_rate = float(epoch_rate_sum / max(epoch_query_weight_sum, 1.0))
@@ -1034,25 +1399,25 @@ def train_blocklength_aware_precoder_net(
             epoch_r_p = float(max(max(avg_rate_violation, 0.0), max(avg_power_violation, 0.0)))
             epoch_r_c = float(
                 max(
-                    abs(float(lambda_rate) * max(avg_rate_violation, 0.0)),
-                    abs(float(lambda_power) * max(avg_power_violation, 0.0)),
+                    abs(float(lambda_rate[int(k)]) * max(avg_rate_violation, 0.0)),
+                    abs(float(lambda_power[int(k)]) * max(avg_power_violation, 0.0)),
                 )
             )
-            epoch_r_s = _relative_model_state_change(model, previous_epoch_model_state)
-            previous_epoch_model_state = _clone_model_state(model)
+            epoch_r_s = _relative_model_state_change(model, previous_epoch_model_states[int(k)])
+            previous_epoch_model_states[int(k)] = _clone_model_state(model)
             exact_feasible = float(avg_rate_violation) <= 0.0 and float(avg_power_violation) <= 0.0
-            if epoch_r_p < best_primal_residual:
-                best_primal_residual = float(epoch_r_p)
-                best_primal_model_state = _clone_model_state(model)
-                best_primal_optimizer_state = copy.deepcopy(optimizer.state_dict())
-                best_primal_lambda_rate = float(lambda_rate)
-                best_primal_lambda_power = float(lambda_power)
-            if exact_feasible and avg_rate >= best_feasible_rate:
-                best_feasible_rate = float(avg_rate)
-                best_feasible_model_state = _clone_model_state(model)
-                best_feasible_optimizer_state = copy.deepcopy(optimizer.state_dict())
-                best_feasible_lambda_rate = float(lambda_rate)
-                best_feasible_lambda_power = float(lambda_power)
+            if epoch_r_p < best_primal_residual[int(k)]:
+                best_primal_residual[int(k)] = float(epoch_r_p)
+                best_primal_model_states[int(k)] = _clone_model_state(model)
+                best_primal_optimizer_states[int(k)] = copy.deepcopy(optimizer.state_dict())
+                best_primal_lambda_rate[int(k)] = float(lambda_rate[int(k)])
+                best_primal_lambda_power[int(k)] = float(lambda_power[int(k)])
+            if exact_feasible and avg_rate >= best_feasible_rate[int(k)]:
+                best_feasible_rate[int(k)] = float(avg_rate)
+                best_feasible_model_states[int(k)] = _clone_model_state(model)
+                best_feasible_optimizer_states[int(k)] = copy.deepcopy(optimizer.state_dict())
+                best_feasible_lambda_rate[int(k)] = float(lambda_rate[int(k)])
+                best_feasible_lambda_power[int(k)] = float(lambda_power[int(k)])
 
             epoch_status = "running"
             if (
@@ -1061,18 +1426,25 @@ def train_blocklength_aware_precoder_net(
                 and epoch_r_s <= kkt_stationarity_tol
             ):
                 epoch_status = "kkt_converged"
-                solve_status = "kkt_converged"
+                per_user_solve_status[int(k)] = "kkt_converged"
             elif epoch > 0 and epoch_r_s <= kkt_stationarity_tol and epoch_r_p > kkt_primal_tol:
                 epoch_status = "stationary_infeasible"
-                solve_status = "stationary_infeasible"
-            user_lagrangian_history.append(avg_lagrangian)
-            user_rate_history.append(avg_rate)
-            user_rate_violation_history.append(avg_rate_violation)
-            user_power_violation_history.append(avg_power_violation)
+                per_user_solve_status[int(k)] = "stationary_infeasible"
+
+            training_history["per_user_lagrangian"][k].append(avg_lagrangian)
+            training_history["per_user_rate"][k].append(avg_rate)
+            training_history["avg_rate_violation"][k].append(avg_rate_violation)
+            training_history["avg_power_violation"][k].append(avg_power_violation)
             training_history["per_user_kkt_primal_residual"][k].append(float(epoch_r_p))
             training_history["per_user_kkt_complementarity_residual"][k].append(float(epoch_r_c))
             training_history["per_user_kkt_stationarity_residual"][k].append(float(epoch_r_s))
             training_history["per_user_training_epoch_status"][k].append(str(epoch_status))
+            epoch_lagrangians.append(avg_lagrangian)
+            epoch_rates.append(avg_rate)
+            epoch_rate_violations.append(avg_rate_violation)
+            epoch_power_violations.append(avg_power_violation)
+            epoch_statuses.append(epoch_status)
+
             if (
                 ((epoch + 1) % print_every_epoch) == 0
                 or epoch == 0
@@ -1093,40 +1465,53 @@ def train_blocklength_aware_precoder_net(
                         status=epoch_status,
                     )
                 )
-            if epoch_status in {"kkt_converged", "stationary_infeasible"}:
-                break
+            model.eval()
 
+        training_history["avg_lagrangian"].append(float(np.mean(epoch_lagrangians)) if epoch_lagrangians else 0.0)
+        training_history["avg_user_rate"].append(float(np.mean(epoch_rates)) if epoch_rates else 0.0)
+        training_history["avg_rate_violation_over_users"].append(
+            float(np.mean(epoch_rate_violations)) if epoch_rate_violations else 0.0
+        )
+        training_history["avg_power_violation_over_users"].append(
+            float(np.mean(epoch_power_violations)) if epoch_power_violations else 0.0
+        )
+
+        terminal_statuses = {"kkt_converged", "stationary_infeasible", "no_rollout_queries"}
+        if all(status == "kkt_converged" for status in epoch_statuses if status != "no_rollout_queries"):
+            break
+        if epoch_statuses and all(status in terminal_statuses for status in epoch_statuses):
+            break
+
+    training_history.setdefault("per_user_epochs_completed", [0 for _ in range(K)])
+    training_history.setdefault("per_user_training_solve_status", ["not_started" for _ in range(K)])
+    training_history.setdefault("per_user_restored_solution_source", ["not_started" for _ in range(K)])
+
+    for k in range(K):
         restored_solution_source = "best_primal"
-        if best_feasible_model_state is not None and best_feasible_optimizer_state is not None:
-            model.load_state_dict(best_feasible_model_state)
-            optimizer.load_state_dict(best_feasible_optimizer_state)
-            lambda_rate = float(best_feasible_lambda_rate if best_feasible_lambda_rate is not None else lambda_rate)
-            lambda_power = float(best_feasible_lambda_power if best_feasible_lambda_power is not None else lambda_power)
+        if best_feasible_model_states[int(k)] is not None and best_feasible_optimizer_states[int(k)] is not None:
+            user_models[int(k)].load_state_dict(best_feasible_model_states[int(k)])
+            optimizers[int(k)].load_state_dict(best_feasible_optimizer_states[int(k)])
+            if best_feasible_lambda_rate[int(k)] is not None:
+                lambda_rate[int(k)] = float(best_feasible_lambda_rate[int(k)])
+            if best_feasible_lambda_power[int(k)] is not None:
+                lambda_power[int(k)] = float(best_feasible_lambda_power[int(k)])
             restored_solution_source = "best_feasible"
-            if solve_status == "max_epochs_reached":
-                solve_status = "max_epochs_feasible_best"
+            if per_user_solve_status[int(k)] == "max_epochs_reached":
+                per_user_solve_status[int(k)] = "max_epochs_feasible_best"
         else:
-            model.load_state_dict(best_primal_model_state)
-            optimizer.load_state_dict(best_primal_optimizer_state)
-            lambda_rate = float(best_primal_lambda_rate)
-            lambda_power = float(best_primal_lambda_power)
-            if solve_status == "max_epochs_reached":
-                solve_status = "max_epochs_best_primal"
-        if training_history["per_user_training_epoch_status"][k]:
-            training_history["per_user_training_epoch_status"][k][-1] = str(solve_status)
-        training_history.setdefault("per_user_epochs_completed", [0 for _ in range(K)])
-        training_history.setdefault("per_user_training_solve_status", ["not_started" for _ in range(K)])
-        training_history.setdefault("per_user_restored_solution_source", ["not_started" for _ in range(K)])
-        training_history["per_user_epochs_completed"][k] = int(epochs_completed)
-        training_history["per_user_training_solve_status"][k] = str(solve_status)
-        training_history["per_user_restored_solution_source"][k] = str(restored_solution_source)
+            user_models[int(k)].load_state_dict(best_primal_model_states[int(k)])
+            optimizers[int(k)].load_state_dict(best_primal_optimizer_states[int(k)])
+            lambda_rate[int(k)] = float(best_primal_lambda_rate[int(k)])
+            lambda_power[int(k)] = float(best_primal_lambda_power[int(k)])
+            if per_user_solve_status[int(k)] == "max_epochs_reached":
+                per_user_solve_status[int(k)] = "max_epochs_best_primal"
+        if training_history["per_user_training_epoch_status"][int(k)]:
+            training_history["per_user_training_epoch_status"][int(k)][-1] = str(per_user_solve_status[int(k)])
+        training_history["per_user_epochs_completed"][int(k)] = int(epochs_completed)
+        training_history["per_user_training_solve_status"][int(k)] = str(per_user_solve_status[int(k)])
+        training_history["per_user_restored_solution_source"][int(k)] = str(restored_solution_source)
+        user_models[int(k)].eval()
 
-        user_models.append(model.eval())
-
-    training_history["avg_lagrangian"] = _aggregate_epoch_means(training_history["per_user_lagrangian"])
-    training_history["avg_user_rate"] = _aggregate_epoch_means(training_history["per_user_rate"])
-    training_history["avg_rate_violation_over_users"] = _aggregate_epoch_means(training_history["avg_rate_violation"])
-    training_history["avg_power_violation_over_users"] = _aggregate_epoch_means(training_history["avg_power_violation"])
     training_history["cumulative_rollout_queries_by_n_kl"] = {
         "global_rollout_queries_by_n_kl_over_all_epochs": _serialize_count_dict(cumulative_rollout_query_global_counts),
         "per_user_rollout_queries_by_n_kl_over_all_epochs": [
@@ -1161,7 +1546,7 @@ def train_blocklength_aware_precoder_net(
         train_eval_post,
         training_history,
         train_eval_seed=train_eval_seed,
-        epochs=int(epochs),
+        epochs=int(max_epochs),
         dataset_summary=dataset_summary,
         initial_baseline=train_eval_initial_baseline,
     )
@@ -1169,9 +1554,9 @@ def train_blocklength_aware_precoder_net(
     train_eval_post.update(
         {
             "train_seeds": [int(s) for s in train_seeds],
-            "training_dataset_sizes": [len(v) for v in episodes_by_user],
-            "training_channel_episode_counts_per_user": [len(v) for v in episodes_by_user],
-            "training_sample_counts_per_user": [len(v) for v in episodes_by_user],
+            "training_dataset_sizes": [int(len(training_episodes)) for _ in range(K)],
+            "training_channel_episode_counts_per_user": [int(len(training_episodes)) for _ in range(K)],
+            "training_sample_counts_per_user": [int(len(training_episodes)) for _ in range(K)],
             "training_dataset_summary": dataset_summary,
             "post_training_summary": post_training_summary,
             "precoder_net_training_losses": [

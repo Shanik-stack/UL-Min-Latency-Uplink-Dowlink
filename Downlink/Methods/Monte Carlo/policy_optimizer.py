@@ -641,13 +641,23 @@ def _best_joint_n_target_transition(
     *,
     n_min: int,
     n_step: int,
+    eligible_users: Sequence[int] | None = None,
     inference_counters: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    candidate_users = [
-        int(k)
-        for k, active in enumerate(scenario["active_mask"])
-        if int(active) > 0 and int(current_n_targets[int(k)]) - int(n_step) >= int(n_min)
-    ]
+    if eligible_users is None:
+        candidate_users = [
+            int(k)
+            for k, active in enumerate(scenario["active_mask"])
+            if int(active) > 0 and int(current_n_targets[int(k)]) - int(n_step) >= int(n_min)
+        ]
+    else:
+        candidate_users = [
+            int(k)
+            for k in eligible_users
+            if 0 <= int(k) < len(scenario["active_mask"])
+            and int(scenario["active_mask"][int(k)]) > 0
+            and int(current_n_targets[int(k)]) - int(n_step) >= int(n_min)
+        ]
     if len(candidate_users) == 0:
         return {"accepted": None, "rejected": None}
 
@@ -696,21 +706,472 @@ def _build_rollout_query_from_downlink_state(
     metrics: dict[str, Any],
     rollout_anchor_bits: Sequence[int],
     *,
+    rollout_phase: str,
     rollout_stage: str,
     frontier_query: bool,
 ) -> dict[str, Any]:
-    query_weight = 2.0 if bool(frontier_query) else (1.25 if not bool(metrics["feasible"]) else 1.0)
     return {
         **scenario,
         "n_targets": [int(v) for v in n_targets],
         "rollout_anchor_bits": [int(v) for v in rollout_anchor_bits],
+        "rollout_phase": str(rollout_phase),
         "rollout_stage": str(rollout_stage),
         "frontier_query": bool(frontier_query),
         "rollout_feasible": bool(metrics["feasible"]),
         "rollout_min_rate_margin": float(metrics["min_rate_margin"]),
         "rollout_sum_rate": float(metrics["sum_rate"]),
-        "query_weight": float(query_weight),
+        "query_weight": 1.0,
     }
+
+
+def _resolve_rollout_phase_weights(sim_params: dict[str, Any]) -> dict[str, float]:
+    return {
+        "full_block": float(sim_params.get("monte_carlo_training_full_block_weight", 1.0)),
+        "tail_feasible": float(sim_params.get("monte_carlo_training_tail_feasible_weight", 1.0)),
+        "tail_frontier": float(sim_params.get("monte_carlo_training_tail_frontier_weight", 1.5)),
+    }
+
+
+def _normalize_episode_query_weights(
+    episode_queries: Sequence[dict[str, Any]],
+    phase_weights: dict[str, float],
+) -> list[dict[str, Any]]:
+    if len(episode_queries) == 0:
+        return []
+    phase_counts: dict[str, int] = {}
+    for query in episode_queries:
+        phase = str(query.get("rollout_phase", "full_block"))
+        phase_counts[phase] = phase_counts.get(phase, 0) + 1
+
+    normalized: list[dict[str, Any]] = []
+    for query in episode_queries:
+        phase = str(query.get("rollout_phase", "full_block"))
+        weight = float(phase_weights.get(phase, 1.0)) / float(max(phase_counts.get(phase, 1), 1))
+        updated = dict(query)
+        updated["query_weight"] = float(weight)
+        normalized.append(updated)
+    return normalized
+
+
+def _supported_bits_from_forward(forward: dict[str, Any]) -> list[int]:
+    supported_bits = [0 for _ in range(len(forward["rates"]))]
+    for k, rate_t in enumerate(forward["rates"]):
+        if rate_t is None:
+            continue
+        if float(forward["active_mask"][k]) <= 0.5 or int(forward["n_targets"][k]) <= 0:
+            continue
+        supported_bits[int(k)] = max(
+            int(
+                np.floor(
+                    max(float(rate_t.detach().cpu()), 0.0)
+                    * float(max(int(forward["n_targets"][k]), 1))
+                )
+            ),
+            0,
+        )
+    return supported_bits
+
+
+def _build_training_block_scenario(
+    system: DownlinkSystem,
+    working_F: list[list[np.ndarray]],
+    block: int,
+    active_mask: Sequence[int | float],
+    *,
+    scenario_mode: str,
+) -> dict[str, Any]:
+    for k, flag in enumerate(active_mask):
+        if float(flag) > 0.5:
+            _ensure_user_block(system, working_F, int(k), int(block))
+    input_snapshot = _masked_precoder_snapshot(system, working_F, int(block), active_mask)
+    scenario = _build_block_joint_scenario(
+        system,
+        int(block),
+        active_mask,
+        scenario_mode=str(scenario_mode),
+    )
+    scenario["input_noise_covariances"] = _scenario_input_noise_covariances(
+        system,
+        input_snapshot,
+        int(block),
+        active_mask,
+    )
+    return scenario
+
+
+def _apply_forward_to_working_precoders(
+    system: DownlinkSystem,
+    working_F: list[list[np.ndarray]],
+    block: int,
+    forward: dict[str, Any] | None,
+) -> None:
+    if forward is None:
+        return
+    active_mask = list(forward.get("active_mask", []))
+    n_targets = list(forward.get("n_targets", []))
+    for k in range(system.K):
+        _ensure_user_block(system, working_F, int(k), int(block))
+        is_active = int(k) < len(active_mask) and float(active_mask[int(k)]) > 0.5
+        has_n = int(k) < len(n_targets) and int(n_targets[int(k)]) > 0
+        if is_active and has_n:
+            working_F[int(k)][int(block)] = np.asarray(
+                _to_complex_numpy(forward["predicted_beams"][int(k)]),
+                dtype=np.complex128,
+            )
+        else:
+            working_F[int(k)][int(block)] = _zero_precoder(system, int(k))
+
+
+def _collect_downlink_tail_rollout_queries(
+    system_params: dict[str, Any],
+    sim_params: dict[str, Any],
+    system: DownlinkSystem,
+    working_F: list[list[np.ndarray]],
+    user_models: Sequence[torch.nn.Module],
+    *,
+    block: int,
+    scenario_mode: str,
+    committed_bits: Sequence[int],
+    service_mask: Sequence[int | float],
+    reducible_users: Sequence[int],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    tail_scenario = _build_training_block_scenario(
+        system,
+        working_F,
+        int(block),
+        service_mask,
+        scenario_mode=str(scenario_mode),
+    )
+    current_n_targets = [
+        int(system.T[int(k)]) if float(service_mask[int(k)]) > 0.5 else 0
+        for k in range(system.K)
+    ]
+    tail_queries: list[dict[str, Any]] = []
+    committed_metrics = _scenario_metrics_with_models(
+        system_params,
+        tail_scenario,
+        user_models,
+        current_n_targets,
+        anchor_bits=committed_bits,
+    )
+    tail_queries.append(
+        _build_rollout_query_from_downlink_state(
+            tail_scenario,
+            current_n_targets,
+            committed_metrics,
+            committed_bits,
+            rollout_phase="tail_feasible",
+            rollout_stage="full_block_commit",
+            frontier_query=False,
+        )
+    )
+
+    n_min = int(sim_params["n_kl_min"])
+    fine_step = max(1, int(sim_params["n_kl_step"]))
+    coarse_step = max(fine_step, int(sim_params.get("monte_carlo_training_n_kl_coarse_step", fine_step)))
+    phases = [("coarse", int(coarse_step))]
+    if int(fine_step) < int(coarse_step):
+        phases.append(("fine", int(fine_step)))
+
+    visited_states = {tuple(int(v) for v in current_n_targets)}
+    for stage_name, step_size in phases:
+        while True:
+            transition = _best_joint_n_target_transition(
+                system_params,
+                tail_scenario,
+                user_models,
+                current_n_targets,
+                committed_bits,
+                n_min=n_min,
+                n_step=int(step_size),
+                eligible_users=[int(k) for k in reducible_users],
+            )
+            accepted = transition.get("accepted")
+            if accepted is None:
+                rejected = transition.get("rejected")
+                if rejected is not None:
+                    rejected_key = tuple(int(v) for v in rejected["candidate_n_targets"])
+                    if rejected_key not in visited_states:
+                        visited_states.add(rejected_key)
+                        tail_queries.append(
+                            _build_rollout_query_from_downlink_state(
+                                tail_scenario,
+                                rejected["candidate_n_targets"],
+                                rejected["metrics"],
+                                committed_bits,
+                                rollout_phase="tail_frontier",
+                                rollout_stage=str(stage_name),
+                                frontier_query=True,
+                            )
+                        )
+                break
+
+            current_n_targets = [int(v) for v in accepted["candidate_n_targets"]]
+            state_key = tuple(int(v) for v in current_n_targets)
+            if state_key in visited_states:
+                break
+            visited_states.add(state_key)
+            tail_queries.append(
+                _build_rollout_query_from_downlink_state(
+                    tail_scenario,
+                    current_n_targets,
+                    accepted["metrics"],
+                    committed_bits,
+                    rollout_phase="tail_feasible",
+                    rollout_stage=str(stage_name),
+                    frontier_query=False,
+                )
+            )
+
+    final_forward = _scenario_forward_pass(
+        system_params,
+        tail_scenario,
+        user_models,
+        current_n_targets,
+        anchor_bits=committed_bits,
+    )
+    return tail_queries, final_forward
+
+
+def _collect_downlink_episode_rollout_queries(
+    system_params: dict[str, Any],
+    sim_params: dict[str, Any],
+    training_episode: dict[str, Any],
+    user_models: Sequence[torch.nn.Module],
+) -> list[dict[str, Any]]:
+    seed = int(training_episode["seed"])
+    scenario = dict(training_episode["scenario"])
+    scenario_mode = str(scenario.get("mode", PAYLOAD_COMPLETION_MODE))
+    phase_weights = _resolve_rollout_phase_weights(sim_params)
+    system = DownlinkSystem(system_params, seed=int(seed))
+    working_F = system.clone_precoders()
+    episode_queries: list[dict[str, Any]] = []
+    max_blocks = int(sim_params.get("max_total_blocks", 256))
+
+    if scenario_mode == FIXED_BLOCK_TARGETS_MODE:
+        block_targets = np.asarray(scenario["block_bit_targets"], dtype=int)
+        num_blocks = int(scenario["num_blocks"])
+        for block in range(num_blocks):
+            target_bits = [int(block_targets[int(k), int(block)]) for k in range(system.K)]
+            active_mask = [1 if int(bits) > 0 else 0 for bits in target_bits]
+            if not any(active_mask):
+                continue
+
+            full_scenario = _build_training_block_scenario(
+                system,
+                working_F,
+                int(block),
+                active_mask,
+                scenario_mode=str(scenario_mode),
+            )
+            full_n_targets = [
+                int(system.T[int(k)]) if int(active_mask[int(k)]) > 0 else 0
+                for k in range(system.K)
+            ]
+            full_forward = _scenario_forward_pass(
+                system_params,
+                full_scenario,
+                user_models,
+                full_n_targets,
+                anchor_bits=[0 for _ in range(system.K)],
+            )
+            full_metrics = _scenario_metrics_from_forward(full_forward)
+            episode_queries.append(
+                _build_rollout_query_from_downlink_state(
+                    full_scenario,
+                    full_n_targets,
+                    full_metrics,
+                    [0 for _ in range(system.K)],
+                    rollout_phase="full_block",
+                    rollout_stage="full_block",
+                    frontier_query=False,
+                )
+            )
+
+            initial_supported_bits = _supported_bits_from_forward(full_forward)
+            service_mask = [1 if int(initial_supported_bits[int(k)]) > 0 else 0 for k in range(system.K)]
+            if not any(service_mask):
+                for k in range(system.K):
+                    _ensure_user_block(system, working_F, int(k), int(block))
+                    working_F[int(k)][int(block)] = _zero_precoder(system, int(k))
+                continue
+
+            service_scenario = _build_training_block_scenario(
+                system,
+                working_F,
+                int(block),
+                service_mask,
+                scenario_mode=str(scenario_mode),
+            )
+            service_n_targets = [
+                int(system.T[int(k)]) if int(service_mask[int(k)]) > 0 else 0
+                for k in range(system.K)
+            ]
+            service_forward = _scenario_forward_pass(
+                system_params,
+                service_scenario,
+                user_models,
+                service_n_targets,
+                anchor_bits=[0 for _ in range(system.K)],
+            )
+            service_metrics = _scenario_metrics_from_forward(service_forward)
+            if service_mask != active_mask:
+                episode_queries.append(
+                    _build_rollout_query_from_downlink_state(
+                        service_scenario,
+                        service_n_targets,
+                        service_metrics,
+                        [0 for _ in range(system.K)],
+                        rollout_phase="full_block",
+                        rollout_stage="service_mask",
+                        frontier_query=False,
+                    )
+                )
+
+            supported_bits = _supported_bits_from_forward(service_forward)
+            committed_bits = [
+                min(int(target_bits[int(k)]), int(supported_bits[int(k)]))
+                if int(service_mask[int(k)]) > 0
+                else 0
+                for k in range(system.K)
+            ]
+            reducible_users = [
+                int(k)
+                for k in range(system.K)
+                if int(service_mask[int(k)]) > 0 and int(committed_bits[int(k)]) >= int(target_bits[int(k)]) > 0
+            ]
+            final_forward = service_forward
+            if len(reducible_users) > 0:
+                tail_queries, final_forward = _collect_downlink_tail_rollout_queries(
+                    system_params,
+                    sim_params,
+                    system,
+                    working_F,
+                    user_models,
+                    block=int(block),
+                    scenario_mode=str(scenario_mode),
+                    committed_bits=committed_bits,
+                    service_mask=service_mask,
+                    reducible_users=reducible_users,
+                )
+                episode_queries.extend(tail_queries)
+
+            _apply_forward_to_working_precoders(system, working_F, int(block), final_forward)
+        return _normalize_episode_query_weights(episode_queries, phase_weights)
+
+    remaining = np.asarray(scenario["payload_bits_per_user"], dtype=int).copy()
+    block = 0
+    while np.any(remaining > 0):
+        if block >= max_blocks:
+            raise RuntimeError(
+                f"Monte Carlo training rollout hit max_total_blocks={max_blocks} for seed={seed} with remaining bits {remaining.tolist()}."
+            )
+        active_mask = [1 if int(remaining[int(k)]) > 0 else 0 for k in range(system.K)]
+        full_scenario = _build_training_block_scenario(
+            system,
+            working_F,
+            int(block),
+            active_mask,
+            scenario_mode=str(scenario_mode),
+        )
+        full_n_targets = [
+            int(system.T[int(k)]) if int(active_mask[int(k)]) > 0 else 0
+            for k in range(system.K)
+        ]
+        full_forward = _scenario_forward_pass(
+            system_params,
+            full_scenario,
+            user_models,
+            full_n_targets,
+            anchor_bits=[0 for _ in range(system.K)],
+        )
+        full_metrics = _scenario_metrics_from_forward(full_forward)
+        episode_queries.append(
+            _build_rollout_query_from_downlink_state(
+                full_scenario,
+                full_n_targets,
+                full_metrics,
+                [0 for _ in range(system.K)],
+                rollout_phase="full_block",
+                rollout_stage="full_block",
+                frontier_query=False,
+            )
+        )
+
+        initial_supported_bits = _supported_bits_from_forward(full_forward)
+        service_mask = [1 if int(initial_supported_bits[int(k)]) > 0 else 0 for k in range(system.K)]
+        if not any(service_mask):
+            for k in range(system.K):
+                _ensure_user_block(system, working_F, int(k), int(block))
+                working_F[int(k)][int(block)] = _zero_precoder(system, int(k))
+            block += 1
+            continue
+
+        service_scenario = _build_training_block_scenario(
+            system,
+            working_F,
+            int(block),
+            service_mask,
+            scenario_mode=str(scenario_mode),
+        )
+        service_n_targets = [
+            int(system.T[int(k)]) if int(service_mask[int(k)]) > 0 else 0
+            for k in range(system.K)
+        ]
+        service_forward = _scenario_forward_pass(
+            system_params,
+            service_scenario,
+            user_models,
+            service_n_targets,
+            anchor_bits=[0 for _ in range(system.K)],
+        )
+        service_metrics = _scenario_metrics_from_forward(service_forward)
+        if service_mask != active_mask:
+            episode_queries.append(
+                _build_rollout_query_from_downlink_state(
+                    service_scenario,
+                    service_n_targets,
+                    service_metrics,
+                    [0 for _ in range(system.K)],
+                    rollout_phase="full_block",
+                    rollout_stage="service_mask",
+                    frontier_query=False,
+                )
+            )
+
+        supported_bits = _supported_bits_from_forward(service_forward)
+        committed_bits = [
+            min(int(remaining[int(k)]), int(supported_bits[int(k)]))
+            if int(service_mask[int(k)]) > 0
+            else 0
+            for k in range(system.K)
+        ]
+        reducible_users = [
+            int(k)
+            for k in range(system.K)
+            if int(service_mask[int(k)]) > 0 and int(committed_bits[int(k)]) >= int(remaining[int(k)]) > 0
+        ]
+        final_forward = service_forward
+        if len(reducible_users) > 0:
+            tail_queries, final_forward = _collect_downlink_tail_rollout_queries(
+                system_params,
+                sim_params,
+                system,
+                working_F,
+                user_models,
+                block=int(block),
+                scenario_mode=str(scenario_mode),
+                committed_bits=committed_bits,
+                service_mask=service_mask,
+                reducible_users=reducible_users,
+            )
+            episode_queries.extend(tail_queries)
+
+        _apply_forward_to_working_precoders(system, working_F, int(block), final_forward)
+        remaining = np.maximum(remaining - np.asarray(committed_bits, dtype=int), 0)
+        block += 1
+
+    return _normalize_episode_query_weights(episode_queries, phase_weights)
 
 
 def _generate_rollout_queries_for_downlink(
@@ -719,103 +1180,16 @@ def _generate_rollout_queries_for_downlink(
     training_episodes: Sequence[dict[str, Any]],
     user_models: Sequence[torch.nn.Module],
 ) -> list[dict[str, Any]]:
-    n_min = int(sim_params["n_kl_min"])
-    fine_step = max(1, int(sim_params["n_kl_step"]))
-    coarse_step = max(fine_step, int(sim_params.get("monte_carlo_training_n_kl_coarse_step", fine_step)))
-    phases = [("coarse", int(coarse_step))]
-    if int(fine_step) < int(coarse_step):
-        phases.append(("fine", int(fine_step)))
-
     rollout_queries: list[dict[str, Any]] = []
-    for episode in training_episodes:
-        visited_states: set[tuple[int, ...]] = set()
-        episode_queries: list[dict[str, Any]] = []
-        current_n_targets = [int(v) for v in episode["max_n_targets"]]
-        initial_forward = _scenario_forward_pass(
-            system_params,
-            episode,
-            user_models,
-            current_n_targets,
-            anchor_bits=None,
-        )
-        rollout_anchor_bits = _resolve_downlink_rollout_anchor_bits_from_forward(initial_forward)
-        initial_metrics = _scenario_metrics_with_models(
-            system_params,
-            episode,
-            user_models,
-            current_n_targets,
-            anchor_bits=rollout_anchor_bits,
-        )
-        state_key = tuple(int(v) for v in current_n_targets)
-        visited_states.add(state_key)
-        episode_queries.append(
-            _build_rollout_query_from_downlink_state(
-                episode,
-                current_n_targets,
-                initial_metrics,
-                rollout_anchor_bits,
-                rollout_stage="coarse",
-                frontier_query=not bool(initial_metrics["feasible"]),
+    for training_episode in training_episodes:
+        rollout_queries.extend(
+            _collect_downlink_episode_rollout_queries(
+                system_params,
+                sim_params,
+                training_episode,
+                user_models,
             )
         )
-        last_feasible_idx = 0 if bool(initial_metrics["feasible"]) else None
-
-        if bool(initial_metrics["feasible"]):
-            for stage_name, step_size in phases:
-                while True:
-                    transition = _best_joint_n_target_transition(
-                        system_params,
-                        episode,
-                        user_models,
-                        current_n_targets,
-                        rollout_anchor_bits,
-                        n_min=n_min,
-                        n_step=int(step_size),
-                    )
-                    accepted = transition.get("accepted")
-                    if accepted is None:
-                        rejected = transition.get("rejected")
-                        if rejected is not None:
-                            rejected_key = tuple(int(v) for v in rejected["candidate_n_targets"])
-                            if rejected_key not in visited_states:
-                                visited_states.add(rejected_key)
-                                episode_queries.append(
-                                    _build_rollout_query_from_downlink_state(
-                                        episode,
-                                        rejected["candidate_n_targets"],
-                                        rejected["metrics"],
-                                        rollout_anchor_bits,
-                                        rollout_stage=stage_name,
-                                        frontier_query=True,
-                                    )
-                                )
-                        break
-
-                    current_n_targets = [int(v) for v in accepted["candidate_n_targets"]]
-                    state_key = tuple(int(v) for v in current_n_targets)
-                    if state_key in visited_states:
-                        break
-                    visited_states.add(state_key)
-                    episode_queries.append(
-                        _build_rollout_query_from_downlink_state(
-                            episode,
-                            current_n_targets,
-                            accepted["metrics"],
-                            rollout_anchor_bits,
-                            rollout_stage=stage_name,
-                            frontier_query=False,
-                        )
-                    )
-                    last_feasible_idx = len(episode_queries) - 1
-
-        if last_feasible_idx is not None:
-            episode_queries[int(last_feasible_idx)]["frontier_query"] = True
-            episode_queries[int(last_feasible_idx)]["query_weight"] = max(
-                float(episode_queries[int(last_feasible_idx)]["query_weight"]),
-                2.0,
-            )
-
-        rollout_queries.extend(episode_queries)
 
     return rollout_queries
 
@@ -993,12 +1367,24 @@ def _summarize_training_cases_with_n_kl(
 
 
 def summarize_training_dataset(training_episodes: Sequence[dict[str, Any]]) -> dict[str, Any]:
-    summary = _summarize_channel_episode_structure(training_episodes)
-    summary["base_dataset_kind"] = "channel_episodes_only"
-    summary["scenario_modes"] = sorted(
-        {str(case.get("scenario_mode", PAYLOAD_COMPLETION_MODE)) for case in training_episodes}
-    )
-    return summary
+    if len(training_episodes) == 0:
+        return {
+            "total_channel_episodes": 0,
+            "channel_episodes_by_seed": {},
+            "channel_episodes_per_user": [],
+            "base_dataset_kind": "channel_episodes_only",
+            "scenario_modes": [],
+        }
+    K = int(training_episodes[0].get("num_users", 0))
+    episodes_by_seed = {str(int(case["seed"])): 1 for case in training_episodes}
+    scenario_modes = sorted({str(case.get("scenario_mode", PAYLOAD_COMPLETION_MODE)) for case in training_episodes})
+    return {
+        "total_channel_episodes": int(len(training_episodes)),
+        "channel_episodes_by_seed": episodes_by_seed,
+        "channel_episodes_per_user": [int(len(training_episodes)) for _ in range(K)],
+        "base_dataset_kind": "channel_episodes_only",
+        "scenario_modes": scenario_modes,
+    }
 
 
 def _accumulate_active_user_case_uses_by_n_kl(
@@ -1029,8 +1415,6 @@ def build_training_dataset(
     *,
     verbose: bool = True,
 ) -> list[dict[str, Any]]:
-    K = int(system_params["K"])
-    scenario_mode = str(sim_params.get("experiment_scenario_mode", PAYLOAD_COMPLETION_MODE))
     episodes: list[dict[str, Any]] = []
 
     for seed in train_seeds:
@@ -1044,34 +1428,13 @@ def build_training_dataset(
                 )
             )
         configure_determinism(int(seed))
-        system = DownlinkSystem(system_params, seed=int(seed))
-        block = 0
-        active_mask = np.ones(K, dtype=np.float32)
-        for k in range(K):
-            system.ensure_block(k, int(block))
-        H_block = _context_channels_for_block(system, int(block))
-        input_snapshot = system.clone_precoders()
-        for k in range(K):
-            if int(block) < len(input_snapshot[k]):
-                input_snapshot[k][int(block)] = _zero_precoder(system, k)
+        scenario = build_experiment_scenario(system_params, sim_params, seed=int(seed))
         episodes.append(
             {
                 "seed": int(seed),
-                "block": int(block),
-                "H_block": [np.asarray(H_kl, dtype=np.complex64) for H_kl in H_block],
-                "active_mask": [int(v > 0.5) for v in active_mask.tolist()],
-                "max_n_targets": [int(system.T[int(k)]) for k in range(K)],
-                "block_power_budget": float(system.block_power_budget),
-                "P": [float(v) for v in system.P.tolist()],
-                "sigma2": [float(v) for v in system.sigma2.tolist()],
-                "epsilon": [float(v) for v in system.epsilon.tolist()],
-                "input_noise_covariances": _scenario_input_noise_covariances(
-                    system,
-                    input_snapshot,
-                    int(block),
-                    active_mask,
-                ),
-                "scenario_mode": scenario_mode,
+                "num_users": int(system_params["K"]),
+                "scenario_mode": str(scenario.get("mode", PAYLOAD_COMPLETION_MODE)),
+                "scenario": scenario,
             }
         )
 
@@ -1120,7 +1483,7 @@ def train_blocklength_aware_precoder_net(
             if str(model_scope) == "bs_shared_net"
             else "not_applicable"
         ),
-        "training_objective": "rollout_lagrangian_sum_finite_blocklength_rate_with_online_full_block_anchor_bits",
+        "training_objective": "scenario_driven_episode_rollout_lagrangian_sum_finite_blocklength_rate",
     }
     dataset_sizes = [
         int(dataset_summary.get("channel_episodes_per_user", [0 for _ in range(K)])[k])
@@ -1479,7 +1842,7 @@ def train_blocklength_aware_precoder_net(
         ),
         "base_dataset_kind": dataset_summary.get("base_dataset_kind", "channel_episodes_only"),
         "total_training_channel_episodes": int(dataset_summary.get("total_channel_episodes", 0)),
-        "rollout_anchor_bits_mode": "derived_online_from_current_joint_full_block_rate",
+        "rollout_anchor_bits_mode": "derived_online_from_current_episode_served_bits",
         "per_user_final_lagrangian": [
             float(history[-1]) if len(history) > 0 else 0.0 for history in training_history["per_user_lagrangian"]
         ],
@@ -3209,7 +3572,7 @@ def build_precoder_net_artifact(
         ),
         "training_objective": precoder_net_training_history.get(
             "training_objective",
-            "lagrangian_sum_finite_blocklength_rate_with_online_full_block_anchor_bits",
+            "scenario_driven_episode_rollout_lagrangian_sum_finite_blocklength_rate",
         ),
     }
 

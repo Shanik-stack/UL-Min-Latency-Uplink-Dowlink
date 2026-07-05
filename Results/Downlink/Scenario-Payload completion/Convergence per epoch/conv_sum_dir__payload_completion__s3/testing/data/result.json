@@ -5,7 +5,7 @@
     "weight_strategy": "none",
     "convergence_precoder_update_mode": "direct_precoder",
     "precoder_parameterization": "direct_active_block_precoders",
-    "downlink_precoder_net_scope": "bs_shared_net",
+    "downlink_precoder_net_scope": "per_user_nets",
     "user_model_specs": [],
     "n_kl": [
         [
@@ -191718,16 +191718,19 @@
         "n_kl_reduction_update_scope": "infeasible_users_only",
         "monte_carlo_training_max_epochs": 150,
         "monte_carlo_training_n_kl_coarse_step": 5,
+        "monte_carlo_training_full_block_weight": 1.0,
+        "monte_carlo_training_tail_feasible_weight": 1.0,
+        "monte_carlo_training_tail_frontier_weight": 1.5,
         "monte_carlo_training_fallback_target_bits": 1,
         "monte_carlo_train_seeds": null,
-        "monte_carlo_num_train_seeds": 10,
+        "monte_carlo_num_train_seeds": 3,
         "monte_carlo_test_seed": 3,
         "convergence_block_objective_mode": "unweighted_sum_rate",
         "remaining_bits_weight_power": 1.0,
         "minimum_user_weight": 0.25,
         "network_rate_weight": 0.15,
         "latency_penalty_weight": 0.5,
-        "downlink_precoder_net_scope": "bs_shared_net",
+        "downlink_precoder_net_scope": "per_user_nets",
         "bs_shared_net_fixed_target_n_target_mode": "shared_n_targets",
         "experiment_scenario": {
             "mode": "payload_completion",
@@ -191966,8 +191969,8 @@
         ]
     },
     "experiment_cost": {
-        "core_wall_time_seconds_total": 316.3353656999534,
-        "core_wall_time_seconds_training": 316.3353656999534,
+        "core_wall_time_seconds_total": 852.8871786999807,
+        "core_wall_time_seconds_training": 852.8871786999807,
         "core_wall_time_seconds_testing": 0.0,
         "estimated_nn_training_flops": 0.0,
         "estimated_nn_inference_flops": 0.0,
@@ -191990,5 +191993,7 @@
             "This convergence run used direct active-block precoder optimization, so NN FLOP counters are reported as 0.0.",
             "Testing-phase wall time is 0.0 for convergence because there is no separate train/test split."
         ]
-    }
+    },
+    "run_started_at_local": "2026-07-05T19:40:37+03:00",
+    "run_completed_at_local": "2026-07-05T19:54:50+03:00"
 }

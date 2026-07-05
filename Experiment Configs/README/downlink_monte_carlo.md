@@ -91,6 +91,18 @@ convergence baseline, not to offline Monte Carlo training.
   - Larger values reduce data-generation cost but give sparser frontier
     coverage.
 
+- `simulation.monte_carlo_training_full_block_weight`
+  - Total loss weight assigned to full-block sum-rate states inside one joint
+    training episode.
+
+- `simulation.monte_carlo_training_tail_feasible_weight`
+  - Total loss weight assigned to feasible tail states where the jointly served
+    users can keep their committed bits while reducing `n_kl`.
+
+- `simulation.monte_carlo_training_tail_frontier_weight`
+  - Total loss weight assigned to the first rejected joint tail state beyond
+    the feasible `n_kl` frontier.
+
 ### Lagrangian Training Weights
 
 - `simulation.initial_lambda_rate_constraint`

@@ -65,6 +65,20 @@ The uplink Monte Carlo method already uses one precoder net per user.
     generation.
   - Larger values make rollout generation faster but less dense.
 
+- `simulation.monte_carlo_training_full_block_weight`
+  - Total loss weight assigned to full-block rate-maximization states inside
+    one training episode.
+  - This is the phase where the user beam is trained at `n_kl = T_k`.
+
+- `simulation.monte_carlo_training_tail_feasible_weight`
+  - Total loss weight assigned to feasible tail states where the same user can
+    finish its remaining bits with smaller `n_kl`.
+
+- `simulation.monte_carlo_training_tail_frontier_weight`
+  - Total loss weight assigned to the first rejected tail state beyond the
+    feasible `n_kl` frontier.
+  - Increasing this sharpens the learned feasible boundary.
+
 ### Training Loss And Dual Variables
 
 - `simulation.initial_lambda_rate_constraint`
