@@ -1,0 +1,155 @@
+Resolved Monte Carlo train seeds: [1, 2, 4]
+Resolved Monte Carlo test seed: 3
+Initialized plotting globals:
+train_result_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Monte Carlo\mc__ul_fixed_block_targets_sweep_20260704_210305_mc_loss_aug_rate_snr__s3\training\optimization_history
+test_result_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Monte Carlo\mc__ul_fixed_block_targets_sweep_20260704_210305_mc_loss_aug_rate_snr__s3\testing\optimization_history
+user_cfg_result_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Monte Carlo\mc__ul_fixed_block_targets_sweep_20260704_210305_mc_loss_aug_rate_snr__s3\testing\user_config
+[UL Monte Carlo Dataset] | phase=collect | seed=1 | base_dataset=channel_episode_only
+[UL Monte Carlo Dataset] | phase=collect | seed=2 | base_dataset=channel_episode_only
+[UL Monte Carlo Dataset] | phase=collect | seed=4 | base_dataset=channel_episode_only
+[UL Monte Carlo Train] | phase=start | user=0 | channel_episodes=3 | epochs=100 | batch_size=32
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=1/100 | objective=-11.528055 | rate=12.007762 | r_p=0.621963 | r_c=0.066065 | r_s=inf | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=2/100 | objective=-13.754776 | rate=14.424803 | r_p=0.740007 | r_c=0.084079 | r_s=0.014205 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=3/100 | objective=-14.712958 | rate=15.474093 | r_p=0.788024 | r_c=0.095745 | r_s=0.012665 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=4/100 | objective=-15.077410 | rate=15.873288 | r_p=0.802642 | r_c=0.103963 | r_s=0.011140 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=5/100 | objective=-15.190529 | rate=16.008847 | r_p=0.811829 | r_c=0.111744 | r_s=0.009478 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=6/100 | objective=-15.244901 | rate=16.072400 | r_p=0.812582 | r_c=0.118450 | r_s=0.008200 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=7/100 | objective=-15.302741 | rate=16.144606 | r_p=0.816882 | r_c=0.125750 | r_s=0.007652 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=8/100 | objective=-15.362950 | rate=16.218204 | r_p=0.820299 | r_c=0.133005 | r_s=0.007481 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=9/100 | objective=-15.380216 | rate=16.244941 | r_p=0.821578 | r_c=0.139962 | r_s=0.006616 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=10/100 | objective=-15.367118 | rate=16.241564 | r_p=0.823651 | r_c=0.147100 | r_s=0.005867 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=11/100 | objective=-15.369192 | rate=16.246194 | r_p=0.820773 | r_c=0.153322 | r_s=0.005379 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=12/100 | objective=-15.375145 | rate=16.256263 | r_p=0.818973 | r_c=0.159693 | r_s=0.005114 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=13/100 | objective=-15.365406 | rate=16.265372 | r_p=0.826646 | r_c=0.168023 | r_s=0.004799 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=14/100 | objective=-15.364079 | rate=16.268160 | r_p=0.824923 | r_c=0.174478 | r_s=0.004322 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=15/100 | objective=-15.365900 | rate=16.269035 | r_p=0.819929 | r_c=0.180144 | r_s=0.003869 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=16/100 | objective=-15.360410 | rate=16.269652 | r_p=0.819538 | r_c=0.186775 | r_s=0.003496 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=17/100 | objective=-15.351434 | rate=16.272040 | r_p=0.822503 | r_c=0.194215 | r_s=0.003280 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=18/100 | objective=-15.343012 | rate=16.274803 | r_p=0.825234 | r_c=0.201671 | r_s=0.003088 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=19/100 | objective=-15.338786 | rate=16.276128 | r_p=0.824422 | r_c=0.208269 | r_s=0.002831 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=20/100 | objective=-15.332013 | rate=16.276148 | r_p=0.824417 | r_c=0.215064 | r_s=0.002546 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=21/100 | objective=-15.325224 | rate=16.276164 | r_p=0.824412 | r_c=0.221860 | r_s=0.002335 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=22/100 | objective=-15.320426 | rate=16.277175 | r_p=0.823788 | r_c=0.228478 | r_s=0.002214 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=23/100 | objective=-15.316585 | rate=16.278650 | r_p=0.822876 | r_c=0.234996 | r_s=0.002104 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=24/100 | objective=-15.311890 | rate=16.279681 | r_p=0.822236 | r_c=0.241574 | r_s=0.001961 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=25/100 | objective=-15.306470 | rate=16.280345 | r_p=0.821823 | r_c=0.248206 | r_s=0.001870 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=26/100 | objective=-15.301188 | rate=16.281072 | r_p=0.821369 | r_c=0.254816 | r_s=0.001778 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=27/100 | objective=-15.295480 | rate=16.281587 | r_p=0.821052 | r_c=0.261459 | r_s=0.001679 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=28/100 | objective=-15.289439 | rate=16.281931 | r_p=0.820839 | r_c=0.268129 | r_s=0.001589 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=29/100 | objective=-15.283583 | rate=16.282363 | r_p=0.820571 | r_c=0.274774 | r_s=0.001517 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=30/100 | objective=-15.270139 | rate=16.282886 | r_p=0.824688 | r_c=0.282954 | r_s=0.001455 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=31/100 | objective=-15.264304 | rate=16.283357 | r_p=0.824394 | r_c=0.289650 | r_s=0.001367 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=32/100 | objective=-15.258367 | rate=16.283780 | r_p=0.824134 | r_c=0.296350 | r_s=0.001253 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=33/100 | objective=-15.252243 | rate=16.284109 | r_p=0.823931 | r_c=0.303066 | r_s=0.001129 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=34/100 | objective=-15.245586 | rate=16.284176 | r_p=0.823893 | r_c=0.309840 | r_s=0.001011 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=35/100 | objective=-15.238523 | rate=16.284042 | r_p=0.823976 | r_c=0.316660 | r_s=9.311792e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=36/100 | objective=-15.231556 | rate=16.283957 | r_p=0.824029 | r_c=0.323471 | r_s=8.844428e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=37/100 | objective=-15.224882 | rate=16.284012 | r_p=0.823992 | r_c=0.330246 | r_s=0.001007 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=38/100 | objective=-15.218538 | rate=16.284229 | r_p=0.823858 | r_c=0.336980 | r_s=0.001090 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=39/100 | objective=-15.212252 | rate=16.284472 | r_p=0.823708 | r_c=0.343704 | r_s=9.921664e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=40/100 | objective=-15.205833 | rate=16.284649 | r_p=0.823599 | r_c=0.350441 | r_s=8.270695e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=41/100 | objective=-15.199193 | rate=16.284720 | r_p=0.823556 | r_c=0.357205 | r_s=7.637269e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=42/100 | objective=-15.192415 | rate=16.284724 | r_p=0.823555 | r_c=0.363987 | r_s=7.672312e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=43/100 | objective=-15.185725 | rate=16.284772 | r_p=0.823528 | r_c=0.370757 | r_s=7.984032e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=44/100 | objective=-15.179187 | rate=16.284885 | r_p=0.823456 | r_c=0.377506 | r_s=8.290158e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=45/100 | objective=-15.172626 | rate=16.284988 | r_p=0.823391 | r_c=0.384256 | r_s=7.725865e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=46/100 | objective=-15.165926 | rate=16.285025 | r_p=0.823368 | r_c=0.391024 | r_s=6.345517e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=0 | epoch=47/100 | objective=-15.159130 | rate=16.285014 | r_p=0.823372 | r_c=0.397806 | r_s=5.609057e-04 | status=stationary_infeasible
+[UL Monte Carlo Train] | phase=start | user=1 | channel_episodes=3 | epochs=100 | batch_size=32
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=1/100 | objective=-10.163608 | rate=10.415298 | r_p=0.436767 | r_c=0.045584 | r_s=inf | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=2/100 | objective=-12.694014 | rate=13.077161 | r_p=0.548387 | r_c=0.060241 | r_s=0.014662 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=3/100 | objective=-14.015804 | rate=14.473743 | r_p=0.601724 | r_c=0.069721 | r_s=0.012634 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=4/100 | objective=-14.660390 | rate=15.158252 | r_p=0.627268 | r_c=0.076615 | r_s=0.011195 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=5/100 | objective=-14.964164 | rate=15.482422 | r_p=0.638194 | r_c=0.082023 | r_s=0.009949 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=6/100 | objective=-15.079245 | rate=15.611962 | r_p=0.645625 | r_c=0.087146 | r_s=0.008699 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=7/100 | objective=-15.108323 | rate=15.649026 | r_p=0.648325 | r_c=0.091714 | r_s=0.007552 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=8/100 | objective=-15.129865 | rate=15.676631 | r_p=0.649545 | r_c=0.096106 | r_s=0.006899 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=9/100 | objective=-15.168807 | rate=15.714238 | r_p=0.644544 | r_c=0.099520 | r_s=0.006454 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=10/100 | objective=-15.183801 | rate=15.743128 | r_p=0.652235 | r_c=0.104962 | r_s=0.006051 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=11/100 | objective=-15.201659 | rate=15.760935 | r_p=0.648526 | r_c=0.108571 | r_s=0.005559 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=12/100 | objective=-15.209000 | rate=15.772703 | r_p=0.648569 | r_c=0.112784 | r_s=0.005093 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=13/100 | objective=-15.211252 | rate=15.781574 | r_p=0.650422 | r_c=0.117337 | r_s=0.004664 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=14/100 | objective=-15.209839 | rate=15.788427 | r_p=0.653503 | r_c=0.122163 | r_s=0.004315 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=15/100 | objective=-15.212999 | rate=15.792628 | r_p=0.650904 | r_c=0.125914 | r_s=0.003985 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=16/100 | objective=-15.207031 | rate=15.794214 | r_p=0.653565 | r_c=0.130701 | r_s=0.003658 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=17/100 | objective=-15.201768 | rate=15.793645 | r_p=0.653892 | r_c=0.135042 | r_s=0.003346 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=18/100 | objective=-15.200748 | rate=15.792804 | r_p=0.650733 | r_c=0.138624 | r_s=0.003064 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=19/100 | objective=-15.198847 | rate=15.794091 | r_p=0.649919 | r_c=0.142675 | r_s=0.002888 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=20/100 | objective=-15.197225 | rate=15.798215 | r_p=0.651023 | r_c=0.147155 | r_s=0.002763 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=21/100 | objective=-15.196363 | rate=15.802772 | r_p=0.651864 | r_c=0.151594 | r_s=0.002587 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=22/100 | objective=-15.197267 | rate=15.805654 | r_p=0.650095 | r_c=0.155409 | r_s=0.002392 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=23/100 | objective=-15.189679 | rate=15.806421 | r_p=0.653289 | r_c=0.160441 | r_s=0.002108 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=24/100 | objective=-15.184355 | rate=15.805854 | r_p=0.653651 | r_c=0.164802 | r_s=0.001952 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=25/100 | objective=-15.178988 | rate=15.805253 | r_p=0.654024 | r_c=0.169174 | r_s=0.001883 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=26/100 | objective=-15.174155 | rate=15.804940 | r_p=0.654211 | r_c=0.173502 | r_s=0.001797 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=27/100 | objective=-15.170472 | rate=15.805260 | r_p=0.654008 | r_c=0.177725 | r_s=0.001740 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=28/100 | objective=-15.168594 | rate=15.806566 | r_p=0.653190 | r_c=0.181770 | r_s=0.001682 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=29/100 | objective=-15.167679 | rate=15.808396 | r_p=0.652052 | r_c=0.185705 | r_s=0.001594 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=30/100 | objective=-15.166207 | rate=15.809912 | r_p=0.651111 | r_c=0.189676 | r_s=0.001467 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=31/100 | objective=-15.163273 | rate=15.810622 | r_p=0.650671 | r_c=0.193782 | r_s=0.001329 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=32/100 | objective=-15.159208 | rate=15.810715 | r_p=0.650616 | r_c=0.197998 | r_s=0.001225 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=33/100 | objective=-15.154778 | rate=15.810610 | r_p=0.650683 | r_c=0.202253 | r_s=0.001188 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=34/100 | objective=-15.150431 | rate=15.810553 | r_p=0.650721 | r_c=0.206499 | r_s=0.001153 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=35/100 | objective=-15.146334 | rate=15.810633 | r_p=0.650676 | r_c=0.210718 | r_s=0.001113 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=36/100 | objective=-15.142553 | rate=15.810884 | r_p=0.650526 | r_c=0.214901 | r_s=0.001051 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=37/100 | objective=-15.138950 | rate=15.811224 | r_p=0.650316 | r_c=0.219061 | r_s=9.622316e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=38/100 | objective=-15.130090 | rate=15.811531 | r_p=0.653782 | r_c=0.224503 | r_s=8.662877e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=39/100 | objective=-15.126362 | rate=15.811822 | r_p=0.653601 | r_c=0.228713 | r_s=8.135619e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=40/100 | objective=-15.122783 | rate=15.812188 | r_p=0.653371 | r_c=0.232902 | r_s=8.132456e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=41/100 | objective=-15.119179 | rate=15.812540 | r_p=0.653151 | r_c=0.237089 | r_s=8.042562e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=42/100 | objective=-15.115120 | rate=15.812649 | r_p=0.653081 | r_c=0.241329 | r_s=7.459070e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=43/100 | objective=-15.110565 | rate=15.812492 | r_p=0.653175 | r_c=0.245630 | r_s=6.562162e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=1 | epoch=44/100 | objective=-15.105922 | rate=15.812291 | r_p=0.653298 | r_c=0.249944 | r_s=5.914635e-04 | status=stationary_infeasible
+[UL Monte Carlo Train] | phase=start | user=2 | channel_episodes=3 | epochs=100 | batch_size=32
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=1/100 | objective=-11.633545 | rate=11.808828 | r_p=0.359025 | r_c=0.037192 | r_s=inf | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=2/100 | objective=-13.555604 | rate=13.787916 | r_p=0.418539 | r_c=0.045108 | r_s=0.013931 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=3/100 | objective=-14.482777 | rate=14.742571 | r_p=0.442879 | r_c=0.049693 | r_s=0.011865 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=4/100 | objective=-14.922656 | rate=15.199047 | r_p=0.456842 | r_c=0.053347 | r_s=0.010573 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=5/100 | objective=-15.139921 | rate=15.424870 | r_p=0.462562 | r_c=0.056154 | r_s=0.009445 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=6/100 | objective=-15.282190 | rate=15.577383 | r_p=0.470610 | r_c=0.059346 | r_s=0.008644 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=7/100 | objective=-15.397073 | rate=15.696747 | r_p=0.472245 | r_c=0.061782 | r_s=0.008214 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=8/100 | objective=-15.465545 | rate=15.769202 | r_p=0.473413 | r_c=0.064176 | r_s=0.007583 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=9/100 | objective=-15.484406 | rate=15.789172 | r_p=0.471970 | r_c=0.066208 | r_s=0.006759 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=10/100 | objective=-15.487545 | rate=15.797329 | r_p=0.475015 | r_c=0.068892 | r_s=0.006099 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=11/100 | objective=-15.492545 | rate=15.803496 | r_p=0.473838 | r_c=0.070966 | r_s=0.005510 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=12/100 | objective=-15.490049 | rate=15.801710 | r_p=0.472192 | r_c=0.072950 | r_s=0.004885 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=13/100 | objective=-15.486867 | rate=15.801022 | r_p=0.472607 | r_c=0.075247 | r_s=0.004422 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=14/100 | objective=-15.487562 | rate=15.806154 | r_p=0.474841 | r_c=0.077858 | r_s=0.004033 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=15/100 | objective=-15.494602 | rate=15.813708 | r_p=0.472888 | r_c=0.079774 | r_s=0.003753 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=16/100 | objective=-15.496042 | rate=15.820872 | r_p=0.476565 | r_c=0.082665 | r_s=0.003553 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=17/100 | objective=-15.498696 | rate=15.825661 | r_p=0.476307 | r_c=0.084889 | r_s=0.003339 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=18/100 | objective=-15.500657 | rate=15.828315 | r_p=0.474663 | r_c=0.086849 | r_s=0.003183 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=19/100 | objective=-15.501369 | rate=15.830174 | r_p=0.473510 | r_c=0.088880 | r_s=0.003076 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=20/100 | objective=-15.502015 | rate=15.831995 | r_p=0.472377 | r_c=0.090899 | r_s=0.002975 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=21/100 | objective=-15.498959 | rate=15.833072 | r_p=0.474406 | r_c=0.093540 | r_s=0.002800 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=22/100 | objective=-15.494552 | rate=15.833369 | r_p=0.476919 | r_c=0.096310 | r_s=0.002600 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=23/100 | objective=-15.493125 | rate=15.833889 | r_p=0.476596 | r_c=0.098516 | r_s=0.002462 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=24/100 | objective=-15.495542 | rate=15.835203 | r_p=0.473082 | r_c=0.100028 | r_s=0.002323 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=25/100 | objective=-15.490621 | rate=15.836860 | r_p=0.477452 | r_c=0.103232 | r_s=0.002188 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=26/100 | objective=-15.490781 | rate=15.838381 | r_p=0.476513 | r_c=0.105299 | r_s=0.002066 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=27/100 | objective=-15.490032 | rate=15.839334 | r_p=0.475925 | r_c=0.107434 | r_s=0.001927 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=28/100 | objective=-15.490825 | rate=15.839499 | r_p=0.473125 | r_c=0.109041 | r_s=0.001813 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=29/100 | objective=-15.488220 | rate=15.839280 | r_p=0.473263 | r_c=0.111312 | r_s=0.001712 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=30/100 | objective=-15.483400 | rate=15.839374 | r_p=0.475901 | r_c=0.114197 | r_s=0.001667 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=31/100 | objective=-15.481715 | rate=15.839726 | r_p=0.475681 | r_c=0.116407 | r_s=0.001563 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=32/100 | objective=-15.477158 | rate=15.840073 | r_p=0.478160 | r_c=0.119301 | r_s=0.001435 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=33/100 | objective=-15.478059 | rate=15.840329 | r_p=0.475303 | r_c=0.120847 | r_s=0.001306 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=34/100 | objective=-15.476290 | rate=15.840628 | r_p=0.475118 | r_c=0.123057 | r_s=0.001235 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=35/100 | objective=-15.474734 | rate=15.841054 | r_p=0.474855 | r_c=0.125244 | r_s=0.001164 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=36/100 | objective=-15.470252 | rate=15.841406 | r_p=0.477336 | r_c=0.128177 | r_s=0.001096 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=37/100 | objective=-15.468141 | rate=15.841505 | r_p=0.477276 | r_c=0.130439 | r_s=0.001021 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=38/100 | objective=-15.465754 | rate=15.841437 | r_p=0.477317 | r_c=0.132728 | r_s=9.582917e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=39/100 | objective=-15.463461 | rate=15.841428 | r_p=0.477322 | r_c=0.135008 | r_s=9.120794e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=40/100 | objective=-15.461323 | rate=15.841516 | r_p=0.477268 | r_c=0.137270 | r_s=8.569901e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=41/100 | objective=-15.459232 | rate=15.841630 | r_p=0.477197 | r_c=0.139527 | r_s=8.033976e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=42/100 | objective=-15.457199 | rate=15.841779 | r_p=0.477104 | r_c=0.141776 | r_s=7.537253e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=43/100 | objective=-15.455141 | rate=15.841914 | r_p=0.477024 | r_c=0.144028 | r_s=6.948848e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=44/100 | objective=-15.452999 | rate=15.841996 | r_p=0.476975 | r_c=0.146288 | r_s=6.315169e-04 | status=running
+[UL Monte Carlo] | phase=train | method=monte_carlo | user=2 | epoch=45/100 | objective=-15.450805 | rate=15.842044 | r_p=0.476944 | r_c=0.148554 | r_s=5.729016e-04 | status=stationary_infeasible
+[UL Initial Baseline] | seed=3 | scenario=fixed_block_targets | method=monte_carlo | users=3 | initial_total_latency=0.033133 | initial_avg_latency=0.011044 | initial_min_latency=0.006467 | initial_max_latency=0.015533
+logging rfbl:  [10.01972384 10.63958963 10.85683243 10.54547219 11.16733275]
+logging rfbl:  [11.98300293 11.62666183 12.46949405 13.12993789 11.91705239]
+logging rfbl:  [13.41409209 13.53759188 13.90594961 12.42613953 12.05575777]
+Test results saved to: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Monte Carlo\mc__ul_fixed_block_targets_sweep_20260704_210305_mc_loss_aug_rate_snr__s3\testing\data\test_results.txt
+Mirrored uplink precoder-net scenario results to: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Scenario-Fixed block targets\Monte Carlo\mc__ul_fixed_block_targets_sweep_20260704_210305_mc_loss_aug_rate_snr__s3
+Saved uplink precoder-net method results to: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Monte Carlo\mc__ul_fixed_block_targets_sweep_20260704_210305_mc_loss_aug_rate_snr__s3

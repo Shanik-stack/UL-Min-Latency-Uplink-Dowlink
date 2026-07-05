@@ -277,13 +277,7 @@ def build_training_dataset(
     system_params, sim_cfg = get_config(cfg_name)
     K = int(system_params["K"])
     episodes_by_user: list[list[dict]] = [[] for _ in range(K)]
-    blocks_per_seed = max(1, int(sim_cfg.get("monte_carlo_training_blocks_per_seed", 1)))
     scenario_mode = str(sim_cfg.get("experiment_scenario_mode", PAYLOAD_COMPLETION_MODE))
-    if blocks_per_seed != 1:
-        print(
-            "[UL Monte Carlo Train] Base dataset now uses one channel episode per seed per user; "
-            "ignoring monte_carlo_training_blocks_per_seed during training-data construction."
-        )
 
     for seed in train_seeds:
         print(
@@ -678,7 +672,18 @@ def _build_post_training_summary(
     return {
         "train_eval_seed": int(train_eval_seed),
         "epochs_requested": int(epochs),
+        "configured_max_epochs": int(training_history.get("configured_max_epochs", epochs)),
+        "per_user_epochs_completed": [
+            int(v) for v in training_history.get("per_user_epochs_completed", [len(history) for history in per_user_lagrangian])
+        ],
+        "per_user_training_solve_status": [
+            str(v) for v in training_history.get("per_user_training_solve_status", ["unknown" for _ in per_user_lagrangian])
+        ],
+        "per_user_restored_solution_source": [
+            str(v) for v in training_history.get("per_user_restored_solution_source", ["unknown" for _ in per_user_lagrangian])
+        ],
         "base_dataset_kind": dataset_summary.get("base_dataset_kind", "channel_episodes_only"),
+        "total_training_channel_episodes": int(dataset_summary.get("total_channel_episodes", 0)),
         "rollout_anchor_bits_mode": "derived_online_from_current_full_block_rate",
         "cumulative_rollout_queries_by_n_kl": training_history.get("cumulative_rollout_queries_by_n_kl", {}),
         "cumulative_frontier_rollout_queries_by_n_kl": training_history.get(
@@ -694,16 +699,38 @@ def _build_post_training_summary(
             float(min(history)) if len(history) > 0 else 0.0 for history in per_user_lagrangian
         ],
         "per_user_final_rate": [float(history[-1]) if len(history) > 0 else 0.0 for history in per_user_rate],
+        "per_user_last_epoch_avg_rate_over_rollout_queries": [
+            float(history[-1]) if len(history) > 0 else 0.0 for history in per_user_rate
+        ],
+        "per_user_last_epoch_avg_lagrangian_over_rollout_queries": [
+            float(history[-1]) if len(history) > 0 else 0.0 for history in per_user_lagrangian
+        ],
         "per_user_final_rate_violation": [
             float(history[-1]) if len(history) > 0 else 0.0 for history in per_user_rate_violation
         ],
         "per_user_final_power_violation": [
             float(history[-1]) if len(history) > 0 else 0.0 for history in per_user_power_violation
         ],
+        "per_user_final_kkt_primal_residual": [
+            float(history[-1]) if len(history) > 0 else 0.0
+            for history in training_history.get("per_user_kkt_primal_residual", [])
+        ],
+        "per_user_final_kkt_complementarity_residual": [
+            float(history[-1]) if len(history) > 0 else 0.0
+            for history in training_history.get("per_user_kkt_complementarity_residual", [])
+        ],
+        "per_user_final_kkt_stationarity_residual": [
+            float(history[-1]) if len(history) > 0 else 0.0
+            for history in training_history.get("per_user_kkt_stationarity_residual", [])
+        ],
         "final_avg_lagrangian": float(avg_lagrangian[-1]) if len(avg_lagrangian) > 0 else 0.0,
         "best_avg_lagrangian": float(min(avg_lagrangian)) if len(avg_lagrangian) > 0 else 0.0,
+        "last_epoch_mean_user_rollout_lagrangian": float(avg_lagrangian[-1]) if len(avg_lagrangian) > 0 else 0.0,
+        "best_epoch_mean_user_rollout_lagrangian": float(min(avg_lagrangian)) if len(avg_lagrangian) > 0 else 0.0,
         "final_avg_user_rate": float(avg_user_rate[-1]) if len(avg_user_rate) > 0 else 0.0,
         "best_avg_user_rate": float(max(avg_user_rate)) if len(avg_user_rate) > 0 else 0.0,
+        "last_epoch_mean_user_rollout_rate": float(avg_user_rate[-1]) if len(avg_user_rate) > 0 else 0.0,
+        "best_epoch_mean_user_rollout_rate": float(max(avg_user_rate)) if len(avg_user_rate) > 0 else 0.0,
         "final_avg_rate_violation": float(avg_rate_violation[-1]) if len(avg_rate_violation) > 0 else 0.0,
         "best_avg_rate_violation": float(min(avg_rate_violation)) if len(avg_rate_violation) > 0 else 0.0,
         "final_avg_power_violation": float(avg_power_violation[-1]) if len(avg_power_violation) > 0 else 0.0,
@@ -714,6 +741,19 @@ def _build_post_training_summary(
         "per_user_best_loss": [
             float(min(history)) if len(history) > 0 else 0.0 for history in per_user_lagrangian
         ],
+        "last_epoch_total_rollout_queries": int(
+            training_history.get("final_epoch_rollout_query_summary", {}).get("total_rollout_queries", 0)
+        ),
+        "last_epoch_feasible_rollout_queries": int(
+            training_history.get("final_epoch_rollout_query_summary", {})
+            .get("global_rollout_queries_by_feasibility", {})
+            .get("feasible", 0)
+        ),
+        "last_epoch_infeasible_rollout_queries": int(
+            training_history.get("final_epoch_rollout_query_summary", {})
+            .get("global_rollout_queries_by_feasibility", {})
+            .get("infeasible", 0)
+        ),
         "train_eval_initial_latency": initial_latency,
         "train_eval_final_latency": final_latency,
         "train_eval_initial_total_latency": float(initial_total_latency),
@@ -743,12 +783,24 @@ def train_blocklength_aware_precoder_net(
     cfg_name: str,
     train_seeds: Sequence[int],
     *,
-    epochs: int = 20,
+    epochs: int | None = None,
     batch_size: int = 32,
     lr: float = 1e-3,
 ) -> dict:
     system_params, sim_cfg = get_config(cfg_name)
     K = int(system_params["K"])
+    max_epochs = max(
+        1,
+        int(epochs if epochs is not None else sim_cfg.get("monte_carlo_training_max_epochs", sim_cfg.get("max_epochs", 20))),
+    )
+    print_every_epoch = max(1, int(sim_cfg.get("print_every_epoch", 1)))
+    kkt_primal_tol = float(sim_cfg.get("kkt_primal_tol", sim_cfg.get("convergence_feasibility_tol", 1e-5)))
+    kkt_complementarity_tol = float(
+        sim_cfg.get("kkt_complementarity_tol", sim_cfg.get("convergence_feasibility_tol", 1e-5))
+    )
+    kkt_stationarity_tol = float(
+        sim_cfg.get("kkt_stationarity_tol", sim_cfg.get("convergence_precoder_tol", 1e-4))
+    )
     episodes_by_user = build_training_dataset(cfg_name, train_seeds)
     dataset_summary = summarize_training_dataset(episodes_by_user)
     training_history = {
@@ -756,12 +808,17 @@ def train_blocklength_aware_precoder_net(
         "per_user_rate": [[] for _ in range(K)],
         "avg_rate_violation": [[] for _ in range(K)],
         "avg_power_violation": [[] for _ in range(K)],
+        "per_user_kkt_primal_residual": [[] for _ in range(K)],
+        "per_user_kkt_complementarity_residual": [[] for _ in range(K)],
+        "per_user_kkt_stationarity_residual": [[] for _ in range(K)],
+        "per_user_training_epoch_status": [[] for _ in range(K)],
         "avg_lagrangian": [],
         "avg_user_rate": [],
         "avg_rate_violation_over_users": [],
         "avg_power_violation_over_users": [],
         "dataset_summary": dataset_summary,
         "rollout_query_summaries_per_user": [[] for _ in range(K)],
+        "configured_max_epochs": int(max_epochs),
         "training_objective": "rollout_lagrangian_user_finite_blocklength_rate_with_online_full_block_anchor_bits",
     }
 
@@ -804,13 +861,26 @@ def train_blocklength_aware_precoder_net(
                 phase="start",
                 user=int(k),
                 channel_episodes=int(len(episodes)),
-                epochs=int(epochs),
+                epochs=int(max_epochs),
                 batch_size=int(batch_size),
             )
         )
         previous_epoch_model_state: dict[str, torch.Tensor] | None = None
+        best_primal_residual = float("inf")
+        best_feasible_rate = -float("inf")
+        best_primal_model_state = _clone_model_state(model)
+        best_primal_optimizer_state = copy.deepcopy(optimizer.state_dict())
+        best_primal_lambda_rate = float(lambda_rate)
+        best_primal_lambda_power = float(lambda_power)
+        best_feasible_model_state: dict[str, torch.Tensor] | None = None
+        best_feasible_optimizer_state: dict[str, Any] | None = None
+        best_feasible_lambda_rate: float | None = None
+        best_feasible_lambda_power: float | None = None
+        solve_status = "max_epochs_reached"
+        epochs_completed = 0
 
-        for epoch in range(int(epochs)):
+        for epoch in range(int(max_epochs)):
+            epochs_completed = int(epoch + 1)
             rollout_queries = _generate_rollout_queries_for_user(model, episodes, sim_cfg)
             last_epoch_queries_by_user[k] = [dict(query) for query in rollout_queries]
             rollout_summary = _summarize_rollout_queries_by_user([rollout_queries])
@@ -858,13 +928,17 @@ def train_blocklength_aware_precoder_net(
                 user_rate_history.append(0.0)
                 user_rate_violation_history.append(0.0)
                 user_power_violation_history.append(0.0)
+                training_history["per_user_kkt_primal_residual"][k].append(0.0)
+                training_history["per_user_kkt_complementarity_residual"][k].append(0.0)
+                training_history["per_user_kkt_stationarity_residual"][k].append(0.0)
+                training_history["per_user_training_epoch_status"][k].append("no_rollout_queries")
                 print(
                     format_progress_log_line(
                         "[UL Monte Carlo]",
                         phase="train",
                         method="monte_carlo",
                         user=int(k),
-                        epoch=f"{epoch + 1}/{int(epochs)}",
+                        epoch=f"{epoch + 1}/{int(max_epochs)}",
                         objective=0.0,
                         rate=0.0,
                         r_p=0.0,
@@ -966,26 +1040,86 @@ def train_blocklength_aware_precoder_net(
             )
             epoch_r_s = _relative_model_state_change(model, previous_epoch_model_state)
             previous_epoch_model_state = _clone_model_state(model)
-            epoch_status = "epoch_budget_reached" if int(epoch + 1) >= int(epochs) else "running"
+            exact_feasible = float(avg_rate_violation) <= 0.0 and float(avg_power_violation) <= 0.0
+            if epoch_r_p < best_primal_residual:
+                best_primal_residual = float(epoch_r_p)
+                best_primal_model_state = _clone_model_state(model)
+                best_primal_optimizer_state = copy.deepcopy(optimizer.state_dict())
+                best_primal_lambda_rate = float(lambda_rate)
+                best_primal_lambda_power = float(lambda_power)
+            if exact_feasible and avg_rate >= best_feasible_rate:
+                best_feasible_rate = float(avg_rate)
+                best_feasible_model_state = _clone_model_state(model)
+                best_feasible_optimizer_state = copy.deepcopy(optimizer.state_dict())
+                best_feasible_lambda_rate = float(lambda_rate)
+                best_feasible_lambda_power = float(lambda_power)
+
+            epoch_status = "running"
+            if (
+                epoch_r_p <= kkt_primal_tol
+                and epoch_r_c <= kkt_complementarity_tol
+                and epoch_r_s <= kkt_stationarity_tol
+            ):
+                epoch_status = "kkt_converged"
+                solve_status = "kkt_converged"
+            elif epoch > 0 and epoch_r_s <= kkt_stationarity_tol and epoch_r_p > kkt_primal_tol:
+                epoch_status = "stationary_infeasible"
+                solve_status = "stationary_infeasible"
             user_lagrangian_history.append(avg_lagrangian)
             user_rate_history.append(avg_rate)
             user_rate_violation_history.append(avg_rate_violation)
             user_power_violation_history.append(avg_power_violation)
-            print(
-                format_progress_log_line(
-                    "[UL Monte Carlo]",
-                    phase="train",
-                    method="monte_carlo",
-                    user=int(k),
-                    epoch=f"{epoch + 1}/{int(epochs)}",
-                    objective=avg_lagrangian,
-                    rate=avg_rate,
-                    r_p=epoch_r_p,
-                    r_c=epoch_r_c,
-                    r_s=epoch_r_s,
-                    status=epoch_status,
+            training_history["per_user_kkt_primal_residual"][k].append(float(epoch_r_p))
+            training_history["per_user_kkt_complementarity_residual"][k].append(float(epoch_r_c))
+            training_history["per_user_kkt_stationarity_residual"][k].append(float(epoch_r_s))
+            training_history["per_user_training_epoch_status"][k].append(str(epoch_status))
+            if (
+                ((epoch + 1) % print_every_epoch) == 0
+                or epoch == 0
+                or epoch_status in {"kkt_converged", "stationary_infeasible"}
+            ):
+                print(
+                    format_progress_log_line(
+                        "[UL Monte Carlo]",
+                        phase="train",
+                        method="monte_carlo",
+                        user=int(k),
+                        epoch=f"{epoch + 1}/{int(max_epochs)}",
+                        objective=avg_lagrangian,
+                        rate=avg_rate,
+                        r_p=epoch_r_p,
+                        r_c=epoch_r_c,
+                        r_s=epoch_r_s,
+                        status=epoch_status,
+                    )
                 )
-            )
+            if epoch_status in {"kkt_converged", "stationary_infeasible"}:
+                break
+
+        restored_solution_source = "best_primal"
+        if best_feasible_model_state is not None and best_feasible_optimizer_state is not None:
+            model.load_state_dict(best_feasible_model_state)
+            optimizer.load_state_dict(best_feasible_optimizer_state)
+            lambda_rate = float(best_feasible_lambda_rate if best_feasible_lambda_rate is not None else lambda_rate)
+            lambda_power = float(best_feasible_lambda_power if best_feasible_lambda_power is not None else lambda_power)
+            restored_solution_source = "best_feasible"
+            if solve_status == "max_epochs_reached":
+                solve_status = "max_epochs_feasible_best"
+        else:
+            model.load_state_dict(best_primal_model_state)
+            optimizer.load_state_dict(best_primal_optimizer_state)
+            lambda_rate = float(best_primal_lambda_rate)
+            lambda_power = float(best_primal_lambda_power)
+            if solve_status == "max_epochs_reached":
+                solve_status = "max_epochs_best_primal"
+        if training_history["per_user_training_epoch_status"][k]:
+            training_history["per_user_training_epoch_status"][k][-1] = str(solve_status)
+        training_history.setdefault("per_user_epochs_completed", [0 for _ in range(K)])
+        training_history.setdefault("per_user_training_solve_status", ["not_started" for _ in range(K)])
+        training_history.setdefault("per_user_restored_solution_source", ["not_started" for _ in range(K)])
+        training_history["per_user_epochs_completed"][k] = int(epochs_completed)
+        training_history["per_user_training_solve_status"][k] = str(solve_status)
+        training_history["per_user_restored_solution_source"][k] = str(restored_solution_source)
 
         user_models.append(model.eval())
 

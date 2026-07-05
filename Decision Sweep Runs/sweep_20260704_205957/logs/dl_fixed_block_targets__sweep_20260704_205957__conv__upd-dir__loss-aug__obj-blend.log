@@ -1,0 +1,37 @@
+[DL Initial Baseline] | seed=3 | scenario=fixed_block_targets | method=convergence | users=3 | initial_total_latency=0.063333 | initial_avg_latency=0.021111 | initial_min_latency=0.016667 | initial_max_latency=0.026667
+[DL Convergence Block] | block=0 | active_users=3 | target_bits=1200 | objective=blended_network_rate
+Traceback (most recent call last):
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py", line 11, in <module>
+    runpy.run_path(str(LEGACY_MAIN), run_name="__main__")
+  File "<frozen runpy>", line 291, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per sweep\main.py", line 61, in <module>
+    main()
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per sweep\main.py", line 43, in main
+    run_downlink_experiment(
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\experiment_runner.py", line 447, in run_downlink_experiment
+    result = OPTIMIZERS[method_name](system, sim_params, verbose=verbose)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 3130, in optimize_downlink_convergence_epoch
+    return optimize_downlink_safe_sweep(system, sim_params, verbose=verbose)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 3107, in optimize_downlink_safe_sweep
+    return _run_safe_sweep_fixed_block_targets(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 2867, in _run_safe_sweep_fixed_block_targets
+    solve_result = optimize_precoders_for_block_constrained(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 1873, in optimize_precoders_for_block_constrained
+    updated_beams = _optimize_active_block_precoders_constrained_direct(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 1137, in _optimize_active_block_precoders_constrained_direct
+    state = _evaluate_constrained_block_state(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 662, in _evaluate_constrained_block_state
+    rate_k = _block_rate_torch_from_precoders(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 579, in _block_rate_torch_from_precoders
+    if torch.any(torch.abs(sign) <= 1e-12):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

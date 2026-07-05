@@ -12,14 +12,22 @@ Notes:
 
 - no expert-label collection or MSE imitation is used
 - `B_rem` stays in the scheduler; the training loss uses `min_bits_required / n_kl`, not a proportional `B_target`
+- training uses `simulation.monte_carlo_training_max_epochs` as its epoch budget
+- training can stop early with the same KKT tolerances used by convergence:
+  `simulation.kkt_primal_tol`, `simulation.kkt_complementarity_tol`, and
+  `simulation.kkt_stationarity_tol`
 
 Entry point:
 
 `python "Uplink\\Methods\\Monte Carlo\\main.py" --cfg_name config_raw_T_exp1.yaml --train_seeds 0,1,2 --test_seed 3`
 
-Results are written under:
+Results are written under the method root:
 
-`Results\\Uplink\\Monte Carlo\\<experiment_name>`
+`Results\\Uplink\\Method-Monte Carlo\\<experiment_name>`
+
+They are also mirrored under the scenario root:
+
+`Results\\Uplink\\Scenario-Payload completion\\Monte Carlo\\<experiment_name>`
 
 Standard files in `training/data/`:
 

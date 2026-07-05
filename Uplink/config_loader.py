@@ -16,6 +16,12 @@ def _first_present(mapping: dict, *names: str, default=None):
     return default
 
 
+def _optional_int(value, default=None):
+    if value is None:
+        return default
+    return int(value)
+
+
 def _resolve_config_path(cfg_name: str) -> str:
     if not cfg_name.endswith(".yaml"):
         cfg_name = f"{cfg_name}.yaml"
@@ -150,14 +156,14 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
                 default=1,
             )
         ),
-        "monte_carlo_training_blocks_per_seed": int(
+        "monte_carlo_training_max_epochs": int(
             _first_present(
                 sim_cfg,
-                "monte_carlo_training_blocks_per_seed",
-                "precoder_net_train_blocks_per_seed",
-                "precoder_train_blocks_per_seed",
-                "policy_train_blocks_per_seed",
-                default=1,
+                "monte_carlo_training_max_epochs",
+                "precoder_net_epochs",
+                "precoder_epochs",
+                "policy_epochs",
+                default=max_epochs,
             )
         ),
         "monte_carlo_training_n_kl_coarse_step": int(
@@ -169,6 +175,27 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
                 "policy_train_n_kl_coarse_step",
                 default=5,
             )
+        ),
+        "monte_carlo_train_seeds": _first_present(
+            sim_cfg,
+            "monte_carlo_train_seeds",
+            default=None,
+        ),
+        "monte_carlo_num_train_seeds": _optional_int(
+            _first_present(
+                sim_cfg,
+                "monte_carlo_num_train_seeds",
+                default=None,
+            ),
+            default=None,
+        ),
+        "monte_carlo_test_seed": _optional_int(
+            _first_present(
+                sim_cfg,
+                "monte_carlo_test_seed",
+                default=None,
+            ),
+            default=None,
         ),
         "kkt_primal_tol": float(
             sim_cfg.get("kkt_primal_tol", sim_cfg.get("convergence_feasibility_tol", 1e-5))

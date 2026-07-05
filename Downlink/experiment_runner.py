@@ -16,6 +16,7 @@ from experiment_utils import (
     compact_objective_tag,
     compact_scope_tag,
     compact_update_mode_tag,
+    current_local_timestamp,
     join_compact_tag_parts,
     make_method_result_tag,
 )
@@ -338,6 +339,77 @@ def _compute_summary_metrics(result: dict) -> dict:
     }
 
 
+def _sum_per_user_summary_field(metrics: dict[str, object], field: str) -> int:
+    return int(sum(int(row.get(field, 0)) for row in metrics.get("per_user_summary", [])))
+
+
+def _build_downlink_final_test_section_lines(result: dict[str, object]) -> list[str]:
+    metrics = result["summary_metrics"]
+    assert isinstance(metrics, dict)
+    lines = [
+        "Final test results",
+        f"Initial total latency: {metrics['initial_total_latency']:.6f}",
+        f"Final total latency: {metrics['final_total_latency']:.6f}",
+        f"Total latency reduction (%): {metrics['total_latency_reduction_percent']:.4f}",
+        f"Initial avg latency: {metrics['initial_avg_latency']:.6f}",
+        f"Final avg latency: {metrics['final_avg_latency']:.6f}",
+        f"Initial asynchronality sum: {metrics['initial_asynchronality_sum']:.6f}",
+        f"Final asynchronality sum: {metrics['final_asynchronality_sum']:.6f}",
+        f"Asynchronality reduction (%): {metrics['asynchronality_reduction_percent']:.4f}",
+        f"Initial avg SNR (dB): {metrics['initial_avg_snr_db']:.4f}",
+        f"Final avg SNR (dB): {metrics['final_avg_snr_db']:.4f}",
+        f"Initial avg served-block SINR (dB): {metrics['initial_avg_sinr_db']:.4f}",
+        f"Final avg served-block SINR (dB): {metrics['final_avg_sinr_db']:.4f}",
+        f"Initial avg all-block SINR (dB): {metrics['initial_avg_sinr_db_all_blocks']:.4f}",
+        f"Final avg all-block SINR (dB): {metrics['final_avg_sinr_db_all_blocks']:.4f}",
+        f"Total served bits: {_sum_per_user_summary_field(metrics, 'served_bits')}",
+        f"Total skipped blocks: {_sum_per_user_summary_field(metrics, 'skipped_blocks')}",
+    ]
+    if metrics.get("scenario_mode", "") == FIXED_BLOCK_TARGETS_MODE:
+        lines.extend(
+            [
+                f"Total target bits: {_sum_per_user_summary_field(metrics, 'target_bits')}",
+                f"Total unserved bits: {_sum_per_user_summary_field(metrics, 'unserved_bits')}",
+                f"Total partially served blocks: {_sum_per_user_summary_field(metrics, 'partially_served_blocks')}",
+                f"Total zero-service blocks: {_sum_per_user_summary_field(metrics, 'zero_service_blocks')}",
+            ]
+        )
+    return lines
+
+
+def _build_downlink_per_user_test_lines(result: dict[str, object]) -> list[str]:
+    metrics = result["summary_metrics"]
+    assert isinstance(metrics, dict)
+    lines = ["Per-user final test details"]
+    for row in metrics["per_user_summary"]:
+        parts = [
+            f"User {row['user']}",
+            f"init_lat={row['initial_latency']:.6f}",
+            f"final_lat={row['final_latency']:.6f}",
+            f"lat_red={row['latency_reduction_percent']:.4f}%",
+            f"init_served_block_sinr={row['initial_sinr_db']:.4f} dB",
+            f"final_served_block_sinr={row['final_sinr_db']:.4f} dB",
+            f"init_all_block_sinr={row['initial_sinr_db_all_blocks']:.4f} dB",
+            f"final_all_block_sinr={row['final_sinr_db_all_blocks']:.4f} dB",
+            f"served_blocks={row['final_served_blocks']}",
+            f"blocks={row['blocks']}",
+            f"total_n={row['total_n']}",
+            f"served_bits={row['served_bits']}",
+            f"skipped_blocks={row['skipped_blocks']}",
+        ]
+        if metrics.get("scenario_mode", "") == FIXED_BLOCK_TARGETS_MODE:
+            parts.extend(
+                [
+                    f"target_bits={row.get('target_bits', 0)}",
+                    f"unserved_bits={row.get('unserved_bits', 0)}",
+                    f"partial_blocks={row.get('partially_served_blocks', 0)}",
+                    f"zero_service_blocks={row.get('zero_service_blocks', 0)}",
+                ]
+            )
+        lines.append(" | ".join(parts))
+    return lines
+
+
 def run_downlink_experiment(
     method_name: str,
     cfg_name: str,
@@ -351,6 +423,7 @@ def run_downlink_experiment(
         raise ValueError(f"Unknown method '{method_name}'. Expected one of: {known}")
 
     configure_determinism(seed)
+    run_started_at_local = current_local_timestamp()
     system_params, sim_params, run_meta = load_config(cfg_name)
     objective_mode_tag = (
         resolve_convergence_objective_mode(sim_params)
@@ -384,6 +457,8 @@ def run_downlink_experiment(
         result,
         core_wall_time_seconds_total=core_wall_time_seconds_total,
     )
+    result["run_started_at_local"] = str(run_started_at_local)
+    result["run_completed_at_local"] = current_local_timestamp()
 
     plot_user_config(system_params, output_dirs["user_config"])
     plot_latency(result, output_dirs["latency_asynchronality"])
@@ -406,66 +481,25 @@ def run_downlink_experiment(
     metrics = result["summary_metrics"]
     lines = [
         "Downlink optimizer summary",
+        "",
+        "Setup",
         f"Method: {method_name}",
         f"Config: {run_meta['cfg_path']}",
         f"Seed: {seed}",
+        f"Run started at: {result.get('run_started_at_local', 'unknown')}",
+        f"Run completed at: {result.get('run_completed_at_local', 'unknown')}",
+        f"Scenario: {result.get('scenario_mode', result.get('allocation_mode', 'unknown'))}",
         f"Objective mode: {result.get('objective_mode', 'unknown')}",
         f"Allocation mode: {result.get('allocation_mode', 'unknown')}",
         f"Weight strategy: {result.get('weight_strategy', 'n/a')}",
         f"Convergence precoder update mode: {result.get('convergence_precoder_update_mode', 'unknown')}",
         f"Downlink precoder-net scope: {result.get('downlink_precoder_net_scope', 'unknown')}",
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
-        "",
-        "Latency summary",
-        f"Initial total latency: {metrics['initial_total_latency']:.6f}",
-        f"Final total latency: {metrics['final_total_latency']:.6f}",
-        f"Total latency reduction (%): {metrics['total_latency_reduction_percent']:.4f}",
-        f"Initial avg latency: {metrics['initial_avg_latency']:.6f}",
-        f"Final avg latency: {metrics['final_avg_latency']:.6f}",
-        f"Initial min/max latency: {metrics['initial_min_latency']:.6f} / {metrics['initial_max_latency']:.6f}",
-        f"Final min/max latency: {metrics['final_min_latency']:.6f} / {metrics['final_max_latency']:.6f}",
-        "",
-        "Asynchronality summary",
-        f"Initial asynchronality sum: {metrics['initial_asynchronality_sum']:.6f}",
-        f"Final asynchronality sum: {metrics['final_asynchronality_sum']:.6f}",
-        f"Asynchronality reduction (%): {metrics['asynchronality_reduction_percent']:.4f}",
-        "",
-        "Link quality summary",
-        f"Initial avg SNR (dB): {metrics['initial_avg_snr_db']:.4f}",
-        f"Final avg SNR (dB): {metrics['final_avg_snr_db']:.4f}",
-        f"Initial avg served-block SINR (dB): {metrics['initial_avg_sinr_db']:.4f}",
-        f"Final avg served-block SINR (dB): {metrics['final_avg_sinr_db']:.4f}",
-        f"Initial avg all-block SINR (dB): {metrics['initial_avg_sinr_db_all_blocks']:.4f}",
-        f"Final avg all-block SINR (dB): {metrics['final_avg_sinr_db_all_blocks']:.4f}",
-        "",
-        "Per-user details",
     ]
-    for row in metrics["per_user_summary"]:
-        parts = [
-            f"User {row['user']}",
-            f"init_lat={row['initial_latency']:.6f}",
-            f"final_lat={row['final_latency']:.6f}",
-            f"lat_red={row['latency_reduction_percent']:.4f}%",
-            f"init_served_block_sinr={row['initial_sinr_db']:.4f} dB",
-            f"final_served_block_sinr={row['final_sinr_db']:.4f} dB",
-            f"init_all_block_sinr={row['initial_sinr_db_all_blocks']:.4f} dB",
-            f"final_all_block_sinr={row['final_sinr_db_all_blocks']:.4f} dB",
-            f"served_blocks={row['final_served_blocks']}",
-            f"blocks={row['blocks']}",
-            f"total_n={row['total_n']}",
-            f"served_bits={row['served_bits']}",
-            f"skipped_blocks={row['skipped_blocks']}",
-        ]
-        if metrics.get("scenario_mode", "") == FIXED_BLOCK_TARGETS_MODE:
-            parts.extend(
-                [
-                    f"target_bits={row.get('target_bits', 0)}",
-                    f"unserved_bits={row.get('unserved_bits', 0)}",
-                    f"partial_blocks={row.get('partially_served_blocks', 0)}",
-                    f"zero_service_blocks={row.get('zero_service_blocks', 0)}",
-                ]
-            )
-        lines.append(" | ".join(parts))
+    lines.extend([""])
+    lines.extend(_build_downlink_final_test_section_lines(result))
+    lines.extend([""])
+    lines.extend(_build_downlink_per_user_test_lines(result))
 
     if metrics["initial_asynchronality_pairs"]:
         lines.extend(["", "Per-pair asynchronality"])

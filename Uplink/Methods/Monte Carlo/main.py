@@ -31,8 +31,9 @@ from experiment_scenarios import (
 )
 from experiment_utils import (
     compact_method_tag,
+    current_local_timestamp,
     make_method_result_tag,
-    parse_seed_list,
+    resolve_monte_carlo_train_and_test_seeds,
     save_json,
     save_text,
 )
@@ -63,7 +64,7 @@ from plotting import (
     plot_user_config,
 )
 from precoder_models import load_user_precoder_models
-from project_paths import build_uplink_result_dirs, mirror_experiment_root_to_scenario_layout
+from project_paths import build_uplink_result_dirs, mirror_experiment_root_to_result_aliases
 from utils import save_test_results_to_txt
 
 
@@ -215,6 +216,7 @@ def _run_precoder_net_test(
         initial_B_kl=initial_B_kl,
         initial_bits_per_symbol_by_block=initial_bits_per_symbol_by_block,
         initial_interference_diag=initial_baseline.get("initial_interference_diag"),
+        uplink_rate_model=sim_cfg.get("uplink_rate_model", "unknown"),
     )
     result["experiment_scenario_mode"] = sim_cfg.get("experiment_scenario_mode", "payload_completion")
     result["experiment_scenario"] = test_scenario_summary
@@ -245,17 +247,38 @@ def _run_precoder_net_test(
 def main():
     parser = argparse.ArgumentParser(description="Offline Monte Carlo precoder-net train/test")
     parser.add_argument("--cfg_name", type=str, default="config_raw_T_exp1.yaml", help="Configuration file name or path")
-    parser.add_argument("--train_seeds", type=str, default="0,1,2")
-    parser.add_argument("--test_seed", type=int, default=3)
-    parser.add_argument("--precoder_net_epochs", "--precoder_epochs", "--policy_epochs", dest="precoder_net_epochs", type=int, default=40)
+    parser.add_argument("--train_seeds", type=str, default=None, help="Explicit comma-separated training seeds")
+    parser.add_argument(
+        "--num_train_seeds",
+        type=int,
+        default=None,
+        help="Build training seeds as 1..N excluding test_seed",
+    )
+    parser.add_argument("--test_seed", type=int, default=None, help="Monte Carlo test seed")
+    parser.add_argument("--precoder_net_epochs", "--precoder_epochs", "--policy_epochs", dest="precoder_net_epochs", type=int, default=None)
     parser.add_argument("--precoder_net_batch_size", "--precoder_batch_size", "--policy_batch_size", dest="precoder_net_batch_size", type=int, default=32)
     parser.add_argument("--precoder_net_lr", "--precoder_lr", "--policy_lr", dest="precoder_net_lr", type=float, default=1e-3)
     parser.add_argument("--skip_test", action="store_true")
     args = parser.parse_args()
 
-    train_seeds = parse_seed_list(args.train_seeds)
-    configure_determinism(train_seeds[0] if train_seeds else 0)
     system_params, sim_cfg = get_config(args.cfg_name)
+    run_started_at_local = current_local_timestamp()
+    train_epochs = int(
+        args.precoder_net_epochs
+        if args.precoder_net_epochs is not None
+        else sim_cfg.get("monte_carlo_training_max_epochs", sim_cfg.get("max_epochs", 100))
+    )
+    train_seeds, test_seed = resolve_monte_carlo_train_and_test_seeds(
+        cli_train_seeds=args.train_seeds,
+        cli_num_train_seeds=args.num_train_seeds,
+        cli_test_seed=args.test_seed,
+        config_train_seeds=sim_cfg.get("monte_carlo_train_seeds"),
+        config_num_train_seeds=sim_cfg.get("monte_carlo_num_train_seeds"),
+        config_test_seed=sim_cfg.get("monte_carlo_test_seed"),
+    )
+    configure_determinism(train_seeds[0] if train_seeds else 0)
+    print(f"Resolved Monte Carlo train seeds: {train_seeds}")
+    print(f"Resolved Monte Carlo test seed: {int(test_seed)}")
     training_scenario_summaries = [
         build_experiment_scenario_summary(scenario)
         for scenario in build_experiment_scenarios_for_seeds(system_params, sim_cfg, train_seeds)
@@ -263,23 +286,25 @@ def main():
     result_tag = make_method_result_tag(
         compact_method_tag("monte_carlo_precoder_net_train_test"),
         args.cfg_name,
-        seed=args.test_seed,
+        seed=int(test_seed),
     )
     result_dirs = build_uplink_result_dirs("Monte Carlo", result_tag)
     initialize_plot_globals(result_tag, result_dirs)
 
+    training_started_at_local = current_local_timestamp()
     training_start = perf_counter()
     train_artifact = train_blocklength_aware_precoder_net(
         cfg_name=args.cfg_name,
         train_seeds=train_seeds,
-        epochs=args.precoder_net_epochs,
+        epochs=train_epochs,
         batch_size=args.precoder_net_batch_size,
         lr=args.precoder_net_lr,
     )
     training_wall_time_seconds = perf_counter() - training_start
+    training_completed_at_local = current_local_timestamp()
     train_artifact["cfg_path"] = _resolve_config_path(args.cfg_name)
     train_artifact["method_name"] = "monte_carlo_precoder_net_train_test"
-    train_artifact["test_seed"] = int(args.test_seed)
+    train_artifact["test_seed"] = int(test_seed)
     train_artifact["experiment_scenario_mode"] = sim_cfg.get("experiment_scenario_mode", "payload_completion")
     train_artifact["training_experiment_scenarios"] = training_scenario_summaries
     training_cost = build_uplink_monte_carlo_training_cost(
@@ -289,6 +314,9 @@ def main():
     )
     train_artifact["experiment_cost"] = training_cost
     if isinstance(train_artifact.get("post_training_summary"), dict):
+        train_artifact["post_training_summary"]["run_started_at_local"] = str(run_started_at_local)
+        train_artifact["post_training_summary"]["training_started_at_local"] = str(training_started_at_local)
+        train_artifact["post_training_summary"]["training_completed_at_local"] = str(training_completed_at_local)
         train_artifact["post_training_summary"]["experiment_cost"] = training_cost
 
     plot_optimization_result(train_artifact["all_user_block_results_train"], train=True)
@@ -325,16 +353,18 @@ def main():
     )
 
     if not args.skip_test:
+        testing_started_at_local = current_local_timestamp()
         testing_start = perf_counter()
         test_result = _run_precoder_net_test(
             train_artifact=train_artifact,
             cfg_name=args.cfg_name,
-            test_seed=args.test_seed,
+            test_seed=int(test_seed),
             do_plots=True,
             result_dirs=result_dirs,
             train_seeds=train_seeds,
         )
         testing_wall_time_seconds = perf_counter() - testing_start
+        testing_completed_at_local = current_local_timestamp()
         total_cost = build_uplink_monte_carlo_total_cost(
             train_artifact,
             test_result.get("evaluation_cost_counters", {}).get("per_user_candidate_n_states", []),
@@ -343,16 +373,22 @@ def main():
             core_wall_time_seconds_testing=testing_wall_time_seconds,
         )
         test_result["experiment_cost"] = total_cost
+        test_result["run_started_at_local"] = str(run_started_at_local)
+        test_result["run_completed_at_local"] = str(testing_completed_at_local)
+        test_result["training_started_at_local"] = str(training_started_at_local)
+        test_result["training_completed_at_local"] = str(training_completed_at_local)
+        test_result["testing_started_at_local"] = str(testing_started_at_local)
+        test_result["testing_completed_at_local"] = str(testing_completed_at_local)
         save_json(test_result, os.path.join(result_dirs["test_data"], "result.json"))
         save_text(build_summary_lines(test_result), os.path.join(result_dirs["test_data"], "summary.txt"))
-    mirror_root = mirror_experiment_root_to_scenario_layout(
+    mirror_paths = mirror_experiment_root_to_result_aliases(
         link_name="Uplink",
         scenario_mode=str(sim_cfg.get("experiment_scenario_mode", "payload_completion")),
         method_name="Monte Carlo",
         source_experiment_root=result_dirs["experiment_root"],
     )
-    print(f"Mirrored uplink precoder-net results to: {mirror_root}")
-    print(f"Saved uplink precoder-net results to: {result_dirs['experiment_root']}")
+    print(f"Mirrored uplink precoder-net scenario results to: {mirror_paths['scenario_root']}")
+    print(f"Saved uplink precoder-net method results to: {mirror_paths['method_root']}")
 
 
 if __name__ == "__main__":

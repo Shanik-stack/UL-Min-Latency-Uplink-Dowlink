@@ -1,0 +1,220 @@
+Decision sweep dry run
+Generated at: 2026-07-04T19:50:36+03:00
+Run root: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed
+Planned runs: 24
+
+001. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-plain__obj-sum.yaml
+  decision_tag: upd-dir__loss-plain__obj-sum
+  is_base_configuration: True
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-plain__obj-sum.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_sum_dir__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_dir_loss_plain_obj_sum__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-plain__obj-sum.log
+
+002. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-plain__obj-bitsw.yaml
+  decision_tag: upd-dir__loss-plain__obj-bitsw
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-plain__obj-bitsw.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_bitsw_dir__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_dir_loss_plain_obj_bitsw__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-plain__obj-bitsw.log
+
+003. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-plain__obj-blend.yaml
+  decision_tag: upd-dir__loss-plain__obj-blend
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-plain__obj-blend.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_blend_dir__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_dir_loss_plain_obj_blend__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-plain__obj-blend.log
+
+004. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-aug__obj-sum.yaml
+  decision_tag: upd-dir__loss-aug__obj-sum
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-aug__obj-sum.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_sum_dir__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_dir_loss_aug_obj_sum__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-aug__obj-sum.log
+
+005. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-aug__obj-bitsw.yaml
+  decision_tag: upd-dir__loss-aug__obj-bitsw
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-aug__obj-bitsw.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_bitsw_dir__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_dir_loss_aug_obj_bitsw__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-aug__obj-bitsw.log
+
+006. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-aug__obj-blend.yaml
+  decision_tag: upd-dir__loss-aug__obj-blend
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-aug__obj-blend.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_blend_dir__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_dir_loss_aug_obj_blend__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-dir__loss-aug__obj-blend.log
+
+007. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-sum__scope-user.yaml
+  decision_tag: upd-net__loss-plain__obj-sum__scope-user
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-sum__scope-user.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_sum_user_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_plain_obj_sum_scope_user__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-sum__scope-user.log
+
+008. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-sum__scope-bs__ntgt-jointn.yaml
+  decision_tag: upd-net__loss-plain__obj-sum__scope-bs__ntgt-jointn
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-sum__scope-bs__ntgt-jointn.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_sum_bs_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_plain_obj_sum_scope_bs_ntgt_jointn__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-sum__scope-bs__ntgt-jointn.log
+
+009. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-sum__scope-bs__ntgt-usern.yaml
+  decision_tag: upd-net__loss-plain__obj-sum__scope-bs__ntgt-usern
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-sum__scope-bs__ntgt-usern.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_sum_bs_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_plain_obj_sum_scope_bs_ntgt_usern__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-sum__scope-bs__ntgt-usern.log
+
+010. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-bitsw__scope-user.yaml
+  decision_tag: upd-net__loss-plain__obj-bitsw__scope-user
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-bitsw__scope-user.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_bitsw_user_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_plain_obj_bitsw_scope_user__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-bitsw__scope-user.log
+
+011. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-bitsw__scope-bs__ntgt-jointn.yaml
+  decision_tag: upd-net__loss-plain__obj-bitsw__scope-bs__ntgt-jointn
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-bitsw__scope-bs__ntgt-jointn.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_bitsw_bs_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_plain_obj_bitsw_scope_bs_ntgt_jointn__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-bitsw__scope-bs__ntgt-jointn.log
+
+012. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-bitsw__scope-bs__ntgt-usern.yaml
+  decision_tag: upd-net__loss-plain__obj-bitsw__scope-bs__ntgt-usern
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-bitsw__scope-bs__ntgt-usern.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_bitsw_bs_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_plain_obj_bitsw_scope_bs_ntgt_usern__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-bitsw__scope-bs__ntgt-usern.log
+
+013. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-blend__scope-user.yaml
+  decision_tag: upd-net__loss-plain__obj-blend__scope-user
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-blend__scope-user.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_blend_user_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_plain_obj_blend_scope_user__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-blend__scope-user.log
+
+014. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-blend__scope-bs__ntgt-jointn.yaml
+  decision_tag: upd-net__loss-plain__obj-blend__scope-bs__ntgt-jointn
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-blend__scope-bs__ntgt-jointn.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_blend_bs_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_plain_obj_blend_scope_bs_ntgt_jointn__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-blend__scope-bs__ntgt-jointn.log
+
+015. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-blend__scope-bs__ntgt-usern.yaml
+  decision_tag: upd-net__loss-plain__obj-blend__scope-bs__ntgt-usern
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-blend__scope-bs__ntgt-usern.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_blend_bs_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_plain_obj_blend_scope_bs_ntgt_usern__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-plain__obj-blend__scope-bs__ntgt-usern.log
+
+016. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-sum__scope-user.yaml
+  decision_tag: upd-net__loss-aug__obj-sum__scope-user
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-sum__scope-user.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_sum_user_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_aug_obj_sum_scope_user__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-sum__scope-user.log
+
+017. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-sum__scope-bs__ntgt-jointn.yaml
+  decision_tag: upd-net__loss-aug__obj-sum__scope-bs__ntgt-jointn
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-sum__scope-bs__ntgt-jointn.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_sum_bs_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_aug_obj_sum_scope_bs_ntgt_jointn__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-sum__scope-bs__ntgt-jointn.log
+
+018. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-sum__scope-bs__ntgt-usern.yaml
+  decision_tag: upd-net__loss-aug__obj-sum__scope-bs__ntgt-usern
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-sum__scope-bs__ntgt-usern.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_sum_bs_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_aug_obj_sum_scope_bs_ntgt_usern__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-sum__scope-bs__ntgt-usern.log
+
+019. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-bitsw__scope-user.yaml
+  decision_tag: upd-net__loss-aug__obj-bitsw__scope-user
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-bitsw__scope-user.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_bitsw_user_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_aug_obj_bitsw_scope_user__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-bitsw__scope-user.log
+
+020. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-bitsw__scope-bs__ntgt-jointn.yaml
+  decision_tag: upd-net__loss-aug__obj-bitsw__scope-bs__ntgt-jointn
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-bitsw__scope-bs__ntgt-jointn.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_bitsw_bs_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_aug_obj_bitsw_scope_bs_ntgt_jointn__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-bitsw__scope-bs__ntgt-jointn.log
+
+021. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-bitsw__scope-bs__ntgt-usern.yaml
+  decision_tag: upd-net__loss-aug__obj-bitsw__scope-bs__ntgt-usern
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-bitsw__scope-bs__ntgt-usern.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_bitsw_bs_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_aug_obj_bitsw_scope_bs_ntgt_usern__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-bitsw__scope-bs__ntgt-usern.log
+
+022. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-blend__scope-user.yaml
+  decision_tag: upd-net__loss-aug__obj-blend__scope-user
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-blend__scope-user.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_blend_user_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_aug_obj_blend_scope_user__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-blend__scope-user.log
+
+023. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-blend__scope-bs__ntgt-jointn.yaml
+  decision_tag: upd-net__loss-aug__obj-blend__scope-bs__ntgt-jointn
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-blend__scope-bs__ntgt-jointn.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_blend_bs_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_aug_obj_blend_scope_bs_ntgt_jointn__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-blend__scope-bs__ntgt-jointn.log
+
+024. Downlink | Convergence per epoch
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-blend__scope-bs__ntgt-usern.yaml
+  decision_tag: upd-net__loss-aug__obj-blend__scope-bs__ntgt-usern
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\generated_configs\downlink\convergence\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-blend__scope-bs__ntgt-usern.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_blend_bs_net__dl_fixed_block_targets_smoke_test_downlink_conv_fixed_conv_upd_net_loss_aug_obj_blend_scope_bs_ntgt_usern__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_downlink_conv_fixed\logs\dl_fixed_block_targets__smoke_test_downlink_conv_fixed__conv__upd-net__loss-aug__obj-blend__scope-bs__ntgt-usern.log

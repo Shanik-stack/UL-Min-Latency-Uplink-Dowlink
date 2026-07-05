@@ -22,9 +22,13 @@ The main user-facing stop budget is `simulation.max_epochs`. The solve accepts
 as soon as one epoch satisfies the KKT tolerances; otherwise it stops at the
 best feasible or best-primal state found within that budget.
 
-Results are written under:
+Results are written under the method root:
 
-`Results\\Uplink\\Convergence per epoch\\<experiment_name>`
+`Results\\Uplink\\Method-Convergence per epoch\\<experiment_name>`
+
+They are also mirrored under the scenario root:
+
+`Results\\Uplink\\Scenario-Payload completion\\Convergence per epoch\\<experiment_name>`
 
 Standard files in `data/`:
 

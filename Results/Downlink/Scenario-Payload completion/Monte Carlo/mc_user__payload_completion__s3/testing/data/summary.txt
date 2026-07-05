@@ -1,0 +1,85 @@
+Downlink optimizer summary
+
+Setup
+Method: monte_carlo_precoder_net_train_test
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\downlink_payload_completion.yaml
+Test seed: 3
+Train seeds: [1, 2, 4, 5, 6, 7, 8, 9, 10]
+Scenario: payload_completion
+Objective mode: unweighted_sum_rate
+Allocation mode: greedy
+Weight strategy: none
+Downlink precoder-net scope: per_user_nets
+BS-shared fixed-target n-target mode: not_applicable
+Precoder parameterization: per_user_block_context_to_precoder_mlp
+Training objective: rollout_lagrangian_sum_finite_blocklength_rate_with_online_full_block_anchor_bits
+Training dataset total channel episodes: 9
+Training channel-episode counts per user: [9, 9, 9]
+
+Final test results
+Initial total latency: 0.305000
+Final total latency: 0.161600
+Total latency reduction (%): 47.0164
+Initial avg latency: 0.101667
+Final avg latency: 0.053867
+Initial asynchronality sum: 0.131600
+Final asynchronality sum: 0.036400
+Asynchronality reduction (%): 72.3404
+Initial avg SNR (dB): 8.0000
+Final avg SNR (dB): 8.3110
+Initial avg block SINR (dB): -2.8373
+Final avg block SINR (dB): 1.1935
+Total served bits: 6000
+Total skipped blocks: 13
+
+Training results
+Epochs requested: 100
+Epochs completed: 100
+Training solve status: max_epochs_best_primal
+Base training dataset: channel_episodes_only
+Rollout anchor-bits mode: derived_online_from_current_joint_full_block_rate
+Final avg sum rate: 35.045271
+Best avg sum rate: 35.915108
+Final avg user rate: 11.681757
+Best avg user rate: 11.971703
+Final avg lagrangian: -11.627130
+Best avg lagrangian: -11.913118
+Final epoch per-user rates: [9.760841687520346, 12.057778358459473, 13.226651191711426]
+Final epoch per-user lagrangian: [-9.744765644981747, -12.003570193336124, -13.133054914928618]
+Final feasible rollout-query fraction: 0.285714
+
+Per-user final test details
+User 0 | init_lat=0.069867 | final_lat=0.049667 | lat_red=28.9122% | init_block_sinr=-3.0034 dB | final_block_sinr=7.6585 dB | blocks=15 | total_n=745 | served_bits=1000 | skipped_blocks=12
+User 1 | init_lat=0.099467 | final_lat=0.046867 | lat_red=52.8820% | init_block_sinr=-2.7737 dB | final_block_sinr=0.0440 dB | blocks=12 | total_n=703 | served_bits=2000 | skipped_blocks=1
+User 2 | init_lat=0.135667 | final_lat=0.065067 | lat_red=52.0393% | init_block_sinr=-2.7644 dB | final_block_sinr=0.6743 dB | blocks=13 | total_n=976 | served_bits=3000 | skipped_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.029600 | final_diff=0.002800
+Users 0-2 | initial_diff=0.065800 | final_diff=0.015400
+Users 1-2 | initial_diff=0.036200 | final_diff=0.018200
+
+Additional training details
+Global active-user rollout queries by n_kl over all epochs: {'45': 161, '49': 180, '50': 1773, '55': 108, '59': 127, '60': 1879, '75': 343, '79': 305, '80': 1466}
+Per-user active-user rollout queries by n_kl over all epochs: [{'45': 161, '49': 180, '50': 1773}, {'55': 108, '59': 127, '60': 1879}, {'75': 343, '79': 305, '80': 1466}]
+Per-user active-user frontier rollout queries by n_kl over all epochs: [{'45': 161, '49': 180, '50': 1773}, {'55': 108, '59': 127, '60': 1879}, {'75': 343, '79': 305, '80': 1466}]
+
+Experiment cost
+Core wall time total (s): 417.799734
+Core wall time training (s): 416.950249
+Testing-phase wall time (s): 0.849485
+Forward+backward NN FLOPs: 0.000e+00
+Forward-only NN FLOPs: 3.520e+08
+Total NN FLOPs: 3.520e+08
+Total forward+backward NN evaluations: 0
+Forward-only NN evaluations: 157
+Optimizer steps: 100
+Workload counters:
+{'training_active_user_rollout_queries_per_user': [], 'batch_size': 32, 'test_forward_calls_per_user': [24, 42, 91], 'test_total_forward_calls': 157}
+Notes:
+- Forward+backward NN FLOPs count the active-user rollout-query training passes that optimize the downlink precoder nets.
+- Forward-only NN FLOPs count the forward-only beam evaluations in the held-out downlink test pass.
+
+Terminology
+- channel episode: one (seed, block=0) block realization stored in the base dataset
+- active-user channel episode: one active user inside one stored channel episode
+- rollout query: one visited joint (episode, n_targets) state generated online from the current precoder nets

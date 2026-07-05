@@ -1,0 +1,31 @@
+Initialized plotting globals:
+train_result_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_net__ul_fixed_block_targets_sweep_20260704_195315_conv_upd_net_loss_plain_rate_snr__s3\optimization_history
+test_result_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_net__ul_fixed_block_targets_sweep_20260704_195315_conv_upd_net_loss_plain_rate_snr__s3\optimization_history
+user_cfg_result_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_net__ul_fixed_block_targets_sweep_20260704_195315_conv_upd_net_loss_plain_rate_snr__s3\user_config
+Traceback (most recent call last):
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per epoch\main.py", line 11, in <module>
+    runpy.run_path(str(LEGACY_MAIN), run_name="__main__")
+  File "<frozen runpy>", line 291, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per sweep\main.py", line 277, in <module>
+    main()
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per sweep\main.py", line 180, in main
+    experiment = run_convergence_experiment(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per sweep\main.py", line 83, in run_convergence_experiment
+    initial_baseline = estimate_initial_random_precoder_schedule_for_scenario(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\advanced_methods_common.py", line 431, in estimate_initial_random_precoder_schedule_for_scenario
+    return _estimate_initial_random_precoder_schedule_fixed_block_targets(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\advanced_methods_common.py", line 362, in _estimate_initial_random_precoder_schedule_fixed_block_targets
+    R_candidate = _compute_R_fbl_np(
+                  ^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Optimizer_per_block.py", line 1376, in _compute_R_fbl_np
+    G = np.linalg.solve(chol, HF)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\linalg\linalg.py", line 409, in solve
+    r = gufunc(a, b, signature=signature, extobj=extobj)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

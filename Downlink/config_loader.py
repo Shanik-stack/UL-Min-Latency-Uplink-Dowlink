@@ -16,6 +16,12 @@ def _first_present(mapping: dict, *names: str, default=None):
     return default
 
 
+def _optional_int(value, default=None):
+    if value is None:
+        return default
+    return int(value)
+
+
 def _as_array(values: Any, K: int, name: str, dtype) -> np.ndarray:
     arr = np.asarray(values, dtype=dtype)
     if arr.ndim == 0:
@@ -35,6 +41,28 @@ def _resolve_downlink_block_power_budget(power_values: np.ndarray) -> float:
             "so test.P must be a scalar or repeated identical values."
         )
     return budget
+
+
+def _resolve_bs_shared_fixed_target_n_target_mode(value: Any) -> str:
+    aliases = {
+        "joint": "shared_n_targets",
+        "shared": "shared_n_targets",
+        "shared_n_targets": "shared_n_targets",
+        "joint_n_targets": "shared_n_targets",
+        "per_user": "per_user_n_targets",
+        "user": "per_user_n_targets",
+        "per_user_n_targets": "per_user_n_targets",
+        "user_n_targets": "per_user_n_targets",
+    }
+    normalized = str(value if value is not None else "shared_n_targets").strip().lower()
+    resolved = aliases.get(normalized)
+    if resolved is None:
+        known = ", ".join(sorted({"shared_n_targets", "per_user_n_targets"}))
+        raise ValueError(
+            "simulation.bs_shared_net_fixed_target_n_target_mode must be one of "
+            f"{known}, got {value!r}."
+        )
+    return resolved
 
 
 def _resolve_config_path(cfg_name: str) -> str:
@@ -98,7 +126,6 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
 
     sim_cfg_raw = cfg.get("simulation", {})
     n_range = sim_cfg_raw.get("n_kl_range", {})
-    default_monte_carlo_training_blocks = min(int(sim_cfg_raw.get("max_total_blocks", 256)), 2)
     scenario_cfg = normalize_experiment_scenario_config(
         sim_cfg_raw.get("experiment_scenario", {}),
         system_params=system_params,
@@ -158,14 +185,14 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
                 default="all_active_users",
             )
         ).strip().lower(),
-        "monte_carlo_training_blocks_per_seed": int(
+        "monte_carlo_training_max_epochs": int(
             _first_present(
                 sim_cfg_raw,
-                "monte_carlo_training_blocks_per_seed",
-                "precoder_net_train_blocks_per_seed",
-                "precoder_train_blocks_per_seed",
-                "policy_train_blocks_per_seed",
-                default=default_monte_carlo_training_blocks,
+                "monte_carlo_training_max_epochs",
+                "precoder_net_epochs",
+                "precoder_epochs",
+                "policy_epochs",
+                default=max_epochs,
             )
         ),
         "monte_carlo_training_n_kl_coarse_step": int(
@@ -187,6 +214,27 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
                 "policy_train_min_bits_required",
                 default=1,
             )
+        ),
+        "monte_carlo_train_seeds": _first_present(
+            sim_cfg_raw,
+            "monte_carlo_train_seeds",
+            default=None,
+        ),
+        "monte_carlo_num_train_seeds": _optional_int(
+            _first_present(
+                sim_cfg_raw,
+                "monte_carlo_num_train_seeds",
+                default=None,
+            ),
+            default=None,
+        ),
+        "monte_carlo_test_seed": _optional_int(
+            _first_present(
+                sim_cfg_raw,
+                "monte_carlo_test_seed",
+                default=None,
+            ),
+            default=None,
         ),
         "convergence_block_objective_mode": str(
             _first_present(
@@ -238,6 +286,13 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
                 default="per_user_nets",
             )
         ).strip().lower(),
+        "bs_shared_net_fixed_target_n_target_mode": _resolve_bs_shared_fixed_target_n_target_mode(
+            _first_present(
+                sim_cfg_raw,
+                "bs_shared_net_fixed_target_n_target_mode",
+                default="shared_n_targets",
+            )
+        ),
         "experiment_scenario": scenario_cfg,
         "experiment_scenario_mode": str(scenario_cfg["mode"]),
     }

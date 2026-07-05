@@ -1,0 +1,68 @@
+test:
+  K: 3
+  Nr:
+  - 16
+  - 16
+  - 16
+  Nt:
+  - 4
+  - 4
+  - 4
+  T:
+  - 50
+  - 60
+  - 80
+  B:
+  - 200
+  - 400
+  - 600
+  P:
+  - 30
+  - 30
+  - 30
+  snr_db:
+  - 8
+  - 8
+  - 8
+  fs:
+  - 15000.0
+  - 15000.0
+  - 15000.0
+  epsilon:
+  - 1.0e-10
+  - 1.0e-10
+  - 1.0e-10
+simulation:
+  convergence_precoder_update_mode: direct_precoder
+  initial_lambda_rate_constraint: 0.1
+  initial_lambda_power_constraint: 0.01
+  max_epochs: 1000
+  lr_net: 0.01
+  lr_rate_constraint: 0.01
+  lr_power_constraint: 0.001
+  constraint_loss_form: augmented_lagrangian
+  augmented_lagrangian_rho_rate: 1.0
+  augmented_lagrangian_rho_power: 1.0
+  print_every_epoch: 1
+  kkt_primal_tol: 1.0e-05
+  kkt_complementarity_tol: 1.0e-05
+  kkt_stationarity_tol: 0.0006
+  reduced_n_kl_log_interval: 10
+  monte_carlo_test_seed: 3
+  monte_carlo_num_train_seeds: 4
+  monte_carlo_training_max_epochs: 100
+  monte_carlo_training_fallback_target_bits: 1
+  monte_carlo_training_n_kl_coarse_step: 5
+  max_total_blocks: 256
+  uplink_rate_model: snr
+  experiment_scenario:
+    mode: fixed_block_targets
+    skip_infeasible_blocks: true
+    skip_block_adds_full_T_latency: true
+    track_skipped_blocks: true
+    fixed_block_targets:
+      num_blocks: 5
+      generation_mode: constant
+  n_kl_range:
+    min: 1
+    step: 1

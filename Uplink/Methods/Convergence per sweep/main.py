@@ -25,6 +25,7 @@ from experiment_report import build_convergence_result, build_convergence_summar
 from experiment_utils import (
     compact_method_tag,
     compact_update_mode_tag,
+    current_local_timestamp,
     join_compact_tag_parts,
     make_method_result_tag,
     save_json,
@@ -46,7 +47,7 @@ from plotting import (
     plot_per_user_interference_profiles,
     plot_user_config,
 )
-from project_paths import build_uplink_convergence_result_dirs, mirror_experiment_root_to_scenario_layout
+from project_paths import build_uplink_convergence_result_dirs, mirror_experiment_root_to_result_aliases
 from terminal_logging import format_latency_log_line
 from UplinkSystem import UplinkSystem
 from utils import save_test_results_to_txt
@@ -74,6 +75,7 @@ def run_convergence_experiment(
     *,
     do_plots: bool = True,
 ) -> dict:
+    run_started_at_local = current_local_timestamp()
     system_params, sim_cfg = get_config(cfg_name)
     sim_cfg = dict(sim_cfg)
     core_start = perf_counter()
@@ -146,6 +148,8 @@ def run_convergence_experiment(
         convergence_data,
         core_wall_time_seconds_total=perf_counter() - core_start,
     )
+    result["run_started_at_local"] = str(run_started_at_local)
+    result["run_completed_at_local"] = current_local_timestamp()
     return {
         "result": result,
         "report_system": report_system,
@@ -259,14 +263,14 @@ def main() -> None:
     plot_interference_heatmaps(report_system, result_dirs["interference"])
     plot_per_user_interference_profiles(report_system, result_dirs["interference"])
     save_text(build_convergence_summary_lines(result), os.path.join(result_dirs["data"], "summary.txt"))
-    mirror_root = mirror_experiment_root_to_scenario_layout(
+    mirror_paths = mirror_experiment_root_to_result_aliases(
         link_name="Uplink",
         scenario_mode=str(sim_cfg.get("experiment_scenario_mode", "payload_completion")),
         method_name=METHOD_LABEL,
         source_experiment_root=result_dirs["experiment_root"],
     )
-    print(f"Mirrored uplink convergence results to: {mirror_root}")
-    print(f"Saved uplink convergence results to: {result_dirs['experiment_root']}")
+    print(f"Mirrored uplink convergence scenario results to: {mirror_paths['scenario_root']}")
+    print(f"Saved uplink convergence method results to: {mirror_paths['method_root']}")
 
 
 if __name__ == "__main__":

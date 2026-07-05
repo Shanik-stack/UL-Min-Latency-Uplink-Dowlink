@@ -1,0 +1,44 @@
+Initialized plotting globals:
+train_result_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_dir__ul_payload_completion_sweep_20260704_205957_conv_upd_dir_loss_plain_rate_sinr__s3\optimization_history
+test_result_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_dir__ul_payload_completion_sweep_20260704_205957_conv_upd_dir_loss_plain_rate_sinr__s3\optimization_history
+user_cfg_result_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_dir__ul_payload_completion_sweep_20260704_205957_conv_upd_dir_loss_plain_rate_sinr__s3\user_config
+[UL Initial Baseline] | seed=3 | scenario=payload_completion | method=convergence | users=3 | initial_total_latency=0.037467 | initial_avg_latency=0.012489 | initial_min_latency=0.006667 | initial_max_latency=0.017467
+[UL Convergence Train] | phase=start | user=0 | mode=payload_completion
+[UL Convergence Train] | user=0 | block=0 | remaining_bits=1000
+[UL Convergence Block] | user=0 | block=0 | budget_mode=B_rem | requested_bits=1000
+[UL Convergence Solve] | user=0 | block=0 | stage=n=T | n_kl=50 | requested_bits=1000
+Traceback (most recent call last):
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per epoch\main.py", line 11, in <module>
+    runpy.run_path(str(LEGACY_MAIN), run_name="__main__")
+  File "<frozen runpy>", line 291, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per sweep\main.py", line 277, in <module>
+    main()
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per sweep\main.py", line 180, in main
+    experiment = run_convergence_experiment(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per sweep\main.py", line 114, in run_convergence_experiment
+    convergence_data = dynamic_subblocklength_precoder_training_baseline(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per sweep\optimizer.py", line 36, in dynamic_subblocklength_precoder_training_baseline
+    convergence_data = dynamic_subblocklength_precoder_training(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Optimizer_per_block.py", line 1002, in dynamic_subblocklength_precoder_training
+    S, B_used, _ = optimize_subblocklength_precoder(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Optimizer_per_block.py", line 600, in optimize_subblocklength_precoder
+    out = optimize_precoder_for_nl(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Optimizer_per_block.py", line 292, in optimize_precoder_for_nl
+    Fmat = project_power(_ri_to_complex_tensor(precoder_param), loss_fn.P)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Optimizer_per_block.py", line 94, in _ri_to_complex_tensor
+    return (param[0] + 1j * param[1]).to(torch.complex64)
+                       ~~~^~~~~~~~~~
+torch.AcceleratorError: CUDA error: out of memory
+Search for `cudaErrorMemoryAllocation' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

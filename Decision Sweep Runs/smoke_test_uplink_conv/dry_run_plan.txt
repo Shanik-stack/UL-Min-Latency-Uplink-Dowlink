@@ -1,0 +1,76 @@
+Decision sweep dry run
+Generated at: 2026-07-04T19:50:11+03:00
+Run root: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv
+Planned runs: 8
+
+001. Uplink | Convergence per epoch
+  base_config: uplink_payload_completion.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-net__loss-plain__rate-snr.yaml
+  decision_tag: upd-net__loss-plain__rate-snr
+  is_base_configuration: True
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-net__loss-plain__rate-snr.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_net__ul_payload_completion_smoke_test_uplink_conv_conv_upd_net_loss_plain_rate_snr__s3\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\logs\ul_payload_completion__smoke_test_uplink_conv__conv__upd-net__loss-plain__rate-snr.log
+
+002. Uplink | Convergence per epoch
+  base_config: uplink_payload_completion.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-net__loss-plain__rate-sinr.yaml
+  decision_tag: upd-net__loss-plain__rate-sinr
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-net__loss-plain__rate-sinr.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_net__ul_payload_completion_smoke_test_uplink_conv_conv_upd_net_loss_plain_rate_sinr__s3\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\logs\ul_payload_completion__smoke_test_uplink_conv__conv__upd-net__loss-plain__rate-sinr.log
+
+003. Uplink | Convergence per epoch
+  base_config: uplink_payload_completion.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-net__loss-aug__rate-snr.yaml
+  decision_tag: upd-net__loss-aug__rate-snr
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-net__loss-aug__rate-snr.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_net__ul_payload_completion_smoke_test_uplink_conv_conv_upd_net_loss_aug_rate_snr__s3\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\logs\ul_payload_completion__smoke_test_uplink_conv__conv__upd-net__loss-aug__rate-snr.log
+
+004. Uplink | Convergence per epoch
+  base_config: uplink_payload_completion.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-net__loss-aug__rate-sinr.yaml
+  decision_tag: upd-net__loss-aug__rate-sinr
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-net__loss-aug__rate-sinr.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_net__ul_payload_completion_smoke_test_uplink_conv_conv_upd_net_loss_aug_rate_sinr__s3\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\logs\ul_payload_completion__smoke_test_uplink_conv__conv__upd-net__loss-aug__rate-sinr.log
+
+005. Uplink | Convergence per epoch
+  base_config: uplink_payload_completion.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-dir__loss-plain__rate-snr.yaml
+  decision_tag: upd-dir__loss-plain__rate-snr
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-dir__loss-plain__rate-snr.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_dir__ul_payload_completion_smoke_test_uplink_conv_conv_upd_dir_loss_plain_rate_snr__s3\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\logs\ul_payload_completion__smoke_test_uplink_conv__conv__upd-dir__loss-plain__rate-snr.log
+
+006. Uplink | Convergence per epoch
+  base_config: uplink_payload_completion.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-dir__loss-plain__rate-sinr.yaml
+  decision_tag: upd-dir__loss-plain__rate-sinr
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-dir__loss-plain__rate-sinr.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_dir__ul_payload_completion_smoke_test_uplink_conv_conv_upd_dir_loss_plain_rate_sinr__s3\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\logs\ul_payload_completion__smoke_test_uplink_conv__conv__upd-dir__loss-plain__rate-sinr.log
+
+007. Uplink | Convergence per epoch
+  base_config: uplink_payload_completion.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-dir__loss-aug__rate-snr.yaml
+  decision_tag: upd-dir__loss-aug__rate-snr
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-dir__loss-aug__rate-snr.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_dir__ul_payload_completion_smoke_test_uplink_conv_conv_upd_dir_loss_aug_rate_snr__s3\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\logs\ul_payload_completion__smoke_test_uplink_conv__conv__upd-dir__loss-aug__rate-snr.log
+
+008. Uplink | Convergence per epoch
+  base_config: uplink_payload_completion.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-dir__loss-aug__rate-sinr.yaml
+  decision_tag: upd-dir__loss-aug__rate-sinr
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per epoch\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\generated_configs\uplink\convergence\ul_payload_completion__smoke_test_uplink_conv__conv__upd-dir__loss-aug__rate-sinr.yaml --seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_dir__ul_payload_completion_smoke_test_uplink_conv_conv_upd_dir_loss_aug_rate_sinr__s3\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_test_uplink_conv\logs\ul_payload_completion__smoke_test_uplink_conv__conv__upd-dir__loss-aug__rate-sinr.log

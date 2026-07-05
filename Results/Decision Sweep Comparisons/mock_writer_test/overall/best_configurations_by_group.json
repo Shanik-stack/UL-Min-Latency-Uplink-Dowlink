@@ -1,0 +1,30 @@
+[
+    {
+        "selection_type": "best_final_total_latency",
+        "link": "downlink",
+        "method": "monte_carlo",
+        "base_config_name": "downlink_fixed_block_targets.yaml",
+        "decision_tag": "scope-bs__loss-plain",
+        "highlighted_configuration": "downlink_precoder_net_scope=bs_shared_net | constraint_loss_form=plain_lagrangian",
+        "final_total_latency": 0.7,
+        "total_latency_reduction_percent": 30.0,
+        "final_avg_sinr_db": 4.0,
+        "total_served_bits": 100,
+        "result_json_path": "result_a.json",
+        "log_path": "log_a.txt"
+    },
+    {
+        "selection_type": "best_latency_reduction_percent",
+        "link": "downlink",
+        "method": "monte_carlo",
+        "base_config_name": "downlink_fixed_block_targets.yaml",
+        "decision_tag": "scope-bs__loss-plain",
+        "highlighted_configuration": "downlink_precoder_net_scope=bs_shared_net | constraint_loss_form=plain_lagrangian",
+        "final_total_latency": 0.7,
+        "total_latency_reduction_percent": 30.0,
+        "final_avg_sinr_db": 4.0,
+        "total_served_bits": 100,
+        "result_json_path": "result_a.json",
+        "log_path": "log_a.txt"
+    }
+]

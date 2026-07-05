@@ -5,6 +5,9 @@ uplink/downlink experiment setup.
 
 For the detailed parameter-by-parameter reference, read `PARAMETER_GUIDE.md`.
 
+For method-specific config readmes organized by uplink/downlink and by method,
+read the files under `README/`.
+
 ## Config Design
 
 The configs now follow a simpler structure:
@@ -17,6 +20,22 @@ The configs now follow a simpler structure:
 For convergence runs, `simulation.convergence_precoder_update_mode` selects
 whether the solver updates a precoder net online (`precoder_net`) or directly
 updates the complex precoder variables (`direct_precoder`).
+
+For downlink Monte Carlo fixed-target runs with
+`simulation.downlink_precoder_net_scope: bs_shared_net`,
+`simulation.bs_shared_net_fixed_target_n_target_mode` selects whether the
+shared BS net uses one joint block-level `n_{k,l}` search
+(`shared_n_targets`) or the older user-by-user reduction style
+(`per_user_n_targets`).
+
+For both uplink and downlink Monte Carlo training,
+`simulation.monte_carlo_training_max_epochs` is the config-side training epoch
+budget. The trainer can stop earlier using the same KKT tolerances as the
+convergence baseline:
+
+- `simulation.kkt_primal_tol`
+- `simulation.kkt_complementarity_tol`
+- `simulation.kkt_stationarity_tol`
 
 The confusing legacy Monte Carlo names such as `precoder_net_train_*`,
 `curriculum_*`, and `policy_train_*` are no longer used in the canonical YAML

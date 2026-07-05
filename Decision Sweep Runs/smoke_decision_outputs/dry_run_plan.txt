@@ -1,0 +1,59 @@
+Decision sweep dry run
+Generated at: 2026-07-04T20:02:10+03:00
+Control root: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs
+Detailed comparison root: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Decision Sweep Comparisons\smoke_decision_outputs
+Planned runs: 6
+
+001. Downlink | Monte Carlo
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\generated_configs\downlink\monte_carlo\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-plain__scope-user.yaml
+  decision_tag: loss-plain__scope-user
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Monte Carlo\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\generated_configs\downlink\monte_carlo\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-plain__scope-user.yaml --test_seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Monte Carlo\mc_user__dl_fixed_block_targets_smoke_decision_outputs_mc_loss_plain_scope_user__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\logs\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-plain__scope-user.log
+
+002. Downlink | Monte Carlo
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\generated_configs\downlink\monte_carlo\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-plain__scope-bs__ntgt-jointn.yaml
+  decision_tag: loss-plain__scope-bs__ntgt-jointn
+  is_base_configuration: True
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Monte Carlo\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\generated_configs\downlink\monte_carlo\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-plain__scope-bs__ntgt-jointn.yaml --test_seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Monte Carlo\mc_bs_jointn__dl_fixed_block_targets_smoke_decision_outputs_mc_loss_plain_scope_bs_ntgt_jointn__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\logs\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-plain__scope-bs__ntgt-jointn.log
+
+003. Downlink | Monte Carlo
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\generated_configs\downlink\monte_carlo\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-plain__scope-bs__ntgt-usern.yaml
+  decision_tag: loss-plain__scope-bs__ntgt-usern
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Monte Carlo\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\generated_configs\downlink\monte_carlo\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-plain__scope-bs__ntgt-usern.yaml --test_seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Monte Carlo\mc_bs_usern__dl_fixed_block_targets_smoke_decision_outputs_mc_loss_plain_scope_bs_ntgt_usern__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\logs\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-plain__scope-bs__ntgt-usern.log
+
+004. Downlink | Monte Carlo
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\generated_configs\downlink\monte_carlo\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-aug__scope-user.yaml
+  decision_tag: loss-aug__scope-user
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Monte Carlo\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\generated_configs\downlink\monte_carlo\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-aug__scope-user.yaml --test_seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Monte Carlo\mc_user__dl_fixed_block_targets_smoke_decision_outputs_mc_loss_aug_scope_user__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\logs\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-aug__scope-user.log
+
+005. Downlink | Monte Carlo
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\generated_configs\downlink\monte_carlo\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-aug__scope-bs__ntgt-jointn.yaml
+  decision_tag: loss-aug__scope-bs__ntgt-jointn
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Monte Carlo\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\generated_configs\downlink\monte_carlo\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-aug__scope-bs__ntgt-jointn.yaml --test_seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Monte Carlo\mc_bs_jointn__dl_fixed_block_targets_smoke_decision_outputs_mc_loss_aug_scope_bs_ntgt_jointn__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\logs\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-aug__scope-bs__ntgt-jointn.log
+
+006. Downlink | Monte Carlo
+  base_config: downlink_fixed_block_targets.yaml
+  generated_config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\generated_configs\downlink\monte_carlo\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-aug__scope-bs__ntgt-usern.yaml
+  decision_tag: loss-aug__scope-bs__ntgt-usern
+  is_base_configuration: False
+  command: python C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Monte Carlo\main.py --cfg_name C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\generated_configs\downlink\monte_carlo\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-aug__scope-bs__ntgt-usern.yaml --test_seed 3
+  expected_result_json: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Monte Carlo\mc_bs_usern__dl_fixed_block_targets_smoke_decision_outputs_mc_loss_aug_scope_bs_ntgt_usern__s3\testing\data\result.json
+  log_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\smoke_decision_outputs\logs\dl_fixed_block_targets__smoke_decision_outputs__mc__loss-aug__scope-bs__ntgt-usern.log

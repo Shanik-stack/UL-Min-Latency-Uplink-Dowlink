@@ -21,9 +21,13 @@ Entry point:
 
 `python "Downlink\\Methods\\Convergence per epoch\\main.py" --cfg_name config_downlink_example.yaml --seed 3`
 
-Results are written under:
+Results are written under the method root:
 
-`Results\\Downlink\\Convergence per epoch\\<experiment_name>`
+`Results\\Downlink\\Method-Convergence per epoch\\<experiment_name>`
+
+They are also mirrored under the scenario root:
+
+`Results\\Downlink\\Scenario-Payload completion\\Convergence per epoch\\<experiment_name>`
 
 The objective mode is appended to the experiment tag so runs with different
 block objectives do not overwrite each other.

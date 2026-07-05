@@ -1,0 +1,66 @@
+C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\linear.py:134: UserWarning: gemm_and_bias error: CUBLAS_STATUS_EXECUTION_FAILED when calling cublasLtMatmul with transpose_mat1 1 transpose_mat2 0 m 512 n 1 k 1024 mat1_ld 1024 mat2_ld 1024 result_ld 512 abType 0 cType 0 computeType 68 scaleType 0. Will attempt to recover by calling unfused cublas path. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\cuda\CUDABlas.cpp:1792.)
+  return F.linear(input, self.weight, self.bias)
+fatal   : Memory allocation failure
+C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\linear.py:134: UserWarning: gemm_and_bias error: CUBLAS_STATUS_EXECUTION_FAILED when calling cublasLtMatmul with transpose_mat1 1 transpose_mat2 0 m 256 n 1 k 512 mat1_ld 512 mat2_ld 512 result_ld 256 abType 0 cType 0 computeType 68 scaleType 0. Will attempt to recover by calling unfused cublas path. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\cuda\CUDABlas.cpp:1792.)
+  return F.linear(input, self.weight, self.bias)
+Traceback (most recent call last):
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py", line 11, in <module>
+    runpy.run_path(str(LEGACY_MAIN), run_name="__main__")
+  File "<frozen runpy>", line 291, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per sweep\main.py", line 61, in <module>
+    main()
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per sweep\main.py", line 43, in main
+    run_downlink_experiment(
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\experiment_runner.py", line 447, in run_downlink_experiment
+    result = OPTIMIZERS[method_name](system, sim_params, verbose=verbose)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 3130, in optimize_downlink_convergence_epoch
+    return optimize_downlink_safe_sweep(system, sim_params, verbose=verbose)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 3107, in optimize_downlink_safe_sweep
+    return _run_safe_sweep_fixed_block_targets(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 2788, in _run_safe_sweep_fixed_block_targets
+    initial_latency, initial_plan, initial_interference_diag = _estimate_initial_latency_from_random_precoders_fixed_block_targets(
+                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 2393, in _estimate_initial_latency_from_random_precoders_fixed_block_targets
+    _refresh_block_precoders_from_models(
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 350, in _refresh_block_precoders_from_models
+    working_F[k_int][l] = infer_raw_precoder_numpy(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\precoder_models.py", line 907, in infer_raw_precoder_numpy
+    F_t = infer_raw_precoder_torch(model, H_t, nb, dk, user_index=user_index)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\precoder_models.py", line 164, in infer_raw_precoder_torch
+    F_out = model(H_kl, user_index=user_index)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\precoder_models.py", line 337, in forward
+    return self.net(x)
+           ^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\container.py", line 253, in forward
+    input = module(input)
+            ^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\linear.py", line 134, in forward
+    return F.linear(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: CUBLAS_STATUS_EXECUTION_FAILED when calling `cublasSgemm( handle, opa, opb, m, n, k, &alpha, a, lda, b, ldb, &beta, c, ldc)`

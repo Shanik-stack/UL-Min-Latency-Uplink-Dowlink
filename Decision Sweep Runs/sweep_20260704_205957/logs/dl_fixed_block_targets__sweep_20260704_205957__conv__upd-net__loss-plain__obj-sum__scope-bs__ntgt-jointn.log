@@ -1,0 +1,56 @@
+Traceback (most recent call last):
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py", line 11, in <module>
+    runpy.run_path(str(LEGACY_MAIN), run_name="__main__")
+  File "<frozen runpy>", line 291, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per sweep\main.py", line 17, in <module>
+    from experiment_runner import build_result_tag, run_downlink_experiment
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\experiment_runner.py", line 10, in <module>
+    from determinism import configure_determinism
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\determinism.py", line 9, in <module>
+    import torch
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\__init__.py", line 2804, in <module>
+    from torch import _meta_registrations
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_meta_registrations.py", line 12, in <module>
+    from torch._decomp import (
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_decomp\__init__.py", line 287, in <module>
+    import torch._decomp.decompositions
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_decomp\decompositions.py", line 17, in <module>
+    import torch._prims as prims
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_prims\__init__.py", line 613, in <module>
+    bessel_j1 = _make_elementwise_unary_prim(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_prims\__init__.py", line 511, in _make_elementwise_unary_prim
+    return _make_prim(
+           ^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_prims\__init__.py", line 334, in _make_prim
+    prim_def = torch.library.custom_op(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_library\custom_ops.py", line 176, in custom_op
+    return inner(fn)
+           ^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_library\custom_ops.py", line 157, in inner
+    result = CustomOpDef(namespace, opname, schema_str, fn, tags)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_library\custom_ops.py", line 214, in __init__
+    self._lib = get_library_allowing_overwrite(self._namespace, self._name)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_library\custom_ops.py", line 942, in get_library_allowing_overwrite
+    lib = torch.library.Library(namespace, "FRAGMENT")  # noqa: TOR901
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\library.py", line 99, in __init__
+    frame = traceback.extract_stack(limit=2)[0]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\traceback.py", line 231, in extract_stack
+    stack = StackSummary.extract(walk_stack(f), limit=limit)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\traceback.py", line 393, in extract
+    return klass._extract_from_extended_frame_gen(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\traceback.py", line 432, in _extract_from_extended_frame_gen
+    linecache.checkcache(filename)
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\linecache.py", line 72, in checkcache
+    stat = os.stat(fullname)
+           ^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

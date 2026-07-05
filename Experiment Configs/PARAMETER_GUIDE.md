@@ -142,9 +142,19 @@ These parameters define the channel dimensions, payload, and timing.
 
 ### Uplink Monte Carlo training data
 
-- `monte_carlo_training_blocks_per_seed`
-  - Number of channel blocks sampled per training seed.
-  - Larger values increase dataset diversity and runtime.
+- `monte_carlo_test_seed`
+  - Default test seed used by the uplink Monte Carlo entry point when `--test_seed` is not passed.
+
+- `monte_carlo_num_train_seeds`
+  - Default upper bound for the auto-generated training-seed range.
+  - If this is `N`, the default training seeds become `1, 2, ..., N`, with `monte_carlo_test_seed` removed if it lies in that range.
+  - One training seed produces one channel episode per user.
+  - Example: `monte_carlo_num_train_seeds: 10` and `monte_carlo_test_seed: 3` gives training seeds `[1, 2, 4, 5, 6, 7, 8, 9, 10]`.
+
+- `monte_carlo_train_seeds`
+  - Optional explicit training-seed list.
+  - If present, it overrides `monte_carlo_num_train_seeds`.
+  - Use this when you want an exact fixed seed set instead of the auto-generated `1..N except test_seed` rule.
 
 - `monte_carlo_training_fallback_target_bits`
   - Bit target used when building Monte Carlo training cases for payload-completion scenarios that do not already provide explicit per-block targets.
@@ -245,8 +255,16 @@ These parameters define the channel dimensions, payload, and timing.
 
 ### Downlink Monte Carlo training data
 
-- `monte_carlo_training_blocks_per_seed`
-  - Number of channel blocks sampled per training seed.
+- `monte_carlo_test_seed`
+  - Default test seed used by the downlink Monte Carlo entry point when `--test_seed` is not passed.
+
+- `monte_carlo_num_train_seeds`
+  - Default upper bound for the auto-generated training-seed range.
+  - If this is `N`, the default training seeds become `1, 2, ..., N`, with `monte_carlo_test_seed` removed if it lies in that range.
+  - One training seed produces one joint channel episode.
+
+- `monte_carlo_train_seeds`
+  - Optional explicit training-seed list that overrides `monte_carlo_num_train_seeds`.
 
 - `monte_carlo_training_fallback_target_bits`
   - Bit target used in payload-completion training episodes when there is no explicit block target.
@@ -355,7 +373,6 @@ break. The main legacy aliases are:
 - `repair_solve_guard_sweeps` -> `max_epochs`
 - `reduced_n_kl_repair_max_epochs` -> `max_epochs`
 - `print_every_reduced_n_kl` -> `reduced_n_kl_log_interval`
-- `precoder_net_train_blocks_per_seed` -> `monte_carlo_training_blocks_per_seed`
 - `precoder_net_train_min_bits_required` -> `monte_carlo_training_fallback_target_bits`
 - `precoder_net_train_n_kl_coarse_step` -> `monte_carlo_training_n_kl_coarse_step`
 - `safe_sweep_objective_mode` -> `convergence_block_objective_mode`

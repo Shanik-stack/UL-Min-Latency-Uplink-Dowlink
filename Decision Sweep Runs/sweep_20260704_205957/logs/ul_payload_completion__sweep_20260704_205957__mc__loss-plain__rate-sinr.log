@@ -1,0 +1,28 @@
+Traceback (most recent call last):
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Monte Carlo\main.py", line 8, in <module>
+    import torch
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\__init__.py", line 2273, in <module>
+    from torch import (
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nested\__init__.py", line 21, in <module>
+    from ._internal.nested_tensor import _rebuild_njt, NestedTensor as _NestedTensor
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nested\_internal\nested_tensor.py", line 7, in <module>
+    from torch.nested._internal.nested_int import NestedIntNode
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nested\_internal\nested_int.py", line 4, in <module>
+    from torch.fx.experimental._constant_symnode import ConstantIntNode
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\fx\__init__.py", line 88, in <module>
+    from torch.fx._symbolic_trace import (  # noqa: F401
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\fx\_symbolic_trace.py", line 28, in <module>
+    from .proxy import ParameterProxy, Proxy, Scope, ScopeContextManager, TracerBase
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\fx\proxy.py", line 21, in <module>
+    from torch._logging import getArtifactLogger
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_logging\__init__.py", line 7, in <module>
+    import torch._logging._registrations
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_logging\_registrations.py", line 2, in <module>
+    from ._internal import register_artifact, register_log
+  File "<frozen importlib._bootstrap>", line 1178, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1149, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 1032, in get_code
+  File "<frozen importlib._bootstrap_external>", line 1131, in get_data
+MemoryError

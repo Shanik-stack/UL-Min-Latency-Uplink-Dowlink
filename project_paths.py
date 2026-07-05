@@ -15,17 +15,35 @@ def _sanitize(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "_", text)
 
 
+def _prefixed_folder_name(prefix: str, value: str) -> str:
+    clean_value = str(value).strip()
+    if clean_value.lower().startswith(f"{str(prefix).strip().lower()}-"):
+        return clean_value
+    return f"{prefix}-{clean_value}"
+
+
+def _method_folder_name(method_name: str, *, prefixed: bool = False) -> str:
+    clean_name = str(method_name).strip()
+    return _prefixed_folder_name("Method", clean_name) if prefixed else clean_name
+
+
 def build_experiment_root(link_name: str, method_name: str, experiment_name: str) -> Path:
-    return RESULTS_ROOT / link_name / method_name / _sanitize(experiment_name)
+    return RESULTS_ROOT / link_name / _method_folder_name(method_name, prefixed=True) / _sanitize(experiment_name)
 
 
-def _scenario_folder_name(scenario_mode: str) -> str:
+def _scenario_folder_name(scenario_mode: str, *, prefixed: bool = False) -> str:
     mode = str(scenario_mode).strip().lower()
     if mode == PAYLOAD_COMPLETION_MODE:
-        return "Payload completion"
-    if mode == FIXED_BLOCK_TARGETS_MODE:
-        return "Fixed block targets"
-    return _sanitize(mode or PAYLOAD_COMPLETION_MODE)
+        scenario_name = "Payload completion"
+    elif mode == FIXED_BLOCK_TARGETS_MODE:
+        scenario_name = "Fixed block targets"
+    else:
+        scenario_name = _sanitize(mode or PAYLOAD_COMPLETION_MODE)
+    return _prefixed_folder_name("Scenario", scenario_name) if prefixed else scenario_name
+
+
+def build_method_alias_experiment_root(link_name: str, method_name: str, experiment_name: str) -> Path:
+    return RESULTS_ROOT / link_name / _method_folder_name(method_name, prefixed=True) / _sanitize(experiment_name)
 
 
 def build_scenario_experiment_root(
@@ -34,7 +52,38 @@ def build_scenario_experiment_root(
     method_name: str,
     experiment_name: str,
 ) -> Path:
-    return RESULTS_ROOT / link_name / _scenario_folder_name(scenario_mode) / method_name / _sanitize(experiment_name)
+    return (
+        RESULTS_ROOT
+        / link_name
+        / _scenario_folder_name(scenario_mode, prefixed=True)
+        / method_name
+        / _sanitize(experiment_name)
+    )
+
+
+def build_scenario_alias_experiment_root(
+    link_name: str,
+    scenario_mode: str,
+    method_name: str,
+    experiment_name: str,
+) -> Path:
+    return build_scenario_experiment_root(
+        link_name,
+        scenario_mode,
+        method_name,
+        experiment_name,
+    )
+
+
+def _mirror_tree(source_root: Path, target_root: Path) -> str:
+    if source_root.resolve() == target_root.resolve():
+        return str(target_root)
+
+    target_root.parent.mkdir(parents=True, exist_ok=True)
+    if target_root.exists():
+        shutil.rmtree(target_root)
+    shutil.copytree(source_root, target_root)
+    return str(target_root)
 
 
 def mirror_experiment_root_to_scenario_layout(
@@ -54,14 +103,30 @@ def mirror_experiment_root_to_scenario_layout(
         method_name,
         source_root.name,
     )
-    if source_root.resolve() == target_root.resolve():
-        return str(target_root)
+    return _mirror_tree(source_root, target_root)
 
-    target_root.parent.mkdir(parents=True, exist_ok=True)
-    if target_root.exists():
-        shutil.rmtree(target_root)
-    shutil.copytree(source_root, target_root)
-    return str(target_root)
+
+def mirror_experiment_root_to_result_aliases(
+    *,
+    link_name: str,
+    scenario_mode: str,
+    method_name: str,
+    source_experiment_root: str | Path,
+) -> dict[str, str]:
+    source_root = Path(source_experiment_root)
+    if not source_root.exists():
+        raise FileNotFoundError(f"Cannot mirror missing experiment root: {source_root}")
+
+    scenario_root = build_scenario_experiment_root(
+        link_name,
+        scenario_mode,
+        method_name,
+        source_root.name,
+    )
+    return {
+        "scenario_root": _mirror_tree(source_root, scenario_root),
+        "method_root": str(source_root),
+    }
 
 
 def build_uplink_result_dirs(method_name: str, experiment_name: str) -> dict[str, str]:

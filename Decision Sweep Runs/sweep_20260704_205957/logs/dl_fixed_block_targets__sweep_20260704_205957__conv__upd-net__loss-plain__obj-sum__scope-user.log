@@ -1,0 +1,44 @@
+Traceback (most recent call last):
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py", line 11, in <module>
+    runpy.run_path(str(LEGACY_MAIN), run_name="__main__")
+  File "<frozen runpy>", line 291, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per sweep\main.py", line 61, in <module>
+    main()
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per sweep\main.py", line 43, in main
+    run_downlink_experiment(
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\experiment_runner.py", line 425, in run_downlink_experiment
+    configure_determinism(seed)
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\determinism.py", line 27, in configure_determinism
+    torch.use_deterministic_algorithms(True, warn_only=True)
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\__init__.py", line 1522, in use_deterministic_algorithms
+    import torch._inductor.config as inductor_config
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_inductor\__init__.py", line 11, in <module>
+    from .standalone_compile import CompiledArtifact  # noqa: TC001
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_inductor\standalone_compile.py", line 13, in <module>
+    from torch._dynamo.aot_compile_types import BundledAOTAutogradSerializableCallable
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\__init__.py", line 13, in <module>
+    from . import (
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\aot_compile.py", line 15, in <module>
+    from torch._dynamo.convert_frame import GraphRuntimeEnv
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\convert_frame.py", line 62, in <module>
+    from torch._dynamo.symbolic_convert import TensorifyState
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\symbolic_convert.py", line 60, in <module>
+    from . import (
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\trace_rules.py", line 59, in <module>
+    from .variables import (
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\variables\__init__.py", line 19, in <module>
+    from .base import VariableTracker
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\variables\base.py", line 929, in <module>
+    from . import builder
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\variables\builder.py", line 185, in <module>
+    from .builtin import BuiltinVariable
+  File "<frozen importlib._bootstrap>", line 1178, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1149, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 1032, in get_code
+  File "<frozen importlib._bootstrap_external>", line 1131, in get_data
+MemoryError

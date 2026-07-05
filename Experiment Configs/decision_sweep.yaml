@@ -1,0 +1,68 @@
+defaults:
+  python_executable: python
+  # max_parallel: auto
+  max_parallel: 8
+  continue_on_error: true
+  quiet: false
+  skip_test: false
+  seed: 3
+  test_seed: 3
+  # If both train_seeds and num_train_seeds are omitted, each Monte Carlo method
+  # uses the defaults already stored in its generated config.
+  # train_seeds: [1, 2, 4]
+  # num_train_seeds: 10
+
+base_configs:
+  uplink: all
+  downlink: all
+
+decision_grids:
+  uplink:
+    convergence:
+      simulation.convergence_precoder_update_mode:
+        - precoder_net
+        - direct_precoder
+      simulation.constraint_loss_form:
+        - plain_lagrangian
+        - augmented_lagrangian
+      simulation.uplink_rate_model:
+        - snr
+        - sinr
+
+    monte_carlo:
+      simulation.constraint_loss_form:
+        - plain_lagrangian
+        - augmented_lagrangian
+      simulation.uplink_rate_model:
+        - snr
+        - sinr
+
+  downlink:
+    convergence:
+      simulation.convergence_precoder_update_mode:
+        - direct_precoder
+        - precoder_net
+      simulation.constraint_loss_form:
+        - plain_lagrangian
+        - augmented_lagrangian
+      simulation.convergence_block_objective_mode:
+        - unweighted_sum_rate
+        - remaining_bits_weighted_sum_rate
+        - blended_network_rate
+      simulation.downlink_precoder_net_scope:
+        - per_user_nets
+        - bs_shared_net
+      simulation.bs_shared_net_fixed_target_n_target_mode:
+        - shared_n_targets
+        - per_user_n_targets
+
+    monte_carlo:
+      simulation.constraint_loss_form:
+        - plain_lagrangian
+        - augmented_lagrangian
+      simulation.downlink_precoder_net_scope:
+        - per_user_nets
+        - bs_shared_net
+      simulation.bs_shared_net_fixed_target_n_target_mode:
+        - shared_n_targets
+        - per_user_n_targets

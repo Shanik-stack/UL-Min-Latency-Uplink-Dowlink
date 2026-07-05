@@ -1,0 +1,55 @@
+Traceback (most recent call last):
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Monte Carlo\main.py", line 395, in <module>
+    main()
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Monte Carlo\main.py", line 279, in main
+    configure_determinism(train_seeds[0] if train_seeds else 0)
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\experiment_determinism.py", line 27, in configure_determinism
+    torch.use_deterministic_algorithms(True, warn_only=True)
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\__init__.py", line 1522, in use_deterministic_algorithms
+    import torch._inductor.config as inductor_config
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_inductor\__init__.py", line 11, in <module>
+    from .standalone_compile import CompiledArtifact  # noqa: TC001
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_inductor\standalone_compile.py", line 13, in <module>
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\__init__.py", line 13, in <module>
+    from . import (
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\aot_compile.py", line 15, in <module>
+    from torch._dynamo.convert_frame import GraphRuntimeEnv
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\convert_frame.py", line 62, in <module>
+    from torch._dynamo.symbolic_convert import TensorifyState
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\symbolic_convert.py", line 60, in <module>
+    from . import (
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\trace_rules.py", line 59, in <module>
+    from .variables import (
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\variables\__init__.py", line 19, in <module>
+    from .base import VariableTracker
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\variables\base.py", line 929, in <module>
+    from . import builder
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\variables\builder.py", line 110, in <module>
+    from ..side_effects import SideEffects
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\side_effects.py", line 46, in <module>
+    from .codegen import PyCodegen
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\codegen.py", line 56, in <module>
+    from .variables.torch_function import TensorWithTFOverrideVariable
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\variables\torch_function.py", line 61, in <module>
+    from .ctx_manager import GenericContextWrappingVariable
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\variables\ctx_manager.py", line 1516, in <module>
+    class WithEnterFunctionVariable(VariableTracker):
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\_dynamo\variables\ctx_manager.py", line 1519, in WithEnterFunctionVariable
+    ctx: Union[ContextWrappingVariable, GenericContextWrappingVariable],
+         ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\typing.py", line 348, in inner
+    return cached(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\typing.py", line 470, in __getitem__
+    return self._getitem(self, parameters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\typing.py", line 683, in Union
+    return _UnionGenericAlias(self, parameters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\typing.py", line 1342, in __init__
+    super().__init__(origin, inst=inst, name=name)
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\typing.py", line 1246, in __init__
+    self._inst = inst
+    ^^^^^^^^^^
+MemoryError

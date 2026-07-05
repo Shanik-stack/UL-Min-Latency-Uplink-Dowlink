@@ -1,0 +1,1094 @@
+[DL Initial Baseline] | seed=3 | scenario=payload_completion | method=convergence | users=3 | initial_total_latency=0.305000 | initial_avg_latency=0.101667 | initial_min_latency=0.069867 | initial_max_latency=0.135667
+[DL Convergence Block] | block=0 | active_users=3 | remaining_bits=6000 | objective=remaining_bits_weighted_sum_rate
+    weight_strategy=remaining_bits | user_weights: u0=0.500, u1=0.750, u2=1.000
+[DL Convergence] | phase=optimize | block=0 | epoch=1/500 | active_users=3 | updated_users=3 | objective=2.540177 | sum_rate=2.838984 | r_p=35.410381 | r_c=3.541038 | r_s=0.004114 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=5/500 | active_users=3 | updated_users=3 | objective=2.800338 | sum_rate=3.131768 | r_p=35.216606 | r_c=53.301811 | r_s=0.004127 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=10/500 | active_users=3 | updated_users=3 | objective=3.146894 | sum_rate=3.522094 | r_p=34.959572 | r_c=114.293322 | r_s=0.004158 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=15/500 | active_users=3 | updated_users=3 | objective=3.517065 | sum_rate=3.938702 | r_p=34.686333 | r_c=173.843478 | r_s=0.004179 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=20/500 | active_users=3 | updated_users=3 | objective=3.909524 | sum_rate=4.380938 | r_p=34.399101 | r_c=231.866802 | r_s=0.004202 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=25/500 | active_users=3 | updated_users=3 | objective=4.322932 | sum_rate=4.847812 | r_p=34.098316 | r_c=288.283779 | r_s=0.004227 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=30/500 | active_users=3 | updated_users=3 | objective=4.755642 | sum_rate=5.333889 | r_p=33.782162 | r_c=342.995123 | r_s=0.004242 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=35/500 | active_users=3 | updated_users=3 | objective=5.204968 | sum_rate=5.837168 | r_p=33.453331 | r_c=395.944146 | r_s=0.004258 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=40/500 | active_users=3 | updated_users=3 | objective=5.666202 | sum_rate=6.354112 | r_p=33.119602 | r_c=447.172254 | r_s=0.004279 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=45/500 | active_users=3 | updated_users=3 | objective=6.134618 | sum_rate=6.880795 | r_p=32.785389 | r_c=496.732475 | r_s=0.004282 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=50/500 | active_users=3 | updated_users=3 | objective=6.604102 | sum_rate=7.415163 | r_p=32.459656 | r_c=544.794616 | r_s=0.004293 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=55/500 | active_users=3 | updated_users=3 | objective=7.067561 | sum_rate=7.949053 | r_p=32.150459 | r_c=591.583926 | r_s=0.004307 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=60/500 | active_users=3 | updated_users=3 | objective=7.519012 | sum_rate=8.475268 | r_p=31.862057 | r_c=637.309117 | r_s=0.004319 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=65/500 | active_users=3 | updated_users=3 | objective=7.953180 | sum_rate=8.990511 | r_p=31.600090 | r_c=682.241702 | r_s=0.004329 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=70/500 | active_users=3 | updated_users=3 | objective=8.365685 | sum_rate=9.497752 | r_p=31.380093 | r_c=726.931234 | r_s=0.004321 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=75/500 | active_users=3 | updated_users=3 | objective=8.757233 | sum_rate=9.993067 | r_p=31.191223 | r_c=771.372318 | r_s=0.004317 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=80/500 | active_users=3 | updated_users=3 | objective=9.128203 | sum_rate=10.479827 | r_p=31.033693 | r_c=815.775087 | r_s=0.004310 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=85/500 | active_users=3 | updated_users=3 | objective=9.483667 | sum_rate=10.952612 | r_p=30.889036 | r_c=859.811883 | r_s=0.004320 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=90/500 | active_users=3 | updated_users=3 | objective=9.825328 | sum_rate=11.416017 | r_p=30.753452 | r_c=903.450149 | r_s=0.004323 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=95/500 | active_users=3 | updated_users=3 | objective=10.155725 | sum_rate=11.872972 | r_p=30.627808 | r_c=946.777190 | r_s=0.004323 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=100/500 | active_users=3 | updated_users=3 | objective=10.475558 | sum_rate=12.326557 | r_p=30.513037 | r_c=989.884318 | r_s=0.004316 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=105/500 | active_users=3 | updated_users=3 | objective=10.788481 | sum_rate=12.776486 | r_p=30.403158 | r_c=1032.638193 | r_s=0.004321 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=110/500 | active_users=3 | updated_users=3 | objective=11.096992 | sum_rate=13.230392 | r_p=30.302376 | r_c=1075.217121 | r_s=0.004313 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=115/500 | active_users=3 | updated_users=3 | objective=11.404848 | sum_rate=13.694073 | r_p=30.209932 | r_c=1117.652281 | r_s=0.004315 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=120/500 | active_users=3 | updated_users=3 | objective=11.714238 | sum_rate=14.160733 | r_p=30.119160 | r_c=1159.733130 | r_s=0.004316 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=125/500 | active_users=3 | updated_users=3 | objective=12.025354 | sum_rate=14.632113 | r_p=30.036144 | r_c=1201.719395 | r_s=0.004317 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=130/500 | active_users=3 | updated_users=3 | objective=12.339858 | sum_rate=15.107477 | r_p=29.955284 | r_c=1243.423238 | r_s=0.004318 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=135/500 | active_users=3 | updated_users=3 | objective=12.655359 | sum_rate=15.581298 | r_p=29.877291 | r_c=1284.888587 | r_s=0.004331 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=140/500 | active_users=3 | updated_users=3 | objective=12.971882 | sum_rate=16.049328 | r_p=29.796894 | r_c=1325.897114 | r_s=0.004339 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=145/500 | active_users=3 | updated_users=3 | objective=13.286793 | sum_rate=16.506016 | r_p=29.714336 | r_c=1366.444575 | r_s=0.004348 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=150/500 | active_users=3 | updated_users=3 | objective=13.601313 | sum_rate=16.943737 | r_p=29.618578 | r_c=1405.990038 | r_s=0.004367 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=155/500 | active_users=3 | updated_users=3 | objective=13.916086 | sum_rate=17.365173 | r_p=29.511154 | r_c=1444.533030 | r_s=0.004382 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=160/500 | active_users=3 | updated_users=3 | objective=14.231839 | sum_rate=17.775356 | r_p=29.395512 | r_c=1482.179053 | r_s=0.004408 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=165/500 | active_users=3 | updated_users=3 | objective=14.547119 | sum_rate=18.182581 | r_p=29.279846 | r_c=1519.315059 | r_s=0.004428 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=170/500 | active_users=3 | updated_users=3 | objective=14.859982 | sum_rate=18.584675 | r_p=29.163628 | r_c=1555.912505 | r_s=0.004425 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=175/500 | active_users=3 | updated_users=3 | objective=15.171074 | sum_rate=18.980827 | r_p=29.041367 | r_c=1591.666869 | r_s=0.004429 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=180/500 | active_users=3 | updated_users=3 | objective=15.479225 | sum_rate=19.371164 | r_p=28.915501 | r_c=1626.683332 | r_s=0.004437 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=185/500 | active_users=3 | updated_users=3 | objective=15.784180 | sum_rate=19.755445 | r_p=28.783823 | r_c=1660.814953 | r_s=0.004443 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=190/500 | active_users=3 | updated_users=3 | objective=16.084616 | sum_rate=20.129782 | r_p=28.647770 | r_c=1694.116527 | r_s=0.004443 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=195/500 | active_users=3 | updated_users=3 | objective=16.380932 | sum_rate=20.498520 | r_p=28.507887 | r_c=1726.599411 | r_s=0.004464 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=200/500 | active_users=3 | updated_users=3 | objective=16.673212 | sum_rate=20.858347 | r_p=28.360630 | r_c=1758.023094 | r_s=0.004481 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=205/500 | active_users=3 | updated_users=3 | objective=16.962200 | sum_rate=21.215073 | r_p=28.206625 | r_c=1788.387439 | r_s=0.004483 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=210/500 | active_users=3 | updated_users=3 | objective=17.245850 | sum_rate=21.567156 | r_p=28.052557 | r_c=1818.095827 | r_s=0.004503 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=215/500 | active_users=3 | updated_users=3 | objective=17.524197 | sum_rate=21.908907 | r_p=27.893089 | r_c=1846.795389 | r_s=0.004507 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=220/500 | active_users=3 | updated_users=3 | objective=17.797241 | sum_rate=22.241169 | r_p=27.727787 | r_c=1874.430384 | r_s=0.004525 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=225/500 | active_users=3 | updated_users=3 | objective=18.063375 | sum_rate=22.566404 | r_p=27.564827 | r_c=1901.538926 | r_s=0.004532 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=230/500 | active_users=3 | updated_users=3 | objective=18.322924 | sum_rate=22.880455 | r_p=27.398516 | r_c=1927.735328 | r_s=0.004524 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=235/500 | active_users=3 | updated_users=3 | objective=18.572945 | sum_rate=23.186131 | r_p=27.241138 | r_c=1953.892919 | r_s=0.004548 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=240/500 | active_users=3 | updated_users=3 | objective=18.813692 | sum_rate=23.478539 | r_p=27.087368 | r_c=1979.673213 | r_s=0.004557 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=245/500 | active_users=3 | updated_users=3 | objective=19.043110 | sum_rate=23.761711 | r_p=26.945995 | r_c=2005.758991 | r_s=0.004569 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=250/500 | active_users=3 | updated_users=3 | objective=19.259815 | sum_rate=24.033066 | r_p=26.819855 | r_c=2032.434752 | r_s=0.004580 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=255/500 | active_users=3 | updated_users=3 | objective=19.465530 | sum_rate=24.294809 | r_p=26.706383 | r_c=2059.586168 | r_s=0.004566 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=260/500 | active_users=3 | updated_users=3 | objective=19.661682 | sum_rate=24.548576 | r_p=26.602192 | r_c=2087.017128 | r_s=0.004603 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=265/500 | active_users=3 | updated_users=3 | objective=19.848776 | sum_rate=24.793293 | r_p=26.506115 | r_c=2114.683953 | r_s=0.004610 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=270/500 | active_users=3 | updated_users=3 | objective=20.027252 | sum_rate=25.028955 | r_p=26.417728 | r_c=2142.596753 | r_s=0.004629 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=275/500 | active_users=3 | updated_users=3 | objective=20.197725 | sum_rate=25.255119 | r_p=26.334988 | r_c=2170.626518 | r_s=0.004634 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=280/500 | active_users=3 | updated_users=3 | objective=20.360348 | sum_rate=25.474060 | r_p=26.258858 | r_c=2198.888416 | r_s=0.004643 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=285/500 | active_users=3 | updated_users=3 | objective=20.515303 | sum_rate=25.681484 | r_p=26.188393 | r_c=2227.335085 | r_s=0.004655 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=290/500 | active_users=3 | updated_users=3 | objective=20.665152 | sum_rate=25.882757 | r_p=26.119198 | r_c=2255.615597 | r_s=0.004669 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=295/500 | active_users=3 | updated_users=3 | objective=20.808798 | sum_rate=26.076286 | r_p=26.054014 | r_c=2283.976922 | r_s=0.004691 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=300/500 | active_users=3 | updated_users=3 | objective=20.946926 | sum_rate=26.261238 | r_p=25.990269 | r_c=2312.213286 | r_s=0.004705 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=305/500 | active_users=3 | updated_users=3 | objective=21.079659 | sum_rate=26.438145 | r_p=25.928627 | r_c=2340.392433 | r_s=0.004704 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=310/500 | active_users=3 | updated_users=3 | objective=21.207966 | sum_rate=26.607891 | r_p=25.867043 | r_c=2368.336610 | r_s=0.004727 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=315/500 | active_users=3 | updated_users=3 | objective=21.332626 | sum_rate=26.768171 | r_p=25.801800 | r_c=2395.701399 | r_s=0.004719 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=320/500 | active_users=3 | updated_users=3 | objective=21.453485 | sum_rate=26.923803 | r_p=25.736990 | r_c=2422.853398 | r_s=0.004758 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=325/500 | active_users=3 | updated_users=3 | objective=21.570253 | sum_rate=27.069174 | r_p=25.670776 | r_c=2449.621559 | r_s=0.004762 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=330/500 | active_users=3 | updated_users=3 | objective=21.684345 | sum_rate=27.211761 | r_p=25.604086 | r_c=2476.087267 | r_s=0.004792 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=335/500 | active_users=3 | updated_users=3 | objective=21.795078 | sum_rate=27.351250 | r_p=25.540249 | r_c=2502.577303 | r_s=0.004808 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=340/500 | active_users=3 | updated_users=3 | objective=21.904377 | sum_rate=27.482943 | r_p=25.468307 | r_c=2528.013866 | r_s=0.004842 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=345/500 | active_users=3 | updated_users=3 | objective=22.011269 | sum_rate=27.610950 | r_p=25.397919 | r_c=2553.334035 | r_s=0.004836 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=350/500 | active_users=3 | updated_users=3 | objective=22.117352 | sum_rate=27.737816 | r_p=25.325272 | r_c=2578.153470 | r_s=0.004850 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=355/500 | active_users=3 | updated_users=3 | objective=22.223949 | sum_rate=27.862331 | r_p=25.247650 | r_c=2602.183491 | r_s=0.004855 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=360/500 | active_users=3 | updated_users=3 | objective=22.331038 | sum_rate=27.986111 | r_p=25.168415 | r_c=2625.750131 | r_s=0.004859 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=365/500 | active_users=3 | updated_users=3 | objective=22.440987 | sum_rate=28.109108 | r_p=25.079670 | r_c=2648.009356 | r_s=0.004861 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=370/500 | active_users=3 | updated_users=3 | objective=22.554588 | sum_rate=28.232449 | r_p=24.982452 | r_c=2669.024946 | r_s=0.004881 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=375/500 | active_users=3 | updated_users=3 | objective=22.673443 | sum_rate=28.356903 | r_p=24.873634 | r_c=2688.415796 | r_s=0.004897 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=380/500 | active_users=3 | updated_users=3 | objective=22.799273 | sum_rate=28.485260 | r_p=24.750458 | r_c=2705.824815 | r_s=0.004915 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=385/500 | active_users=3 | updated_users=3 | objective=22.931370 | sum_rate=28.618134 | r_p=24.619461 | r_c=2721.908680 | r_s=0.004912 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=390/500 | active_users=3 | updated_users=3 | objective=23.071188 | sum_rate=28.757215 | r_p=24.612234 | r_c=2736.039313 | r_s=0.004937 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=395/500 | active_users=3 | updated_users=3 | objective=23.216862 | sum_rate=28.898750 | r_p=24.616924 | r_c=2748.723411 | r_s=0.004959 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=400/500 | active_users=3 | updated_users=3 | objective=23.369619 | sum_rate=29.044918 | r_p=24.627380 | r_c=2759.426663 | r_s=0.004970 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=405/500 | active_users=3 | updated_users=3 | objective=23.527386 | sum_rate=29.195053 | r_p=24.635075 | r_c=2768.992832 | r_s=0.004992 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=410/500 | active_users=3 | updated_users=3 | objective=23.690348 | sum_rate=29.352587 | r_p=24.645102 | r_c=2783.809317 | r_s=0.004997 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=415/500 | active_users=3 | updated_users=3 | objective=23.856281 | sum_rate=29.512180 | r_p=24.654057 | r_c=2815.205880 | r_s=0.005011 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=420/500 | active_users=3 | updated_users=3 | objective=24.024117 | sum_rate=29.675179 | r_p=24.662426 | r_c=2846.567165 | r_s=0.004996 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=425/500 | active_users=3 | updated_users=3 | objective=24.192436 | sum_rate=29.839996 | r_p=24.673397 | r_c=2878.264241 | r_s=0.005020 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=430/500 | active_users=3 | updated_users=3 | objective=24.357689 | sum_rate=29.999828 | r_p=24.676628 | r_c=2909.085943 | r_s=0.005012 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=435/500 | active_users=3 | updated_users=3 | objective=24.518499 | sum_rate=30.155991 | r_p=24.680954 | r_c=2940.051666 | r_s=0.005049 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=440/500 | active_users=3 | updated_users=3 | objective=24.673031 | sum_rate=30.307705 | r_p=24.683456 | r_c=2970.811387 | r_s=0.005028 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=445/500 | active_users=3 | updated_users=3 | objective=24.818422 | sum_rate=30.453127 | r_p=24.680859 | r_c=3000.958045 | r_s=0.005060 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=450/500 | active_users=3 | updated_users=3 | objective=24.953346 | sum_rate=30.594463 | r_p=24.676300 | r_c=3030.853761 | r_s=0.005068 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=455/500 | active_users=3 | updated_users=3 | objective=25.076927 | sum_rate=30.720192 | r_p=24.665058 | r_c=3059.901446 | r_s=0.005064 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=460/500 | active_users=3 | updated_users=3 | objective=25.188635 | sum_rate=30.837477 | r_p=24.649187 | r_c=3088.323736 | r_s=0.005075 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=465/500 | active_users=3 | updated_users=3 | objective=25.292118 | sum_rate=30.950480 | r_p=24.628902 | r_c=3116.127643 | r_s=0.005083 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=470/500 | active_users=3 | updated_users=3 | objective=25.386677 | sum_rate=31.057606 | r_p=24.606283 | r_c=3143.556344 | r_s=0.005102 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=475/500 | active_users=3 | updated_users=3 | objective=25.474689 | sum_rate=31.159290 | r_p=24.583593 | r_c=3170.892443 | r_s=0.005128 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=480/500 | active_users=3 | updated_users=3 | objective=25.554996 | sum_rate=31.256683 | r_p=24.554768 | r_c=3197.340052 | r_s=0.005126 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=485/500 | active_users=3 | updated_users=3 | objective=25.630289 | sum_rate=31.348240 | r_p=24.528316 | r_c=3223.996455 | r_s=0.005142 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=490/500 | active_users=3 | updated_users=3 | objective=25.700806 | sum_rate=31.435143 | r_p=24.505669 | r_c=3251.061153 | r_s=0.005142 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=495/500 | active_users=3 | updated_users=3 | objective=25.763119 | sum_rate=31.518696 | r_p=24.468960 | r_c=3276.154932 | r_s=0.005150 | status=running
+[DL Convergence] | phase=optimize | block=0 | epoch=500/500 | active_users=3 | updated_users=3 | objective=25.823750 | sum_rate=31.594643 | r_p=24.441227 | r_c=3302.331548 | r_s=0.005143 | status=running
+  user=00 block=00 serves partial bits at n=T; not reducing n_kl.
+  user=01 block=00 serves partial bits at n=T; not reducing n_kl.
+  user=02 block=00 serves partial bits at n=T; not reducing n_kl.
+[DL Convergence Allocation] | user=0 | block=0 | served_bits=354 | n_kl=50 | required_rate=7.080000 | achieved_rate=7.095727 | rate_margin=0.015727
+[DL Convergence Allocation] | user=1 | block=0 | served_bits=533 | n_kl=60 | required_rate=8.883333 | achieved_rate=8.892102 | rate_margin=0.008769
+[DL Convergence Allocation] | user=2 | block=0 | served_bits=1248 | n_kl=80 | required_rate=15.600000 | achieved_rate=15.606808 | rate_margin=0.006808
+[DL Convergence Block] | block=0 | status=complete | allocated_bits=2135 | remaining_bits=3865
+[DL Convergence Block] | block=1 | active_users=3 | remaining_bits=3865 | objective=remaining_bits_weighted_sum_rate
+    weight_strategy=remaining_bits | user_weights: u0=0.527, u1=0.878, u2=1.000
+[DL Convergence] | phase=optimize | block=1 | epoch=1/500 | active_users=3 | updated_users=3 | objective=2.743713 | sum_rate=4.717709 | r_p=24.496037 | r_c=2.449604 | r_s=0.203994 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=5/500 | active_users=3 | updated_users=3 | objective=3.007016 | sum_rate=5.054022 | r_p=24.405212 | r_c=26.321450 | r_s=0.005547 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=10/500 | active_users=3 | updated_users=3 | objective=3.359437 | sum_rate=5.491957 | r_p=24.265755 | r_c=55.716910 | r_s=0.005539 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=15/500 | active_users=3 | updated_users=3 | objective=3.738631 | sum_rate=5.952103 | r_p=24.093121 | r_c=84.473161 | r_s=0.005514 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=20/500 | active_users=3 | updated_users=3 | objective=4.145664 | sum_rate=6.439018 | r_p=23.886316 | r_c=112.426351 | r_s=0.005489 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=25/500 | active_users=3 | updated_users=3 | objective=4.577173 | sum_rate=6.944824 | r_p=23.648952 | r_c=139.443884 | r_s=0.005463 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=30/500 | active_users=3 | updated_users=3 | objective=5.028892 | sum_rate=7.464592 | r_p=23.386267 | r_c=165.427266 | r_s=0.005452 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=35/500 | active_users=3 | updated_users=3 | objective=5.497205 | sum_rate=7.996539 | r_p=23.108427 | r_c=190.355635 | r_s=0.005439 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=40/500 | active_users=3 | updated_users=3 | objective=5.977096 | sum_rate=8.541647 | r_p=22.829226 | r_c=214.304967 | r_s=0.005425 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=45/500 | active_users=3 | updated_users=3 | objective=6.459084 | sum_rate=9.087784 | r_p=22.559958 | r_c=237.405862 | r_s=0.005418 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=50/500 | active_users=3 | updated_users=3 | objective=6.933374 | sum_rate=9.623597 | r_p=22.302176 | r_c=259.733385 | r_s=0.005386 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=55/500 | active_users=3 | updated_users=3 | objective=7.393235 | sum_rate=10.140413 | r_p=22.063606 | r_c=281.450926 | r_s=0.005370 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=60/500 | active_users=3 | updated_users=3 | objective=7.838041 | sum_rate=10.644077 | r_p=21.846668 | r_c=302.687746 | r_s=0.005313 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=65/500 | active_users=3 | updated_users=3 | objective=8.267019 | sum_rate=11.132338 | r_p=21.655025 | r_c=323.602206 | r_s=0.005293 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=70/500 | active_users=3 | updated_users=3 | objective=8.675385 | sum_rate=11.596588 | r_p=21.479046 | r_c=344.151786 | r_s=0.005266 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=75/500 | active_users=3 | updated_users=3 | objective=9.064620 | sum_rate=12.042999 | r_p=21.312935 | r_c=364.308162 | r_s=0.005212 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=80/500 | active_users=3 | updated_users=3 | objective=9.437971 | sum_rate=12.474927 | r_p=21.146637 | r_c=383.930212 | r_s=0.005188 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=85/500 | active_users=3 | updated_users=3 | objective=9.798570 | sum_rate=12.891783 | r_p=20.979040 | r_c=402.999159 | r_s=0.005150 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=90/500 | active_users=3 | updated_users=3 | objective=10.149167 | sum_rate=13.293615 | r_p=20.803740 | r_c=421.381073 | r_s=0.005124 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=95/500 | active_users=3 | updated_users=3 | objective=10.496223 | sum_rate=13.686958 | r_p=20.621563 | r_c=439.067427 | r_s=0.005054 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=100/500 | active_users=3 | updated_users=3 | objective=10.844644 | sum_rate=14.083742 | r_p=20.424107 | r_c=455.842394 | r_s=0.005028 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=105/500 | active_users=3 | updated_users=3 | objective=11.197420 | sum_rate=14.484612 | r_p=20.212078 | r_c=471.665755 | r_s=0.004954 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=110/500 | active_users=3 | updated_users=3 | objective=11.558953 | sum_rate=14.895500 | r_p=19.991707 | r_c=486.639522 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=115/500 | active_users=3 | updated_users=3 | objective=11.930364 | sum_rate=15.315454 | r_p=19.762882 | r_c=500.734644 | r_s=0.004912 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=120/500 | active_users=3 | updated_users=3 | objective=12.309715 | sum_rate=15.740887 | r_p=19.521032 | r_c=513.803657 | r_s=0.004880 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=125/500 | active_users=3 | updated_users=3 | objective=12.694183 | sum_rate=16.164196 | r_p=19.257191 | r_c=525.555808 | r_s=0.004871 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=130/500 | active_users=3 | updated_users=3 | objective=13.086440 | sum_rate=16.597017 | r_p=18.971214 | r_c=535.910899 | r_s=0.004831 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=135/500 | active_users=3 | updated_users=3 | objective=13.487114 | sum_rate=17.040028 | r_p=18.668800 | r_c=544.965450 | r_s=0.004773 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=140/500 | active_users=3 | updated_users=3 | objective=13.892523 | sum_rate=17.490250 | r_p=18.351324 | r_c=552.712472 | r_s=0.004701 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=145/500 | active_users=3 | updated_users=3 | objective=14.299294 | sum_rate=17.940380 | r_p=18.031216 | r_c=559.499900 | r_s=0.004709 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=150/500 | active_users=3 | updated_users=3 | objective=14.701797 | sum_rate=18.385868 | r_p=17.719463 | r_c=565.689626 | r_s=0.004750 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=155/500 | active_users=3 | updated_users=3 | objective=15.095016 | sum_rate=18.816362 | r_p=17.437344 | r_c=572.031486 | r_s=0.004640 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=160/500 | active_users=3 | updated_users=3 | objective=15.471046 | sum_rate=19.229008 | r_p=17.185781 | r_c=578.673783 | r_s=0.004646 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=165/500 | active_users=3 | updated_users=3 | objective=15.824684 | sum_rate=19.618999 | r_p=16.967625 | r_c=585.831358 | r_s=0.004577 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=170/500 | active_users=3 | updated_users=3 | objective=16.156706 | sum_rate=19.984146 | r_p=16.785479 | r_c=593.719480 | r_s=0.004529 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=175/500 | active_users=3 | updated_users=3 | objective=16.467411 | sum_rate=20.323452 | r_p=16.630428 | r_c=602.139465 | r_s=0.004503 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=180/500 | active_users=3 | updated_users=3 | objective=16.758945 | sum_rate=20.642042 | r_p=16.496502 | r_c=610.962645 | r_s=0.004477 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=185/500 | active_users=3 | updated_users=3 | objective=17.033722 | sum_rate=20.944790 | r_p=16.372753 | r_c=619.843370 | r_s=0.004440 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=190/500 | active_users=3 | updated_users=3 | objective=17.290495 | sum_rate=21.224293 | r_p=16.249229 | r_c=628.429069 | r_s=0.004399 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=195/500 | active_users=3 | updated_users=3 | objective=17.533888 | sum_rate=21.490520 | r_p=16.128761 | r_c=636.835294 | r_s=0.004347 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=200/500 | active_users=3 | updated_users=3 | objective=17.764751 | sum_rate=21.741688 | r_p=16.012932 | r_c=645.137849 | r_s=0.004284 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=205/500 | active_users=3 | updated_users=3 | objective=17.983791 | sum_rate=21.978401 | r_p=15.898889 | r_c=653.236162 | r_s=0.004280 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=210/500 | active_users=3 | updated_users=3 | objective=18.193768 | sum_rate=22.206451 | r_p=15.790776 | r_c=661.312352 | r_s=0.004273 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=215/500 | active_users=3 | updated_users=3 | objective=18.395504 | sum_rate=22.427525 | r_p=15.687263 | r_c=669.330200 | r_s=0.004236 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=220/500 | active_users=3 | updated_users=3 | objective=18.589457 | sum_rate=22.639206 | r_p=15.585437 | r_c=677.177993 | r_s=0.004202 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=225/500 | active_users=3 | updated_users=3 | objective=18.776426 | sum_rate=22.840843 | r_p=15.487845 | r_c=684.977097 | r_s=0.004164 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=230/500 | active_users=3 | updated_users=3 | objective=18.957708 | sum_rate=23.037556 | r_p=15.392824 | r_c=692.665432 | r_s=0.004136 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=235/500 | active_users=3 | updated_users=3 | objective=19.133711 | sum_rate=23.227236 | r_p=15.300514 | r_c=700.259292 | r_s=0.004104 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=240/500 | active_users=3 | updated_users=3 | objective=19.303696 | sum_rate=23.409964 | r_p=15.208012 | r_c=707.632028 | r_s=0.004063 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=245/500 | active_users=3 | updated_users=3 | objective=19.469799 | sum_rate=23.589993 | r_p=15.121176 | r_c=715.063160 | r_s=0.004017 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=250/500 | active_users=3 | updated_users=3 | objective=19.631119 | sum_rate=23.763754 | r_p=15.036653 | r_c=722.408938 | r_s=0.003977 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=255/500 | active_users=3 | updated_users=3 | objective=19.788433 | sum_rate=23.933468 | r_p=14.956820 | r_c=729.794304 | r_s=0.003945 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=260/500 | active_users=3 | updated_users=3 | objective=19.941036 | sum_rate=24.097820 | r_p=14.878959 | r_c=737.099054 | r_s=0.003954 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=265/500 | active_users=3 | updated_users=3 | objective=20.090572 | sum_rate=24.259895 | r_p=14.804977 | r_c=744.426149 | r_s=0.003876 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=270/500 | active_users=3 | updated_users=3 | objective=20.235371 | sum_rate=24.415688 | r_p=14.731881 | r_c=751.634290 | r_s=0.003858 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=275/500 | active_users=3 | updated_users=3 | objective=20.376219 | sum_rate=24.566364 | r_p=14.660189 | r_c=758.754000 | r_s=0.003814 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=280/500 | active_users=3 | updated_users=3 | objective=20.513214 | sum_rate=24.713268 | r_p=14.589662 | r_c=765.777633 | r_s=0.003760 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=285/500 | active_users=3 | updated_users=3 | objective=20.646225 | sum_rate=24.855415 | r_p=14.521962 | r_c=772.797689 | r_s=0.003766 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=290/500 | active_users=3 | updated_users=3 | objective=20.775915 | sum_rate=24.994831 | r_p=14.455583 | r_c=779.742135 | r_s=0.003705 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=295/500 | active_users=3 | updated_users=3 | objective=20.902523 | sum_rate=25.129841 | r_p=14.392383 | r_c=786.717200 | r_s=0.003702 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=300/500 | active_users=3 | updated_users=3 | objective=21.025955 | sum_rate=25.260708 | r_p=14.329475 | r_c=793.572267 | r_s=0.003663 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=305/500 | active_users=3 | updated_users=3 | objective=21.146864 | sum_rate=25.387993 | r_p=14.271341 | r_c=800.561150 | r_s=0.003689 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=310/500 | active_users=3 | updated_users=3 | objective=21.265366 | sum_rate=25.513418 | r_p=14.213835 | r_c=807.461006 | r_s=0.003763 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=315/500 | active_users=3 | updated_users=3 | objective=21.382015 | sum_rate=25.637350 | r_p=14.159126 | r_c=814.399719 | r_s=0.003834 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=320/500 | active_users=3 | updated_users=3 | objective=21.497255 | sum_rate=25.760433 | r_p=14.107688 | r_c=821.413879 | r_s=0.003811 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=325/500 | active_users=3 | updated_users=3 | objective=21.610905 | sum_rate=25.879457 | r_p=14.058487 | r_c=828.451506 | r_s=0.003861 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=330/500 | active_users=3 | updated_users=3 | objective=21.724207 | sum_rate=25.999878 | r_p=14.013120 | r_c=835.615298 | r_s=0.003886 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=335/500 | active_users=3 | updated_users=3 | objective=21.837914 | sum_rate=26.119106 | r_p=13.974046 | r_c=843.065294 | r_s=0.003968 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=340/500 | active_users=3 | updated_users=3 | objective=21.949917 | sum_rate=26.236219 | r_p=13.932304 | r_c=850.269734 | r_s=0.003891 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=345/500 | active_users=3 | updated_users=3 | objective=22.063004 | sum_rate=26.352978 | r_p=13.893236 | r_c=857.553226 | r_s=0.003940 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=350/500 | active_users=3 | updated_users=3 | objective=22.178036 | sum_rate=26.474428 | r_p=13.857983 | r_c=864.994427 | r_s=0.003951 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=355/500 | active_users=3 | updated_users=3 | objective=22.293873 | sum_rate=26.593525 | r_p=13.824914 | r_c=872.500178 | r_s=0.003986 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=360/500 | active_users=3 | updated_users=3 | objective=22.410679 | sum_rate=26.714516 | r_p=13.791034 | r_c=879.885002 | r_s=0.004060 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=365/500 | active_users=3 | updated_users=3 | objective=22.532139 | sum_rate=26.840462 | r_p=13.767843 | r_c=887.892590 | r_s=0.004011 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=370/500 | active_users=3 | updated_users=3 | objective=22.655762 | sum_rate=26.966042 | r_p=13.747189 | r_c=896.017937 | r_s=0.004046 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=375/500 | active_users=3 | updated_users=3 | objective=22.782461 | sum_rate=27.095650 | r_p=13.728359 | r_c=904.221727 | r_s=0.004063 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=380/500 | active_users=3 | updated_users=3 | objective=22.912491 | sum_rate=27.228714 | r_p=13.711472 | r_c=912.516772 | r_s=0.004097 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=385/500 | active_users=3 | updated_users=3 | objective=23.045612 | sum_rate=27.365429 | r_p=13.696590 | r_c=920.912278 | r_s=0.004117 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=390/500 | active_users=3 | updated_users=3 | objective=23.179657 | sum_rate=27.499168 | r_p=13.680752 | r_c=929.211919 | r_s=0.004147 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=395/500 | active_users=3 | updated_users=3 | objective=23.314606 | sum_rate=27.633087 | r_p=13.664728 | r_c=937.466906 | r_s=0.004205 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=400/500 | active_users=3 | updated_users=3 | objective=23.450035 | sum_rate=27.769037 | r_p=13.650419 | r_c=945.807720 | r_s=0.004195 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=405/500 | active_users=3 | updated_users=3 | objective=23.585037 | sum_rate=27.903078 | r_p=13.636290 | r_c=954.131805 | r_s=0.004238 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=410/500 | active_users=3 | updated_users=3 | objective=23.718525 | sum_rate=28.039276 | r_p=13.623643 | r_c=962.531829 | r_s=0.004229 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=415/500 | active_users=3 | updated_users=3 | objective=23.848131 | sum_rate=28.168930 | r_p=13.606810 | r_c=970.606821 | r_s=0.004281 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=420/500 | active_users=3 | updated_users=3 | objective=23.976570 | sum_rate=28.300926 | r_p=13.593911 | r_c=978.931861 | r_s=0.004253 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=425/500 | active_users=3 | updated_users=3 | objective=24.101044 | sum_rate=28.428432 | r_p=13.580097 | r_c=987.163672 | r_s=0.004284 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=430/500 | active_users=3 | updated_users=3 | objective=24.219975 | sum_rate=28.550003 | r_p=13.561951 | r_c=995.047971 | r_s=0.004331 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=435/500 | active_users=3 | updated_users=3 | objective=24.334583 | sum_rate=28.667412 | r_p=13.546746 | r_c=1003.113841 | r_s=0.004312 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=440/500 | active_users=3 | updated_users=3 | objective=24.444080 | sum_rate=28.779160 | r_p=13.530168 | r_c=1011.045806 | r_s=0.004328 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=445/500 | active_users=3 | updated_users=3 | objective=24.547527 | sum_rate=28.885756 | r_p=13.512146 | r_c=1018.835306 | r_s=0.004353 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=450/500 | active_users=3 | updated_users=3 | objective=24.646570 | sum_rate=28.988956 | r_p=13.496196 | r_c=1026.746184 | r_s=0.004378 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=455/500 | active_users=3 | updated_users=3 | objective=24.739624 | sum_rate=29.085922 | r_p=13.479627 | r_c=1034.577556 | r_s=0.004388 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=460/500 | active_users=3 | updated_users=3 | objective=24.829294 | sum_rate=29.181082 | r_p=13.466955 | r_c=1042.678230 | r_s=0.004400 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=465/500 | active_users=3 | updated_users=3 | objective=24.913177 | sum_rate=29.269855 | r_p=13.451498 | r_c=1050.534968 | r_s=0.004431 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=470/500 | active_users=3 | updated_users=3 | objective=24.992790 | sum_rate=29.354816 | r_p=13.437736 | r_c=1058.494164 | r_s=0.004447 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=475/500 | active_users=3 | updated_users=3 | objective=25.067247 | sum_rate=29.432178 | r_p=13.419274 | r_c=1066.051150 | r_s=0.004474 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=480/500 | active_users=3 | updated_users=3 | objective=25.136677 | sum_rate=29.505985 | r_p=13.398881 | r_c=1073.415674 | r_s=0.004522 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=485/500 | active_users=3 | updated_users=3 | objective=25.203060 | sum_rate=29.576862 | r_p=13.381066 | r_c=1080.949133 | r_s=0.004437 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=490/500 | active_users=3 | updated_users=3 | objective=25.266455 | sum_rate=29.645306 | r_p=13.365629 | r_c=1088.640462 | r_s=0.004521 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=495/500 | active_users=3 | updated_users=3 | objective=25.325623 | sum_rate=29.707375 | r_p=13.347408 | r_c=1096.071459 | r_s=0.004557 | status=running
+[DL Convergence] | phase=optimize | block=1 | epoch=500/500 | active_users=3 | updated_users=3 | objective=25.383362 | sum_rate=29.771648 | r_p=13.330022 | r_c=1103.535223 | r_s=0.004543 | status=running
+  user=00 block=01 serves partial bits at n=T; not reducing n_kl.
+  user=01 block=01 serves partial bits at n=T; not reducing n_kl.
+  user=02 block=01 serves partial bits at n=T; not reducing n_kl.
+[DL Convergence Allocation] | user=0 | block=1 | served_bits=320 | n_kl=50 | required_rate=6.400000 | achieved_rate=6.403125 | rate_margin=0.003125
+[DL Convergence Allocation] | user=1 | block=1 | served_bits=667 | n_kl=60 | required_rate=11.116667 | achieved_rate=11.119990 | rate_margin=0.003323
+[DL Convergence Allocation] | user=2 | block=1 | served_bits=979 | n_kl=80 | required_rate=12.237500 | achieved_rate=12.248558 | rate_margin=0.011058
+[DL Convergence Block] | block=1 | status=complete | allocated_bits=1966 | remaining_bits=1899
+[DL Convergence Block] | block=2 | active_users=3 | remaining_bits=1899 | objective=remaining_bits_weighted_sum_rate
+    weight_strategy=remaining_bits | user_weights: u0=0.556, u1=1.000, u2=0.975
+[DL Convergence] | phase=optimize | block=2 | epoch=1/500 | active_users=3 | updated_users=3 | objective=4.265181 | sum_rate=6.020757 | r_p=11.508219 | r_c=1.150822 | r_s=0.201884 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=5/500 | active_users=3 | updated_users=3 | objective=4.653461 | sum_rate=6.445561 | r_p=11.206095 | r_c=6.228951 | r_s=0.004985 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=10/500 | active_users=3 | updated_users=3 | objective=5.167220 | sum_rate=7.003400 | r_p=10.804417 | r_c=11.973806 | r_s=0.004961 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=15/500 | active_users=3 | updated_users=3 | objective=5.705181 | sum_rate=7.585408 | r_p=10.381329 | r_c=17.025813 | r_s=0.004924 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=20/500 | active_users=3 | updated_users=3 | objective=6.253220 | sum_rate=8.177871 | r_p=9.961506 | r_c=21.423882 | r_s=0.004922 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=25/500 | active_users=3 | updated_users=3 | objective=6.791656 | sum_rate=8.763112 | r_p=9.566210 | r_c=25.261405 | r_s=0.004907 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=30/500 | active_users=3 | updated_users=3 | objective=7.298881 | sum_rate=9.321028 | r_p=9.222475 | r_c=28.698998 | r_s=0.004894 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=35/500 | active_users=3 | updated_users=3 | objective=7.763624 | sum_rate=9.839817 | r_p=8.937210 | r_c=31.879376 | r_s=0.004870 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=40/500 | active_users=3 | updated_users=3 | objective=8.187282 | sum_rate=10.313449 | r_p=8.709723 | r_c=34.918056 | r_s=0.004866 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=45/500 | active_users=3 | updated_users=3 | objective=8.602028 | sum_rate=10.779816 | r_p=8.530303 | r_c=37.881961 | r_s=0.004847 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=50/500 | active_users=3 | updated_users=3 | objective=9.017773 | sum_rate=11.240466 | r_p=8.365635 | r_c=40.690959 | r_s=0.004847 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=55/500 | active_users=3 | updated_users=3 | objective=9.437887 | sum_rate=11.700117 | r_p=8.205017 | r_c=43.315190 | r_s=0.004800 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=60/500 | active_users=3 | updated_users=3 | objective=9.861683 | sum_rate=12.158243 | r_p=8.052114 | r_c=45.786302 | r_s=0.004770 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=65/500 | active_users=3 | updated_users=3 | objective=10.288979 | sum_rate=12.616835 | r_p=7.907118 | r_c=48.122350 | r_s=0.004753 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=70/500 | active_users=3 | updated_users=3 | objective=10.715200 | sum_rate=13.070048 | r_p=7.764857 | r_c=50.304108 | r_s=0.004728 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=75/500 | active_users=3 | updated_users=3 | objective=11.139366 | sum_rate=13.520306 | r_p=7.624635 | r_c=52.334540 | r_s=0.004727 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=80/500 | active_users=3 | updated_users=3 | objective=11.557983 | sum_rate=13.963986 | r_p=7.485014 | r_c=54.208874 | r_s=0.004702 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=85/500 | active_users=3 | updated_users=3 | objective=11.964340 | sum_rate=14.390463 | r_p=7.345402 | r_c=55.926397 | r_s=0.004662 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=90/500 | active_users=3 | updated_users=3 | objective=12.359868 | sum_rate=14.806329 | r_p=7.208668 | r_c=57.512838 | r_s=0.004649 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=95/500 | active_users=3 | updated_users=3 | objective=12.742384 | sum_rate=15.209007 | r_p=7.074482 | r_c=58.972910 | r_s=0.004610 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=100/500 | active_users=3 | updated_users=3 | objective=13.115438 | sum_rate=15.602100 | r_p=6.946140 | r_c=60.342152 | r_s=0.004593 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=105/500 | active_users=3 | updated_users=3 | objective=13.481162 | sum_rate=15.986173 | r_p=6.824021 | r_c=61.634555 | r_s=0.004567 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=110/500 | active_users=3 | updated_users=3 | objective=13.840445 | sum_rate=16.360319 | r_p=6.703112 | r_c=62.813394 | r_s=0.004540 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=115/500 | active_users=3 | updated_users=3 | objective=14.195552 | sum_rate=16.727776 | r_p=6.586353 | r_c=63.911264 | r_s=0.004494 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=120/500 | active_users=3 | updated_users=3 | objective=14.550167 | sum_rate=17.095589 | r_p=6.474372 | r_c=64.942307 | r_s=0.004470 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=125/500 | active_users=3 | updated_users=3 | objective=14.900938 | sum_rate=17.458216 | r_p=6.361615 | r_c=65.856308 | r_s=0.004447 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=130/500 | active_users=3 | updated_users=3 | objective=15.245720 | sum_rate=17.813440 | r_p=6.250803 | r_c=66.683564 | r_s=0.004434 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=135/500 | active_users=3 | updated_users=3 | objective=15.583706 | sum_rate=18.161640 | r_p=6.142015 | r_c=67.429321 | r_s=0.004370 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=140/500 | active_users=3 | updated_users=3 | objective=15.912250 | sum_rate=18.499182 | r_p=6.032526 | r_c=68.066789 | r_s=0.004350 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=145/500 | active_users=3 | updated_users=3 | objective=16.229340 | sum_rate=18.823879 | r_p=5.923295 | r_c=68.608108 | r_s=0.004307 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=150/500 | active_users=3 | updated_users=3 | objective=16.535957 | sum_rate=19.140255 | r_p=5.812435 | r_c=69.032699 | r_s=0.004268 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=155/500 | active_users=3 | updated_users=3 | objective=16.830002 | sum_rate=19.444422 | r_p=5.695682 | r_c=69.288155 | r_s=0.004214 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=160/500 | active_users=3 | updated_users=3 | objective=17.113626 | sum_rate=19.740334 | r_p=5.579500 | r_c=69.450788 | r_s=0.004152 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=165/500 | active_users=3 | updated_users=3 | objective=17.386522 | sum_rate=20.027554 | r_p=5.463181 | r_c=69.514248 | r_s=0.004157 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=170/500 | active_users=3 | updated_users=3 | objective=17.648178 | sum_rate=20.304209 | r_p=5.345707 | r_c=69.467041 | r_s=0.004052 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=175/500 | active_users=3 | updated_users=3 | objective=17.901741 | sum_rate=20.576641 | r_p=5.228790 | r_c=69.332890 | r_s=0.004042 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=180/500 | active_users=3 | updated_users=3 | objective=18.148388 | sum_rate=20.845041 | r_p=5.115067 | r_c=69.150396 | r_s=0.004023 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=185/500 | active_users=3 | updated_users=3 | objective=18.391384 | sum_rate=21.114727 | r_p=5.003931 | r_c=68.916535 | r_s=0.003986 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=190/500 | active_users=3 | updated_users=3 | objective=18.625298 | sum_rate=21.371174 | r_p=4.893413 | r_c=68.607869 | r_s=0.003955 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=195/500 | active_users=3 | updated_users=3 | objective=18.852207 | sum_rate=21.619709 | r_p=4.784196 | r_c=68.236656 | r_s=0.003886 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=200/500 | active_users=3 | updated_users=3 | objective=19.071571 | sum_rate=21.858467 | r_p=4.674104 | r_c=67.774152 | r_s=0.003937 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=205/500 | active_users=3 | updated_users=3 | objective=19.289776 | sum_rate=22.100899 | r_p=4.568884 | r_c=67.306584 | r_s=0.003906 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=210/500 | active_users=3 | updated_users=3 | objective=19.500435 | sum_rate=22.332647 | r_p=4.464032 | r_c=66.772286 | r_s=0.003870 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=215/500 | active_users=3 | updated_users=3 | objective=19.708014 | sum_rate=22.564014 | r_p=4.360659 | r_c=66.190307 | r_s=0.003838 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=220/500 | active_users=3 | updated_users=3 | objective=19.910698 | sum_rate=22.789913 | r_p=4.257813 | r_c=65.548787 | r_s=0.003860 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=225/500 | active_users=3 | updated_users=3 | objective=20.105591 | sum_rate=23.004772 | r_p=4.153635 | r_c=64.820623 | r_s=0.003809 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=230/500 | active_users=3 | updated_users=3 | objective=20.294441 | sum_rate=23.211006 | r_p=4.049857 | r_c=64.033768 | r_s=0.003800 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=235/500 | active_users=3 | updated_users=3 | objective=20.479124 | sum_rate=23.411781 | r_p=3.951375 | r_c=63.268932 | r_s=0.003778 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=240/500 | active_users=3 | updated_users=3 | objective=20.657179 | sum_rate=23.603779 | r_p=3.851708 | r_c=62.426385 | r_s=0.003776 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=245/500 | active_users=3 | updated_users=3 | objective=20.827480 | sum_rate=23.782536 | r_p=3.753454 | r_c=61.549402 | r_s=0.003763 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=250/500 | active_users=3 | updated_users=3 | objective=20.991211 | sum_rate=23.951073 | r_p=3.654673 | r_c=60.608062 | r_s=0.003747 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=255/500 | active_users=3 | updated_users=3 | objective=21.152851 | sum_rate=24.118406 | r_p=3.556912 | r_c=59.629865 | r_s=0.003741 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=260/500 | active_users=3 | updated_users=3 | objective=21.310753 | sum_rate=24.280937 | r_p=3.459002 | r_c=58.596829 | r_s=0.003734 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=265/500 | active_users=3 | updated_users=3 | objective=21.463982 | sum_rate=24.436325 | r_p=3.361206 | r_c=57.514876 | r_s=0.003725 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=270/500 | active_users=3 | updated_users=3 | objective=21.619694 | sum_rate=24.601028 | r_p=3.264806 | r_c=56.407790 | r_s=0.003683 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=275/500 | active_users=3 | updated_users=3 | objective=21.768574 | sum_rate=24.752710 | r_p=3.165234 | r_c=55.197777 | r_s=0.003662 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=280/500 | active_users=3 | updated_users=3 | objective=21.916775 | sum_rate=24.907017 | r_p=3.060609 | r_c=53.851285 | r_s=0.003693 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=285/500 | active_users=3 | updated_users=3 | objective=22.061565 | sum_rate=25.056240 | r_p=2.949019 | r_c=52.332602 | r_s=0.003676 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=290/500 | active_users=3 | updated_users=3 | objective=22.205578 | sum_rate=25.202822 | r_p=2.830874 | r_c=50.646765 | r_s=0.003664 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=295/500 | active_users=3 | updated_users=3 | objective=22.344858 | sum_rate=25.336971 | r_p=2.700020 | r_c=48.680839 | r_s=0.003655 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=300/500 | active_users=3 | updated_users=3 | objective=22.485584 | sum_rate=25.469913 | r_p=2.559175 | r_c=46.479785 | r_s=0.003706 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=305/500 | active_users=3 | updated_users=3 | objective=22.628132 | sum_rate=25.600380 | r_p=2.408444 | r_c=44.043300 | r_s=0.003703 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=310/500 | active_users=3 | updated_users=3 | objective=22.775291 | sum_rate=25.734459 | r_p=2.246483 | r_c=41.344845 | r_s=0.003797 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=315/500 | active_users=3 | updated_users=3 | objective=22.923130 | sum_rate=25.864441 | r_p=2.073812 | r_c=38.392776 | r_s=0.003838 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=320/500 | active_users=3 | updated_users=3 | objective=23.074932 | sum_rate=25.997845 | r_p=1.900966 | r_c=35.383374 | r_s=0.003855 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=325/500 | active_users=3 | updated_users=3 | objective=23.226910 | sum_rate=26.130524 | r_p=1.726598 | r_c=32.295851 | r_s=0.003790 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=330/500 | active_users=3 | updated_users=3 | objective=23.377193 | sum_rate=26.260983 | r_p=1.554124 | r_c=29.198564 | r_s=0.003818 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=335/500 | active_users=3 | updated_users=3 | objective=23.530159 | sum_rate=26.399662 | r_p=1.391548 | r_c=26.247717 | r_s=0.003853 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=340/500 | active_users=3 | updated_users=3 | objective=23.680973 | sum_rate=26.539095 | r_p=1.235022 | r_c=23.377280 | r_s=0.003962 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=345/500 | active_users=3 | updated_users=3 | objective=23.829092 | sum_rate=26.681007 | r_p=1.162057 | r_c=20.627539 | r_s=0.003938 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=350/500 | active_users=3 | updated_users=3 | objective=23.971481 | sum_rate=26.815800 | r_p=1.147968 | r_c=18.044718 | r_s=0.004004 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=355/500 | active_users=3 | updated_users=3 | objective=24.113216 | sum_rate=26.955841 | r_p=1.131528 | r_c=15.987623 | r_s=0.004030 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=360/500 | active_users=3 | updated_users=3 | objective=24.250526 | sum_rate=27.092083 | r_p=1.112927 | r_c=15.787441 | r_s=0.004078 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=365/500 | active_users=3 | updated_users=3 | objective=24.384790 | sum_rate=27.226219 | r_p=1.090414 | r_c=15.528306 | r_s=0.004201 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=370/500 | active_users=3 | updated_users=3 | objective=24.515377 | sum_rate=27.356426 | r_p=1.067293 | r_c=15.256795 | r_s=0.004246 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=375/500 | active_users=3 | updated_users=3 | objective=24.644217 | sum_rate=27.488083 | r_p=1.043921 | r_c=14.977917 | r_s=0.004270 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=380/500 | active_users=3 | updated_users=3 | objective=24.768677 | sum_rate=27.613508 | r_p=1.021433 | r_c=14.708134 | r_s=0.004344 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=385/500 | active_users=3 | updated_users=3 | objective=24.888763 | sum_rate=27.732361 | r_p=0.997717 | r_c=14.417132 | r_s=0.004343 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=390/500 | active_users=3 | updated_users=3 | objective=25.006792 | sum_rate=27.851622 | r_p=0.976536 | r_c=14.159334 | r_s=0.004457 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=395/500 | active_users=3 | updated_users=3 | objective=25.116768 | sum_rate=27.977898 | r_p=0.932716 | r_c=13.569111 | r_s=0.004451 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=400/500 | active_users=3 | updated_users=3 | objective=25.210030 | sum_rate=28.095642 | r_p=0.883860 | r_c=12.899137 | r_s=0.004467 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=405/500 | active_users=3 | updated_users=3 | objective=25.291317 | sum_rate=28.188801 | r_p=0.842916 | r_c=12.338107 | r_s=0.004485 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=410/500 | active_users=3 | updated_users=3 | objective=25.358509 | sum_rate=28.283703 | r_p=0.778044 | r_c=11.420329 | r_s=0.004505 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=415/500 | active_users=3 | updated_users=3 | objective=25.432335 | sum_rate=28.365105 | r_p=0.747458 | r_c=11.000013 | r_s=0.004535 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=420/500 | active_users=3 | updated_users=3 | objective=25.495113 | sum_rate=28.453033 | r_p=0.688041 | r_c=10.150485 | r_s=0.004543 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=425/500 | active_users=3 | updated_users=3 | objective=25.552492 | sum_rate=28.530880 | r_p=0.630877 | r_c=9.328160 | r_s=0.004545 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=430/500 | active_users=3 | updated_users=3 | objective=25.620205 | sum_rate=28.598177 | r_p=0.603067 | r_c=8.935664 | r_s=0.004493 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=435/500 | active_users=3 | updated_users=3 | objective=25.673674 | sum_rate=28.669487 | r_p=0.543759 | r_c=8.072662 | r_s=0.004582 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=440/500 | active_users=3 | updated_users=3 | objective=25.725582 | sum_rate=28.740221 | r_p=0.488583 | r_c=7.266555 | r_s=0.004595 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=445/500 | active_users=3 | updated_users=3 | objective=25.789494 | sum_rate=28.801579 | r_p=0.463888 | r_c=6.910392 | r_s=0.004531 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=450/500 | active_users=3 | updated_users=3 | objective=25.838764 | sum_rate=28.865505 | r_p=0.402947 | r_c=6.011442 | r_s=0.004623 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=455/500 | active_users=3 | updated_users=3 | objective=25.901329 | sum_rate=28.924286 | r_p=0.374681 | r_c=5.597088 | r_s=0.004503 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=460/500 | active_users=3 | updated_users=3 | objective=25.948830 | sum_rate=28.982689 | r_p=0.313442 | r_c=4.687677 | r_s=0.004587 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=465/500 | active_users=3 | updated_users=3 | objective=25.996937 | sum_rate=29.042686 | r_p=0.252725 | r_c=3.783274 | r_s=0.004670 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=470/500 | active_users=3 | updated_users=3 | objective=26.059261 | sum_rate=29.096844 | r_p=0.222333 | r_c=3.270128 | r_s=0.004527 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=475/500 | active_users=3 | updated_users=3 | objective=26.108181 | sum_rate=29.154518 | r_p=0.206701 | r_c=2.202066 | r_s=0.004703 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=480/500 | active_users=3 | updated_users=3 | objective=26.172186 | sum_rate=29.209085 | r_p=0.230277 | r_c=1.586743 | r_s=0.004621 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=485/500 | active_users=3 | updated_users=3 | objective=26.229118 | sum_rate=29.273914 | r_p=0.217047 | r_c=0.852505 | r_s=0.004746 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=490/500 | active_users=3 | updated_users=3 | objective=26.279320 | sum_rate=29.351007 | r_p=0.158621 | r_c=0.624554 | r_s=0.004749 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=495/500 | active_users=3 | updated_users=3 | objective=26.337490 | sum_rate=29.426516 | r_p=0.118720 | r_c=0.468288 | r_s=0.004731 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=500/500 | active_users=3 | updated_users=3 | objective=26.389349 | sum_rate=29.536608 | r_p=0.008204 | r_c=0.157907 | r_s=0.004966 | status=running
+  user=01 block=02 serves partial bits at n=T; not reducing n_kl.
+[DL Convergence Reduction] | block=2 | epoch=1 | users=[0, 2]
+  user=00 block=02 candidate n_kl=  49 breaks committed-user feasibility [0]; trying fresh re-optimization.
+[DL Convergence] | phase=optimize | block=2 | epoch=1/500 | active_users=3 | updated_users=1 | objective=26.383297 | sum_rate=29.531898 | r_p=0.118845 | r_c=0.469216 | r_s=0.004505 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=5/500 | active_users=3 | updated_users=1 | objective=26.398685 | sum_rate=29.564112 | r_p=0.080513 | r_c=0.318196 | r_s=0.004641 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=10/500 | active_users=3 | updated_users=1 | objective=26.420002 | sum_rate=29.606552 | r_p=0.032729 | r_c=0.129428 | r_s=0.004663 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=15/500 | active_users=3 | updated_users=1 | objective=26.440750 | sum_rate=29.642004 | r_p=0.000000 | r_c=0.000000 | r_s=0.004204 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=20/500 | active_users=3 | updated_users=1 | objective=26.479210 | sum_rate=29.704782 | r_p=0.000000 | r_c=0.000000 | r_s=0.004700 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=25/500 | active_users=3 | updated_users=1 | objective=26.514227 | sum_rate=29.763742 | r_p=0.000000 | r_c=0.000000 | r_s=0.004702 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=30/500 | active_users=3 | updated_users=1 | objective=26.547611 | sum_rate=29.817892 | r_p=0.000000 | r_c=0.000000 | r_s=0.004700 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=35/500 | active_users=3 | updated_users=1 | objective=26.579239 | sum_rate=29.869827 | r_p=0.000000 | r_c=0.000000 | r_s=0.004705 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=40/500 | active_users=3 | updated_users=1 | objective=26.609573 | sum_rate=29.920267 | r_p=0.000000 | r_c=0.000000 | r_s=0.004703 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=45/500 | active_users=3 | updated_users=1 | objective=26.638514 | sum_rate=29.968866 | r_p=0.000000 | r_c=0.000000 | r_s=0.004702 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=50/500 | active_users=3 | updated_users=1 | objective=26.661386 | sum_rate=30.001156 | r_p=0.000000 | r_c=0.000000 | r_s=0.004707 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=55/500 | active_users=3 | updated_users=1 | objective=26.688492 | sum_rate=30.046204 | r_p=0.000000 | r_c=0.000000 | r_s=0.004706 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=60/500 | active_users=3 | updated_users=1 | objective=26.713692 | sum_rate=30.087677 | r_p=0.000000 | r_c=0.000000 | r_s=0.004707 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=65/500 | active_users=3 | updated_users=1 | objective=26.738220 | sum_rate=30.129025 | r_p=0.000000 | r_c=0.000000 | r_s=0.004699 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=70/500 | active_users=3 | updated_users=1 | objective=26.761486 | sum_rate=30.166552 | r_p=0.000000 | r_c=0.000000 | r_s=0.004704 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=75/500 | active_users=3 | updated_users=1 | objective=26.783285 | sum_rate=30.201378 | r_p=0.000000 | r_c=0.000000 | r_s=0.004702 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=80/500 | active_users=3 | updated_users=1 | objective=26.804039 | sum_rate=30.235630 | r_p=0.000000 | r_c=0.000000 | r_s=0.004698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=85/500 | active_users=3 | updated_users=1 | objective=26.823921 | sum_rate=30.265791 | r_p=0.000000 | r_c=0.000000 | r_s=0.004703 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=90/500 | active_users=3 | updated_users=1 | objective=26.842587 | sum_rate=30.295261 | r_p=0.000000 | r_c=0.000000 | r_s=0.004689 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=95/500 | active_users=3 | updated_users=1 | objective=26.860472 | sum_rate=30.322672 | r_p=0.000000 | r_c=0.000000 | r_s=0.004707 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=100/500 | active_users=3 | updated_users=1 | objective=26.877621 | sum_rate=30.346851 | r_p=0.000000 | r_c=0.000000 | r_s=0.004697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=105/500 | active_users=3 | updated_users=1 | objective=26.893965 | sum_rate=30.372250 | r_p=0.000000 | r_c=0.000000 | r_s=0.004711 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=110/500 | active_users=3 | updated_users=1 | objective=26.909746 | sum_rate=30.395239 | r_p=0.000000 | r_c=0.000000 | r_s=0.004698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=115/500 | active_users=3 | updated_users=1 | objective=26.925365 | sum_rate=30.417191 | r_p=0.000000 | r_c=0.000000 | r_s=0.004715 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=120/500 | active_users=3 | updated_users=1 | objective=26.939850 | sum_rate=30.438927 | r_p=0.000000 | r_c=0.000000 | r_s=0.004720 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=125/500 | active_users=3 | updated_users=1 | objective=26.954037 | sum_rate=30.457970 | r_p=0.000000 | r_c=0.000000 | r_s=0.004718 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=130/500 | active_users=3 | updated_users=1 | objective=26.967670 | sum_rate=30.475441 | r_p=0.000000 | r_c=0.000000 | r_s=0.004696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=135/500 | active_users=3 | updated_users=1 | objective=26.980259 | sum_rate=30.491901 | r_p=0.000000 | r_c=0.000000 | r_s=0.004741 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=140/500 | active_users=3 | updated_users=1 | objective=26.992685 | sum_rate=30.508974 | r_p=0.000000 | r_c=0.000000 | r_s=0.004738 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=145/500 | active_users=3 | updated_users=1 | objective=27.004145 | sum_rate=30.524231 | r_p=0.000000 | r_c=0.000000 | r_s=0.004729 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=150/500 | active_users=3 | updated_users=1 | objective=27.015892 | sum_rate=30.538288 | r_p=0.000000 | r_c=0.000000 | r_s=0.004731 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=155/500 | active_users=3 | updated_users=1 | objective=27.026495 | sum_rate=30.551735 | r_p=0.000000 | r_c=0.000000 | r_s=0.004763 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=160/500 | active_users=3 | updated_users=1 | objective=27.036831 | sum_rate=30.565248 | r_p=0.000000 | r_c=0.000000 | r_s=0.004749 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=165/500 | active_users=3 | updated_users=1 | objective=27.046825 | sum_rate=30.577631 | r_p=0.000000 | r_c=0.000000 | r_s=0.004772 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=170/500 | active_users=3 | updated_users=1 | objective=27.056425 | sum_rate=30.588625 | r_p=0.000000 | r_c=0.000000 | r_s=0.004751 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=175/500 | active_users=3 | updated_users=1 | objective=27.065308 | sum_rate=30.600555 | r_p=0.000000 | r_c=0.000000 | r_s=0.004786 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=180/500 | active_users=3 | updated_users=1 | objective=27.073349 | sum_rate=30.609875 | r_p=0.000000 | r_c=0.000000 | r_s=0.004764 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=185/500 | active_users=3 | updated_users=1 | objective=27.081280 | sum_rate=30.619926 | r_p=0.000000 | r_c=0.000000 | r_s=0.004780 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=190/500 | active_users=3 | updated_users=1 | objective=27.089684 | sum_rate=30.631042 | r_p=0.000000 | r_c=0.000000 | r_s=0.004815 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=195/500 | active_users=3 | updated_users=1 | objective=27.097181 | sum_rate=30.638613 | r_p=0.000000 | r_c=0.000000 | r_s=0.004823 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=200/500 | active_users=3 | updated_users=1 | objective=27.104530 | sum_rate=30.648834 | r_p=0.000000 | r_c=0.000000 | r_s=0.004827 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=205/500 | active_users=3 | updated_users=1 | objective=27.111137 | sum_rate=30.657764 | r_p=0.000000 | r_c=0.000000 | r_s=0.004829 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=210/500 | active_users=3 | updated_users=1 | objective=27.117941 | sum_rate=30.665806 | r_p=0.000000 | r_c=0.000000 | r_s=0.004825 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=215/500 | active_users=3 | updated_users=1 | objective=27.124153 | sum_rate=30.674938 | r_p=0.000000 | r_c=0.000000 | r_s=0.004836 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=220/500 | active_users=3 | updated_users=1 | objective=27.130486 | sum_rate=30.683075 | r_p=0.000000 | r_c=0.000000 | r_s=0.004839 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=225/500 | active_users=3 | updated_users=1 | objective=27.135784 | sum_rate=30.691998 | r_p=0.000000 | r_c=0.000000 | r_s=0.004844 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=230/500 | active_users=3 | updated_users=1 | objective=27.142067 | sum_rate=30.696964 | r_p=0.000000 | r_c=0.000000 | r_s=0.004804 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=235/500 | active_users=3 | updated_users=1 | objective=27.147268 | sum_rate=30.703924 | r_p=0.000000 | r_c=0.000000 | r_s=0.004851 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=240/500 | active_users=3 | updated_users=1 | objective=27.152960 | sum_rate=30.709412 | r_p=0.000000 | r_c=0.000000 | r_s=0.004837 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=245/500 | active_users=3 | updated_users=1 | objective=27.157318 | sum_rate=30.716175 | r_p=0.000000 | r_c=0.000000 | r_s=0.004864 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=250/500 | active_users=3 | updated_users=1 | objective=27.161394 | sum_rate=30.724998 | r_p=0.000000 | r_c=0.000000 | r_s=0.004851 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=255/500 | active_users=3 | updated_users=1 | objective=27.166092 | sum_rate=30.731876 | r_p=0.000000 | r_c=0.000000 | r_s=0.004864 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=260/500 | active_users=3 | updated_users=1 | objective=27.170422 | sum_rate=30.735371 | r_p=0.000000 | r_c=0.000000 | r_s=0.004871 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=265/500 | active_users=3 | updated_users=1 | objective=27.174946 | sum_rate=30.739971 | r_p=0.000000 | r_c=0.000000 | r_s=0.004859 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=270/500 | active_users=3 | updated_users=1 | objective=27.178621 | sum_rate=30.743645 | r_p=0.000000 | r_c=0.000000 | r_s=0.004882 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=275/500 | active_users=3 | updated_users=1 | objective=27.182533 | sum_rate=30.746708 | r_p=0.000000 | r_c=0.000000 | r_s=0.004868 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=280/500 | active_users=3 | updated_users=1 | objective=27.185820 | sum_rate=30.750946 | r_p=0.000000 | r_c=0.000000 | r_s=0.004888 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=285/500 | active_users=3 | updated_users=1 | objective=27.188828 | sum_rate=30.752825 | r_p=0.000000 | r_c=0.000000 | r_s=0.004890 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=290/500 | active_users=3 | updated_users=1 | objective=27.191986 | sum_rate=30.756819 | r_p=0.000000 | r_c=0.000000 | r_s=0.004896 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=295/500 | active_users=3 | updated_users=1 | objective=27.195284 | sum_rate=30.761335 | r_p=0.000000 | r_c=0.000000 | r_s=0.004902 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=300/500 | active_users=3 | updated_users=1 | objective=27.197706 | sum_rate=30.764584 | r_p=0.000000 | r_c=0.000000 | r_s=0.004906 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=305/500 | active_users=3 | updated_users=1 | objective=27.200264 | sum_rate=30.767365 | r_p=0.000000 | r_c=0.000000 | r_s=0.004904 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=310/500 | active_users=3 | updated_users=1 | objective=27.202038 | sum_rate=30.771194 | r_p=0.000000 | r_c=0.000000 | r_s=0.004908 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=315/500 | active_users=3 | updated_users=1 | objective=27.204258 | sum_rate=30.773478 | r_p=0.000000 | r_c=0.000000 | r_s=0.004899 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=320/500 | active_users=3 | updated_users=1 | objective=27.205830 | sum_rate=30.776323 | r_p=0.000000 | r_c=0.000000 | r_s=0.004910 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=325/500 | active_users=3 | updated_users=1 | objective=27.207397 | sum_rate=30.778385 | r_p=0.000000 | r_c=0.000000 | r_s=0.004904 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=330/500 | active_users=3 | updated_users=1 | objective=27.209131 | sum_rate=30.780699 | r_p=0.000000 | r_c=0.000000 | r_s=0.004913 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=335/500 | active_users=3 | updated_users=1 | objective=27.210579 | sum_rate=30.783546 | r_p=0.000000 | r_c=0.000000 | r_s=0.004914 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=340/500 | active_users=3 | updated_users=1 | objective=27.212090 | sum_rate=30.785835 | r_p=0.000000 | r_c=0.000000 | r_s=0.004913 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=345/500 | active_users=3 | updated_users=1 | objective=27.213634 | sum_rate=30.786461 | r_p=0.000000 | r_c=0.000000 | r_s=0.004919 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=350/500 | active_users=3 | updated_users=1 | objective=27.215199 | sum_rate=30.788555 | r_p=0.000000 | r_c=0.000000 | r_s=0.004917 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=355/500 | active_users=3 | updated_users=1 | objective=27.216629 | sum_rate=30.790232 | r_p=0.000000 | r_c=0.000000 | r_s=0.004914 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=360/500 | active_users=3 | updated_users=1 | objective=27.217903 | sum_rate=30.791599 | r_p=0.000000 | r_c=0.000000 | r_s=0.004924 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=365/500 | active_users=3 | updated_users=1 | objective=27.219116 | sum_rate=30.791298 | r_p=0.000000 | r_c=0.000000 | r_s=0.004927 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=370/500 | active_users=3 | updated_users=1 | objective=27.220139 | sum_rate=30.792137 | r_p=0.000000 | r_c=0.000000 | r_s=0.004923 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=375/500 | active_users=3 | updated_users=1 | objective=27.220961 | sum_rate=30.794140 | r_p=0.000000 | r_c=0.000000 | r_s=0.004928 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=380/500 | active_users=3 | updated_users=1 | objective=27.221745 | sum_rate=30.795610 | r_p=0.000000 | r_c=0.000000 | r_s=0.004926 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=385/500 | active_users=3 | updated_users=1 | objective=27.222610 | sum_rate=30.796442 | r_p=0.000000 | r_c=0.000000 | r_s=0.004931 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=390/500 | active_users=3 | updated_users=1 | objective=27.223169 | sum_rate=30.796703 | r_p=0.000000 | r_c=0.000000 | r_s=0.004933 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=395/500 | active_users=3 | updated_users=1 | objective=27.223587 | sum_rate=30.795921 | r_p=0.000000 | r_c=0.000000 | r_s=0.004934 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=400/500 | active_users=3 | updated_users=1 | objective=27.224142 | sum_rate=30.796146 | r_p=0.000000 | r_c=0.000000 | r_s=0.004935 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=405/500 | active_users=3 | updated_users=1 | objective=27.224407 | sum_rate=30.795982 | r_p=0.000000 | r_c=0.000000 | r_s=0.004937 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=410/500 | active_users=3 | updated_users=1 | objective=27.224737 | sum_rate=30.796959 | r_p=0.000000 | r_c=0.000000 | r_s=0.004933 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=415/500 | active_users=3 | updated_users=1 | objective=27.224836 | sum_rate=30.797192 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=420/500 | active_users=3 | updated_users=1 | objective=27.225113 | sum_rate=30.797640 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=425/500 | active_users=3 | updated_users=1 | objective=27.225128 | sum_rate=30.797379 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=430/500 | active_users=3 | updated_users=1 | objective=27.225262 | sum_rate=30.798077 | r_p=0.000000 | r_c=0.000000 | r_s=0.004934 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=435/500 | active_users=3 | updated_users=1 | objective=27.225386 | sum_rate=30.798203 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=440/500 | active_users=3 | updated_users=1 | objective=27.225468 | sum_rate=30.798450 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=445/500 | active_users=3 | updated_users=1 | objective=27.225430 | sum_rate=30.797831 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=450/500 | active_users=3 | updated_users=1 | objective=27.225464 | sum_rate=30.798445 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=455/500 | active_users=3 | updated_users=1 | objective=27.225433 | sum_rate=30.797836 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=460/500 | active_users=3 | updated_users=1 | objective=27.225468 | sum_rate=30.798450 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=465/500 | active_users=3 | updated_users=1 | objective=27.225430 | sum_rate=30.797832 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=470/500 | active_users=3 | updated_users=1 | objective=27.225464 | sum_rate=30.798447 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=475/500 | active_users=3 | updated_users=1 | objective=27.225431 | sum_rate=30.797834 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=480/500 | active_users=3 | updated_users=1 | objective=27.225468 | sum_rate=30.798449 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=485/500 | active_users=3 | updated_users=1 | objective=27.225426 | sum_rate=30.797827 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=490/500 | active_users=3 | updated_users=1 | objective=27.225471 | sum_rate=30.798454 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=495/500 | active_users=3 | updated_users=1 | objective=27.225431 | sum_rate=30.797838 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=500/500 | active_users=3 | updated_users=1 | objective=27.225464 | sum_rate=30.798447 | r_p=0.000000 | r_c=0.000000 | r_s=0.004936 | status=running
+  user=00 block=02 accepted smaller n_kl=  49 after fresh re-optimization of users [0].
+  user=02 block=02 accepted smaller n_kl=  79 without fresh re-optimization.
+[DL Convergence Reduction] | block=2 | epoch=2 | users=[2, 0]
+  user=02 block=02 candidate n_kl=  78 breaks committed-user feasibility [2]; trying fresh re-optimization.
+[DL Convergence] | phase=optimize | block=2 | epoch=1/500 | active_users=3 | updated_users=1 | objective=27.206142 | sum_rate=30.776340 | r_p=0.008959 | r_c=0.134407 | r_s=0.002941 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=5/500 | active_users=3 | updated_users=1 | objective=27.244476 | sum_rate=30.812317 | r_p=0.000000 | r_c=0.000000 | r_s=0.003276 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=10/500 | active_users=3 | updated_users=1 | objective=27.300646 | sum_rate=30.869633 | r_p=0.000000 | r_c=0.000000 | r_s=0.003272 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=15/500 | active_users=3 | updated_users=1 | objective=27.352169 | sum_rate=30.922623 | r_p=0.000000 | r_c=0.000000 | r_s=0.003277 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=20/500 | active_users=3 | updated_users=1 | objective=27.400839 | sum_rate=30.974140 | r_p=0.000000 | r_c=0.000000 | r_s=0.003266 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=25/500 | active_users=3 | updated_users=1 | objective=27.446716 | sum_rate=31.022011 | r_p=0.000000 | r_c=0.000000 | r_s=0.003277 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=30/500 | active_users=3 | updated_users=1 | objective=27.490376 | sum_rate=31.068361 | r_p=0.000000 | r_c=0.000000 | r_s=0.003275 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=35/500 | active_users=3 | updated_users=1 | objective=27.531860 | sum_rate=31.110462 | r_p=0.000000 | r_c=0.000000 | r_s=0.003271 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=40/500 | active_users=3 | updated_users=1 | objective=27.571262 | sum_rate=31.150036 | r_p=0.000000 | r_c=0.000000 | r_s=0.003268 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=45/500 | active_users=3 | updated_users=1 | objective=27.609322 | sum_rate=31.187283 | r_p=0.000000 | r_c=0.000000 | r_s=0.003275 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=50/500 | active_users=3 | updated_users=1 | objective=27.645638 | sum_rate=31.223461 | r_p=0.000000 | r_c=0.000000 | r_s=0.003248 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=55/500 | active_users=3 | updated_users=1 | objective=27.680323 | sum_rate=31.257301 | r_p=0.000000 | r_c=0.000000 | r_s=0.003269 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=60/500 | active_users=3 | updated_users=1 | objective=27.713638 | sum_rate=31.290106 | r_p=0.000000 | r_c=0.000000 | r_s=0.003265 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=65/500 | active_users=3 | updated_users=1 | objective=27.745628 | sum_rate=31.323275 | r_p=0.000000 | r_c=0.000000 | r_s=0.003248 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=70/500 | active_users=3 | updated_users=1 | objective=27.775660 | sum_rate=31.352810 | r_p=0.000000 | r_c=0.000000 | r_s=0.003226 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=75/500 | active_users=3 | updated_users=1 | objective=27.804346 | sum_rate=31.382019 | r_p=0.000000 | r_c=0.000000 | r_s=0.003237 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=80/500 | active_users=3 | updated_users=1 | objective=27.831682 | sum_rate=31.408689 | r_p=0.000000 | r_c=0.000000 | r_s=0.003247 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=85/500 | active_users=3 | updated_users=1 | objective=27.857876 | sum_rate=31.433685 | r_p=0.000000 | r_c=0.000000 | r_s=0.003223 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=90/500 | active_users=3 | updated_users=1 | objective=27.882835 | sum_rate=31.457716 | r_p=0.000000 | r_c=0.000000 | r_s=0.003200 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=95/500 | active_users=3 | updated_users=1 | objective=27.906237 | sum_rate=31.481588 | r_p=0.000000 | r_c=0.000000 | r_s=0.003233 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=100/500 | active_users=3 | updated_users=1 | objective=27.928740 | sum_rate=31.502344 | r_p=0.000000 | r_c=0.000000 | r_s=0.003179 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=105/500 | active_users=3 | updated_users=1 | objective=27.949587 | sum_rate=31.522699 | r_p=0.000000 | r_c=0.000000 | r_s=0.003196 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=110/500 | active_users=3 | updated_users=1 | objective=27.968956 | sum_rate=31.540691 | r_p=0.000000 | r_c=0.000000 | r_s=0.003178 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=115/500 | active_users=3 | updated_users=1 | objective=27.987030 | sum_rate=31.558220 | r_p=0.000000 | r_c=0.000000 | r_s=0.003236 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=120/500 | active_users=3 | updated_users=1 | objective=28.003904 | sum_rate=31.574474 | r_p=0.000000 | r_c=0.000000 | r_s=0.003215 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=125/500 | active_users=3 | updated_users=1 | objective=28.020353 | sum_rate=31.588520 | r_p=0.000000 | r_c=0.000000 | r_s=0.003150 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=130/500 | active_users=3 | updated_users=1 | objective=28.034786 | sum_rate=31.602482 | r_p=0.000000 | r_c=0.000000 | r_s=0.003195 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=135/500 | active_users=3 | updated_users=1 | objective=28.048782 | sum_rate=31.615208 | r_p=0.000000 | r_c=0.000000 | r_s=0.003185 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=140/500 | active_users=3 | updated_users=1 | objective=28.061892 | sum_rate=31.626925 | r_p=0.000000 | r_c=0.000000 | r_s=0.003133 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=145/500 | active_users=3 | updated_users=1 | objective=28.074295 | sum_rate=31.637833 | r_p=0.000000 | r_c=0.000000 | r_s=0.003157 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=150/500 | active_users=3 | updated_users=1 | objective=28.085201 | sum_rate=31.647259 | r_p=0.000000 | r_c=0.000000 | r_s=0.003190 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=155/500 | active_users=3 | updated_users=1 | objective=28.095963 | sum_rate=31.657110 | r_p=0.000000 | r_c=0.000000 | r_s=0.003191 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=160/500 | active_users=3 | updated_users=1 | objective=28.105354 | sum_rate=31.665030 | r_p=0.000000 | r_c=0.000000 | r_s=0.003161 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=165/500 | active_users=3 | updated_users=1 | objective=28.114607 | sum_rate=31.673128 | r_p=0.000000 | r_c=0.000000 | r_s=0.003136 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=170/500 | active_users=3 | updated_users=1 | objective=28.122965 | sum_rate=31.679361 | r_p=0.000000 | r_c=0.000000 | r_s=0.003157 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=175/500 | active_users=3 | updated_users=1 | objective=28.131119 | sum_rate=31.686043 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=180/500 | active_users=3 | updated_users=1 | objective=28.138302 | sum_rate=31.690773 | r_p=0.000000 | r_c=0.000000 | r_s=0.003117 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=185/500 | active_users=3 | updated_users=1 | objective=28.145264 | sum_rate=31.696999 | r_p=0.000000 | r_c=0.000000 | r_s=0.003161 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=190/500 | active_users=3 | updated_users=1 | objective=28.151756 | sum_rate=31.701714 | r_p=0.000000 | r_c=0.000000 | r_s=0.003141 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=195/500 | active_users=3 | updated_users=1 | objective=28.156757 | sum_rate=31.705259 | r_p=0.000000 | r_c=0.000000 | r_s=0.003169 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=200/500 | active_users=3 | updated_users=1 | objective=28.161898 | sum_rate=31.710064 | r_p=0.000000 | r_c=0.000000 | r_s=0.003073 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=205/500 | active_users=3 | updated_users=1 | objective=28.166655 | sum_rate=31.713177 | r_p=0.000000 | r_c=0.000000 | r_s=0.003166 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=210/500 | active_users=3 | updated_users=1 | objective=28.171337 | sum_rate=31.717342 | r_p=0.000000 | r_c=0.000000 | r_s=0.003121 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=215/500 | active_users=3 | updated_users=1 | objective=28.175140 | sum_rate=31.719604 | r_p=0.000000 | r_c=0.000000 | r_s=0.003149 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=220/500 | active_users=3 | updated_users=1 | objective=28.178896 | sum_rate=31.722576 | r_p=0.000000 | r_c=0.000000 | r_s=0.003140 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=225/500 | active_users=3 | updated_users=1 | objective=28.181953 | sum_rate=31.724697 | r_p=0.000000 | r_c=0.000000 | r_s=0.003159 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=230/500 | active_users=3 | updated_users=1 | objective=28.184940 | sum_rate=31.725763 | r_p=0.000000 | r_c=0.000000 | r_s=0.003159 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=235/500 | active_users=3 | updated_users=1 | objective=28.187281 | sum_rate=31.727585 | r_p=0.000000 | r_c=0.000000 | r_s=0.003147 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=240/500 | active_users=3 | updated_users=1 | objective=28.189198 | sum_rate=31.728409 | r_p=0.000000 | r_c=0.000000 | r_s=0.003142 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=245/500 | active_users=3 | updated_users=1 | objective=28.191093 | sum_rate=31.728943 | r_p=0.000000 | r_c=0.000000 | r_s=0.003168 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=250/500 | active_users=3 | updated_users=1 | objective=28.192276 | sum_rate=31.730591 | r_p=0.000000 | r_c=0.000000 | r_s=0.003138 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=255/500 | active_users=3 | updated_users=1 | objective=28.193542 | sum_rate=31.730785 | r_p=0.000000 | r_c=0.000000 | r_s=0.003165 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=260/500 | active_users=3 | updated_users=1 | objective=28.194820 | sum_rate=31.731464 | r_p=0.000000 | r_c=0.000000 | r_s=0.003105 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=265/500 | active_users=3 | updated_users=1 | objective=28.196117 | sum_rate=31.732094 | r_p=0.000000 | r_c=0.000000 | r_s=0.003160 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=270/500 | active_users=3 | updated_users=1 | objective=28.196974 | sum_rate=31.732840 | r_p=0.000000 | r_c=0.000000 | r_s=0.003153 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=275/500 | active_users=3 | updated_users=1 | objective=28.197773 | sum_rate=31.732992 | r_p=0.000000 | r_c=0.000000 | r_s=0.003156 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=280/500 | active_users=3 | updated_users=1 | objective=28.198261 | sum_rate=31.733734 | r_p=0.000000 | r_c=0.000000 | r_s=0.003140 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=285/500 | active_users=3 | updated_users=1 | objective=28.199013 | sum_rate=31.733467 | r_p=0.000000 | r_c=0.000000 | r_s=0.003158 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=290/500 | active_users=3 | updated_users=1 | objective=28.199938 | sum_rate=31.734291 | r_p=0.000000 | r_c=0.000000 | r_s=0.003150 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=295/500 | active_users=3 | updated_users=1 | objective=28.200897 | sum_rate=31.734451 | r_p=0.000000 | r_c=0.000000 | r_s=0.003156 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=300/500 | active_users=3 | updated_users=1 | objective=28.201443 | sum_rate=31.734873 | r_p=0.000000 | r_c=0.000000 | r_s=0.003139 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=305/500 | active_users=3 | updated_users=1 | objective=28.202183 | sum_rate=31.733984 | r_p=0.000000 | r_c=0.000000 | r_s=0.003150 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=310/500 | active_users=3 | updated_users=1 | objective=28.202387 | sum_rate=31.733788 | r_p=0.000000 | r_c=0.000000 | r_s=0.003144 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=315/500 | active_users=3 | updated_users=1 | objective=28.202839 | sum_rate=31.733301 | r_p=0.000000 | r_c=0.000000 | r_s=0.003144 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=320/500 | active_users=3 | updated_users=1 | objective=28.202995 | sum_rate=31.733700 | r_p=0.000000 | r_c=0.000000 | r_s=0.003144 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=325/500 | active_users=3 | updated_users=1 | objective=28.203173 | sum_rate=31.733688 | r_p=0.000000 | r_c=0.000000 | r_s=0.003150 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=330/500 | active_users=3 | updated_users=1 | objective=28.203108 | sum_rate=31.733662 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=335/500 | active_users=3 | updated_users=1 | objective=28.203310 | sum_rate=31.733595 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=340/500 | active_users=3 | updated_users=1 | objective=28.203089 | sum_rate=31.733700 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=345/500 | active_users=3 | updated_users=1 | objective=28.203302 | sum_rate=31.733582 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=350/500 | active_users=3 | updated_users=1 | objective=28.203098 | sum_rate=31.733711 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=355/500 | active_users=3 | updated_users=1 | objective=28.203308 | sum_rate=31.733593 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=360/500 | active_users=3 | updated_users=1 | objective=28.203087 | sum_rate=31.733696 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=365/500 | active_users=3 | updated_users=1 | objective=28.203302 | sum_rate=31.733583 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=370/500 | active_users=3 | updated_users=1 | objective=28.203098 | sum_rate=31.733713 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=375/500 | active_users=3 | updated_users=1 | objective=28.203304 | sum_rate=31.733587 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=380/500 | active_users=3 | updated_users=1 | objective=28.203098 | sum_rate=31.733707 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=385/500 | active_users=3 | updated_users=1 | objective=28.203300 | sum_rate=31.733582 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=390/500 | active_users=3 | updated_users=1 | objective=28.203104 | sum_rate=31.733719 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=395/500 | active_users=3 | updated_users=1 | objective=28.203299 | sum_rate=31.733582 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=400/500 | active_users=3 | updated_users=1 | objective=28.203104 | sum_rate=31.733717 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=405/500 | active_users=3 | updated_users=1 | objective=28.203293 | sum_rate=31.733574 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=410/500 | active_users=3 | updated_users=1 | objective=28.203102 | sum_rate=31.733715 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=415/500 | active_users=3 | updated_users=1 | objective=28.203287 | sum_rate=31.733566 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=420/500 | active_users=3 | updated_users=1 | objective=28.203098 | sum_rate=31.733707 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=425/500 | active_users=3 | updated_users=1 | objective=28.203289 | sum_rate=31.733566 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=430/500 | active_users=3 | updated_users=1 | objective=28.203112 | sum_rate=31.733723 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=435/500 | active_users=3 | updated_users=1 | objective=28.203293 | sum_rate=31.733576 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=440/500 | active_users=3 | updated_users=1 | objective=28.203114 | sum_rate=31.733727 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=445/500 | active_users=3 | updated_users=1 | objective=28.203289 | sum_rate=31.733570 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=450/500 | active_users=3 | updated_users=1 | objective=28.203117 | sum_rate=31.733730 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=455/500 | active_users=3 | updated_users=1 | objective=28.203287 | sum_rate=31.733566 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=460/500 | active_users=3 | updated_users=1 | objective=28.203117 | sum_rate=31.733730 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=465/500 | active_users=3 | updated_users=1 | objective=28.203285 | sum_rate=31.733566 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=470/500 | active_users=3 | updated_users=1 | objective=28.203121 | sum_rate=31.733734 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=475/500 | active_users=3 | updated_users=1 | objective=28.203281 | sum_rate=31.733562 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=480/500 | active_users=3 | updated_users=1 | objective=28.203121 | sum_rate=31.733730 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=485/500 | active_users=3 | updated_users=1 | objective=28.203283 | sum_rate=31.733562 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=490/500 | active_users=3 | updated_users=1 | objective=28.203119 | sum_rate=31.733728 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=495/500 | active_users=3 | updated_users=1 | objective=28.203283 | sum_rate=31.733566 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=500/500 | active_users=3 | updated_users=1 | objective=28.203125 | sum_rate=31.733736 | r_p=0.000000 | r_c=0.000000 | r_s=0.003145 | status=running
+  user=02 block=02 accepted smaller n_kl=  78 after fresh re-optimization of users [2].
+  user=00 block=02 accepted smaller n_kl=  48 without fresh re-optimization.
+[DL Convergence Reduction] | block=2 | epoch=3 | users=[0, 2]
+  user=00 block=02 accepted smaller n_kl=  47 without fresh re-optimization.
+  user=02 block=02 accepted smaller n_kl=  77 without fresh re-optimization.
+[DL Convergence Reduction] | block=2 | epoch=4 | users=[2, 0]
+  user=02 block=02 accepted smaller n_kl=  76 without fresh re-optimization.
+  user=00 block=02 accepted smaller n_kl=  46 without fresh re-optimization.
+[DL Convergence Reduction] | block=2 | epoch=5 | users=[0, 2]
+  user=00 block=02 candidate n_kl=  45 breaks committed-user feasibility [0]; trying fresh re-optimization.
+[DL Convergence] | phase=optimize | block=2 | epoch=1/500 | active_users=3 | updated_users=1 | objective=28.135180 | sum_rate=31.636703 | r_p=0.000000 | r_c=0.000000 | r_s=0.004461 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=5/500 | active_users=3 | updated_users=1 | objective=28.175320 | sum_rate=31.677170 | r_p=0.000000 | r_c=0.000000 | r_s=0.005053 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=10/500 | active_users=3 | updated_users=1 | objective=28.214996 | sum_rate=31.713772 | r_p=0.003612 | r_c=0.014286 | r_s=0.005043 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=15/500 | active_users=3 | updated_users=1 | objective=28.234468 | sum_rate=31.741127 | r_p=0.000000 | r_c=0.000000 | r_s=0.004381 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=20/500 | active_users=3 | updated_users=1 | objective=28.257908 | sum_rate=31.762806 | r_p=0.000000 | r_c=0.000000 | r_s=0.005023 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=25/500 | active_users=3 | updated_users=1 | objective=28.274303 | sum_rate=31.780312 | r_p=0.000000 | r_c=0.000000 | r_s=0.005002 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=30/500 | active_users=3 | updated_users=1 | objective=28.286337 | sum_rate=31.796198 | r_p=0.000000 | r_c=0.000000 | r_s=0.004363 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=35/500 | active_users=3 | updated_users=1 | objective=28.299965 | sum_rate=31.801777 | r_p=0.002052 | r_c=0.008117 | r_s=0.004996 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=40/500 | active_users=3 | updated_users=1 | objective=28.306450 | sum_rate=31.809814 | r_p=0.000000 | r_c=0.000000 | r_s=0.004975 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=45/500 | active_users=3 | updated_users=1 | objective=28.311867 | sum_rate=31.813931 | r_p=0.002379 | r_c=0.009409 | r_s=0.004908 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=50/500 | active_users=3 | updated_users=1 | objective=28.313784 | sum_rate=31.824402 | r_p=0.000000 | r_c=0.000000 | r_s=0.004356 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=55/500 | active_users=3 | updated_users=1 | objective=28.317234 | sum_rate=31.824951 | r_p=0.000000 | r_c=0.000000 | r_s=0.004940 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=60/500 | active_users=3 | updated_users=1 | objective=28.319956 | sum_rate=31.826508 | r_p=0.000000 | r_c=0.000000 | r_s=0.004904 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=65/500 | active_users=3 | updated_users=1 | objective=28.321674 | sum_rate=31.826035 | r_p=0.000000 | r_c=0.000000 | r_s=0.004878 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=70/500 | active_users=3 | updated_users=1 | objective=28.322712 | sum_rate=31.827139 | r_p=0.000000 | r_c=0.000000 | r_s=0.004960 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=75/500 | active_users=3 | updated_users=1 | objective=28.323565 | sum_rate=31.827892 | r_p=0.000000 | r_c=0.000000 | r_s=0.004949 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=80/500 | active_users=3 | updated_users=1 | objective=28.324085 | sum_rate=31.827959 | r_p=0.000000 | r_c=0.000000 | r_s=0.004918 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=85/500 | active_users=3 | updated_users=1 | objective=28.324312 | sum_rate=31.830639 | r_p=0.000000 | r_c=0.000000 | r_s=0.004934 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=90/500 | active_users=3 | updated_users=1 | objective=28.325092 | sum_rate=31.832222 | r_p=0.000000 | r_c=0.000000 | r_s=0.004937 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=95/500 | active_users=3 | updated_users=1 | objective=28.325504 | sum_rate=31.829723 | r_p=0.000000 | r_c=0.000000 | r_s=0.004947 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=100/500 | active_users=3 | updated_users=1 | objective=28.325636 | sum_rate=31.832598 | r_p=0.000000 | r_c=0.000000 | r_s=0.004913 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=105/500 | active_users=3 | updated_users=1 | objective=28.326157 | sum_rate=31.833229 | r_p=0.000000 | r_c=0.000000 | r_s=0.004929 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=110/500 | active_users=3 | updated_users=1 | objective=28.326344 | sum_rate=31.830093 | r_p=0.000000 | r_c=0.000000 | r_s=0.004970 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=115/500 | active_users=3 | updated_users=1 | objective=28.326227 | sum_rate=31.833138 | r_p=0.000000 | r_c=0.000000 | r_s=0.004919 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=120/500 | active_users=3 | updated_users=1 | objective=28.326702 | sum_rate=31.830795 | r_p=0.000000 | r_c=0.000000 | r_s=0.004970 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=125/500 | active_users=3 | updated_users=1 | objective=28.326488 | sum_rate=31.833658 | r_p=0.000000 | r_c=0.000000 | r_s=0.004955 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=130/500 | active_users=3 | updated_users=1 | objective=28.326935 | sum_rate=31.831676 | r_p=0.000000 | r_c=0.000000 | r_s=0.004967 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=135/500 | active_users=3 | updated_users=1 | objective=28.327034 | sum_rate=31.830889 | r_p=0.000000 | r_c=0.000000 | r_s=0.004961 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=140/500 | active_users=3 | updated_users=1 | objective=28.327156 | sum_rate=31.834639 | r_p=0.000000 | r_c=0.000000 | r_s=0.004916 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=145/500 | active_users=3 | updated_users=1 | objective=28.327101 | sum_rate=31.831728 | r_p=0.000000 | r_c=0.000000 | r_s=0.004963 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=150/500 | active_users=3 | updated_users=1 | objective=28.327305 | sum_rate=31.831619 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=155/500 | active_users=3 | updated_users=1 | objective=28.327114 | sum_rate=31.831940 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=160/500 | active_users=3 | updated_users=1 | objective=28.327307 | sum_rate=31.831621 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=165/500 | active_users=3 | updated_users=1 | objective=28.327118 | sum_rate=31.831944 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=170/500 | active_users=3 | updated_users=1 | objective=28.327305 | sum_rate=31.831619 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=175/500 | active_users=3 | updated_users=1 | objective=28.327110 | sum_rate=31.831936 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=180/500 | active_users=3 | updated_users=1 | objective=28.327301 | sum_rate=31.831615 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=185/500 | active_users=3 | updated_users=1 | objective=28.327108 | sum_rate=31.831932 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=190/500 | active_users=3 | updated_users=1 | objective=28.327305 | sum_rate=31.831615 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=195/500 | active_users=3 | updated_users=1 | objective=28.327114 | sum_rate=31.831940 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=200/500 | active_users=3 | updated_users=1 | objective=28.327301 | sum_rate=31.831612 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=205/500 | active_users=3 | updated_users=1 | objective=28.327114 | sum_rate=31.831938 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=210/500 | active_users=3 | updated_users=1 | objective=28.327309 | sum_rate=31.831621 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=215/500 | active_users=3 | updated_users=1 | objective=28.327114 | sum_rate=31.831940 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=220/500 | active_users=3 | updated_users=1 | objective=28.327307 | sum_rate=31.831621 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=225/500 | active_users=3 | updated_users=1 | objective=28.327118 | sum_rate=31.831944 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=230/500 | active_users=3 | updated_users=1 | objective=28.327301 | sum_rate=31.831608 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=235/500 | active_users=3 | updated_users=1 | objective=28.327110 | sum_rate=31.831934 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=240/500 | active_users=3 | updated_users=1 | objective=28.327301 | sum_rate=31.831610 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=245/500 | active_users=3 | updated_users=1 | objective=28.327118 | sum_rate=31.831942 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=250/500 | active_users=3 | updated_users=1 | objective=28.327301 | sum_rate=31.831614 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=255/500 | active_users=3 | updated_users=1 | objective=28.327110 | sum_rate=31.831930 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=260/500 | active_users=3 | updated_users=1 | objective=28.327297 | sum_rate=31.831612 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=265/500 | active_users=3 | updated_users=1 | objective=28.327110 | sum_rate=31.831932 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=270/500 | active_users=3 | updated_users=1 | objective=28.327305 | sum_rate=31.831619 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=275/500 | active_users=3 | updated_users=1 | objective=28.327116 | sum_rate=31.831936 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=280/500 | active_users=3 | updated_users=1 | objective=28.327301 | sum_rate=31.831615 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=285/500 | active_users=3 | updated_users=1 | objective=28.327110 | sum_rate=31.831930 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=290/500 | active_users=3 | updated_users=1 | objective=28.327301 | sum_rate=31.831612 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=295/500 | active_users=3 | updated_users=1 | objective=28.327118 | sum_rate=31.831940 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=300/500 | active_users=3 | updated_users=1 | objective=28.327297 | sum_rate=31.831610 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=305/500 | active_users=3 | updated_users=1 | objective=28.327122 | sum_rate=31.831947 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=310/500 | active_users=3 | updated_users=1 | objective=28.327301 | sum_rate=31.831615 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=315/500 | active_users=3 | updated_users=1 | objective=28.327114 | sum_rate=31.831936 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=320/500 | active_users=3 | updated_users=1 | objective=28.327291 | sum_rate=31.831600 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=325/500 | active_users=3 | updated_users=1 | objective=28.327118 | sum_rate=31.831944 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=330/500 | active_users=3 | updated_users=1 | objective=28.327301 | sum_rate=31.831612 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=335/500 | active_users=3 | updated_users=1 | objective=28.327114 | sum_rate=31.831938 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=340/500 | active_users=3 | updated_users=1 | objective=28.327297 | sum_rate=31.831608 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=345/500 | active_users=3 | updated_users=1 | objective=28.327118 | sum_rate=31.831944 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=350/500 | active_users=3 | updated_users=1 | objective=28.327297 | sum_rate=31.831606 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=355/500 | active_users=3 | updated_users=1 | objective=28.327118 | sum_rate=31.831938 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=360/500 | active_users=3 | updated_users=1 | objective=28.327295 | sum_rate=31.831606 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=365/500 | active_users=3 | updated_users=1 | objective=28.327114 | sum_rate=31.831932 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=370/500 | active_users=3 | updated_users=1 | objective=28.327293 | sum_rate=31.831604 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=375/500 | active_users=3 | updated_users=1 | objective=28.327114 | sum_rate=31.831934 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=380/500 | active_users=3 | updated_users=1 | objective=28.327293 | sum_rate=31.831602 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=385/500 | active_users=3 | updated_users=1 | objective=28.327114 | sum_rate=31.831934 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=390/500 | active_users=3 | updated_users=1 | objective=28.327293 | sum_rate=31.831600 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=395/500 | active_users=3 | updated_users=1 | objective=28.327120 | sum_rate=31.831940 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=400/500 | active_users=3 | updated_users=1 | objective=28.327299 | sum_rate=31.831612 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=405/500 | active_users=3 | updated_users=1 | objective=28.327126 | sum_rate=31.831947 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=410/500 | active_users=3 | updated_users=1 | objective=28.327293 | sum_rate=31.831604 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=415/500 | active_users=3 | updated_users=1 | objective=28.327122 | sum_rate=31.831940 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=420/500 | active_users=3 | updated_users=1 | objective=28.327299 | sum_rate=31.831612 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=425/500 | active_users=3 | updated_users=1 | objective=28.327118 | sum_rate=31.831936 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=430/500 | active_users=3 | updated_users=1 | objective=28.327293 | sum_rate=31.831604 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=435/500 | active_users=3 | updated_users=1 | objective=28.327122 | sum_rate=31.831942 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=440/500 | active_users=3 | updated_users=1 | objective=28.327290 | sum_rate=31.831600 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=445/500 | active_users=3 | updated_users=1 | objective=28.327126 | sum_rate=31.831944 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=450/500 | active_users=3 | updated_users=1 | objective=28.327291 | sum_rate=31.831602 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=455/500 | active_users=3 | updated_users=1 | objective=28.327122 | sum_rate=31.831942 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=460/500 | active_users=3 | updated_users=1 | objective=28.327290 | sum_rate=31.831600 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=465/500 | active_users=3 | updated_users=1 | objective=28.327127 | sum_rate=31.831947 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=470/500 | active_users=3 | updated_users=1 | objective=28.327290 | sum_rate=31.831596 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=475/500 | active_users=3 | updated_users=1 | objective=28.327126 | sum_rate=31.831945 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=480/500 | active_users=3 | updated_users=1 | objective=28.327286 | sum_rate=31.831596 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=485/500 | active_users=3 | updated_users=1 | objective=28.327133 | sum_rate=31.831955 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=490/500 | active_users=3 | updated_users=1 | objective=28.327288 | sum_rate=31.831596 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=495/500 | active_users=3 | updated_users=1 | objective=28.327122 | sum_rate=31.831944 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=500/500 | active_users=3 | updated_users=1 | objective=28.327290 | sum_rate=31.831600 | r_p=0.000000 | r_c=0.000000 | r_s=0.004969 | status=running
+  user=00 block=02 accepted smaller n_kl=  45 after fresh re-optimization of users [0].
+  user=02 block=02 accepted smaller n_kl=  75 without fresh re-optimization.
+[DL Convergence Reduction] | block=2 | epoch=6 | users=[2, 0]
+  user=02 block=02 accepted smaller n_kl=  74 without fresh re-optimization.
+  user=00 block=02 candidate n_kl=  44 breaks committed-user feasibility [0]; trying fresh re-optimization.
+[DL Convergence] | phase=optimize | block=2 | epoch=1/500 | active_users=3 | updated_users=1 | objective=28.290522 | sum_rate=31.793072 | r_p=0.165234 | r_c=0.653589 | r_s=0.004322 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=5/500 | active_users=3 | updated_users=1 | objective=28.279722 | sum_rate=31.813274 | r_p=0.094089 | r_c=0.372694 | r_s=0.004243 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=10/500 | active_users=3 | updated_users=1 | objective=28.275230 | sum_rate=31.824574 | r_p=0.057359 | r_c=0.227432 | r_s=0.004193 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=15/500 | active_users=3 | updated_users=1 | objective=28.269810 | sum_rate=31.823269 | r_p=0.047179 | r_c=0.187192 | r_s=0.004632 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=20/500 | active_users=3 | updated_users=1 | objective=28.260674 | sum_rate=31.827084 | r_p=0.016952 | r_c=0.074210 | r_s=0.004174 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=25/500 | active_users=3 | updated_users=1 | objective=28.254984 | sum_rate=31.821623 | r_p=0.015850 | r_c=0.062929 | r_s=0.004491 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=30/500 | active_users=3 | updated_users=1 | objective=28.248161 | sum_rate=31.815060 | r_p=0.014644 | r_c=0.058152 | r_s=0.004402 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=35/500 | active_users=3 | updated_users=1 | objective=28.244148 | sum_rate=31.818748 | r_p=0.002681 | r_c=0.051597 | r_s=0.004194 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=40/500 | active_users=3 | updated_users=1 | objective=28.246132 | sum_rate=31.813671 | r_p=0.013018 | r_c=0.051704 | r_s=0.004170 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=45/500 | active_users=3 | updated_users=1 | objective=28.242630 | sum_rate=31.817654 | r_p=0.002615 | r_c=0.050331 | r_s=0.004194 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=50/500 | active_users=3 | updated_users=1 | objective=28.245825 | sum_rate=31.813463 | r_p=0.012768 | r_c=0.050720 | r_s=0.004185 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=55/500 | active_users=3 | updated_users=1 | objective=28.242748 | sum_rate=31.817768 | r_p=0.002605 | r_c=0.050148 | r_s=0.004194 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=60/500 | active_users=3 | updated_users=1 | objective=28.245846 | sum_rate=31.813440 | r_p=0.012868 | r_c=0.051124 | r_s=0.004189 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=65/500 | active_users=3 | updated_users=1 | objective=28.242783 | sum_rate=31.817759 | r_p=0.002564 | r_c=0.049359 | r_s=0.004194 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=70/500 | active_users=3 | updated_users=1 | objective=28.245861 | sum_rate=31.813408 | r_p=0.012979 | r_c=0.051574 | r_s=0.004189 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=75/500 | active_users=3 | updated_users=1 | objective=28.242800 | sum_rate=31.817730 | r_p=0.002524 | r_c=0.048588 | r_s=0.004194 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=80/500 | active_users=3 | updated_users=1 | objective=28.245876 | sum_rate=31.813377 | r_p=0.013084 | r_c=0.051999 | r_s=0.004189 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=85/500 | active_users=3 | updated_users=1 | objective=28.242817 | sum_rate=31.817699 | r_p=0.002487 | r_c=0.047873 | r_s=0.004194 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=90/500 | active_users=3 | updated_users=1 | objective=28.245884 | sum_rate=31.813335 | r_p=0.013196 | r_c=0.052453 | r_s=0.004189 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=95/500 | active_users=3 | updated_users=1 | objective=28.242842 | sum_rate=31.817680 | r_p=0.002448 | r_c=0.047120 | r_s=0.004194 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=100/500 | active_users=3 | updated_users=1 | objective=28.245476 | sum_rate=31.812988 | r_p=0.013029 | r_c=0.051799 | r_s=0.004170 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=105/500 | active_users=3 | updated_users=1 | objective=28.242416 | sum_rate=31.817314 | r_p=0.002399 | r_c=0.046184 | r_s=0.004194 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=110/500 | active_users=3 | updated_users=1 | objective=28.245485 | sum_rate=31.812950 | r_p=0.013137 | r_c=0.052237 | r_s=0.004190 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=115/500 | active_users=3 | updated_users=1 | objective=28.242435 | sum_rate=31.817284 | r_p=0.002361 | r_c=0.045451 | r_s=0.004194 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=120/500 | active_users=3 | updated_users=1 | objective=28.245502 | sum_rate=31.812925 | r_p=0.013239 | r_c=0.052650 | r_s=0.004190 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=125/500 | active_users=3 | updated_users=1 | objective=28.242455 | sum_rate=31.817261 | r_p=0.002321 | r_c=0.044680 | r_s=0.004194 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=130/500 | active_users=3 | updated_users=1 | objective=28.245514 | sum_rate=31.812885 | r_p=0.013352 | r_c=0.053110 | r_s=0.004190 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=135/500 | active_users=3 | updated_users=1 | objective=28.242474 | sum_rate=31.817230 | r_p=0.002282 | r_c=0.043927 | r_s=0.004194 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=140/500 | active_users=3 | updated_users=1 | objective=28.245537 | sum_rate=31.812862 | r_p=0.013455 | r_c=0.053527 | r_s=0.004190 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=145/500 | active_users=3 | updated_users=1 | objective=28.242500 | sum_rate=31.817211 | r_p=0.002244 | r_c=0.043193 | r_s=0.004195 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=150/500 | active_users=3 | updated_users=1 | objective=28.245544 | sum_rate=31.812822 | r_p=0.013565 | r_c=0.053974 | r_s=0.004190 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=155/500 | active_users=3 | updated_users=1 | objective=28.242519 | sum_rate=31.817181 | r_p=0.002201 | r_c=0.042368 | r_s=0.004195 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=160/500 | active_users=3 | updated_users=1 | objective=28.245567 | sum_rate=31.812801 | r_p=0.013667 | r_c=0.054390 | r_s=0.004190 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=165/500 | active_users=3 | updated_users=1 | objective=28.242542 | sum_rate=31.817162 | r_p=0.002163 | r_c=0.041634 | r_s=0.004195 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=170/500 | active_users=3 | updated_users=1 | objective=28.245575 | sum_rate=31.812757 | r_p=0.013783 | r_c=0.054858 | r_s=0.004190 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=175/500 | active_users=3 | updated_users=1 | objective=28.242561 | sum_rate=31.817135 | r_p=0.002125 | r_c=0.040900 | r_s=0.004195 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=180/500 | active_users=3 | updated_users=1 | objective=28.245592 | sum_rate=31.812731 | r_p=0.013886 | r_c=0.055282 | r_s=0.004190 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=185/500 | active_users=3 | updated_users=1 | objective=28.242588 | sum_rate=31.817116 | r_p=0.002083 | r_c=0.040092 | r_s=0.004195 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=190/500 | active_users=3 | updated_users=1 | objective=28.245605 | sum_rate=31.812702 | r_p=0.013989 | r_c=0.055700 | r_s=0.004190 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=195/500 | active_users=3 | updated_users=1 | objective=28.242603 | sum_rate=31.817081 | r_p=0.002047 | r_c=0.039395 | r_s=0.004195 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=200/500 | active_users=3 | updated_users=1 | objective=28.245613 | sum_rate=31.812658 | r_p=0.014103 | r_c=0.056163 | r_s=0.004191 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=205/500 | active_users=3 | updated_users=1 | objective=28.242626 | sum_rate=31.817059 | r_p=0.002004 | r_c=0.038569 | r_s=0.004195 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=210/500 | active_users=3 | updated_users=1 | objective=28.245630 | sum_rate=31.812630 | r_p=0.014209 | r_c=0.056595 | r_s=0.004191 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=215/500 | active_users=3 | updated_users=1 | objective=28.242641 | sum_rate=31.817028 | r_p=0.001969 | r_c=0.037908 | r_s=0.004195 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=220/500 | active_users=3 | updated_users=1 | objective=28.245651 | sum_rate=31.812607 | r_p=0.014314 | r_c=0.057025 | r_s=0.004191 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=225/500 | active_users=3 | updated_users=1 | objective=28.242659 | sum_rate=31.816994 | r_p=0.001933 | r_c=0.037211 | r_s=0.004195 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=230/500 | active_users=3 | updated_users=1 | objective=28.245663 | sum_rate=31.812569 | r_p=0.014422 | r_c=0.057466 | r_s=0.004191 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=235/500 | active_users=3 | updated_users=1 | objective=28.242685 | sum_rate=31.816978 | r_p=0.001892 | r_c=0.036422 | r_s=0.004196 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=240/500 | active_users=3 | updated_users=1 | objective=28.245678 | sum_rate=31.812538 | r_p=0.014527 | r_c=0.057895 | r_s=0.004191 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=245/500 | active_users=3 | updated_users=1 | objective=28.242702 | sum_rate=31.816948 | r_p=0.001854 | r_c=0.035687 | r_s=0.004196 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=250/500 | active_users=3 | updated_users=1 | objective=28.245693 | sum_rate=31.812508 | r_p=0.014635 | r_c=0.058333 | r_s=0.004191 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=255/500 | active_users=3 | updated_users=1 | objective=28.242729 | sum_rate=31.816929 | r_p=0.001812 | r_c=0.034880 | r_s=0.004196 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=260/500 | active_users=3 | updated_users=1 | objective=28.245703 | sum_rate=31.812469 | r_p=0.014741 | r_c=0.058770 | r_s=0.004191 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=265/500 | active_users=3 | updated_users=1 | objective=28.242746 | sum_rate=31.816898 | r_p=0.001775 | r_c=0.034164 | r_s=0.004196 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=270/500 | active_users=3 | updated_users=1 | objective=28.245720 | sum_rate=31.812439 | r_p=0.014852 | r_c=0.059220 | r_s=0.004191 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=275/500 | active_users=3 | updated_users=1 | objective=28.242769 | sum_rate=31.816875 | r_p=0.001736 | r_c=0.033412 | r_s=0.004196 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=280/500 | active_users=3 | updated_users=1 | objective=28.245726 | sum_rate=31.812397 | r_p=0.014964 | r_c=0.059680 | r_s=0.004191 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=285/500 | active_users=3 | updated_users=1 | objective=28.242786 | sum_rate=31.816849 | r_p=0.001696 | r_c=0.032641 | r_s=0.004196 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=290/500 | active_users=3 | updated_users=1 | objective=28.245750 | sum_rate=31.812376 | r_p=0.015065 | r_c=0.060092 | r_s=0.004192 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=295/500 | active_users=3 | updated_users=1 | objective=28.242804 | sum_rate=31.816818 | r_p=0.001661 | r_c=0.031980 | r_s=0.004196 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=300/500 | active_users=3 | updated_users=1 | objective=28.245758 | sum_rate=31.812336 | r_p=0.015179 | r_c=0.060558 | r_s=0.004192 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=305/500 | active_users=3 | updated_users=1 | objective=28.242828 | sum_rate=31.816801 | r_p=0.001620 | r_c=0.031191 | r_s=0.004196 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=310/500 | active_users=3 | updated_users=1 | objective=28.245775 | sum_rate=31.812307 | r_p=0.015282 | r_c=0.060983 | r_s=0.004192 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=315/500 | active_users=3 | updated_users=1 | objective=28.242851 | sum_rate=31.816774 | r_p=0.001580 | r_c=0.030420 | r_s=0.004196 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=320/500 | active_users=3 | updated_users=1 | objective=28.245781 | sum_rate=31.812267 | r_p=0.015392 | r_c=0.061434 | r_s=0.004192 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=325/500 | active_users=3 | updated_users=1 | objective=28.242874 | sum_rate=31.816751 | r_p=0.001542 | r_c=0.029686 | r_s=0.004197 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=330/500 | active_users=3 | updated_users=1 | objective=28.245804 | sum_rate=31.812244 | r_p=0.015494 | r_c=0.061853 | r_s=0.004192 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=335/500 | active_users=3 | updated_users=1 | objective=28.242893 | sum_rate=31.816725 | r_p=0.001506 | r_c=0.028988 | r_s=0.004197 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=340/500 | active_users=3 | updated_users=1 | objective=28.245813 | sum_rate=31.812202 | r_p=0.015613 | r_c=0.062338 | r_s=0.004192 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=345/500 | active_users=3 | updated_users=1 | objective=28.242910 | sum_rate=31.816694 | r_p=0.001468 | r_c=0.028254 | r_s=0.004197 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=350/500 | active_users=3 | updated_users=1 | objective=28.245834 | sum_rate=31.812180 | r_p=0.015708 | r_c=0.062731 | r_s=0.004192 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=355/500 | active_users=3 | updated_users=1 | objective=28.242933 | sum_rate=31.816669 | r_p=0.001426 | r_c=0.027446 | r_s=0.004197 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=360/500 | active_users=3 | updated_users=1 | objective=28.245842 | sum_rate=31.812140 | r_p=0.015824 | r_c=0.063206 | r_s=0.004192 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=365/500 | active_users=3 | updated_users=1 | objective=28.242945 | sum_rate=31.816631 | r_p=0.001390 | r_c=0.026749 | r_s=0.004197 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=370/500 | active_users=3 | updated_users=1 | objective=28.245861 | sum_rate=31.812119 | r_p=0.015919 | r_c=0.063597 | r_s=0.004192 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=375/500 | active_users=3 | updated_users=1 | objective=28.242970 | sum_rate=31.816612 | r_p=0.001351 | r_c=0.026014 | r_s=0.004197 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=380/500 | active_users=3 | updated_users=1 | objective=28.245872 | sum_rate=31.812077 | r_p=0.016034 | r_c=0.064071 | r_s=0.004193 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=385/500 | active_users=3 | updated_users=1 | objective=28.242992 | sum_rate=31.816591 | r_p=0.001313 | r_c=0.025280 | r_s=0.004197 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=390/500 | active_users=3 | updated_users=1 | objective=28.245878 | sum_rate=31.812031 | r_p=0.016151 | r_c=0.064553 | r_s=0.004193 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=395/500 | active_users=3 | updated_users=1 | objective=28.243015 | sum_rate=31.816566 | r_p=0.001274 | r_c=0.024527 | r_s=0.004197 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=400/500 | active_users=3 | updated_users=1 | objective=28.245899 | sum_rate=31.812010 | r_p=0.016251 | r_c=0.064963 | r_s=0.004193 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=405/500 | active_users=3 | updated_users=1 | objective=28.243029 | sum_rate=31.816534 | r_p=0.001239 | r_c=0.023848 | r_s=0.004197 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=410/500 | active_users=3 | updated_users=1 | objective=28.245911 | sum_rate=31.811974 | r_p=0.016363 | r_c=0.065426 | r_s=0.004193 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=415/500 | active_users=3 | updated_users=1 | objective=28.243052 | sum_rate=31.816513 | r_p=0.001199 | r_c=0.023077 | r_s=0.004197 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=420/500 | active_users=3 | updated_users=1 | objective=28.245930 | sum_rate=31.811951 | r_p=0.016461 | r_c=0.065830 | r_s=0.004193 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=425/500 | active_users=3 | updated_users=1 | objective=28.243065 | sum_rate=31.816473 | r_p=0.001159 | r_c=0.022306 | r_s=0.004198 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=430/500 | active_users=3 | updated_users=1 | objective=28.245943 | sum_rate=31.811918 | r_p=0.016565 | r_c=0.066261 | r_s=0.004193 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=435/500 | active_users=3 | updated_users=1 | objective=28.243093 | sum_rate=31.816460 | r_p=0.001120 | r_c=0.021554 | r_s=0.004198 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=440/500 | active_users=3 | updated_users=1 | objective=28.245956 | sum_rate=31.811884 | r_p=0.016673 | r_c=0.066706 | r_s=0.004193 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=445/500 | active_users=3 | updated_users=1 | objective=28.243114 | sum_rate=31.816437 | r_p=0.001083 | r_c=0.020856 | r_s=0.004198 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=450/500 | active_users=3 | updated_users=1 | objective=28.245966 | sum_rate=31.811846 | r_p=0.016783 | r_c=0.067159 | r_s=0.004193 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=455/500 | active_users=3 | updated_users=1 | objective=28.243130 | sum_rate=31.816402 | r_p=0.001044 | r_c=0.020103 | r_s=0.004198 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=460/500 | active_users=3 | updated_users=1 | objective=28.245983 | sum_rate=31.811817 | r_p=0.016891 | r_c=0.067606 | r_s=0.004193 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=465/500 | active_users=3 | updated_users=1 | objective=28.243145 | sum_rate=31.816368 | r_p=0.001008 | r_c=0.019406 | r_s=0.004198 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=470/500 | active_users=3 | updated_users=1 | objective=28.245995 | sum_rate=31.811783 | r_p=0.016997 | r_c=0.068046 | r_s=0.004193 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=475/500 | active_users=3 | updated_users=1 | objective=28.243166 | sum_rate=31.816347 | r_p=9.679794e-04 | r_c=0.018635 | r_s=0.004198 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=480/500 | active_users=3 | updated_users=1 | objective=28.241440 | sum_rate=31.810015 | r_p=0.010296 | r_c=0.041229 | r_s=0.004532 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=485/500 | active_users=3 | updated_users=1 | objective=28.237671 | sum_rate=31.813942 | r_p=0.001839 | r_c=0.035397 | r_s=0.004192 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=490/500 | active_users=3 | updated_users=1 | objective=28.240685 | sum_rate=31.809578 | r_p=0.009505 | r_c=0.038066 | r_s=0.004187 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=495/500 | active_users=3 | updated_users=1 | objective=28.237738 | sum_rate=31.814005 | r_p=0.001830 | r_c=0.035232 | r_s=0.004192 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=500/500 | active_users=3 | updated_users=1 | objective=28.240700 | sum_rate=31.809547 | r_p=0.009606 | r_c=0.038473 | r_s=0.004187 | status=running
+  user=00 block=02 candidate n_kl=  44 after updating users [0] still leaves committed users infeasible [0, 1] after re-optimization; stopping further n_kl reduction for this user in this block.
+[DL Convergence Reduction] | block=2 | epoch=7 | users=[2]
+  user=02 block=02 accepted smaller n_kl=  73 without fresh re-optimization.
+[DL Convergence Reduction] | block=2 | epoch=8 | users=[2]
+  user=02 block=02 accepted smaller n_kl=  72 without fresh re-optimization.
+[DL Convergence Reduction] | block=2 | epoch=9 | users=[2]
+  user=02 block=02 accepted smaller n_kl=  71 without fresh re-optimization.
+[DL Convergence Reduction] | block=2 | epoch=10 | users=[2]
+  user=02 block=02 accepted smaller n_kl=  70 without fresh re-optimization.
+[DL Convergence Reduction] | block=2 | epoch=11 | users=[2]
+  user=02 block=02 candidate n_kl=  69 breaks committed-user feasibility [2]; trying fresh re-optimization.
+[DL Convergence] | phase=optimize | block=2 | epoch=1/500 | active_users=3 | updated_users=1 | objective=28.238976 | sum_rate=31.738514 | r_p=0.047046 | r_c=0.705821 | r_s=0.002688 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=5/500 | active_users=3 | updated_users=1 | objective=28.235956 | sum_rate=31.726622 | r_p=0.026669 | r_c=0.181379 | r_s=0.003158 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=10/500 | active_users=3 | updated_users=1 | objective=28.233593 | sum_rate=31.720432 | r_p=0.036098 | r_c=0.188713 | r_s=0.002677 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=15/500 | active_users=3 | updated_users=1 | objective=28.240765 | sum_rate=31.728899 | r_p=0.032533 | r_c=0.137084 | r_s=0.002768 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=20/500 | active_users=3 | updated_users=1 | objective=28.237156 | sum_rate=31.721214 | r_p=0.042533 | r_c=0.168481 | r_s=0.002685 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=25/500 | active_users=3 | updated_users=1 | objective=28.242233 | sum_rate=31.728689 | r_p=0.036420 | r_c=0.144340 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=30/500 | active_users=3 | updated_users=1 | objective=28.238365 | sum_rate=31.722198 | r_p=0.043083 | r_c=0.170831 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=35/500 | active_users=3 | updated_users=1 | objective=28.242252 | sum_rate=31.728727 | r_p=0.036369 | r_c=0.144283 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=40/500 | active_users=3 | updated_users=1 | objective=28.238396 | sum_rate=31.722244 | r_p=0.043034 | r_c=0.170805 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=45/500 | active_users=3 | updated_users=1 | objective=28.242266 | sum_rate=31.728758 | r_p=0.036328 | r_c=0.144264 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=50/500 | active_users=3 | updated_users=1 | objective=28.238420 | sum_rate=31.722290 | r_p=0.042991 | r_c=0.170807 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=55/500 | active_users=3 | updated_users=1 | objective=28.242470 | sum_rate=31.729059 | r_p=0.036110 | r_c=0.143540 | r_s=0.002685 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=60/500 | active_users=3 | updated_users=1 | objective=28.238792 | sum_rate=31.722921 | r_p=0.042412 | r_c=0.168673 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=65/500 | active_users=3 | updated_users=1 | objective=28.242729 | sum_rate=31.729496 | r_p=0.035715 | r_c=0.142109 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=70/500 | active_users=3 | updated_users=1 | objective=28.238825 | sum_rate=31.722971 | r_p=0.042366 | r_c=0.168654 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=75/500 | active_users=3 | updated_users=1 | objective=28.242744 | sum_rate=31.729528 | r_p=0.035671 | r_c=0.142073 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=80/500 | active_users=3 | updated_users=1 | objective=28.238850 | sum_rate=31.723017 | r_p=0.042318 | r_c=0.168629 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=85/500 | active_users=3 | updated_users=1 | objective=28.242760 | sum_rate=31.729557 | r_p=0.035628 | r_c=0.142043 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=90/500 | active_users=3 | updated_users=1 | objective=28.238880 | sum_rate=31.723064 | r_p=0.042268 | r_c=0.168597 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=95/500 | active_users=3 | updated_users=1 | objective=28.242785 | sum_rate=31.729605 | r_p=0.035574 | r_c=0.141967 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=100/500 | active_users=3 | updated_users=1 | objective=28.238909 | sum_rate=31.723114 | r_p=0.042220 | r_c=0.168569 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=105/500 | active_users=3 | updated_users=1 | objective=28.242794 | sum_rate=31.729630 | r_p=0.035535 | r_c=0.141949 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=110/500 | active_users=3 | updated_users=1 | objective=28.238937 | sum_rate=31.723158 | r_p=0.042173 | r_c=0.168544 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=115/500 | active_users=3 | updated_users=1 | objective=28.242809 | sum_rate=31.729664 | r_p=0.035490 | r_c=0.141904 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=120/500 | active_users=3 | updated_users=1 | objective=28.238964 | sum_rate=31.723206 | r_p=0.042128 | r_c=0.168529 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=125/500 | active_users=3 | updated_users=1 | objective=28.242836 | sum_rate=31.729708 | r_p=0.035439 | r_c=0.141840 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=130/500 | active_users=3 | updated_users=1 | objective=28.238998 | sum_rate=31.723257 | r_p=0.042079 | r_c=0.168497 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=135/500 | active_users=3 | updated_users=1 | objective=28.242851 | sum_rate=31.729742 | r_p=0.035396 | r_c=0.141805 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=140/500 | active_users=3 | updated_users=1 | objective=28.239017 | sum_rate=31.723293 | r_p=0.042037 | r_c=0.168490 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=145/500 | active_users=3 | updated_users=1 | objective=28.242865 | sum_rate=31.729771 | r_p=0.035356 | r_c=0.141780 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=150/500 | active_users=3 | updated_users=1 | objective=28.239048 | sum_rate=31.723345 | r_p=0.041981 | r_c=0.168429 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=155/500 | active_users=3 | updated_users=1 | objective=28.242880 | sum_rate=31.729805 | r_p=0.035308 | r_c=0.141725 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=160/500 | active_users=3 | updated_users=1 | objective=28.239069 | sum_rate=31.723385 | r_p=0.041937 | r_c=0.168415 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=165/500 | active_users=3 | updated_users=1 | objective=28.242897 | sum_rate=31.729836 | r_p=0.035268 | r_c=0.141702 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=170/500 | active_users=3 | updated_users=1 | objective=28.239101 | sum_rate=31.723434 | r_p=0.041892 | r_c=0.168393 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=175/500 | active_users=3 | updated_users=1 | objective=28.242912 | sum_rate=31.729874 | r_p=0.035215 | r_c=0.141625 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=180/500 | active_users=3 | updated_users=1 | objective=28.239132 | sum_rate=31.723484 | r_p=0.041846 | r_c=0.168372 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=185/500 | active_users=3 | updated_users=1 | objective=28.242931 | sum_rate=31.729908 | r_p=0.035173 | r_c=0.141592 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=190/500 | active_users=3 | updated_users=1 | objective=28.239155 | sum_rate=31.723522 | r_p=0.041800 | r_c=0.168349 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=195/500 | active_users=3 | updated_users=1 | objective=28.242943 | sum_rate=31.729935 | r_p=0.035133 | r_c=0.141566 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=200/500 | active_users=3 | updated_users=1 | objective=28.239250 | sum_rate=31.723810 | r_p=0.041366 | r_c=0.166756 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=205/500 | active_users=3 | updated_users=1 | objective=28.243126 | sum_rate=31.730318 | r_p=0.034679 | r_c=0.139867 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=210/500 | active_users=3 | updated_users=1 | objective=28.239279 | sum_rate=31.723854 | r_p=0.041325 | r_c=0.166749 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=215/500 | active_users=3 | updated_users=1 | objective=28.243143 | sum_rate=31.730349 | r_p=0.034642 | r_c=0.139851 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=220/500 | active_users=3 | updated_users=1 | objective=28.239307 | sum_rate=31.723904 | r_p=0.041275 | r_c=0.166702 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=225/500 | active_users=3 | updated_users=1 | objective=28.243162 | sum_rate=31.730391 | r_p=0.034589 | r_c=0.139768 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=230/500 | active_users=3 | updated_users=1 | objective=28.239334 | sum_rate=31.723949 | r_p=0.041225 | r_c=0.166658 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=235/500 | active_users=3 | updated_users=1 | objective=28.243179 | sum_rate=31.730423 | r_p=0.034547 | r_c=0.139728 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=240/500 | active_users=3 | updated_users=1 | objective=28.239368 | sum_rate=31.724003 | r_p=0.041177 | r_c=0.166621 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=245/500 | active_users=3 | updated_users=1 | objective=28.243196 | sum_rate=31.730461 | r_p=0.034492 | r_c=0.139636 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=250/500 | active_users=3 | updated_users=1 | objective=28.239389 | sum_rate=31.724041 | r_p=0.041133 | r_c=0.166600 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=255/500 | active_users=3 | updated_users=1 | objective=28.243206 | sum_rate=31.730482 | r_p=0.034462 | r_c=0.139647 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=260/500 | active_users=3 | updated_users=1 | objective=28.239416 | sum_rate=31.724087 | r_p=0.041083 | r_c=0.166550 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=265/500 | active_users=3 | updated_users=1 | objective=28.243223 | sum_rate=31.730518 | r_p=0.034416 | r_c=0.139588 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=270/500 | active_users=3 | updated_users=1 | objective=28.239449 | sum_rate=31.724140 | r_p=0.041036 | r_c=0.166515 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=275/500 | active_users=3 | updated_users=1 | objective=28.243242 | sum_rate=31.730555 | r_p=0.034371 | r_c=0.140704 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=280/500 | active_users=3 | updated_users=1 | objective=28.239473 | sum_rate=31.724180 | r_p=0.040991 | r_c=0.166486 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=285/500 | active_users=3 | updated_users=1 | objective=28.243261 | sum_rate=31.730595 | r_p=0.034320 | r_c=0.142155 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=290/500 | active_users=3 | updated_users=1 | objective=28.239496 | sum_rate=31.724222 | r_p=0.040944 | r_c=0.166450 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=295/500 | active_users=3 | updated_users=1 | objective=28.243275 | sum_rate=31.730623 | r_p=0.034276 | r_c=0.143620 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=300/500 | active_users=3 | updated_users=1 | objective=28.239529 | sum_rate=31.724272 | r_p=0.040897 | r_c=0.166412 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=305/500 | active_users=3 | updated_users=1 | objective=28.243290 | sum_rate=31.730659 | r_p=0.034230 | r_c=0.145014 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=310/500 | active_users=3 | updated_users=1 | objective=28.239552 | sum_rate=31.724316 | r_p=0.040851 | r_c=0.166378 | r_s=0.002696 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=315/500 | active_users=3 | updated_users=1 | objective=28.243307 | sum_rate=31.730690 | r_p=0.034188 | r_c=0.146436 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=320/500 | active_users=3 | updated_users=1 | objective=28.239574 | sum_rate=31.724354 | r_p=0.040810 | r_c=0.166366 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=325/500 | active_users=3 | updated_users=1 | objective=28.243324 | sum_rate=31.730732 | r_p=0.034132 | r_c=0.147830 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=330/500 | active_users=3 | updated_users=1 | objective=28.239605 | sum_rate=31.724403 | r_p=0.040762 | r_c=0.166322 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=335/500 | active_users=3 | updated_users=1 | objective=28.243343 | sum_rate=31.730764 | r_p=0.034094 | r_c=0.149253 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=340/500 | active_users=3 | updated_users=1 | objective=28.239639 | sum_rate=31.724457 | r_p=0.040707 | r_c=0.166250 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=345/500 | active_users=3 | updated_users=1 | objective=28.243362 | sum_rate=31.730804 | r_p=0.034041 | r_c=0.150676 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=350/500 | active_users=3 | updated_users=1 | objective=28.239664 | sum_rate=31.724503 | r_p=0.040659 | r_c=0.166206 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=355/500 | active_users=3 | updated_users=1 | objective=28.243374 | sum_rate=31.730827 | r_p=0.034006 | r_c=0.152070 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=360/500 | active_users=3 | updated_users=1 | objective=28.239691 | sum_rate=31.724546 | r_p=0.040616 | r_c=0.166182 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=365/500 | active_users=3 | updated_users=1 | objective=28.243389 | sum_rate=31.730862 | r_p=0.033960 | r_c=0.153479 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=370/500 | active_users=3 | updated_users=1 | objective=28.239714 | sum_rate=31.724585 | r_p=0.040572 | r_c=0.166154 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=375/500 | active_users=3 | updated_users=1 | objective=28.243401 | sum_rate=31.730892 | r_p=0.033913 | r_c=0.154946 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=380/500 | active_users=3 | updated_users=1 | objective=28.239738 | sum_rate=31.724634 | r_p=0.040518 | r_c=0.166082 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=385/500 | active_users=3 | updated_users=1 | objective=28.243420 | sum_rate=31.730927 | r_p=0.033870 | r_c=0.156369 | r_s=0.002698 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=390/500 | active_users=3 | updated_users=1 | objective=28.239767 | sum_rate=31.724676 | r_p=0.040480 | r_c=0.166078 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=395/500 | active_users=3 | updated_users=1 | objective=28.243439 | sum_rate=31.730967 | r_p=0.033821 | r_c=0.157793 | r_s=0.002699 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=400/500 | active_users=3 | updated_users=1 | objective=28.239799 | sum_rate=31.724730 | r_p=0.040424 | r_c=0.165999 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=405/500 | active_users=3 | updated_users=1 | objective=28.243450 | sum_rate=31.730999 | r_p=0.033772 | r_c=0.159231 | r_s=0.002699 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=410/500 | active_users=3 | updated_users=1 | objective=28.239819 | sum_rate=31.724766 | r_p=0.040382 | r_c=0.165977 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=415/500 | active_users=3 | updated_users=1 | objective=28.243465 | sum_rate=31.731022 | r_p=0.033740 | r_c=0.160655 | r_s=0.002699 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=420/500 | active_users=3 | updated_users=1 | objective=28.239849 | sum_rate=31.724817 | r_p=0.040328 | r_c=0.165901 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=425/500 | active_users=3 | updated_users=1 | objective=28.243484 | sum_rate=31.731064 | r_p=0.033689 | r_c=0.162022 | r_s=0.002699 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=430/500 | active_users=3 | updated_users=1 | objective=28.239872 | sum_rate=31.724855 | r_p=0.040292 | r_c=0.165903 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=435/500 | active_users=3 | updated_users=1 | objective=28.243494 | sum_rate=31.731089 | r_p=0.033649 | r_c=0.163460 | r_s=0.002699 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=440/500 | active_users=3 | updated_users=1 | objective=28.239899 | sum_rate=31.724903 | r_p=0.040240 | r_c=0.165837 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=445/500 | active_users=3 | updated_users=1 | objective=28.243509 | sum_rate=31.731123 | r_p=0.033604 | r_c=0.164885 | r_s=0.002699 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=450/500 | active_users=3 | updated_users=1 | objective=28.239922 | sum_rate=31.724939 | r_p=0.040201 | r_c=0.165825 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=455/500 | active_users=3 | updated_users=1 | objective=28.243530 | sum_rate=31.731163 | r_p=0.033555 | r_c=0.166295 | r_s=0.002699 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=460/500 | active_users=3 | updated_users=1 | objective=28.239952 | sum_rate=31.724995 | r_p=0.040139 | r_c=0.165717 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=465/500 | active_users=3 | updated_users=1 | objective=28.243547 | sum_rate=31.731199 | r_p=0.033503 | r_c=0.167720 | r_s=0.002699 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=470/500 | active_users=3 | updated_users=1 | objective=28.239975 | sum_rate=31.725033 | r_p=0.040102 | r_c=0.165715 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=475/500 | active_users=3 | updated_users=1 | objective=28.243557 | sum_rate=31.731222 | r_p=0.033469 | r_c=0.169202 | r_s=0.002699 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=480/500 | active_users=3 | updated_users=1 | objective=28.240002 | sum_rate=31.725079 | r_p=0.040056 | r_c=0.165671 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=485/500 | active_users=3 | updated_users=1 | objective=28.243572 | sum_rate=31.731258 | r_p=0.033420 | r_c=0.170627 | r_s=0.002699 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=490/500 | active_users=3 | updated_users=1 | objective=28.240036 | sum_rate=31.725128 | r_p=0.040007 | r_c=0.165615 | r_s=0.002697 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=495/500 | active_users=3 | updated_users=1 | objective=28.243586 | sum_rate=31.731285 | r_p=0.033381 | r_c=0.172009 | r_s=0.002699 | status=running
+[DL Convergence] | phase=optimize | block=2 | epoch=500/500 | active_users=3 | updated_users=1 | objective=28.240063 | sum_rate=31.725178 | r_p=0.039954 | r_c=0.165540 | r_s=0.002697 | status=running
+  user=02 block=02 candidate n_kl=  69 after updating users [2] still leaves committed users infeasible [0, 2] after re-optimization; stopping further n_kl reduction for this user in this block.
+[DL Convergence Allocation] | user=0 | block=2 | served_bits=326 | n_kl=45 | required_rate=7.244444 | achieved_rate=7.247651 | rate_margin=0.003207
+[DL Convergence Allocation] | user=1 | block=2 | served_bits=799 | n_kl=60 | required_rate=13.316667 | achieved_rate=13.351850 | rate_margin=0.035184
+[DL Convergence Allocation] | user=2 | block=2 | served_bits=773 | n_kl=70 | required_rate=11.042857 | achieved_rate=11.155750 | rate_margin=0.112892
+[DL Convergence Block] | block=2 | status=complete | allocated_bits=1898 | remaining_bits=1
+[DL Convergence Block] | block=3 | active_users=1 | remaining_bits=1 | objective=remaining_bits_weighted_sum_rate
+    weight_strategy=remaining_bits | user_weights: u1=1.000
+[DL Convergence] | phase=optimize | block=3 | epoch=1/500 | active_users=1 | updated_users=1 | objective=11.856061 | sum_rate=11.856061 | r_p=0.000000 | r_c=0.000000 | r_s=0.002059 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=5/500 | active_users=1 | updated_users=1 | objective=11.971375 | sum_rate=11.971375 | r_p=0.000000 | r_c=0.000000 | r_s=0.002063 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=10/500 | active_users=1 | updated_users=1 | objective=12.116325 | sum_rate=12.116325 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=15/500 | active_users=1 | updated_users=1 | objective=12.266106 | sum_rate=12.266106 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=20/500 | active_users=1 | updated_users=1 | objective=12.425736 | sum_rate=12.425736 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=25/500 | active_users=1 | updated_users=1 | objective=12.597477 | sum_rate=12.597477 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=30/500 | active_users=1 | updated_users=1 | objective=12.785000 | sum_rate=12.785000 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=35/500 | active_users=1 | updated_users=1 | objective=12.988562 | sum_rate=12.988562 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=40/500 | active_users=1 | updated_users=1 | objective=13.205795 | sum_rate=13.205795 | r_p=0.000000 | r_c=0.000000 | r_s=0.002063 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=45/500 | active_users=1 | updated_users=1 | objective=13.432343 | sum_rate=13.432343 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=50/500 | active_users=1 | updated_users=1 | objective=13.664319 | sum_rate=13.664319 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=55/500 | active_users=1 | updated_users=1 | objective=13.898141 | sum_rate=13.898141 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=60/500 | active_users=1 | updated_users=1 | objective=14.131219 | sum_rate=14.131219 | r_p=0.000000 | r_c=0.000000 | r_s=0.002062 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=65/500 | active_users=1 | updated_users=1 | objective=14.361450 | sum_rate=14.361450 | r_p=0.000000 | r_c=0.000000 | r_s=0.002063 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=70/500 | active_users=1 | updated_users=1 | objective=14.587317 | sum_rate=14.587317 | r_p=0.000000 | r_c=0.000000 | r_s=0.002063 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=75/500 | active_users=1 | updated_users=1 | objective=14.807901 | sum_rate=14.807901 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=80/500 | active_users=1 | updated_users=1 | objective=15.022606 | sum_rate=15.022606 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=85/500 | active_users=1 | updated_users=1 | objective=15.231115 | sum_rate=15.231115 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=90/500 | active_users=1 | updated_users=1 | objective=15.433461 | sum_rate=15.433461 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=95/500 | active_users=1 | updated_users=1 | objective=15.629691 | sum_rate=15.629691 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=100/500 | active_users=1 | updated_users=1 | objective=15.819964 | sum_rate=15.819964 | r_p=0.000000 | r_c=0.000000 | r_s=0.002063 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=105/500 | active_users=1 | updated_users=1 | objective=16.004530 | sum_rate=16.004530 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=110/500 | active_users=1 | updated_users=1 | objective=16.183521 | sum_rate=16.183521 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=115/500 | active_users=1 | updated_users=1 | objective=16.357098 | sum_rate=16.357098 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=120/500 | active_users=1 | updated_users=1 | objective=16.525434 | sum_rate=16.525434 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=125/500 | active_users=1 | updated_users=1 | objective=16.688828 | sum_rate=16.688828 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=130/500 | active_users=1 | updated_users=1 | objective=16.847555 | sum_rate=16.847555 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=135/500 | active_users=1 | updated_users=1 | objective=17.001791 | sum_rate=17.001791 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=140/500 | active_users=1 | updated_users=1 | objective=17.151726 | sum_rate=17.151726 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=145/500 | active_users=1 | updated_users=1 | objective=17.297550 | sum_rate=17.297550 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=150/500 | active_users=1 | updated_users=1 | objective=17.439444 | sum_rate=17.439444 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=155/500 | active_users=1 | updated_users=1 | objective=17.577524 | sum_rate=17.577524 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=160/500 | active_users=1 | updated_users=1 | objective=17.711933 | sum_rate=17.711933 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=165/500 | active_users=1 | updated_users=1 | objective=17.842846 | sum_rate=17.842846 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=170/500 | active_users=1 | updated_users=1 | objective=17.970364 | sum_rate=17.970364 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=175/500 | active_users=1 | updated_users=1 | objective=18.094578 | sum_rate=18.094578 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=180/500 | active_users=1 | updated_users=1 | objective=18.215647 | sum_rate=18.215647 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=185/500 | active_users=1 | updated_users=1 | objective=18.333775 | sum_rate=18.333775 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=190/500 | active_users=1 | updated_users=1 | objective=18.449083 | sum_rate=18.449083 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=195/500 | active_users=1 | updated_users=1 | objective=18.561668 | sum_rate=18.561668 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=200/500 | active_users=1 | updated_users=1 | objective=18.671665 | sum_rate=18.671665 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=205/500 | active_users=1 | updated_users=1 | objective=18.779152 | sum_rate=18.779152 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=210/500 | active_users=1 | updated_users=1 | objective=18.884171 | sum_rate=18.884171 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=215/500 | active_users=1 | updated_users=1 | objective=18.986773 | sum_rate=18.986773 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=220/500 | active_users=1 | updated_users=1 | objective=19.087069 | sum_rate=19.087069 | r_p=0.000000 | r_c=0.000000 | r_s=0.002063 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=225/500 | active_users=1 | updated_users=1 | objective=19.185169 | sum_rate=19.185169 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=230/500 | active_users=1 | updated_users=1 | objective=19.281254 | sum_rate=19.281254 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=235/500 | active_users=1 | updated_users=1 | objective=19.375355 | sum_rate=19.375355 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=240/500 | active_users=1 | updated_users=1 | objective=19.467495 | sum_rate=19.467495 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=245/500 | active_users=1 | updated_users=1 | objective=19.557709 | sum_rate=19.557709 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=250/500 | active_users=1 | updated_users=1 | objective=19.646040 | sum_rate=19.646040 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=255/500 | active_users=1 | updated_users=1 | objective=19.732540 | sum_rate=19.732540 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=260/500 | active_users=1 | updated_users=1 | objective=19.817242 | sum_rate=19.817242 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=265/500 | active_users=1 | updated_users=1 | objective=19.900177 | sum_rate=19.900177 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=270/500 | active_users=1 | updated_users=1 | objective=19.981428 | sum_rate=19.981428 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=275/500 | active_users=1 | updated_users=1 | objective=20.061056 | sum_rate=20.061056 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=280/500 | active_users=1 | updated_users=1 | objective=20.139097 | sum_rate=20.139097 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=285/500 | active_users=1 | updated_users=1 | objective=20.215565 | sum_rate=20.215565 | r_p=0.000000 | r_c=0.000000 | r_s=0.002062 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=290/500 | active_users=1 | updated_users=1 | objective=20.290476 | sum_rate=20.290476 | r_p=0.000000 | r_c=0.000000 | r_s=0.002062 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=295/500 | active_users=1 | updated_users=1 | objective=20.363865 | sum_rate=20.363865 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=300/500 | active_users=1 | updated_users=1 | objective=20.435808 | sum_rate=20.435808 | r_p=0.000000 | r_c=0.000000 | r_s=0.002061 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=305/500 | active_users=1 | updated_users=1 | objective=20.506332 | sum_rate=20.506332 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=310/500 | active_users=1 | updated_users=1 | objective=20.575478 | sum_rate=20.575478 | r_p=0.000000 | r_c=0.000000 | r_s=0.002055 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=315/500 | active_users=1 | updated_users=1 | objective=20.643280 | sum_rate=20.643280 | r_p=0.000000 | r_c=0.000000 | r_s=0.002057 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=320/500 | active_users=1 | updated_users=1 | objective=20.709749 | sum_rate=20.709749 | r_p=0.000000 | r_c=0.000000 | r_s=0.002063 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=325/500 | active_users=1 | updated_users=1 | objective=20.774900 | sum_rate=20.774900 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=330/500 | active_users=1 | updated_users=1 | objective=20.838747 | sum_rate=20.838747 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=335/500 | active_users=1 | updated_users=1 | objective=20.901293 | sum_rate=20.901293 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=340/500 | active_users=1 | updated_users=1 | objective=20.962553 | sum_rate=20.962553 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=345/500 | active_users=1 | updated_users=1 | objective=21.022533 | sum_rate=21.022533 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=350/500 | active_users=1 | updated_users=1 | objective=21.081266 | sum_rate=21.081266 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=355/500 | active_users=1 | updated_users=1 | objective=21.138807 | sum_rate=21.138807 | r_p=0.000000 | r_c=0.000000 | r_s=0.002061 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=360/500 | active_users=1 | updated_users=1 | objective=21.195160 | sum_rate=21.195160 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=365/500 | active_users=1 | updated_users=1 | objective=21.250351 | sum_rate=21.250351 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=370/500 | active_users=1 | updated_users=1 | objective=21.304413 | sum_rate=21.304413 | r_p=0.000000 | r_c=0.000000 | r_s=0.002062 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=375/500 | active_users=1 | updated_users=1 | objective=21.357363 | sum_rate=21.357363 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=380/500 | active_users=1 | updated_users=1 | objective=21.409193 | sum_rate=21.409193 | r_p=0.000000 | r_c=0.000000 | r_s=0.002061 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=385/500 | active_users=1 | updated_users=1 | objective=21.459923 | sum_rate=21.459923 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=390/500 | active_users=1 | updated_users=1 | objective=21.509556 | sum_rate=21.509556 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=395/500 | active_users=1 | updated_users=1 | objective=21.558111 | sum_rate=21.558111 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=400/500 | active_users=1 | updated_users=1 | objective=21.605577 | sum_rate=21.605577 | r_p=0.000000 | r_c=0.000000 | r_s=0.002061 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=405/500 | active_users=1 | updated_users=1 | objective=21.651993 | sum_rate=21.651993 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=410/500 | active_users=1 | updated_users=1 | objective=21.697367 | sum_rate=21.697367 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=415/500 | active_users=1 | updated_users=1 | objective=21.741726 | sum_rate=21.741726 | r_p=0.000000 | r_c=0.000000 | r_s=0.002063 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=420/500 | active_users=1 | updated_users=1 | objective=21.785088 | sum_rate=21.785088 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=425/500 | active_users=1 | updated_users=1 | objective=21.827452 | sum_rate=21.827452 | r_p=0.000000 | r_c=0.000000 | r_s=0.002063 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=430/500 | active_users=1 | updated_users=1 | objective=21.868832 | sum_rate=21.868832 | r_p=0.000000 | r_c=0.000000 | r_s=0.002063 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=435/500 | active_users=1 | updated_users=1 | objective=21.909248 | sum_rate=21.909248 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=440/500 | active_users=1 | updated_users=1 | objective=21.948706 | sum_rate=21.948706 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=445/500 | active_users=1 | updated_users=1 | objective=21.987247 | sum_rate=21.987247 | r_p=0.000000 | r_c=0.000000 | r_s=0.002066 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=450/500 | active_users=1 | updated_users=1 | objective=22.024916 | sum_rate=22.024916 | r_p=0.000000 | r_c=0.000000 | r_s=0.002061 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=455/500 | active_users=1 | updated_users=1 | objective=22.061714 | sum_rate=22.061714 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=460/500 | active_users=1 | updated_users=1 | objective=22.097654 | sum_rate=22.097654 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=465/500 | active_users=1 | updated_users=1 | objective=22.132751 | sum_rate=22.132751 | r_p=0.000000 | r_c=0.000000 | r_s=0.002055 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=470/500 | active_users=1 | updated_users=1 | objective=22.167032 | sum_rate=22.167032 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=475/500 | active_users=1 | updated_users=1 | objective=22.200493 | sum_rate=22.200493 | r_p=0.000000 | r_c=0.000000 | r_s=0.002055 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=480/500 | active_users=1 | updated_users=1 | objective=22.233149 | sum_rate=22.233149 | r_p=0.000000 | r_c=0.000000 | r_s=0.002062 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=485/500 | active_users=1 | updated_users=1 | objective=22.265030 | sum_rate=22.265030 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=490/500 | active_users=1 | updated_users=1 | objective=22.296175 | sum_rate=22.296175 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=495/500 | active_users=1 | updated_users=1 | objective=22.326597 | sum_rate=22.326597 | r_p=0.000000 | r_c=0.000000 | r_s=0.002065 | status=running
+[DL Convergence] | phase=optimize | block=3 | epoch=500/500 | active_users=1 | updated_users=1 | objective=22.356337 | sum_rate=22.356337 | r_p=0.000000 | r_c=0.000000 | r_s=0.002064 | status=running
+[DL Convergence Reduction] | block=3 | epoch=1 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  59 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=2 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  58 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=3 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  57 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=4 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  56 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=5 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  55 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=6 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  54 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=7 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  53 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=8 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  52 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=9 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  51 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=10 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  50 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=11 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  49 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=12 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  48 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=13 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  47 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=14 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  46 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=15 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  45 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=16 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  44 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=17 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  43 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=18 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  42 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=19 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  41 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=20 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  40 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=21 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  39 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=22 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  38 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=23 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  37 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=24 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  36 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=25 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  35 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=26 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  34 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=27 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  33 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=28 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  32 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=29 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  31 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=30 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  30 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=31 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  29 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=32 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  28 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=33 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  27 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=34 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  26 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=35 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  25 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=36 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  24 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=37 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  23 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=38 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  22 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=39 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  21 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=40 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  20 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=41 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  19 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=42 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  18 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=43 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  17 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=44 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  16 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=45 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  15 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=46 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  14 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=47 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  13 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=48 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  12 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=49 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  11 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=50 | users=[1]
+  user=01 block=03 accepted smaller n_kl=  10 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=51 | users=[1]
+  user=01 block=03 accepted smaller n_kl=   9 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=52 | users=[1]
+  user=01 block=03 accepted smaller n_kl=   8 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=53 | users=[1]
+  user=01 block=03 accepted smaller n_kl=   7 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=54 | users=[1]
+  user=01 block=03 accepted smaller n_kl=   6 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=55 | users=[1]
+  user=01 block=03 accepted smaller n_kl=   5 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=56 | users=[1]
+  user=01 block=03 accepted smaller n_kl=   4 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=57 | users=[1]
+  user=01 block=03 accepted smaller n_kl=   3 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=58 | users=[1]
+  user=01 block=03 accepted smaller n_kl=   2 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=59 | users=[1]
+  user=01 block=03 accepted smaller n_kl=   1 without fresh re-optimization.
+[DL Convergence Reduction] | block=3 | epoch=60 | users=[1]
+[DL Convergence Allocation] | user=1 | block=3 | served_bits=1 | n_kl=1 | required_rate=1.000000 | achieved_rate=6.373366 | rate_margin=5.373366
+[DL Convergence Block] | block=3 | status=complete | allocated_bits=1 | remaining_bits=0
+Saved downlink results to: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_bitsw_dir__dl_payload_completion_sweep_20260704_210305_conv_upd_dir_loss_aug_obj_bitsw__s3\testing
+Mirrored downlink convergence scenario results to: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Scenario-Payload completion\Convergence per epoch\conv_bitsw_dir__dl_payload_completion_sweep_20260704_210305_conv_upd_dir_loss_aug_obj_bitsw__s3
+Saved downlink convergence method results to: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Downlink\Method-Convergence per epoch\conv_bitsw_dir__dl_payload_completion_sweep_20260704_210305_conv_upd_dir_loss_aug_obj_bitsw__s3

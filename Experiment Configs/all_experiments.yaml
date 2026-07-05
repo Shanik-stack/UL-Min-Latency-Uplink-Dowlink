@@ -1,0 +1,27 @@
+defaults:
+  python_executable: python
+  launch_mode: parallel_terminals
+  quiet: false
+  skip_test: false
+  seed: 3
+
+runs:
+  - link: uplink
+    method: convergence
+    cfg_names: all
+    seed: 3
+
+  - link: uplink
+    method: monte_carlo
+    cfg_names: all
+
+  - link: downlink
+    method: convergence
+    cfg_names: all
+    seed: 3
+    # quiet: true
+
+  - link: downlink
+    method: monte_carlo
+    cfg_names: all
+    # quiet: true

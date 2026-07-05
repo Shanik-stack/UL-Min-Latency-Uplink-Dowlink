@@ -1,0 +1,524 @@
+Initialized plotting globals:
+train_result_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_net__ul_fixed_block_targets_sweep_20260704_205957_conv_upd_net_loss_plain_rate_snr__s3\optimization_history
+test_result_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_net__ul_fixed_block_targets_sweep_20260704_205957_conv_upd_net_loss_plain_rate_snr__s3\optimization_history
+user_cfg_result_path: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Uplink\Method-Convergence per epoch\conv_net__ul_fixed_block_targets_sweep_20260704_205957_conv_upd_net_loss_plain_rate_snr__s3\user_config
+[UL Initial Baseline] | seed=3 | scenario=fixed_block_targets | method=convergence | users=3 | initial_total_latency=0.033133 | initial_avg_latency=0.011044 | initial_min_latency=0.006467 | initial_max_latency=0.015533
+[UL Convergence Train] | phase=start | user=0 | mode=fixed_block_targets
+[UL Convergence Train] | user=0 | block=0 | target_bits=200 | mode=fixed_block_targets
+[UL Convergence Block] | user=0 | block=0 | budget_mode=target_bits | requested_bits=200
+[UL Convergence Solve] | user=0 | block=0 | stage=n=T | n_kl=50 | requested_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=1/1000 | objective=-11.854093 | rate=11.846247 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=2/1000 | objective=-13.820199 | rate=13.810389 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=1.168195 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=3/1000 | objective=-14.780721 | rate=14.769951 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.546082 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=4/1000 | objective=-15.015971 | rate=15.004966 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.188243 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=5/1000 | objective=-15.125972 | rate=15.114857 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.121871 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=6/1000 | objective=-15.202081 | rate=15.190890 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.071941 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=7/1000 | objective=-15.271596 | rate=15.260336 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.051864 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=8/1000 | objective=-15.324049 | rate=15.312737 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.046311 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=9/1000 | objective=-15.352309 | rate=15.340968 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.041641 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=10/1000 | objective=-15.361066 | rate=15.349716 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.036280 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=11/1000 | objective=-15.358356 | rate=15.347010 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.029797 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=12/1000 | objective=-15.352135 | rate=15.340794 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.023367 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=13/1000 | objective=-15.348167 | rate=15.336830 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.017935 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=14/1000 | objective=-15.349437 | rate=15.338099 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.017060 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=15/1000 | objective=-15.355184 | rate=15.343840 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.017867 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=16/1000 | objective=-15.363518 | rate=15.352165 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.015437 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=17/1000 | objective=-15.371805 | rate=15.360445 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.015417 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=18/1000 | objective=-15.378031 | rate=15.366664 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.015473 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=19/1000 | objective=-15.381547 | rate=15.370177 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.014653 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=20/1000 | objective=-15.382837 | rate=15.371466 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.012821 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=21/1000 | objective=-15.382816 | rate=15.371445 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.011179 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=22/1000 | objective=-15.381957 | rate=15.370586 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.009083 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=23/1000 | objective=-15.381254 | rate=15.369884 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.007642 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=24/1000 | objective=-15.381124 | rate=15.369754 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005791 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=25/1000 | objective=-15.381394 | rate=15.370025 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.005827 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=26/1000 | objective=-15.381942 | rate=15.370571 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005719 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=27/1000 | objective=-15.382620 | rate=15.371248 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.005618 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=28/1000 | objective=-15.383313 | rate=15.371942 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005447 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=29/1000 | objective=-15.383979 | rate=15.372606 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005225 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=30/1000 | objective=-15.384559 | rate=15.373185 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.004999 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=31/1000 | objective=-15.385028 | rate=15.373654 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.004800 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=32/1000 | objective=-15.385383 | rate=15.374008 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.004626 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=33/1000 | objective=-15.385619 | rate=15.374245 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.004442 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=34/1000 | objective=-15.385745 | rate=15.374371 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.004216 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=35/1000 | objective=-15.385800 | rate=15.374426 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003933 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=36/1000 | objective=-15.385814 | rate=15.374439 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.003614 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=37/1000 | objective=-15.385818 | rate=15.374444 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003298 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=38/1000 | objective=-15.385859 | rate=15.374484 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003034 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=39/1000 | objective=-15.385933 | rate=15.374558 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002850 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=40/1000 | objective=-15.386019 | rate=15.374644 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002737 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=41/1000 | objective=-15.386133 | rate=15.374759 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002661 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=42/1000 | objective=-15.386248 | rate=15.374873 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.002588 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=43/1000 | objective=-15.386358 | rate=15.374983 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.002507 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=44/1000 | objective=-15.386478 | rate=15.375103 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002429 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=45/1000 | objective=-15.386590 | rate=15.375215 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002370 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=46/1000 | objective=-15.386690 | rate=15.375315 | power=29.999950 | r_p=0.000000 | r_c=0.000000 | r_s=0.002334 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=47/1000 | objective=-15.386773 | rate=15.375398 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002303 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=48/1000 | objective=-15.386812 | rate=15.375437 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002240 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=49/1000 | objective=-15.386817 | rate=15.375442 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002117 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=50/1000 | objective=-15.386791 | rate=15.375416 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001923 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=51/1000 | objective=-15.386770 | rate=15.375395 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001680 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=52/1000 | objective=-15.386753 | rate=15.375378 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001439 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=53/1000 | objective=-15.386771 | rate=15.375396 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001274 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=54/1000 | objective=-15.386808 | rate=15.375433 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001243 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=55/1000 | objective=-15.386862 | rate=15.375486 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001321 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=56/1000 | objective=-15.386928 | rate=15.375552 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001430 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=57/1000 | objective=-15.386981 | rate=15.375606 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001501 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=58/1000 | objective=-15.387004 | rate=15.375628 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001500 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=59/1000 | objective=-15.387023 | rate=15.375648 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001408 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=60/1000 | objective=-15.387017 | rate=15.375642 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001267 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=61/1000 | objective=-15.387007 | rate=15.375631 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001101 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=62/1000 | objective=-15.386996 | rate=15.375621 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=9.374992e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=63/1000 | objective=-15.386993 | rate=15.375618 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=8.166822e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=64/1000 | objective=-15.386994 | rate=15.375619 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=7.661453e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=65/1000 | objective=-15.387020 | rate=15.375645 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=7.816989e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=66/1000 | objective=-15.387028 | rate=15.375652 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=8.293713e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=67/1000 | objective=-15.387046 | rate=15.375670 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=8.722604e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=68/1000 | objective=-15.387063 | rate=15.375688 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=8.862170e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=69/1000 | objective=-15.387082 | rate=15.375707 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=8.605106e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=70/1000 | objective=-15.387077 | rate=15.375702 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=7.962415e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=71/1000 | objective=-15.387077 | rate=15.375702 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=7.051739e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=72/1000 | objective=-15.387063 | rate=15.375688 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=6.088467e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=50 | epoch=73/1000 | objective=-15.387068 | rate=15.375692 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=5.344753e-04 | status=kkt_converged
+[UL Convergence Result] | user=0 | block=0 | n_kl=50 | achieved_rate=15.375707 | power=29.999945 | rate_gap=-11.375707 | power_gap=-5.531311e-05 | solve_status=kkt_converged
+[UL Convergence Allocation] | user=0 | block=0 | n_kl=50 | requested_bits=200 | served_bits=200 | full_service=true
+[UL Convergence Block] | user=0 | block=0 | stage=post_T | served_bits=200 | unserved_bits=0
+[UL Convergence Reduction] | user=0 | block=0 | served_bits=200 | n_start=49 | n_min=1
+[UL Convergence Solve] | user=0 | block=0 | stage=reduced_n | n_kl=49 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=49 | epoch=1/1000 | objective=-15.360648 | rate=15.349380 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=49 | epoch=2/1000 | objective=-15.360654 | rate=15.349386 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=7.962111e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=49 | epoch=3/1000 | objective=-15.360641 | rate=15.349374 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=7.051928e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=49 | epoch=4/1000 | objective=-15.360646 | rate=15.349379 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=6.090017e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=49 | epoch=5/1000 | objective=-15.360644 | rate=15.349377 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=5.348639e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=0 | n_kl=49 | achieved_rate=15.349386 | rate_gap=-11.267754 | power_gap=-5.531311e-05 | status=accepted
+[UL Convergence Solve] | user=0 | block=0 | stage=reduced_n | n_kl=40 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=40 | epoch=1/1000 | objective=-15.079870 | rate=15.069800 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=40 | epoch=2/1000 | objective=-15.079872 | rate=15.069802 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=5.251835e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=0 | n_kl=40 | achieved_rate=15.069802 | rate_gap=-10.069802 | power_gap=-6.103516e-05 | status=accepted
+[UL Convergence Solve] | user=0 | block=0 | stage=reduced_n | n_kl=30 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=30 | epoch=1/1000 | objective=-14.629495 | rate=14.621540 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=30 | epoch=2/1000 | objective=-14.629495 | rate=14.621540 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=5.039604e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=0 | n_kl=30 | achieved_rate=14.621540 | rate_gap=-7.954874 | power_gap=-6.103516e-05 | status=accepted
+[UL Convergence Solve] | user=0 | block=0 | stage=reduced_n | n_kl=20 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=20 | epoch=1/1000 | objective=-13.873425 | rate=13.869555 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=0 | n_kl=20 | epoch=2/1000 | objective=-13.873423 | rate=13.869553 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=2.740487e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=0 | n_kl=20 | achieved_rate=13.869555 | rate_gap=-3.869555 | power_gap=-6.103516e-05 | status=accepted
+[UL Convergence Reduction] | user=0 | block=0 | n_kl=15 | status=stop_infeasible
+[UL Convergence Final] | user=0 | block=0 | feasible_points=35 | chosen_n_kl=16 | served_bits=200 | achieved_rate=13.385859 | power=29.999945 | solve_status=kkt_converged
+[UL Convergence Allocation] | user=0 | block=0 | chosen_n_kl=16 | served_bits=200 | unserved_bits=0 | mode=fixed_block_targets
+[UL Convergence Train] | user=0 | block=1 | target_bits=200 | mode=fixed_block_targets
+[UL Convergence Block] | user=0 | block=1 | budget_mode=target_bits | requested_bits=200
+[UL Convergence Solve] | user=0 | block=1 | stage=n=T | n_kl=50 | requested_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=1/1000 | objective=-15.302280 | rate=15.290990 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=2/1000 | objective=-15.138182 | rate=15.127054 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.161919 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=3/1000 | objective=-15.280966 | rate=15.269696 | power=29.999950 | r_p=0.000000 | r_c=0.000000 | r_s=0.103821 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=4/1000 | objective=-15.272816 | rate=15.261554 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.091806 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=5/1000 | objective=-15.239423 | rate=15.228194 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.049573 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=6/1000 | objective=-15.251203 | rate=15.239963 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.031366 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=7/1000 | objective=-15.278307 | rate=15.267040 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.037820 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=8/1000 | objective=-15.295597 | rate=15.284313 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.040122 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=9/1000 | objective=-15.296294 | rate=15.285009 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.036290 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=10/1000 | objective=-15.286911 | rate=15.275636 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.028703 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=11/1000 | objective=-15.279436 | rate=15.268167 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.019066 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=12/1000 | objective=-15.281100 | rate=15.269831 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.013589 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=13/1000 | objective=-15.290227 | rate=15.278948 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.015513 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=14/1000 | objective=-15.299919 | rate=15.288630 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.019686 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=15/1000 | objective=-15.304098 | rate=15.292806 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.021411 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=16/1000 | objective=-15.301448 | rate=15.290157 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.019523 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=17/1000 | objective=-15.295815 | rate=15.284531 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.014419 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=18/1000 | objective=-15.292568 | rate=15.281287 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.008074 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=19/1000 | objective=-15.294310 | rate=15.283027 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.006172 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=20/1000 | objective=-15.299356 | rate=15.288068 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.010409 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=21/1000 | objective=-15.303931 | rate=15.292639 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.013884 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=22/1000 | objective=-15.305331 | rate=15.294037 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.014773 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=23/1000 | objective=-15.303645 | rate=15.292353 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.013029 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=24/1000 | objective=-15.301052 | rate=15.289762 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.009480 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=25/1000 | objective=-15.299750 | rate=15.288462 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005682 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=26/1000 | objective=-15.300544 | rate=15.289254 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.004664 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=27/1000 | objective=-15.302600 | rate=15.291308 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.006936 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=28/1000 | objective=-15.304487 | rate=15.293194 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.008945 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=29/1000 | objective=-15.305235 | rate=15.293941 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.009513 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=30/1000 | objective=-15.304855 | rate=15.293562 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.008738 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=31/1000 | objective=-15.303976 | rate=15.292684 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.007147 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=32/1000 | objective=-15.303308 | rate=15.292015 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.005290 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=33/1000 | objective=-15.303310 | rate=15.292018 | power=29.999950 | r_p=0.000000 | r_c=0.000000 | r_s=0.004040 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=34/1000 | objective=-15.303960 | rate=15.292667 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.004455 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=35/1000 | objective=-15.304848 | rate=15.293554 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005738 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=36/1000 | objective=-15.305471 | rate=15.294177 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.006682 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=37/1000 | objective=-15.305532 | rate=15.294238 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.006793 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=38/1000 | objective=-15.305131 | rate=15.293838 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.005901 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=39/1000 | objective=-15.304631 | rate=15.293338 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.004174 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=40/1000 | objective=-15.304492 | rate=15.293199 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002428 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=41/1000 | objective=-15.304804 | rate=15.293510 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002555 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=42/1000 | objective=-15.305358 | rate=15.294064 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003980 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=43/1000 | objective=-15.305741 | rate=15.294447 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.004996 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=44/1000 | objective=-15.305735 | rate=15.294440 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005057 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=45/1000 | objective=-15.305442 | rate=15.294147 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.004088 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=46/1000 | objective=-15.305173 | rate=15.293880 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002491 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=47/1000 | objective=-15.305160 | rate=15.293866 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.001447 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=48/1000 | objective=-15.305396 | rate=15.294102 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.002327 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=49/1000 | objective=-15.305667 | rate=15.294373 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003396 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=50/1000 | objective=-15.305786 | rate=15.294492 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003797 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=51/1000 | objective=-15.305719 | rate=15.294425 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003421 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=52/1000 | objective=-15.305586 | rate=15.294291 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002569 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=53/1000 | objective=-15.305503 | rate=15.294209 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001733 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=54/1000 | objective=-15.305537 | rate=15.294243 | power=29.999950 | r_p=0.000000 | r_c=0.000000 | r_s=0.001432 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=55/1000 | objective=-15.305649 | rate=15.294354 | power=29.999950 | r_p=0.000000 | r_c=0.000000 | r_s=0.001880 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=56/1000 | objective=-15.305771 | rate=15.294477 | power=29.999950 | r_p=0.000000 | r_c=0.000000 | r_s=0.002445 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=57/1000 | objective=-15.305820 | rate=15.294525 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002644 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=58/1000 | objective=-15.305763 | rate=15.294469 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002373 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=59/1000 | objective=-15.305686 | rate=15.294392 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001688 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=60/1000 | objective=-15.305665 | rate=15.294371 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=8.700779e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=61/1000 | objective=-15.305710 | rate=15.294415 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001032 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=62/1000 | objective=-15.305783 | rate=15.294489 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001694 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=63/1000 | objective=-15.305834 | rate=15.294539 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001983 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=64/1000 | objective=-15.305818 | rate=15.294523 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001846 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=65/1000 | objective=-15.305771 | rate=15.294477 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001368 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=66/1000 | objective=-15.305743 | rate=15.294449 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=7.860948e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=67/1000 | objective=-15.305758 | rate=15.294464 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=7.568949e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=68/1000 | objective=-15.305804 | rate=15.294510 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001139 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=69/1000 | objective=-15.305821 | rate=15.294527 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001380 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=70/1000 | objective=-15.305825 | rate=15.294531 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001373 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=71/1000 | objective=-15.305814 | rate=15.294519 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001126 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=72/1000 | objective=-15.305793 | rate=15.294498 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=7.985070e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=73/1000 | objective=-15.305799 | rate=15.294505 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=6.234311e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=74/1000 | objective=-15.305809 | rate=15.294515 | power=29.999950 | r_p=0.000000 | r_c=0.000000 | r_s=7.134359e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=75/1000 | objective=-15.305831 | rate=15.294537 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=9.523858e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=76/1000 | objective=-15.305835 | rate=15.294540 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001073 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=77/1000 | objective=-15.305831 | rate=15.294537 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=9.504134e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=78/1000 | objective=-15.305812 | rate=15.294518 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=6.470076e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=50 | epoch=79/1000 | objective=-15.305821 | rate=15.294527 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=3.608973e-04 | status=kkt_converged
+[UL Convergence Result] | user=0 | block=1 | n_kl=50 | achieved_rate=15.294540 | power=29.999945 | rate_gap=-11.294540 | power_gap=-5.531311e-05 | solve_status=kkt_converged
+[UL Convergence Allocation] | user=0 | block=1 | n_kl=50 | requested_bits=200 | served_bits=200 | full_service=true
+[UL Convergence Block] | user=0 | block=1 | stage=post_T | served_bits=200 | unserved_bits=0
+[UL Convergence Reduction] | user=0 | block=1 | served_bits=200 | n_start=49 | n_min=1
+[UL Convergence Solve] | user=0 | block=1 | stage=reduced_n | n_kl=49 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=49 | epoch=1/1000 | objective=-15.279411 | rate=15.268225 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=49 | epoch=2/1000 | objective=-15.279404 | rate=15.268217 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=9.519875e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=49 | epoch=3/1000 | objective=-15.279388 | rate=15.268202 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=6.504313e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=49 | epoch=4/1000 | objective=-15.279388 | rate=15.268202 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=3.636308e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=1 | n_kl=49 | achieved_rate=15.268225 | rate_gap=-11.186592 | power_gap=-5.531311e-05 | status=accepted
+[UL Convergence Solve] | user=0 | block=1 | stage=reduced_n | n_kl=40 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=40 | epoch=1/1000 | objective=-14.998602 | rate=14.988613 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=40 | epoch=2/1000 | objective=-14.998603 | rate=14.988614 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=9.672353e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=40 | epoch=3/1000 | objective=-14.998589 | rate=14.988600 | power=29.999950 | r_p=0.000000 | r_c=0.000000 | r_s=6.714887e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=40 | epoch=4/1000 | objective=-14.998582 | rate=14.988593 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=3.651706e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=1 | n_kl=40 | achieved_rate=14.988614 | rate_gap=-9.988614 | power_gap=-5.531311e-05 | status=accepted
+[UL Convergence Solve] | user=0 | block=1 | stage=reduced_n | n_kl=30 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=30 | epoch=1/1000 | objective=-14.548203 | rate=14.540329 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=30 | epoch=2/1000 | objective=-14.548197 | rate=14.540323 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=6.996314e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=30 | epoch=3/1000 | objective=-14.548183 | rate=14.540310 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=3.784916e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=1 | n_kl=30 | achieved_rate=14.540329 | rate_gap=-7.873662 | power_gap=-5.531311e-05 | status=accepted
+[UL Convergence Solve] | user=0 | block=1 | stage=reduced_n | n_kl=20 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=20 | epoch=1/1000 | objective=-13.792103 | rate=13.788315 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=1 | n_kl=20 | epoch=2/1000 | objective=-13.792105 | rate=13.788317 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=4.288620e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=1 | n_kl=20 | achieved_rate=13.788317 | rate_gap=-3.788317 | power_gap=-6.103516e-05 | status=accepted
+[UL Convergence Reduction] | user=0 | block=1 | n_kl=15 | status=stop_infeasible
+[UL Convergence Final] | user=0 | block=1 | feasible_points=35 | chosen_n_kl=16 | served_bits=200 | achieved_rate=13.304642 | power=29.999939 | solve_status=kkt_converged
+[UL Convergence Allocation] | user=0 | block=1 | chosen_n_kl=16 | served_bits=200 | unserved_bits=0 | mode=fixed_block_targets
+[UL Convergence Train] | user=0 | block=2 | target_bits=200 | mode=fixed_block_targets
+[UL Convergence Block] | user=0 | block=2 | budget_mode=target_bits | requested_bits=200
+[UL Convergence Solve] | user=0 | block=2 | stage=n=T | n_kl=50 | requested_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=1/1000 | objective=-15.956504 | rate=15.944559 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=2/1000 | objective=-15.874192 | rate=15.862329 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.125324 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=3/1000 | objective=-15.942159 | rate=15.930228 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.080067 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=4/1000 | objective=-15.943279 | rate=15.931348 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.066554 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=5/1000 | objective=-15.922767 | rate=15.910856 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.038752 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=6/1000 | objective=-15.927323 | rate=15.915408 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.022123 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=7/1000 | objective=-15.945067 | rate=15.933134 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.028074 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=8/1000 | objective=-15.955318 | rate=15.943375 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.031894 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=9/1000 | objective=-15.952979 | rate=15.941038 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.028763 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=10/1000 | objective=-15.945885 | rate=15.933950 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.021260 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=11/1000 | objective=-15.943258 | rate=15.931327 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.013688 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=12/1000 | objective=-15.947652 | rate=15.935716 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.012805 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=13/1000 | objective=-15.954631 | rate=15.942688 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.016918 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=14/1000 | objective=-15.958545 | rate=15.946598 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.019349 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=15/1000 | objective=-15.957442 | rate=15.945497 | power=29.999950 | r_p=0.000000 | r_c=0.000000 | r_s=0.018278 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=16/1000 | objective=-15.953963 | rate=15.942021 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.014071 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=17/1000 | objective=-15.952156 | rate=15.940216 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.009321 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=18/1000 | objective=-15.953524 | rate=15.941582 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.008291 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=19/1000 | objective=-15.956751 | rate=15.944806 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.010648 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=20/1000 | objective=-15.959414 | rate=15.947466 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.012826 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=21/1000 | objective=-15.959890 | rate=15.947943 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.013241 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=22/1000 | objective=-15.958402 | rate=15.946455 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.011426 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=23/1000 | objective=-15.956694 | rate=15.944749 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.007921 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=24/1000 | objective=-15.956500 | rate=15.944555 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.004961 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=25/1000 | objective=-15.957985 | rate=15.946039 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.006266 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=26/1000 | objective=-15.959871 | rate=15.947924 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.008848 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=27/1000 | objective=-15.960711 | rate=15.948763 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.009943 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=28/1000 | objective=-15.960153 | rate=15.948204 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.009098 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=29/1000 | objective=-15.958997 | rate=15.947050 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.006642 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=30/1000 | objective=-15.958465 | rate=15.946518 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003632 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=31/1000 | objective=-15.959055 | rate=15.947108 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.003388 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=32/1000 | objective=-15.960220 | rate=15.948272 | power=29.999950 | r_p=0.000000 | r_c=0.000000 | r_s=0.005803 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=33/1000 | objective=-15.960936 | rate=15.948987 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.007315 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=34/1000 | objective=-15.960730 | rate=15.948781 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.007102 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=35/1000 | objective=-15.960041 | rate=15.948093 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.005319 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=36/1000 | objective=-15.959644 | rate=15.947697 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002796 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=37/1000 | objective=-15.959908 | rate=15.947961 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002214 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=38/1000 | objective=-15.960542 | rate=15.948593 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.004187 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=39/1000 | objective=-15.960969 | rate=15.949020 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005494 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=40/1000 | objective=-15.960889 | rate=15.948940 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005417 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=41/1000 | objective=-15.960527 | rate=15.948579 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.004080 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=42/1000 | objective=-15.960331 | rate=15.948382 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002330 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=43/1000 | objective=-15.960452 | rate=15.948503 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002101 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=44/1000 | objective=-15.960755 | rate=15.948807 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003225 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=45/1000 | objective=-15.960977 | rate=15.949028 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003963 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=46/1000 | objective=-15.960966 | rate=15.949018 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003971 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=47/1000 | objective=-15.960794 | rate=15.948846 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.003239 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=48/1000 | objective=-15.960664 | rate=15.948715 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002012 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=49/1000 | objective=-15.960723 | rate=15.948774 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001462 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=50/1000 | objective=-15.960900 | rate=15.948952 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002380 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=51/1000 | objective=-15.961019 | rate=15.949069 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003085 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=52/1000 | objective=-15.960994 | rate=15.949045 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.003027 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=53/1000 | objective=-15.960901 | rate=15.948953 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002321 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=54/1000 | objective=-15.960846 | rate=15.948897 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001400 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=55/1000 | objective=-15.960886 | rate=15.948937 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001229 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=56/1000 | objective=-15.960989 | rate=15.949040 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001917 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=57/1000 | objective=-15.961045 | rate=15.949096 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002381 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=58/1000 | objective=-15.961013 | rate=15.949063 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002266 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=59/1000 | objective=-15.960949 | rate=15.949000 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001603 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=60/1000 | objective=-15.960934 | rate=15.948985 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=7.438333e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=61/1000 | objective=-15.960983 | rate=15.949035 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=9.630398e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=62/1000 | objective=-15.961050 | rate=15.949100 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001695 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=63/1000 | objective=-15.961051 | rate=15.949101 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001936 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=64/1000 | objective=-15.961012 | rate=15.949062 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001538 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=65/1000 | objective=-15.960990 | rate=15.949041 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=7.348234e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=50 | epoch=66/1000 | objective=-15.961007 | rate=15.949059 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=5.728307e-04 | status=kkt_converged
+[UL Convergence Result] | user=0 | block=2 | n_kl=50 | achieved_rate=15.949101 | power=29.999939 | rate_gap=-11.949101 | power_gap=-6.103516e-05 | solve_status=kkt_converged
+[UL Convergence Allocation] | user=0 | block=2 | n_kl=50 | requested_bits=200 | served_bits=200 | full_service=true
+[UL Convergence Block] | user=0 | block=2 | stage=post_T | served_bits=200 | unserved_bits=0
+[UL Convergence Reduction] | user=0 | block=2 | served_bits=200 | n_start=49 | n_min=1
+[UL Convergence Solve] | user=0 | block=2 | stage=reduced_n | n_kl=49 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=49 | epoch=1/1000 | objective=-15.934626 | rate=15.922785 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=49 | epoch=2/1000 | objective=-15.934593 | rate=15.922752 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001537 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=49 | epoch=3/1000 | objective=-15.934557 | rate=15.922716 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=7.333755e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=49 | epoch=4/1000 | objective=-15.934575 | rate=15.922734 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=5.740576e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=2 | n_kl=49 | achieved_rate=15.922785 | rate_gap=-11.841152 | power_gap=-5.531311e-05 | status=accepted
+[UL Convergence Solve] | user=0 | block=2 | stage=reduced_n | n_kl=40 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=40 | epoch=1/1000 | objective=-15.653765 | rate=15.643122 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=40 | epoch=2/1000 | objective=-15.653720 | rate=15.643077 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001526 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=40 | epoch=3/1000 | objective=-15.653697 | rate=15.643054 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=7.175071e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=40 | epoch=4/1000 | objective=-15.653698 | rate=15.643055 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=5.885175e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=2 | n_kl=40 | achieved_rate=15.643122 | rate_gap=-10.643122 | power_gap=-6.103516e-05 | status=accepted
+[UL Convergence Solve] | user=0 | block=2 | stage=reduced_n | n_kl=30 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=30 | epoch=1/1000 | objective=-15.203266 | rate=15.194738 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=30 | epoch=2/1000 | objective=-15.203247 | rate=15.194719 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=8.868301e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=30 | epoch=3/1000 | objective=-15.203237 | rate=15.194709 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=4.742604e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=2 | n_kl=30 | achieved_rate=15.194738 | rate_gap=-8.528072 | power_gap=-6.103516e-05 | status=accepted
+[UL Convergence Solve] | user=0 | block=2 | stage=reduced_n | n_kl=20 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=20 | epoch=1/1000 | objective=-14.447023 | rate=14.442581 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=20 | epoch=2/1000 | objective=-14.447008 | rate=14.442566 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=9.291123e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=2 | n_kl=20 | epoch=3/1000 | objective=-14.447010 | rate=14.442568 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=5.133897e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=2 | n_kl=20 | achieved_rate=14.442581 | rate_gap=-4.442581 | power_gap=-6.103516e-05 | status=accepted
+[UL Convergence Reduction] | user=0 | block=2 | n_kl=14 | status=stop_infeasible
+[UL Convergence Final] | user=0 | block=2 | feasible_points=36 | chosen_n_kl=15 | served_bits=200 | achieved_rate=13.808493 | power=29.999939 | solve_status=kkt_converged
+[UL Convergence Allocation] | user=0 | block=2 | chosen_n_kl=15 | served_bits=200 | unserved_bits=0 | mode=fixed_block_targets
+[UL Convergence Train] | user=0 | block=3 | target_bits=200 | mode=fixed_block_targets
+[UL Convergence Block] | user=0 | block=3 | budget_mode=target_bits | requested_bits=200
+[UL Convergence Solve] | user=0 | block=3 | stage=n=T | n_kl=50 | requested_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=1/1000 | objective=-14.563505 | rate=14.552952 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=2/1000 | objective=-14.516710 | rate=14.506204 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.105140 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=3/1000 | objective=-14.558825 | rate=14.548276 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.057133 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=4/1000 | objective=-14.559945 | rate=14.549396 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.054819 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=5/1000 | objective=-14.546926 | rate=14.536389 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.031979 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=6/1000 | objective=-14.550486 | rate=14.539946 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.017302 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=7/1000 | objective=-14.562239 | rate=14.551687 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.023107 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=8/1000 | objective=-14.567381 | rate=14.556824 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.026890 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=9/1000 | objective=-14.563550 | rate=14.552997 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.023215 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=10/1000 | objective=-14.558773 | rate=14.548224 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.014680 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=11/1000 | objective=-14.559491 | rate=14.548943 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.009457 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=12/1000 | objective=-14.564377 | rate=14.553823 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.013502 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=13/1000 | objective=-14.568244 | rate=14.557686 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.017227 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=14/1000 | objective=-14.568112 | rate=14.557555 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.017149 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=15/1000 | objective=-14.565428 | rate=14.554873 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.013378 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=16/1000 | objective=-14.563789 | rate=14.553236 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.007835 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=17/1000 | objective=-14.565019 | rate=14.554464 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.006099 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=18/1000 | objective=-14.567682 | rate=14.557125 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.009636 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=19/1000 | objective=-14.569223 | rate=14.558664 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.011930 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=20/1000 | objective=-14.568719 | rate=14.558161 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.011350 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=21/1000 | objective=-14.567304 | rate=14.556746 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.008448 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=22/1000 | objective=-14.566691 | rate=14.556135 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.005094 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=23/1000 | objective=-14.567486 | rate=14.556929 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005005 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=24/1000 | objective=-14.568866 | rate=14.558308 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.007487 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=25/1000 | objective=-14.569572 | rate=14.559013 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.008935 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=26/1000 | objective=-14.569197 | rate=14.558638 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.008340 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=27/1000 | objective=-14.568414 | rate=14.557856 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.006002 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=28/1000 | objective=-14.568197 | rate=14.557640 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003506 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=29/1000 | objective=-14.568729 | rate=14.558171 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.003953 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=30/1000 | objective=-14.569454 | rate=14.558895 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005761 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=31/1000 | objective=-14.569718 | rate=14.559159 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.006527 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=32/1000 | objective=-14.569442 | rate=14.558883 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005902 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=33/1000 | objective=-14.569058 | rate=14.558500 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.004251 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=34/1000 | objective=-14.569018 | rate=14.558460 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002737 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=35/1000 | objective=-14.569359 | rate=14.558800 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.003330 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=36/1000 | objective=-14.569738 | rate=14.559179 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.004656 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=37/1000 | objective=-14.569813 | rate=14.559254 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.005067 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=38/1000 | objective=-14.569606 | rate=14.559047 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.004304 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=39/1000 | objective=-14.569412 | rate=14.558853 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002797 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=40/1000 | objective=-14.569460 | rate=14.558901 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001908 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=41/1000 | objective=-14.569697 | rate=14.559138 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002830 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=42/1000 | objective=-14.569876 | rate=14.559317 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003756 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=43/1000 | objective=-14.569849 | rate=14.559290 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003785 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=44/1000 | objective=-14.569696 | rate=14.559137 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.002875 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=45/1000 | objective=-14.569624 | rate=14.559065 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001637 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=46/1000 | objective=-14.569729 | rate=14.559170 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001704 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=47/1000 | objective=-14.569878 | rate=14.559319 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002659 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=48/1000 | objective=-14.569933 | rate=14.559374 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003100 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=49/1000 | objective=-14.569843 | rate=14.559284 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002694 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=50/1000 | objective=-14.569762 | rate=14.559203 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001600 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=51/1000 | objective=-14.569785 | rate=14.559226 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=9.087048e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=52/1000 | objective=-14.569883 | rate=14.559324 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001777 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=53/1000 | objective=-14.569941 | rate=14.559381 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002389 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=54/1000 | objective=-14.569903 | rate=14.559344 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002258 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=55/1000 | objective=-14.569839 | rate=14.559280 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001482 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=56/1000 | objective=-14.569837 | rate=14.559278 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=6.674453e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=57/1000 | objective=-14.569900 | rate=14.559340 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001216 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=58/1000 | objective=-14.569945 | rate=14.559386 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001845 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=59/1000 | objective=-14.569941 | rate=14.559381 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001862 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=60/1000 | objective=-14.569884 | rate=14.559325 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001294 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=50 | epoch=61/1000 | objective=-14.569883 | rate=14.559324 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=5.721728e-04 | status=kkt_converged
+[UL Convergence Result] | user=0 | block=3 | n_kl=50 | achieved_rate=14.559386 | power=29.999945 | rate_gap=-10.559386 | power_gap=-5.531311e-05 | solve_status=kkt_converged
+[UL Convergence Allocation] | user=0 | block=3 | n_kl=50 | requested_bits=200 | served_bits=200 | full_service=true
+[UL Convergence Block] | user=0 | block=3 | stage=post_T | served_bits=200 | unserved_bits=0
+[UL Convergence Reduction] | user=0 | block=3 | served_bits=200 | n_start=49 | n_min=1
+[UL Convergence Solve] | user=0 | block=3 | stage=reduced_n | n_kl=49 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=49 | epoch=1/1000 | objective=-14.543561 | rate=14.533110 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=49 | epoch=2/1000 | objective=-14.543550 | rate=14.533099 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001858 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=49 | epoch=3/1000 | objective=-14.543509 | rate=14.533057 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001287 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=49 | epoch=4/1000 | objective=-14.543503 | rate=14.533051 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=5.663682e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=3 | n_kl=49 | achieved_rate=14.533110 | rate_gap=-10.451477 | power_gap=-6.103516e-05 | status=accepted
+[UL Convergence Solve] | user=0 | block=3 | stage=reduced_n | n_kl=40 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=40 | epoch=1/1000 | objective=-14.263137 | rate=14.253883 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=40 | epoch=2/1000 | objective=-14.263122 | rate=14.253868 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001822 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=40 | epoch=3/1000 | objective=-14.263082 | rate=14.253828 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001216 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=40 | epoch=4/1000 | objective=-14.263076 | rate=14.253822 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=5.107962e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=3 | n_kl=40 | achieved_rate=14.253883 | rate_gap=-9.253883 | power_gap=-5.531311e-05 | status=accepted
+[UL Convergence Solve] | user=0 | block=3 | stage=reduced_n | n_kl=30 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=30 | epoch=1/1000 | objective=-13.813356 | rate=13.806217 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=30 | epoch=2/1000 | objective=-13.813345 | rate=13.806206 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001771 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=30 | epoch=3/1000 | objective=-13.813295 | rate=13.806156 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.001125 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=30 | epoch=4/1000 | objective=-13.813296 | rate=13.806157 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=4.518343e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=3 | n_kl=30 | achieved_rate=13.806217 | rate_gap=-7.139551 | power_gap=-6.103516e-05 | status=accepted
+[UL Convergence Solve] | user=0 | block=3 | stage=reduced_n | n_kl=20 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=20 | epoch=1/1000 | objective=-13.058308 | rate=13.055252 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=20 | epoch=2/1000 | objective=-13.058289 | rate=13.055233 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001710 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=20 | epoch=3/1000 | objective=-13.058250 | rate=13.055195 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001044 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=3 | n_kl=20 | epoch=4/1000 | objective=-13.058249 | rate=13.055193 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=4.683311e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=3 | n_kl=20 | achieved_rate=13.055252 | rate_gap=-3.055252 | power_gap=-6.484985e-05 | status=accepted
+[UL Convergence Reduction] | user=0 | block=3 | n_kl=15 | status=stop_infeasible
+[UL Convergence Final] | user=0 | block=3 | feasible_points=35 | chosen_n_kl=16 | served_bits=200 | achieved_rate=12.572197 | power=29.999935 | solve_status=kkt_converged
+[UL Convergence Allocation] | user=0 | block=3 | chosen_n_kl=16 | served_bits=200 | unserved_bits=0 | mode=fixed_block_targets
+[UL Convergence Train] | user=0 | block=4 | target_bits=200 | mode=fixed_block_targets
+[UL Convergence Block] | user=0 | block=4 | budget_mode=target_bits | requested_bits=200
+[UL Convergence Solve] | user=0 | block=4 | stage=n=T | n_kl=50 | requested_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=1/1000 | objective=-14.847436 | rate=14.836599 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=2/1000 | objective=-14.819422 | rate=14.808613 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.088154 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=3/1000 | objective=-14.844422 | rate=14.833589 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.048557 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=4/1000 | objective=-14.845986 | rate=14.835152 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.044531 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=5/1000 | objective=-14.839167 | rate=14.828339 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.026033 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=6/1000 | objective=-14.841032 | rate=14.830202 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.018616 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=7/1000 | objective=-14.847390 | rate=14.836554 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.019838 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=8/1000 | objective=-14.850657 | rate=14.839817 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.021409 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=9/1000 | objective=-14.849002 | rate=14.838163 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.018974 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=10/1000 | objective=-14.846491 | rate=14.835655 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.013643 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=11/1000 | objective=-14.846934 | rate=14.836099 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.009974 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=12/1000 | objective=-14.849648 | rate=14.838810 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.011549 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=13/1000 | objective=-14.851699 | rate=14.840858 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.013486 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=14/1000 | objective=-14.851697 | rate=14.840857 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.013038 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=15/1000 | objective=-14.850637 | rate=14.839798 | power=29.999950 | r_p=0.000000 | r_c=0.000000 | r_s=0.010888 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=16/1000 | objective=-14.849970 | rate=14.839130 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.008616 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=17/1000 | objective=-14.850429 | rate=14.839589 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.007463 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=18/1000 | objective=-14.851630 | rate=14.840790 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.008135 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=19/1000 | objective=-14.852613 | rate=14.841772 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.009231 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=20/1000 | objective=-14.852673 | rate=14.841831 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.009320 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=21/1000 | objective=-14.852057 | rate=14.841215 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.007954 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=22/1000 | objective=-14.851598 | rate=14.840757 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.005869 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=23/1000 | objective=-14.851837 | rate=14.840996 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.004869 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=24/1000 | objective=-14.852589 | rate=14.841747 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.005807 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=25/1000 | objective=-14.853194 | rate=14.842352 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.007016 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=26/1000 | objective=-14.853173 | rate=14.842331 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.007111 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=27/1000 | objective=-14.852696 | rate=14.841854 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.005741 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=28/1000 | objective=-14.852403 | rate=14.841561 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003722 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=29/1000 | objective=-14.852657 | rate=14.841816 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.003295 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=30/1000 | objective=-14.853179 | rate=14.842337 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.004658 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=31/1000 | objective=-14.853483 | rate=14.842641 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.005623 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=32/1000 | objective=-14.853324 | rate=14.842482 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.005395 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=33/1000 | objective=-14.852992 | rate=14.842150 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.003945 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=34/1000 | objective=-14.852914 | rate=14.842072 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002240 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=35/1000 | objective=-14.853183 | rate=14.842340 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002762 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=36/1000 | objective=-14.853491 | rate=14.842649 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.004121 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=37/1000 | objective=-14.853543 | rate=14.842701 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.004491 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=38/1000 | objective=-14.853353 | rate=14.842510 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003732 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=39/1000 | objective=-14.853198 | rate=14.842356 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002329 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=40/1000 | objective=-14.853269 | rate=14.842426 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001650 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=41/1000 | objective=-14.853480 | rate=14.842638 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002697 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=42/1000 | objective=-14.853601 | rate=14.842758 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003545 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=43/1000 | objective=-14.853520 | rate=14.842678 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.003365 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=44/1000 | objective=-14.853382 | rate=14.842540 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.002190 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=45/1000 | objective=-14.853374 | rate=14.842532 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=9.537730e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=46/1000 | objective=-14.853500 | rate=14.842658 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001845 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=47/1000 | objective=-14.853601 | rate=14.842758 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002747 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=48/1000 | objective=-14.853580 | rate=14.842737 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.002740 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=49/1000 | objective=-14.853499 | rate=14.842657 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001932 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=50/1000 | objective=-14.853473 | rate=14.842630 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=9.603622e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=51/1000 | objective=-14.853539 | rate=14.842697 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001304 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=52/1000 | objective=-14.853601 | rate=14.842758 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002078 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=53/1000 | objective=-14.853605 | rate=14.842763 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.002230 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=54/1000 | objective=-14.853549 | rate=14.842707 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001609 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=55/1000 | objective=-14.853536 | rate=14.842693 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=7.569607e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=56/1000 | objective=-14.853575 | rate=14.842732 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001137 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=57/1000 | objective=-14.853610 | rate=14.842768 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001643 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=58/1000 | objective=-14.853604 | rate=14.842762 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.001639 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=59/1000 | objective=-14.853586 | rate=14.842744 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=0.001300 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=60/1000 | objective=-14.853566 | rate=14.842724 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=8.934609e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=61/1000 | objective=-14.853583 | rate=14.842741 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=8.692130e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=62/1000 | objective=-14.853613 | rate=14.842771 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=0.001203 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=63/1000 | objective=-14.853616 | rate=14.842773 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001319 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=64/1000 | objective=-14.853598 | rate=14.842755 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001058 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=65/1000 | objective=-14.853589 | rate=14.842747 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=6.620465e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=66/1000 | objective=-14.853603 | rate=14.842761 | power=29.999945 | r_p=0.000000 | r_c=0.000000 | r_s=6.994024e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=67/1000 | objective=-14.853620 | rate=14.842777 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=9.637430e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=68/1000 | objective=-14.853618 | rate=14.842775 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001017 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=69/1000 | objective=-14.853608 | rate=14.842766 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=8.236383e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=50 | epoch=70/1000 | objective=-14.853606 | rate=14.842764 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=5.226985e-04 | status=kkt_converged
+[UL Convergence Result] | user=0 | block=4 | n_kl=50 | achieved_rate=14.842777 | power=29.999935 | rate_gap=-10.842777 | power_gap=-6.484985e-05 | solve_status=kkt_converged
+[UL Convergence Allocation] | user=0 | block=4 | n_kl=50 | requested_bits=200 | served_bits=200 | full_service=true
+[UL Convergence Block] | user=0 | block=4 | stage=post_T | served_bits=200 | unserved_bits=0
+[UL Convergence Reduction] | user=0 | block=4 | served_bits=200 | n_start=49 | n_min=1
+[UL Convergence Solve] | user=0 | block=4 | stage=reduced_n | n_kl=49 | served_bits=200
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=49 | epoch=1/1000 | objective=-14.827199 | rate=14.816464 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=inf | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=49 | epoch=2/1000 | objective=-14.827203 | rate=14.816468 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=0.001016 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=49 | epoch=3/1000 | objective=-14.827196 | rate=14.816462 | power=29.999939 | r_p=0.000000 | r_c=0.000000 | r_s=8.217360e-04 | status=running
+[UL Convergence] | phase=optimize | user=0 | block=4 | n_kl=49 | epoch=4/1000 | objective=-14.827187 | rate=14.816452 | power=29.999935 | r_p=0.000000 | r_c=0.000000 | r_s=5.222082e-04 | status=kkt_converged
+[UL Convergence Candidate] | user=0 | block=4 | n_kl=49 | achieved_rate=14.816468 | rate_gap=-10.734836 | power_gap=-6.103516e-05 | status=accepted
+Traceback (most recent call last):
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per epoch\main.py", line 11, in <module>
+    runpy.run_path(str(LEGACY_MAIN), run_name="__main__")
+  File "<frozen runpy>", line 291, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per sweep\main.py", line 277, in <module>
+    main()
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per sweep\main.py", line 180, in main
+    experiment = run_convergence_experiment(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per sweep\main.py", line 114, in run_convergence_experiment
+    convergence_data = dynamic_subblocklength_precoder_training_baseline(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Methods\Convergence per sweep\optimizer.py", line 28, in dynamic_subblocklength_precoder_training_baseline
+    convergence_data = dynamic_fixed_target_precoder_training(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Optimizer_per_block.py", line 1191, in dynamic_fixed_target_precoder_training
+    S, B_used, step_a_diagnostics = optimize_subblocklength_precoder(
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Optimizer_per_block.py", line 788, in optimize_subblocklength_precoder
+    out = optimize_precoder_for_nl(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Optimizer_per_block.py", line 401, in optimize_precoder_for_nl
+    best_feasible_model_state = {
+                                ^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Uplink\Optimizer_per_block.py", line 402, in <dictcomp>
+    key: value.detach().cpu().clone()
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: [enforce fail at alloc_cpu.cpp:117] data. DefaultCPUAllocator: not enough memory: you tried to allocate 131072 bytes.

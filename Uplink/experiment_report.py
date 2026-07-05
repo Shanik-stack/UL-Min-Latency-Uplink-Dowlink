@@ -224,6 +224,7 @@ def build_precoder_net_result(
     initial_bits_per_symbol_by_block: Sequence[Sequence[float]] | None = None,
     initial_interference_diag: dict[str, Any] | None = None,
     final_interference_diag: dict[str, Any] | None = None,
+    uplink_rate_model: str | None = None,
 ) -> dict[str, Any]:
     _, final_snr_db = test_uplinksystem.get_SNR()
     _, final_sinr_db = test_uplinksystem.get_SINR()
@@ -274,6 +275,7 @@ def build_precoder_net_result(
         "precoder_net_training_history": train_artifact.get("precoder_net_training_history", {}),
         "precoder_parameterization": train_artifact.get("precoder_parameterization", "unknown"),
         "training_objective": train_artifact.get("training_objective", "unknown"),
+        "uplink_rate_model": str(uplink_rate_model or "unknown"),
         "user_model_specs": train_artifact.get("user_model_specs", []),
         "initial_latency": list(map(float, initial_latency)),
         "final_latency": list(map(float, test_uplinksystem.latency)),
@@ -412,6 +414,7 @@ def build_convergence_result(
             "complementarity": float(sim_cfg.get("kkt_complementarity_tol", np.nan)) if sim_cfg is not None else np.nan,
             "stationarity": float(sim_cfg.get("kkt_stationarity_tol", np.nan)) if sim_cfg is not None else np.nan,
         },
+        "uplink_rate_model": str(sim_cfg.get("uplink_rate_model", "unknown")) if sim_cfg is not None else "unknown",
         "skipped_blocks_per_user": [
             int(v)
             for v in convergence_data_dict.get(
@@ -424,41 +427,44 @@ def build_convergence_result(
     return result
 
 
-def build_convergence_summary_lines(result: dict[str, Any]) -> list[str]:
+def _sum_per_user_summary_field(metrics: dict[str, Any], field: str) -> int:
+    return int(sum(int(row.get(field, 0)) for row in metrics.get("per_user_summary", [])))
+
+
+def _build_uplink_final_test_section_lines(result: dict[str, Any]) -> list[str]:
     metrics = result["summary_metrics"]
     lines = [
-        "Uplink optimizer summary",
-        f"Method: {result.get('method_name', 'unknown')}",
-        f"Config: {result.get('cfg_path', 'unknown')}",
-        f"Seed: {int(result.get('seed', 0))}",
-        f"Experiment scenario mode: {result.get('scenario_mode', 'unknown')}",
-        f"Convergence precoder update mode: {result.get('convergence_precoder_update_mode', 'unknown')}",
-        f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
-        f"Initial schedule source: {result.get('initial_schedule_source', 'unknown')}",
-        "",
-        "Latency summary",
+        "Final test results",
         f"Initial total latency: {metrics['initial_total_latency']:.6f}",
         f"Final total latency: {metrics['final_total_latency']:.6f}",
         f"Total latency reduction (%): {metrics['total_latency_reduction_percent']:.4f}",
         f"Initial avg latency: {metrics['initial_avg_latency']:.6f}",
         f"Final avg latency: {metrics['final_avg_latency']:.6f}",
-        f"Initial min/max latency: {metrics['initial_min_latency']:.6f} / {metrics['initial_max_latency']:.6f}",
-        f"Final min/max latency: {metrics['final_min_latency']:.6f} / {metrics['final_max_latency']:.6f}",
-        "",
-        "Asynchronality summary",
         f"Initial asynchronality sum: {metrics['initial_asynchronality_sum']:.6f}",
         f"Final asynchronality sum: {metrics['final_asynchronality_sum']:.6f}",
         f"Asynchronality reduction (%): {metrics['asynchronality_reduction_percent']:.4f}",
-        "",
-        "Link quality summary",
         f"Initial avg SNR (dB): {metrics['initial_avg_snr_db']:.4f}",
         f"Final avg SNR (dB): {metrics['final_avg_snr_db']:.4f}",
         f"Initial avg SINR (dB): {metrics['initial_avg_sinr_db']:.4f}",
         f"Final avg SINR (dB): {metrics['final_avg_sinr_db']:.4f}",
-        "",
-        "Per-user details",
+        f"Total served bits: {_sum_per_user_summary_field(metrics, 'served_bits')}",
+        f"Total skipped blocks: {_sum_per_user_summary_field(metrics, 'skipped_blocks')}",
     ]
+    if metrics.get("scenario_mode", "") == FIXED_BLOCK_TARGETS_MODE:
+        lines.extend(
+            [
+                f"Total target bits: {_sum_per_user_summary_field(metrics, 'target_bits')}",
+                f"Total unserved bits: {_sum_per_user_summary_field(metrics, 'unserved_bits')}",
+                f"Total partially served blocks: {_sum_per_user_summary_field(metrics, 'partially_served_blocks')}",
+                f"Total zero-service blocks: {_sum_per_user_summary_field(metrics, 'zero_service_blocks')}",
+            ]
+        )
+    return lines
 
+
+def _build_uplink_per_user_test_lines(result: dict[str, Any]) -> list[str]:
+    metrics = result["summary_metrics"]
+    lines = ["Per-user final test details"]
     for row in metrics["per_user_summary"]:
         parts = [
             f"User {row['user']}",
@@ -485,6 +491,30 @@ def build_convergence_summary_lines(result: dict[str, Any]) -> list[str]:
                 ]
             )
         lines.append(" | ".join(parts))
+    return lines
+
+
+def build_convergence_summary_lines(result: dict[str, Any]) -> list[str]:
+    metrics = result["summary_metrics"]
+    lines = [
+        "Uplink optimizer summary",
+        "",
+        "Setup",
+        f"Method: {result.get('method_name', 'unknown')}",
+        f"Config: {result.get('cfg_path', 'unknown')}",
+        f"Seed: {int(result.get('seed', 0))}",
+        f"Run started at: {result.get('run_started_at_local', 'unknown')}",
+        f"Run completed at: {result.get('run_completed_at_local', 'unknown')}",
+        f"Scenario: {result.get('scenario_mode', 'unknown')}",
+        f"Uplink rate model: {result.get('uplink_rate_model', 'unknown')}",
+        f"Convergence precoder update mode: {result.get('convergence_precoder_update_mode', 'unknown')}",
+        f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
+        f"Initial schedule source: {result.get('initial_schedule_source', 'unknown')}",
+    ]
+    lines.extend([""])
+    lines.extend(_build_uplink_final_test_section_lines(result))
+    lines.extend([""])
+    lines.extend(_build_uplink_per_user_test_lines(result))
 
     if metrics["initial_asynchronality_pairs"]:
         lines.extend(["", "Per-pair asynchronality"])
@@ -509,103 +539,57 @@ def build_summary_lines(result: dict[str, Any]) -> list[str]:
     post_training_summary = result.get("post_training_summary", {})
     lines = [
         "Uplink optimizer summary",
+        "",
+        "Setup",
         f"Method: {result.get('method_name', 'unknown')}",
         f"Config: {result.get('cfg_path', 'unknown')}",
         f"Test seed: {int(result.get('seed', 0))}",
         f"Train seeds: {result.get('train_seeds', [])}",
-        f"Experiment scenario mode: {result.get('experiment_scenario_mode', 'unknown')}",
-        f"Training channel-episode counts per user: {result.get('training_channel_episode_counts_per_user', result.get('training_sample_counts_per_user', result.get('training_dataset_sizes', [])))}",
-        f"Training dataset total channel episodes: {int(dataset_summary.get('total_channel_episodes', 0)) if isinstance(dataset_summary, dict) else 0}",
+        f"Run started at: {result.get('run_started_at_local', 'unknown')}",
+        f"Run completed at: {result.get('run_completed_at_local', 'unknown')}",
+        f"Scenario: {result.get('experiment_scenario_mode', 'unknown')}",
+        f"Uplink rate model: {result.get('uplink_rate_model', 'unknown')}",
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
         f"Training objective: {result.get('training_objective', 'unknown')}",
         f"Initial schedule source: {result.get('initial_schedule_source', 'unknown')}",
-        "",
+        f"Training dataset total channel episodes: {int(dataset_summary.get('total_channel_episodes', 0)) if isinstance(dataset_summary, dict) else 0}",
+        f"Training channel-episode counts per user: {result.get('training_channel_episode_counts_per_user', result.get('training_sample_counts_per_user', result.get('training_dataset_sizes', [])))}",
     ]
+    lines.extend([""])
+    lines.extend(_build_uplink_final_test_section_lines(result))
     if isinstance(post_training_summary, dict) and len(post_training_summary) > 0:
         lines.extend(
             [
-                "Training summary",
-                f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}",
-                f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}",
-                f"Final avg user rate: {float(post_training_summary.get('final_avg_user_rate', 0.0)):.6f}",
-                f"Best avg user rate: {float(post_training_summary.get('best_avg_user_rate', 0.0)):.6f}",
-                f"Final avg lagrangian: {float(post_training_summary.get('final_avg_lagrangian', 0.0)):.6f}",
-                f"Best avg lagrangian: {float(post_training_summary.get('best_avg_lagrangian', 0.0)):.6f}",
-                f"Per-user final rate: {post_training_summary.get('per_user_final_rate', [])}",
-                f"Per-user final lagrangian: {post_training_summary.get('per_user_final_lagrangian', post_training_summary.get('per_user_final_loss', []))}",
-                f"Cumulative rollout queries by n_kl: {post_training_summary.get('cumulative_rollout_queries_by_n_kl', {}).get('global_rollout_queries_by_n_kl_over_all_epochs', {})}",
-                f"Cumulative frontier rollout queries by n_kl: {post_training_summary.get('cumulative_frontier_rollout_queries_by_n_kl', {}).get('global_frontier_rollout_queries_by_n_kl_over_all_epochs', {})}",
-                f"Train-eval initial blocks per user: {post_training_summary.get('train_eval_initial_blocks_per_user', [])}",
-                f"Train-eval final blocks per user: {post_training_summary.get('train_eval_blocks_per_user', [])}",
-                f"Train-eval initial total n per user: {post_training_summary.get('train_eval_initial_total_n_per_user', [])}",
-                f"Train-eval final total n per user: {post_training_summary.get('train_eval_total_n_per_user', [])}",
-                (
-                    "Train-eval total latency reduction (%): "
-                    f"{float(post_training_summary.get('train_eval_total_latency_reduction_percent', 0.0)):.4f}"
-                ),
-                (
-                    f"Train-eval initial selected n_kl summary: "
-                    f"{post_training_summary.get('train_eval_initial_selected_n_kl_summary', {})}"
-                ),
-                (
-                    f"Train-eval final selected n_kl summary: "
-                    f"{post_training_summary.get('train_eval_selected_n_kl_summary', {})}"
-                ),
                 "",
+                "Training results",
+                f"Epochs requested: {int(post_training_summary.get('epochs_requested', 0))}",
+                f"Configured max epochs: {int(post_training_summary.get('configured_max_epochs', post_training_summary.get('epochs_requested', 0)))}",
+                f"Per-user epochs completed: {post_training_summary.get('per_user_epochs_completed', [])}",
+                f"Per-user training solve status: {post_training_summary.get('per_user_training_solve_status', [])}",
+                f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}",
+                f"Training channel episodes: {int(post_training_summary.get('total_training_channel_episodes', 0))}",
+                f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}",
+                f"Last epoch mean per-user rollout rate: {float(post_training_summary.get('last_epoch_mean_user_rollout_rate', post_training_summary.get('final_avg_user_rate', 0.0))):.6f}",
+                f"Best epoch mean per-user rollout rate: {float(post_training_summary.get('best_epoch_mean_user_rollout_rate', post_training_summary.get('best_avg_user_rate', 0.0))):.6f}",
+                f"Last epoch mean per-user rollout Lagrangian: {float(post_training_summary.get('last_epoch_mean_user_rollout_lagrangian', post_training_summary.get('final_avg_lagrangian', 0.0))):.6f}",
+                f"Best epoch mean per-user rollout Lagrangian: {float(post_training_summary.get('best_epoch_mean_user_rollout_lagrangian', post_training_summary.get('best_avg_lagrangian', 0.0))):.6f}",
+                (
+                    "Per-user last epoch avg rate over rollout queries: "
+                    f"{post_training_summary.get('per_user_last_epoch_avg_rate_over_rollout_queries', post_training_summary.get('per_user_final_rate', []))}"
+                ),
+                (
+                    "Per-user last epoch avg Lagrangian over rollout queries: "
+                    f"{post_training_summary.get('per_user_last_epoch_avg_lagrangian_over_rollout_queries', post_training_summary.get('per_user_final_lagrangian', post_training_summary.get('per_user_final_loss', [])))}"
+                ),
+                (
+                    "Last epoch feasible rollout queries: "
+                    f"{int(post_training_summary.get('last_epoch_feasible_rollout_queries', 0))} / "
+                    f"{max(int(post_training_summary.get('last_epoch_total_rollout_queries', 0)), 0)}"
+                ),
             ]
         )
-    lines.extend([
-        "Testing summary",
-        f"Initial latency source: {result.get('initial_schedule_source', 'unknown')}",
-        "",
-        "Latency summary",
-        f"Initial total latency: {metrics['initial_total_latency']:.6f}",
-        f"Final total latency: {metrics['final_total_latency']:.6f}",
-        f"Total latency reduction (%): {metrics['total_latency_reduction_percent']:.4f}",
-        f"Initial avg latency: {metrics['initial_avg_latency']:.6f}",
-        f"Final avg latency: {metrics['final_avg_latency']:.6f}",
-        f"Initial min/max latency: {metrics['initial_min_latency']:.6f} / {metrics['initial_max_latency']:.6f}",
-        f"Final min/max latency: {metrics['final_min_latency']:.6f} / {metrics['final_max_latency']:.6f}",
-        "",
-        "Asynchronality summary",
-        f"Initial asynchronality sum: {metrics['initial_asynchronality_sum']:.6f}",
-        f"Final asynchronality sum: {metrics['final_asynchronality_sum']:.6f}",
-        f"Asynchronality reduction (%): {metrics['asynchronality_reduction_percent']:.4f}",
-        "",
-        "Link quality summary",
-        f"Initial avg SNR (dB): {metrics['initial_avg_snr_db']:.4f}",
-        f"Final avg SNR (dB): {metrics['final_avg_snr_db']:.4f}",
-        f"Initial avg SINR (dB): {metrics['initial_avg_sinr_db']:.4f}",
-        f"Final avg SINR (dB): {metrics['final_avg_sinr_db']:.4f}",
-        "",
-        "Per-user details",
-    ])
-    for row in metrics["per_user_summary"]:
-        parts = [
-            f"User {row['user']}",
-            f"init_lat={row['initial_latency']:.6f}",
-            f"final_lat={row['final_latency']:.6f}",
-            f"lat_red={row['latency_reduction_percent']:.4f}%",
-            f"init_snr={row['initial_snr_db']:.4f} dB",
-            f"final_snr={row['final_snr_db']:.4f} dB",
-            f"init_sinr={row['initial_sinr_db']:.4f} dB",
-            f"final_sinr={row['final_sinr_db']:.4f} dB",
-            f"blocks={row['blocks']}",
-            f"total_n={row['total_n']}",
-            f"served_bits={row['served_bits']}",
-            f"skipped_blocks={row.get('skipped_blocks', 0)}",
-        ]
-        if metrics.get("scenario_mode", "") == FIXED_BLOCK_TARGETS_MODE:
-            parts.extend(
-                [
-                    f"target_bits={row.get('target_bits', 0)}",
-                    f"init_unserved_bits={row.get('initial_unserved_bits', 0)}",
-                    f"unserved_bits={row.get('unserved_bits', 0)}",
-                    f"partial_blocks={row.get('partially_served_blocks', 0)}",
-                    f"zero_service_blocks={row.get('zero_service_blocks', 0)}",
-                ]
-            )
-        lines.append(" | ".join(parts))
+    lines.extend([""])
+    lines.extend(_build_uplink_per_user_test_lines(result))
 
     if metrics["initial_asynchronality_pairs"]:
         lines.extend(["", "Per-pair asynchronality"])
@@ -619,6 +603,25 @@ def build_summary_lines(result: dict[str, Any]) -> list[str]:
                     ]
                 )
             )
+    if isinstance(post_training_summary, dict) and len(post_training_summary) > 0:
+        lines.extend(
+            [
+                "",
+                "Additional training details",
+                f"Cumulative rollout queries by n_kl: {post_training_summary.get('cumulative_rollout_queries_by_n_kl', {}).get('global_rollout_queries_by_n_kl_over_all_epochs', {})}",
+                f"Cumulative frontier rollout queries by n_kl: {post_training_summary.get('cumulative_frontier_rollout_queries_by_n_kl', {}).get('global_frontier_rollout_queries_by_n_kl_over_all_epochs', {})}",
+                f"Train-eval initial blocks per user: {post_training_summary.get('train_eval_initial_blocks_per_user', [])}",
+                f"Train-eval final blocks per user: {post_training_summary.get('train_eval_blocks_per_user', [])}",
+                f"Train-eval initial total n per user: {post_training_summary.get('train_eval_initial_total_n_per_user', [])}",
+                f"Train-eval final total n per user: {post_training_summary.get('train_eval_total_n_per_user', [])}",
+                (
+                    "Train-eval total latency reduction (%): "
+                    f"{float(post_training_summary.get('train_eval_total_latency_reduction_percent', 0.0)):.4f}"
+                ),
+                f"Train-eval initial selected n_kl summary: {post_training_summary.get('train_eval_initial_selected_n_kl_summary', {})}",
+                f"Train-eval final selected n_kl summary: {post_training_summary.get('train_eval_selected_n_kl_summary', {})}",
+            ]
+        )
     lines.extend(format_experiment_cost_lines(result.get("experiment_cost")))
     lines.extend(
         [
@@ -668,20 +671,43 @@ def build_post_training_summary_lines(post_training_summary: dict[str, Any]) -> 
     lines = [
         "Uplink post-training summary",
         f"Train-eval seed: {int(post_training_summary.get('train_eval_seed', 0))}",
+        f"Run started at: {post_training_summary.get('run_started_at_local', 'unknown')}",
+        f"Training started at: {post_training_summary.get('training_started_at_local', 'unknown')}",
+        f"Training completed at: {post_training_summary.get('training_completed_at_local', 'unknown')}",
         f"Epochs requested: {int(post_training_summary.get('epochs_requested', 0))}",
+        f"Configured max epochs: {int(post_training_summary.get('configured_max_epochs', post_training_summary.get('epochs_requested', 0)))}",
         f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}",
         f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}",
         f"Per-user num epochs: {post_training_summary.get('per_user_num_epochs', [])}",
-        f"Final avg user rate: {float(post_training_summary.get('final_avg_user_rate', 0.0)):.6f}",
-        f"Best avg user rate: {float(post_training_summary.get('best_avg_user_rate', 0.0)):.6f}",
-        f"Final avg lagrangian: {float(post_training_summary.get('final_avg_lagrangian', 0.0)):.6f}",
-        f"Best avg lagrangian: {float(post_training_summary.get('best_avg_lagrangian', 0.0)):.6f}",
-        f"Per-user final rate: {post_training_summary.get('per_user_final_rate', [])}",
-        f"Per-user final lagrangian: {post_training_summary.get('per_user_final_lagrangian', post_training_summary.get('per_user_final_loss', []))}",
+        f"Per-user epochs completed: {post_training_summary.get('per_user_epochs_completed', [])}",
+        f"Per-user training solve status: {post_training_summary.get('per_user_training_solve_status', [])}",
+        f"Per-user restored solution source: {post_training_summary.get('per_user_restored_solution_source', [])}",
+        f"Training channel episodes: {int(post_training_summary.get('total_training_channel_episodes', 0))}",
+        f"Last epoch mean per-user rollout rate: {float(post_training_summary.get('last_epoch_mean_user_rollout_rate', post_training_summary.get('final_avg_user_rate', 0.0))):.6f}",
+        f"Best epoch mean per-user rollout rate: {float(post_training_summary.get('best_epoch_mean_user_rollout_rate', post_training_summary.get('best_avg_user_rate', 0.0))):.6f}",
+        f"Last epoch mean per-user rollout Lagrangian: {float(post_training_summary.get('last_epoch_mean_user_rollout_lagrangian', post_training_summary.get('final_avg_lagrangian', 0.0))):.6f}",
+        f"Best epoch mean per-user rollout Lagrangian: {float(post_training_summary.get('best_epoch_mean_user_rollout_lagrangian', post_training_summary.get('best_avg_lagrangian', 0.0))):.6f}",
+        (
+            "Per-user last epoch avg rate over rollout queries: "
+            f"{post_training_summary.get('per_user_last_epoch_avg_rate_over_rollout_queries', post_training_summary.get('per_user_final_rate', []))}"
+        ),
+        (
+            "Per-user last epoch avg Lagrangian over rollout queries: "
+            f"{post_training_summary.get('per_user_last_epoch_avg_lagrangian_over_rollout_queries', post_training_summary.get('per_user_final_lagrangian', post_training_summary.get('per_user_final_loss', [])))}"
+        ),
+        (
+            "Last epoch feasible rollout queries: "
+            f"{int(post_training_summary.get('last_epoch_feasible_rollout_queries', 0))} / "
+            f"{max(int(post_training_summary.get('last_epoch_total_rollout_queries', 0)), 0)}"
+        ),
         f"Per-user best lagrangian: {post_training_summary.get('per_user_best_lagrangian', post_training_summary.get('per_user_best_loss', []))}",
+        f"Per-user final KKT primal residual: {post_training_summary.get('per_user_final_kkt_primal_residual', [])}",
+        f"Per-user final KKT complementarity residual: {post_training_summary.get('per_user_final_kkt_complementarity_residual', [])}",
+        f"Per-user final KKT stationarity residual: {post_training_summary.get('per_user_final_kkt_stationarity_residual', [])}",
         f"Cumulative rollout queries by n_kl: {post_training_summary.get('cumulative_rollout_queries_by_n_kl', {}).get('global_rollout_queries_by_n_kl_over_all_epochs', {})}",
         f"Cumulative frontier rollout queries by n_kl: {post_training_summary.get('cumulative_frontier_rollout_queries_by_n_kl', {}).get('global_frontier_rollout_queries_by_n_kl_over_all_epochs', {})}",
-        f"Final epoch rollout query summary: {post_training_summary.get('final_epoch_rollout_query_summary', {})}",
+        f"Last epoch rollout queries by n_kl: {post_training_summary.get('final_epoch_rollout_query_summary', {}).get('global_rollout_queries_by_n_kl', {})}",
+        f"Last epoch frontier rollout queries by n_kl: {post_training_summary.get('final_epoch_rollout_query_summary', {}).get('global_frontier_rollout_queries_by_n_kl', {})}",
         f"Train-eval initial latency: {post_training_summary.get('train_eval_initial_latency', [])}",
         f"Train-eval final latency: {post_training_summary.get('train_eval_final_latency', [])}",
         f"Train-eval initial blocks per user: {post_training_summary.get('train_eval_initial_blocks_per_user', [])}",

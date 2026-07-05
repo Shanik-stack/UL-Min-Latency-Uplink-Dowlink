@@ -1,0 +1,53 @@
+Traceback (most recent call last):
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per epoch\main.py", line 11, in <module>
+    runpy.run_path(str(LEGACY_MAIN), run_name="__main__")
+  File "<frozen runpy>", line 291, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per sweep\main.py", line 61, in <module>
+    main()
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Convergence per sweep\main.py", line 43, in main
+    run_downlink_experiment(
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\experiment_runner.py", line 447, in run_downlink_experiment
+    result = OPTIMIZERS[method_name](system, sim_params, verbose=verbose)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 3130, in optimize_downlink_convergence_epoch
+    return optimize_downlink_safe_sweep(system, sim_params, verbose=verbose)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 3107, in optimize_downlink_safe_sweep
+    return _run_safe_sweep_fixed_block_targets(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 2788, in _run_safe_sweep_fixed_block_targets
+    initial_latency, initial_plan, initial_interference_diag = _estimate_initial_latency_from_random_precoders_fixed_block_targets(
+                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 2376, in _estimate_initial_latency_from_random_precoders_fixed_block_targets
+    baseline_models = _build_user_precoder_models(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 200, in _build_user_precoder_models
+    return _construct_models()
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\optimizer.py", line 175, in _construct_models
+    model = build_user_precoder_net(
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\precoder_models.py", line 732, in build_user_precoder_net
+    ).to(device)
+      ^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1384, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\module.py", line 934, in _apply
+    module._apply(fn)
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\module.py", line 934, in _apply
+    module._apply(fn)
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\module.py", line 965, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "C:\Users\shani\AppData\Local\Programs\Python\Python311\Lib\site-packages\torch\nn\modules\module.py", line 1370, in convert
+    return t.to(
+           ^^^^^
+torch.AcceleratorError: CUDA error: out of memory
+Search for `cudaErrorMemoryAllocation' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

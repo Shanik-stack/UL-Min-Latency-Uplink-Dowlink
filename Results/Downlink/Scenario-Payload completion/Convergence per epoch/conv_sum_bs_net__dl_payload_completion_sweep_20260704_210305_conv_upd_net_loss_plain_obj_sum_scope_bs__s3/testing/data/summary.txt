@@ -1,0 +1,61 @@
+Downlink optimizer summary
+
+Setup
+Method: convergence_per_epoch_baseline
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\sweep_20260704_210305\generated_configs\downlink\convergence\dl_payload_completion__sweep_20260704_210305__conv__upd-net__loss-plain__obj-sum__scope-bs.yaml
+Seed: 3
+Run started at: 2026-07-05T00:24:47+03:00
+Run completed at: 2026-07-05T01:05:54+03:00
+Scenario: greedy
+Objective mode: unweighted_sum_rate
+Allocation mode: greedy
+Weight strategy: none
+Convergence precoder update mode: precoder_net
+Downlink precoder-net scope: bs_shared_net
+Precoder parameterization: bs_shared_block_context_to_full_precoder_mlp
+
+Final test results
+Initial total latency: 0.305000
+Final total latency: 0.033667
+Total latency reduction (%): 88.9617
+Initial avg latency: 0.101667
+Final avg latency: 0.011222
+Initial asynchronality sum: 0.131600
+Final asynchronality sum: 0.012800
+Asynchronality reduction (%): 90.2736
+Initial avg SNR (dB): 8.0000
+Final avg SNR (dB): 13.7126
+Initial avg served-block SINR (dB): -2.8373
+Final avg served-block SINR (dB): 6.2306
+Initial avg all-block SINR (dB): -2.8373
+Final avg all-block SINR (dB): 6.2306
+Total served bits: 6000
+Total skipped blocks: 0
+
+Per-user final test details
+User 0 | init_lat=0.069867 | final_lat=0.008533 | lat_red=87.7863% | init_served_block_sinr=-3.0034 dB | final_served_block_sinr=3.1866 dB | init_all_block_sinr=-3.0034 dB | final_all_block_sinr=3.1866 dB | served_blocks=3 | blocks=3 | total_n=128 | served_bits=1000 | skipped_blocks=0
+User 1 | init_lat=0.099467 | final_lat=0.010200 | lat_red=89.7453% | init_served_block_sinr=-2.7737 dB | final_served_block_sinr=5.9944 dB | init_all_block_sinr=-2.7737 dB | final_all_block_sinr=5.9944 dB | served_blocks=3 | blocks=3 | total_n=153 | served_bits=2000 | skipped_blocks=0
+User 2 | init_lat=0.135667 | final_lat=0.014933 | lat_red=88.9926% | init_served_block_sinr=-2.7644 dB | final_served_block_sinr=9.5106 dB | init_all_block_sinr=-2.7644 dB | final_all_block_sinr=9.5106 dB | served_blocks=3 | blocks=3 | total_n=224 | served_bits=3000 | skipped_blocks=0
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.029600 | final_diff=0.001667
+Users 0-2 | initial_diff=0.065800 | final_diff=0.006400
+Users 1-2 | initial_diff=0.036200 | final_diff=0.004733
+
+Experiment cost
+Core wall time total (s): 2467.431842
+Core wall time training (s): 2467.431842
+Testing-phase wall time (s): 0.000000
+Forward+backward NN FLOPs: 1.752e+11
+Forward-only NN FLOPs: 2.920e+10
+Total NN FLOPs: 2.044e+11
+Total forward+backward NN evaluations: 23708
+Forward-only beam evaluations: 5927
+Actual optimizer updates: 17781
+Extra gradient evaluations used to check the current constrained joint state: 5927
+Workload counters:
+{'joint_block_epochs': 5927, 'constrained_joint_block_epochs': 5927, 'unconstrained_joint_block_epochs': 0, 'user_update_steps_per_epoch': 1, 'updated_user_calls': 17781}
+Notes:
+- Forward+backward NN FLOPs count the optimizer updates plus the extra gradient evaluations used to check the current constrained joint state.
+- Forward-only NN FLOPs count the forward-only beam evaluations inside the same convergence routine.
+- Testing-phase wall time is 0.0 for convergence because there is no separate train/test split.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from itertools import combinations
 from typing import Any, Sequence
 
@@ -44,6 +45,7 @@ from terminal_logging import format_log_line, format_latency_log_line, format_pr
 
 LOG2E_SQ = float(np.log2(np.e) ** 2)
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
+BS_SHARED_FIXED_TARGET_N_TARGET_MODES = {"shared_n_targets", "per_user_n_targets"}
 
 
 def _to_complex_numpy(x) -> np.ndarray:
@@ -62,6 +64,14 @@ def _clone_model_states(models: Sequence[torch.nn.Module]) -> list[dict[str, tor
         }
         for model in models
     ]
+
+
+def _restore_model_states(
+    models: Sequence[torch.nn.Module],
+    state_snapshots: Sequence[dict[str, torch.Tensor]],
+) -> None:
+    for model, model_state in zip(models, state_snapshots):
+        model.load_state_dict(model_state)
 
 
 def _relative_model_state_change(
@@ -119,6 +129,28 @@ def _downlink_monte_carlo_precoder_parameterization(model_scope: str) -> str:
     if scope == "bs_shared_net":
         return "bs_shared_block_context_to_full_precoder_mlp"
     return "per_user_block_context_to_precoder_mlp"
+
+
+def _resolve_bs_shared_fixed_target_n_target_mode(mode: str | None) -> str:
+    aliases = {
+        "joint": "shared_n_targets",
+        "shared": "shared_n_targets",
+        "shared_n_targets": "shared_n_targets",
+        "joint_n_targets": "shared_n_targets",
+        "per_user": "per_user_n_targets",
+        "user": "per_user_n_targets",
+        "per_user_n_targets": "per_user_n_targets",
+        "user_n_targets": "per_user_n_targets",
+    }
+    normalized = str(mode or "shared_n_targets").strip().lower()
+    resolved = aliases.get(normalized)
+    if resolved not in BS_SHARED_FIXED_TARGET_N_TARGET_MODES:
+        known = ", ".join(sorted(BS_SHARED_FIXED_TARGET_N_TARGET_MODES))
+        raise ValueError(
+            "Unknown bs_shared_net fixed-target n-target mode "
+            f"{mode!r}. Expected one of: {known}"
+        )
+    return resolved
 
 
 def _build_training_user_models(
@@ -305,6 +337,31 @@ def _masked_precoder_snapshot(
     return snapshot
 
 
+def _build_block_joint_scenario(
+    system: DownlinkSystem,
+    block: int,
+    active_mask: Sequence[int | float],
+    *,
+    scenario_mode: str,
+) -> dict[str, Any]:
+    active_mask_vec = [int(float(v) > 0.5) for v in active_mask]
+    return {
+        "seed": int(system.seed),
+        "block": int(block),
+        "H_block": [np.asarray(H_kl, dtype=np.complex64) for H_kl in _context_channels_for_block(system, int(block))],
+        "active_mask": active_mask_vec,
+        "max_n_targets": [
+            int(system.T[int(k)]) if int(active_mask_vec[int(k)]) > 0 else 0
+            for k in range(system.K)
+        ],
+        "block_power_budget": float(system.block_power_budget),
+        "P": [float(v) for v in system.P.tolist()],
+        "sigma2": [float(v) for v in system.sigma2.tolist()],
+        "epsilon": [float(v) for v in system.epsilon.tolist()],
+        "scenario_mode": str(scenario_mode),
+    }
+
+
 def _scenario_input_noise_covariances(
     system: DownlinkSystem,
     snapshot: list[list[np.ndarray]],
@@ -354,6 +411,7 @@ def _scenario_forward_pass(
     user_models: Sequence[torch.nn.Module],
     n_targets: Sequence[int],
     anchor_bits: Sequence[int] | None = None,
+    inference_counters: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     K = int(system_params["K"])
     active_mask = np.asarray(scenario["active_mask"], dtype=np.float32)
@@ -377,6 +435,13 @@ def _scenario_forward_pass(
     sum_rate = torch.zeros((), dtype=torch.float32, device=DEVICE)
 
     if _models_output_full_bs_precoder(user_models):
+        if inference_counters is not None:
+            inference_counters["total_forward_calls"] = int(inference_counters.get("total_forward_calls", 0)) + 1
+            per_user = inference_counters.get("per_user_forward_calls")
+            if isinstance(per_user, list):
+                for k in range(K):
+                    if float(active_mask[k]) > 0.5 and 0 <= int(k) < len(per_user):
+                        per_user[int(k)] = int(per_user[int(k)]) + 1
         sigma2_t = torch.tensor(np.asarray(scenario["sigma2"]), dtype=torch.float32, device=DEVICE)
         epsilon_t = torch.tensor(np.asarray(scenario["epsilon"]), dtype=torch.float32, device=DEVICE)
         predicted_beams = infer_raw_bs_precoders_torch_with_blocklength(
@@ -408,6 +473,11 @@ def _scenario_forward_pass(
                 )
                 continue
 
+            if inference_counters is not None:
+                inference_counters["total_forward_calls"] = int(inference_counters.get("total_forward_calls", 0)) + 1
+                per_user = inference_counters.get("per_user_forward_calls")
+                if isinstance(per_user, list) and 0 <= int(k) < len(per_user):
+                    per_user[int(k)] = int(per_user[int(k)]) + 1
             noise_cov_input_t = torch.tensor(
                 np.asarray(scenario["input_noise_covariances"][k]),
                 dtype=torch.complex64,
@@ -548,9 +618,17 @@ def _scenario_metrics_with_models(
     user_models: Sequence[torch.nn.Module],
     n_targets: Sequence[int],
     anchor_bits: Sequence[int] | None = None,
+    inference_counters: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     with torch.no_grad():
-        forward = _scenario_forward_pass(system_params, scenario, user_models, n_targets, anchor_bits=anchor_bits)
+        forward = _scenario_forward_pass(
+            system_params,
+            scenario,
+            user_models,
+            n_targets,
+            anchor_bits=anchor_bits,
+            inference_counters=inference_counters,
+        )
     return _scenario_metrics_from_forward(forward)
 
 
@@ -563,6 +641,7 @@ def _best_joint_n_target_transition(
     *,
     n_min: int,
     n_step: int,
+    inference_counters: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     candidate_users = [
         int(k)
@@ -588,6 +667,7 @@ def _best_joint_n_target_transition(
                 user_models,
                 candidate_n_targets,
                 anchor_bits=anchor_bits,
+                inference_counters=inference_counters,
             )
             candidate = {
                 "reduced_users": [int(k) for k in subset],
@@ -952,12 +1032,6 @@ def build_training_dataset(
     K = int(system_params["K"])
     scenario_mode = str(sim_params.get("experiment_scenario_mode", PAYLOAD_COMPLETION_MODE))
     episodes: list[dict[str, Any]] = []
-    blocks_per_seed = max(1, int(sim_params.get("monte_carlo_training_blocks_per_seed", 1)))
-    if verbose and blocks_per_seed != 1:
-        print(
-            "[DL Monte Carlo Train] Base dataset now uses one joint channel episode per seed; "
-            "ignoring monte_carlo_training_blocks_per_seed during training-data construction."
-        )
 
     for seed in train_seeds:
         if verbose:
@@ -1009,13 +1083,16 @@ def train_blocklength_aware_precoder_net(
     sim_params: dict[str, Any],
     training_episodes: Sequence[dict[str, Any]],
     *,
-    epochs: int = 20,
+    epochs: int | None = None,
     batch_size: int = 32,
     lr: float = 1e-3,
     verbose: bool = True,
 ) -> tuple[list[torch.nn.Module], dict[str, Any], list[int]]:
     K = int(system_params["K"])
     model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
+    shared_fixed_target_n_target_mode = _resolve_bs_shared_fixed_target_n_target_mode(
+        sim_params.get("bs_shared_net_fixed_target_n_target_mode", "shared_n_targets")
+    )
     dataset_summary = summarize_training_dataset(training_episodes)
     models = _build_training_user_models(system_params, sim_params)
     optimizer = torch.optim.Adam(
@@ -1031,9 +1108,18 @@ def train_blocklength_aware_precoder_net(
         "avg_block_power_violation": [],
         "avg_lagrangian": [],
         "avg_rate_violation_over_users": [],
+        "kkt_primal_residual": [],
+        "kkt_complementarity_residual": [],
+        "kkt_stationarity_residual": [],
+        "training_epoch_status": [],
         "dataset_summary": dataset_summary,
         "epoch_rollout_query_summaries": [],
         "downlink_precoder_net_scope": str(model_scope),
+        "bs_shared_net_fixed_target_n_target_mode": (
+            str(shared_fixed_target_n_target_mode)
+            if str(model_scope) == "bs_shared_net"
+            else "not_applicable"
+        ),
         "training_objective": "rollout_lagrangian_sum_finite_blocklength_rate_with_online_full_block_anchor_bits",
     }
     dataset_sizes = [
@@ -1047,6 +1133,11 @@ def train_blocklength_aware_precoder_net(
     lambda_power_block = float(sim_params.get("initial_lambda_power_constraint", 0.01))
     lr_rate = float(sim_params.get("lr_rate_constraint", 1e-2))
     lr_power = float(sim_params.get("lr_power_constraint", 1e-3))
+    max_epochs = max(1, int(epochs if epochs is not None else sim_params.get("monte_carlo_training_max_epochs", sim_params.get("max_epochs", 20))))
+    print_every = max(1, int(sim_params.get("print_every_epoch", 1)))
+    kkt_primal_tol = float(sim_params.get("kkt_primal_tol", 1e-5))
+    kkt_complementarity_tol = float(sim_params.get("kkt_complementarity_tol", 1e-5))
+    kkt_stationarity_tol = float(sim_params.get("kkt_stationarity_tol", 1e-4))
 
     if verbose:
         print(
@@ -1056,7 +1147,7 @@ def train_blocklength_aware_precoder_net(
                 scope="joint",
                 channel_episodes=int(len(training_episodes)),
                 channel_episodes_per_user=[int(v) for v in dataset_sizes],
-                epochs=int(epochs),
+                epochs=int(max_epochs),
                 batch_size=int(batch_size),
                 precoder_net_scope=str(model_scope),
             )
@@ -1072,8 +1163,21 @@ def train_blocklength_aware_precoder_net(
     cumulative_frontier_query_per_user_counts: list[dict[int, int]] = [{} for _ in range(K)]
     final_epoch_rollout_summary: dict[str, Any] = {}
     previous_epoch_model_states: list[dict[str, torch.Tensor]] | None = None
+    best_primal_residual = float("inf")
+    best_feasible_objective = -float("inf")
+    best_primal_model_states = _clone_model_states(models)
+    best_primal_optimizer_state = copy.deepcopy(optimizer.state_dict())
+    best_primal_lambda_rate = np.array(lambda_rate, copy=True)
+    best_primal_lambda_power_block = float(lambda_power_block)
+    best_feasible_model_states: list[dict[str, torch.Tensor]] | None = None
+    best_feasible_optimizer_state: dict[str, Any] | None = None
+    best_feasible_lambda_rate: np.ndarray | None = None
+    best_feasible_lambda_power_block: float | None = None
+    solve_status = "max_epochs_reached"
+    epochs_completed = 0
 
-    for epoch in range(int(epochs)):
+    for epoch in range(int(max_epochs)):
+        epochs_completed = int(epoch + 1)
         for model in models:
             model.eval()
         rollout_queries = _generate_rollout_queries_for_downlink(
@@ -1138,6 +1242,10 @@ def train_blocklength_aware_precoder_net(
             training_history["avg_lagrangian"].append(0.0)
             training_history["avg_rate_violation_over_users"].append(0.0)
             training_history["avg_block_power_violation"].append(0.0)
+            training_history["kkt_primal_residual"].append(0.0)
+            training_history["kkt_complementarity_residual"].append(0.0)
+            training_history["kkt_stationarity_residual"].append(0.0)
+            training_history["training_epoch_status"].append("no_rollout_queries")
             if verbose:
                 print(
                     format_progress_log_line(
@@ -1145,7 +1253,7 @@ def train_blocklength_aware_precoder_net(
                         phase="train",
                         method="monte_carlo",
                         scope="joint",
-                        epoch=f"{epoch + 1}/{int(epochs)}",
+                        epoch=f"{epoch + 1}/{int(max_epochs)}",
                         objective=0.0,
                         sum_rate=0.0,
                         avg_user_rate=0.0,
@@ -1277,29 +1385,100 @@ def train_blocklength_aware_precoder_net(
         )
         epoch_r_s = _relative_model_state_change(models, previous_epoch_model_states)
         previous_epoch_model_states = _clone_model_states(models)
-        epoch_status = "epoch_budget_reached" if int(epoch + 1) >= int(epochs) else "running"
+        exact_feasible = (
+            all(float(violation) <= 0.0 for violation in epoch_rate_violations)
+            and float(avg_block_power_violation) <= 0.0
+        )
+        if epoch_r_p < best_primal_residual:
+            best_primal_residual = float(epoch_r_p)
+            best_primal_model_states = _clone_model_states(models)
+            best_primal_optimizer_state = copy.deepcopy(optimizer.state_dict())
+            best_primal_lambda_rate = np.array(lambda_rate, copy=True)
+            best_primal_lambda_power_block = float(lambda_power_block)
+        if exact_feasible and avg_sum_rate >= best_feasible_objective:
+            best_feasible_objective = float(avg_sum_rate)
+            best_feasible_model_states = _clone_model_states(models)
+            best_feasible_optimizer_state = copy.deepcopy(optimizer.state_dict())
+            best_feasible_lambda_rate = np.array(lambda_rate, copy=True)
+            best_feasible_lambda_power_block = float(lambda_power_block)
+
+        epoch_status = "running"
+        if (
+            epoch_r_p <= kkt_primal_tol
+            and epoch_r_c <= kkt_complementarity_tol
+            and epoch_r_s <= kkt_stationarity_tol
+        ):
+            epoch_status = "kkt_converged"
+            solve_status = "kkt_converged"
+        elif epoch > 0 and epoch_r_s <= kkt_stationarity_tol and epoch_r_p > kkt_primal_tol:
+            epoch_status = "stationary_infeasible"
+            solve_status = "stationary_infeasible"
+        training_history["kkt_primal_residual"].append(float(epoch_r_p))
+        training_history["kkt_complementarity_residual"].append(float(epoch_r_c))
+        training_history["kkt_stationarity_residual"].append(float(epoch_r_s))
+        training_history["training_epoch_status"].append(str(epoch_status))
         if verbose:
-            print(
-                format_progress_log_line(
-                    "[DL Monte Carlo]",
-                    phase="train",
-                    method="monte_carlo",
-                    scope="joint",
-                    epoch=f"{epoch + 1}/{int(epochs)}",
-                    objective=float(training_history["avg_lagrangian"][-1]),
-                    sum_rate=float(avg_sum_rate),
-                    avg_user_rate=float(training_history["avg_user_rate"][-1]),
-                    r_p=epoch_r_p,
-                    r_c=epoch_r_c,
-                    r_s=epoch_r_s,
-                    status=epoch_status,
+            if (
+                ((epoch + 1) % print_every) == 0
+                or epoch == 0
+                or epoch_status in {"kkt_converged", "stationary_infeasible"}
+            ):
+                print(
+                    format_progress_log_line(
+                        "[DL Monte Carlo]",
+                        phase="train",
+                        method="monte_carlo",
+                        scope="joint",
+                        epoch=f"{epoch + 1}/{int(max_epochs)}",
+                        objective=float(training_history["avg_lagrangian"][-1]),
+                        sum_rate=float(avg_sum_rate),
+                        avg_user_rate=float(training_history["avg_user_rate"][-1]),
+                        r_p=epoch_r_p,
+                        r_c=epoch_r_c,
+                        r_s=epoch_r_s,
+                        status=epoch_status,
+                    )
                 )
-            )
+        if epoch_status in {"kkt_converged", "stationary_infeasible"}:
+            break
+
+    restored_solution_source = "best_primal"
+    if best_feasible_model_states is not None and best_feasible_optimizer_state is not None and best_feasible_lambda_rate is not None:
+        _restore_model_states(models, best_feasible_model_states)
+        optimizer.load_state_dict(best_feasible_optimizer_state)
+        lambda_rate = np.array(best_feasible_lambda_rate, copy=True)
+        lambda_power_block = float(best_feasible_lambda_power_block if best_feasible_lambda_power_block is not None else lambda_power_block)
+        restored_solution_source = "best_feasible"
+        if solve_status == "max_epochs_reached":
+            solve_status = "max_epochs_feasible_best"
+    else:
+        _restore_model_states(models, best_primal_model_states)
+        optimizer.load_state_dict(best_primal_optimizer_state)
+        lambda_rate = np.array(best_primal_lambda_rate, copy=True)
+        lambda_power_block = float(best_primal_lambda_power_block)
+        if solve_status == "max_epochs_reached":
+            solve_status = "max_epochs_best_primal"
+    if training_history["training_epoch_status"]:
+        training_history["training_epoch_status"][-1] = str(solve_status)
+    training_history["configured_max_epochs"] = int(max_epochs)
+    training_history["epochs_completed"] = int(epochs_completed)
+    training_history["training_solve_status"] = str(solve_status)
+    training_history["restored_solution_source"] = str(restored_solution_source)
 
     training_history["post_training_summary"] = {
-        "epochs_requested": int(epochs),
+        "epochs_requested": int(max_epochs),
+        "configured_max_epochs": int(max_epochs),
+        "epochs_completed": int(epochs_completed),
+        "training_solve_status": str(solve_status),
+        "restored_solution_source": str(restored_solution_source),
         "downlink_precoder_net_scope": str(model_scope),
+        "bs_shared_net_fixed_target_n_target_mode": (
+            str(shared_fixed_target_n_target_mode)
+            if str(model_scope) == "bs_shared_net"
+            else "not_applicable"
+        ),
         "base_dataset_kind": dataset_summary.get("base_dataset_kind", "channel_episodes_only"),
+        "total_training_channel_episodes": int(dataset_summary.get("total_channel_episodes", 0)),
         "rollout_anchor_bits_mode": "derived_online_from_current_joint_full_block_rate",
         "per_user_final_lagrangian": [
             float(history[-1]) if len(history) > 0 else 0.0 for history in training_history["per_user_lagrangian"]
@@ -1310,19 +1489,43 @@ def train_blocklength_aware_precoder_net(
         "per_user_final_rate": [
             float(history[-1]) if len(history) > 0 else 0.0 for history in training_history["per_user_rate"]
         ],
+        "per_user_last_epoch_avg_lagrangian_over_active_rollout_queries": [
+            float(history[-1]) if len(history) > 0 else 0.0 for history in training_history["per_user_lagrangian"]
+        ],
+        "per_user_last_epoch_avg_rate_over_active_rollout_queries": [
+            float(history[-1]) if len(history) > 0 else 0.0 for history in training_history["per_user_rate"]
+        ],
         "per_user_final_rate_violation": [
             float(history[-1]) if len(history) > 0 else 0.0 for history in training_history["avg_rate_violation"]
         ],
         "final_avg_sum_rate": float(training_history["sum_rate"][-1]) if training_history["sum_rate"] else 0.0,
         "best_avg_sum_rate": float(max(training_history["sum_rate"])) if training_history["sum_rate"] else 0.0,
+        "last_epoch_rollout_weighted_avg_sum_rate": (
+            float(training_history["sum_rate"][-1]) if training_history["sum_rate"] else 0.0
+        ),
+        "best_epoch_rollout_weighted_avg_sum_rate": (
+            float(max(training_history["sum_rate"])) if training_history["sum_rate"] else 0.0
+        ),
         "final_avg_user_rate": (
             float(training_history["avg_user_rate"][-1]) if training_history["avg_user_rate"] else 0.0
         ),
         "best_avg_user_rate": float(max(training_history["avg_user_rate"])) if training_history["avg_user_rate"] else 0.0,
+        "last_epoch_mean_user_rollout_rate": (
+            float(training_history["avg_user_rate"][-1]) if training_history["avg_user_rate"] else 0.0
+        ),
+        "best_epoch_mean_user_rollout_rate": (
+            float(max(training_history["avg_user_rate"])) if training_history["avg_user_rate"] else 0.0
+        ),
         "final_avg_lagrangian": (
             float(training_history["avg_lagrangian"][-1]) if training_history["avg_lagrangian"] else 0.0
         ),
         "best_avg_lagrangian": float(min(training_history["avg_lagrangian"])) if training_history["avg_lagrangian"] else 0.0,
+        "last_epoch_mean_user_lagrangian": (
+            float(training_history["avg_lagrangian"][-1]) if training_history["avg_lagrangian"] else 0.0
+        ),
+        "best_epoch_mean_user_lagrangian": (
+            float(min(training_history["avg_lagrangian"])) if training_history["avg_lagrangian"] else 0.0
+        ),
         "final_avg_rate_violation": (
             float(training_history["avg_rate_violation_over_users"][-1])
             if training_history["avg_rate_violation_over_users"]
@@ -1343,10 +1546,40 @@ def train_blocklength_aware_precoder_net(
             if training_history["avg_block_power_violation"]
             else 0.0
         ),
+        "final_kkt_primal_residual": (
+            float(training_history["kkt_primal_residual"][-1]) if training_history["kkt_primal_residual"] else 0.0
+        ),
+        "best_kkt_primal_residual": (
+            float(min(training_history["kkt_primal_residual"])) if training_history["kkt_primal_residual"] else 0.0
+        ),
+        "final_kkt_complementarity_residual": (
+            float(training_history["kkt_complementarity_residual"][-1])
+            if training_history["kkt_complementarity_residual"]
+            else 0.0
+        ),
+        "best_kkt_complementarity_residual": (
+            float(min(training_history["kkt_complementarity_residual"]))
+            if training_history["kkt_complementarity_residual"]
+            else 0.0
+        ),
+        "final_kkt_stationarity_residual": (
+            float(training_history["kkt_stationarity_residual"][-1])
+            if training_history["kkt_stationarity_residual"]
+            else 0.0
+        ),
+        "best_kkt_stationarity_residual": (
+            float(min(training_history["kkt_stationarity_residual"]))
+            if training_history["kkt_stationarity_residual"]
+            else 0.0
+        ),
         "final_feasible_rollout_query_fraction": (
             float(final_epoch_rollout_summary.get("feasible_rollout_queries", 0))
             / float(max(int(final_epoch_rollout_summary.get("total_rollout_queries", 0)), 1))
         ),
+        "last_epoch_total_rollout_queries": int(final_epoch_rollout_summary.get("total_rollout_queries", 0)),
+        "last_epoch_feasible_rollout_queries": int(final_epoch_rollout_summary.get("feasible_rollout_queries", 0)),
+        "last_epoch_infeasible_rollout_queries": int(final_epoch_rollout_summary.get("infeasible_rollout_queries", 0)),
+        "last_epoch_frontier_rollout_queries": int(final_epoch_rollout_summary.get("frontier_rollout_queries", 0)),
         "cumulative_rollout_queries_by_n_kl": _serialize_n_kl_case_counts(
             cumulative_rollout_query_global_counts,
             cumulative_rollout_query_per_user_counts,
@@ -1502,7 +1735,7 @@ def _allocate_bits_for_user_block_precoder_net(
     B_used = int(min(int(remaining_bits), B_max))
     chosen_n = int(T_k)
     chosen_R = float(R_T)
-    chosen_F = np.array(F_T, copy=True)
+    chosen_F = np.array(snapshot_T[k][l], copy=True)
 
     if int(remaining_bits) <= B_max:
         candidate = T_k - n_step
@@ -1524,7 +1757,7 @@ def _allocate_bits_for_user_block_precoder_net(
             if (float(B_used) / float(candidate)) <= R_candidate:
                 chosen_n = int(candidate)
                 chosen_R = float(R_candidate)
-                chosen_F = np.array(F_candidate, copy=True)
+                chosen_F = np.array(candidate_snapshot[k][l], copy=True)
                 candidate -= n_step
             else:
                 break
@@ -1577,7 +1810,7 @@ def _allocate_fixed_target_for_user_block_precoder_net(
 
     chosen_n = int(T_k)
     chosen_R = float(R_T)
-    chosen_F = np.array(F_T, copy=True)
+    chosen_F = np.array(snapshot_T[k][l], copy=True)
     if int(B_used) >= int(target_bits) and int(target_bits) > 0:
         candidate = T_k - n_step
         while candidate >= n_min:
@@ -1598,11 +1831,476 @@ def _allocate_fixed_target_for_user_block_precoder_net(
             if (float(target_bits) / float(max(int(candidate), 1))) <= R_candidate:
                 chosen_n = int(candidate)
                 chosen_R = float(R_candidate)
-                chosen_F = np.array(F_candidate, copy=True)
+                chosen_F = np.array(candidate_snapshot[k][l], copy=True)
                 candidate -= int(n_step)
             else:
                 break
     return int(B_used), int(chosen_n), float(chosen_R), chosen_F
+
+
+def _reconcile_fixed_target_plans_after_commit(
+    system: DownlinkSystem,
+    user_models: Sequence[torch.nn.Module],
+    committed_snapshot: list[list[np.ndarray]],
+    corrected_plans: dict[int, dict[str, Any]],
+    block_targets: np.ndarray,
+    block: int,
+    sim_params: dict[str, Any],
+    active_mask: Sequence[int | float],
+    inference_counters: dict[str, Any] | None = None,
+) -> None:
+    l = int(block)
+    active_users = [int(k) for k in range(system.K) if float(active_mask[int(k)]) > 0.5]
+    if len(active_users) == 0:
+        return
+
+    for _ in range(3):
+        changed = False
+        system.project_block_precoders_to_power(committed_snapshot, l, active_users=active_users)
+
+        for k in active_users:
+            plan = corrected_plans[int(k)]
+            target_bits = int(plan.get("target_bits", int(block_targets[int(k), l])))
+            if bool(plan.get("skipped", False)) or target_bits <= 0:
+                corrected_plans[int(k)] = {
+                    **plan,
+                    "B_used": 0,
+                    "n_used": int(system.T[int(k)]),
+                    "R_used": 0.0,
+                    "F_used": np.zeros((int(system.Nb[int(k)]), int(system.dk[int(k)])), dtype=np.complex128),
+                    "skipped": bool(target_bits > 0),
+                    "target_bits": target_bits,
+                }
+                committed_snapshot[int(k)][l] = np.array(corrected_plans[int(k)]["F_used"], copy=True)
+                continue
+
+            n_used = int(plan["n_used"])
+            actual_rate = float(system.compute_block_rate(int(k), l, max(int(n_used), 1), F_override=committed_snapshot))
+            achievable_bits = max(_rate_to_max_bits(n_used, actual_rate), 0)
+            if int(n_used) < int(system.T[int(k)]) and achievable_bits < target_bits:
+                B_fix, n_fix, R_fix, F_fix = _allocate_fixed_target_for_user_block_precoder_net(
+                    system,
+                    committed_snapshot,
+                    user_models[int(k)],
+                    int(k),
+                    l,
+                    target_bits,
+                    sim_params,
+                    active_mask,
+                    allow_infeasible_zero=True,
+                    inference_counters=inference_counters,
+                )
+                next_plan = {
+                    "B_used": int(B_fix),
+                    "n_used": int(n_fix if B_fix > 0 else int(system.T[int(k)])),
+                    "R_used": float(R_fix),
+                    "F_used": np.array(F_fix, copy=True),
+                    "skipped": bool(B_fix <= 0),
+                    "target_bits": target_bits,
+                }
+                if (
+                    int(next_plan["n_used"]) != int(plan["n_used"])
+                    or bool(next_plan["skipped"]) != bool(plan.get("skipped", False))
+                    or not np.allclose(np.asarray(next_plan["F_used"]), np.asarray(plan["F_used"]))
+                ):
+                    changed = True
+                corrected_plans[int(k)] = next_plan
+                committed_snapshot[int(k)][l] = np.array(F_fix, copy=True)
+        if not changed:
+            break
+
+    system.project_block_precoders_to_power(committed_snapshot, l, active_users=active_users)
+
+    for k in active_users:
+        plan = corrected_plans[int(k)]
+        target_bits = int(plan.get("target_bits", int(block_targets[int(k), l])))
+        if bool(plan.get("skipped", False)) or target_bits <= 0:
+            corrected_plans[int(k)] = {
+                **plan,
+                "B_used": 0,
+                "n_used": int(system.T[int(k)]),
+                "R_used": 0.0,
+                "F_used": np.zeros((int(system.Nb[int(k)]), int(system.dk[int(k)])), dtype=np.complex128),
+                "skipped": bool(target_bits > 0),
+                "target_bits": target_bits,
+            }
+            committed_snapshot[int(k)][l] = np.array(corrected_plans[int(k)]["F_used"], copy=True)
+            continue
+
+        n_used = int(plan["n_used"])
+        actual_rate = float(system.compute_block_rate(int(k), l, max(int(n_used), 1), F_override=committed_snapshot))
+        achievable_bits = max(_rate_to_max_bits(n_used, actual_rate), 0)
+        B_final = int(min(target_bits, achievable_bits))
+        corrected_plans[int(k)] = {
+            **plan,
+            "B_used": int(B_final),
+            "n_used": int(n_used if B_final > 0 else int(system.T[int(k)])),
+            "R_used": float(actual_rate if B_final > 0 else 0.0),
+            "F_used": np.array(committed_snapshot[int(k)][l], copy=True) if B_final > 0 else np.zeros(
+                (int(system.Nb[int(k)]), int(system.dk[int(k)])),
+                dtype=np.complex128,
+            ),
+            "skipped": bool(target_bits > 0 and B_final <= 0),
+            "target_bits": target_bits,
+        }
+
+
+def _reconcile_payload_plans_after_commit(
+    system: DownlinkSystem,
+    user_models: Sequence[torch.nn.Module],
+    committed_snapshot: list[list[np.ndarray]],
+    corrected_plans: dict[int, dict[str, Any]],
+    remaining_bits_by_user: np.ndarray,
+    block: int,
+    sim_params: dict[str, Any],
+    active_mask: Sequence[int | float],
+    inference_counters: dict[str, Any] | None = None,
+) -> None:
+    l = int(block)
+    active_users = [int(k) for k in range(system.K) if float(active_mask[int(k)]) > 0.5]
+    if len(active_users) == 0:
+        return
+
+    for _ in range(3):
+        changed = False
+        system.project_block_precoders_to_power(committed_snapshot, l, active_users=active_users)
+
+        for k in active_users:
+            plan = corrected_plans[int(k)]
+            remaining_bits = int(remaining_bits_by_user[int(k)])
+            if bool(plan.get("skipped", False)) or remaining_bits <= 0:
+                corrected_plans[int(k)] = {
+                    **plan,
+                    "B_used": 0,
+                    "n_used": int(system.T[int(k)]),
+                    "R_used": 0.0,
+                    "F_used": np.zeros((int(system.Nb[int(k)]), int(system.dk[int(k)])), dtype=np.complex128),
+                    "skipped": True,
+                }
+                committed_snapshot[int(k)][l] = np.array(corrected_plans[int(k)]["F_used"], copy=True)
+                continue
+
+            n_used = int(plan["n_used"])
+            actual_rate = float(system.compute_block_rate(int(k), l, max(int(n_used), 1), F_override=committed_snapshot))
+            achievable_bits = max(_rate_to_max_bits(n_used, actual_rate), 0)
+            if int(n_used) < int(system.T[int(k)]) and achievable_bits < remaining_bits:
+                B_fix, n_fix, R_fix, F_fix = _allocate_bits_for_user_block_precoder_net(
+                    system,
+                    committed_snapshot,
+                    user_models[int(k)],
+                    int(k),
+                    l,
+                    remaining_bits,
+                    sim_params,
+                    active_mask,
+                    allow_infeasible_zero=True,
+                    inference_counters=inference_counters,
+                )
+                next_plan = {
+                    "B_used": int(B_fix),
+                    "n_used": int(n_fix),
+                    "R_used": float(R_fix),
+                    "F_used": np.array(F_fix, copy=True),
+                    "skipped": bool(B_fix <= 0),
+                }
+                if (
+                    int(next_plan["n_used"]) != int(plan["n_used"])
+                    or bool(next_plan["skipped"]) != bool(plan.get("skipped", False))
+                    or not np.allclose(np.asarray(next_plan["F_used"]), np.asarray(plan["F_used"]))
+                ):
+                    changed = True
+                corrected_plans[int(k)] = next_plan
+                committed_snapshot[int(k)][l] = np.array(F_fix, copy=True)
+        if not changed:
+            break
+
+    system.project_block_precoders_to_power(committed_snapshot, l, active_users=active_users)
+
+    for k in active_users:
+        plan = corrected_plans[int(k)]
+        remaining_bits = int(remaining_bits_by_user[int(k)])
+        if bool(plan.get("skipped", False)) or remaining_bits <= 0:
+            corrected_plans[int(k)] = {
+                **plan,
+                "B_used": 0,
+                "n_used": int(system.T[int(k)]),
+                "R_used": 0.0,
+                "F_used": np.zeros((int(system.Nb[int(k)]), int(system.dk[int(k)])), dtype=np.complex128),
+                "skipped": True,
+            }
+            committed_snapshot[int(k)][l] = np.array(corrected_plans[int(k)]["F_used"], copy=True)
+            continue
+
+        n_used = int(plan["n_used"])
+        actual_rate = float(system.compute_block_rate(int(k), l, max(int(n_used), 1), F_override=committed_snapshot))
+        achievable_bits = max(_rate_to_max_bits(n_used, actual_rate), 0)
+        B_final = int(min(remaining_bits, achievable_bits))
+        corrected_plans[int(k)] = {
+            **plan,
+            "B_used": int(B_final),
+            "n_used": int(n_used if B_final > 0 else int(system.T[int(k)])),
+            "R_used": float(actual_rate if B_final > 0 else 0.0),
+            "F_used": np.array(committed_snapshot[int(k)][l], copy=True) if B_final > 0 else np.zeros(
+                (int(system.Nb[int(k)]), int(system.dk[int(k)])),
+                dtype=np.complex128,
+            ),
+            "skipped": bool(B_final <= 0),
+        }
+
+
+def _finalize_shared_fixed_target_plans_from_joint_beam(
+    system: DownlinkSystem,
+    committed_snapshot: list[list[np.ndarray]],
+    block: int,
+    target_bits_by_user: Sequence[int],
+    n_targets: Sequence[int],
+    active_mask: Sequence[int | float],
+) -> dict[int, dict[str, Any]]:
+    l = int(block)
+    active_users = [int(k) for k, flag in enumerate(active_mask) if float(flag) > 0.5]
+
+    for _ in range(max(system.K, 1)):
+        system.project_block_precoders_to_power(committed_snapshot, l, active_users=active_users)
+        changed = False
+        next_active_users: list[int] = []
+        for k in range(system.K):
+            target_bits = int(target_bits_by_user[int(k)])
+            if int(target_bits) <= 0 or float(active_mask[int(k)]) <= 0.5:
+                if int(l) < len(committed_snapshot[int(k)]):
+                    committed_snapshot[int(k)][l] = _zero_downlink_precoder(system, int(k))
+                continue
+
+            n_used = int(n_targets[int(k)])
+            actual_rate = float(system.compute_block_rate(int(k), l, max(int(n_used), 1), F_override=committed_snapshot))
+            achievable_bits = max(_rate_to_max_bits(n_used, actual_rate), 0)
+            if achievable_bits <= 0:
+                if np.linalg.norm(np.asarray(committed_snapshot[int(k)][l])) > 0.0:
+                    changed = True
+                committed_snapshot[int(k)][l] = _zero_downlink_precoder(system, int(k))
+                continue
+            next_active_users.append(int(k))
+
+        if not changed and next_active_users == active_users:
+            break
+        active_users = next_active_users
+
+    system.project_block_precoders_to_power(committed_snapshot, l, active_users=active_users)
+    final_plans: dict[int, dict[str, Any]] = {}
+    for k in range(system.K):
+        target_bits = int(target_bits_by_user[int(k)])
+        if int(target_bits) <= 0 or float(active_mask[int(k)]) <= 0.5:
+            final_plans[int(k)] = {
+                "B_used": 0,
+                "n_used": int(system.T[int(k)]),
+                "R_used": 0.0,
+                "F_used": _zero_downlink_precoder(system, int(k)),
+                "skipped": False,
+                "target_bits": int(target_bits),
+            }
+            if int(l) < len(committed_snapshot[int(k)]):
+                committed_snapshot[int(k)][l] = np.array(final_plans[int(k)]["F_used"], copy=True)
+            continue
+
+        n_used = int(n_targets[int(k)])
+        actual_rate = float(system.compute_block_rate(int(k), l, max(int(n_used), 1), F_override=committed_snapshot))
+        achievable_bits = max(_rate_to_max_bits(n_used, actual_rate), 0)
+        B_final = int(min(int(target_bits), achievable_bits))
+        if B_final <= 0:
+            zero_beam = _zero_downlink_precoder(system, int(k))
+            committed_snapshot[int(k)][l] = np.array(zero_beam, copy=True)
+            final_plans[int(k)] = {
+                "B_used": 0,
+                "n_used": int(system.T[int(k)]),
+                "R_used": 0.0,
+                "F_used": zero_beam,
+                "skipped": bool(target_bits > 0),
+                "target_bits": int(target_bits),
+            }
+            continue
+
+        final_plans[int(k)] = {
+            "B_used": int(B_final),
+            "n_used": int(n_used),
+            "R_used": float(actual_rate),
+            "F_used": np.array(committed_snapshot[int(k)][l], copy=True),
+            "skipped": False,
+            "target_bits": int(target_bits),
+        }
+    return final_plans
+
+
+def _plan_fixed_target_block_with_shared_bs_precoder(
+    system: DownlinkSystem,
+    sim_params: dict[str, Any],
+    shared_model: torch.nn.Module,
+    block: int,
+    target_bits_by_user: Sequence[int],
+    *,
+    inference_counters: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    active_mask = [1 if int(target_bits_by_user[int(k)]) > 0 else 0 for k in range(system.K)]
+    initial_n_targets = [
+        int(system.T[int(k)]) if int(active_mask[int(k)]) > 0 else 0
+        for k in range(system.K)
+    ]
+    block_scenario = _build_block_joint_scenario(
+        system,
+        int(block),
+        active_mask,
+        scenario_mode=FIXED_BLOCK_TARGETS_MODE,
+    )
+    anchor_bits = [int(max(int(target_bits_by_user[int(k)]), 0)) for k in range(system.K)]
+    allocation_snapshot = _shared_precoder_snapshot_for_targets(
+        system,
+        shared_model,
+        int(block),
+        initial_n_targets,
+        active_mask,
+        inference_counters=inference_counters,
+    )
+    current_n_targets = [int(v) for v in initial_n_targets]
+    initial_metrics = _scenario_metrics_with_models(
+        system.sc,
+        block_scenario,
+        [shared_model],
+        current_n_targets,
+        anchor_bits=anchor_bits,
+        inference_counters=inference_counters,
+    )
+
+    if bool(initial_metrics["feasible"]):
+        while True:
+            transition = _best_joint_n_target_transition(
+                system.sc,
+                block_scenario,
+                [shared_model],
+                current_n_targets,
+                anchor_bits,
+                n_min=int(sim_params["n_kl_min"]),
+                n_step=int(sim_params["n_kl_step"]),
+                inference_counters=inference_counters,
+            )
+            accepted = transition.get("accepted")
+            if accepted is None:
+                break
+            current_n_targets = [int(v) for v in accepted["candidate_n_targets"]]
+
+    committed_snapshot = _shared_precoder_snapshot_for_targets(
+        system,
+        shared_model,
+        int(block),
+        current_n_targets,
+        active_mask,
+        inference_counters=inference_counters,
+    )
+    final_plans = _finalize_shared_fixed_target_plans_from_joint_beam(
+        system,
+        committed_snapshot,
+        int(block),
+        target_bits_by_user,
+        current_n_targets,
+        active_mask,
+    )
+    return {
+        "active_mask": [int(v) for v in active_mask],
+        "initial_n_targets": [int(v) for v in initial_n_targets],
+        "final_n_targets": [int(v) for v in current_n_targets],
+        "allocation_snapshot": allocation_snapshot,
+        "committed_snapshot": committed_snapshot,
+        "final_plans": final_plans,
+        "initial_metrics": initial_metrics,
+    }
+
+
+def _plan_fixed_target_block_with_shared_bs_precoder_per_user_n_targets(
+    system: DownlinkSystem,
+    sim_params: dict[str, Any],
+    shared_model: torch.nn.Module,
+    block: int,
+    target_bits_by_user: Sequence[int],
+    *,
+    inference_counters: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    active_mask = [1 if int(target_bits_by_user[int(k)]) > 0 else 0 for k in range(system.K)]
+    initial_n_targets = [
+        int(system.T[int(k)]) if int(active_mask[int(k)]) > 0 else 0
+        for k in range(system.K)
+    ]
+    block_scenario = _build_block_joint_scenario(
+        system,
+        int(block),
+        active_mask,
+        scenario_mode=FIXED_BLOCK_TARGETS_MODE,
+    )
+    anchor_bits = [int(max(int(target_bits_by_user[int(k)]), 0)) for k in range(system.K)]
+    allocation_snapshot = _shared_precoder_snapshot_for_targets(
+        system,
+        shared_model,
+        int(block),
+        initial_n_targets,
+        active_mask,
+        inference_counters=inference_counters,
+    )
+    current_n_targets = [int(v) for v in initial_n_targets]
+    initial_metrics = _scenario_metrics_with_models(
+        system.sc,
+        block_scenario,
+        [shared_model],
+        current_n_targets,
+        anchor_bits=anchor_bits,
+        inference_counters=inference_counters,
+    )
+
+    if bool(initial_metrics["feasible"]):
+        while True:
+            changed = False
+            for k in range(system.K):
+                if int(active_mask[int(k)]) <= 0:
+                    continue
+                candidate_n = int(current_n_targets[int(k)]) - int(sim_params["n_kl_step"])
+                if candidate_n < int(sim_params["n_kl_min"]):
+                    continue
+                candidate_n_targets = [int(v) for v in current_n_targets]
+                candidate_n_targets[int(k)] = int(candidate_n)
+                metrics = _scenario_metrics_with_models(
+                    system.sc,
+                    block_scenario,
+                    [shared_model],
+                    candidate_n_targets,
+                    anchor_bits=anchor_bits,
+                    inference_counters=inference_counters,
+                )
+                if bool(metrics["feasible"]):
+                    current_n_targets = [int(v) for v in candidate_n_targets]
+                    changed = True
+            if not changed:
+                break
+
+    committed_snapshot = _shared_precoder_snapshot_for_targets(
+        system,
+        shared_model,
+        int(block),
+        current_n_targets,
+        active_mask,
+        inference_counters=inference_counters,
+    )
+    final_plans = _finalize_shared_fixed_target_plans_from_joint_beam(
+        system,
+        committed_snapshot,
+        int(block),
+        target_bits_by_user,
+        current_n_targets,
+        active_mask,
+    )
+    return {
+        "active_mask": [int(v) for v in active_mask],
+        "initial_n_targets": [int(v) for v in initial_n_targets],
+        "final_n_targets": [int(v) for v in current_n_targets],
+        "allocation_snapshot": allocation_snapshot,
+        "committed_snapshot": committed_snapshot,
+        "final_plans": final_plans,
+        "initial_metrics": initial_metrics,
+    }
 
 
 def _estimate_initial_latency_from_random_precoders_fixed_block_targets(
@@ -1698,6 +2396,10 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
         sim_params,
         scenario,
     )
+    model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
+    shared_fixed_target_n_target_mode = _resolve_bs_shared_fixed_target_n_target_mode(
+        sim_params.get("bs_shared_net_fixed_target_n_target_mode", "shared_n_targets")
+    )
     if verbose:
         print(
             format_latency_log_line(
@@ -1725,21 +2427,40 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
     }
 
     for block in range(num_blocks):
-        active_users = list(range(system.K))
-        for k in active_users:
+        target_bits_by_user = [int(block_targets[int(k), block]) for k in range(system.K)]
+        active_users = [int(k) for k in range(system.K) if int(target_bits_by_user[int(k)]) > 0]
+        block_users = list(range(system.K))
+        for k in block_users:
             _ensure_user_block(system, working_F, k, block)
-        active_mask = [1 for _ in range(system.K)]
+        active_mask = [1 if int(target_bits_by_user[int(k)]) > 0 else 0 for k in range(system.K)]
         if _models_output_full_bs_precoder(user_models):
-            joint_snapshot = _shared_precoder_snapshot_for_targets(
-                system,
-                user_models[0],
-                int(block),
-                _shared_n_targets_for_block(system, active_mask),
-                active_mask,
-                inference_counters=evaluation_cost_counters,
-            )
-            for k in active_users:
-                working_F[int(k)][int(block)] = np.asarray(joint_snapshot[int(k)][int(block)], dtype=np.complex128)
+            if shared_fixed_target_n_target_mode == "per_user_n_targets":
+                shared_plan = _plan_fixed_target_block_with_shared_bs_precoder_per_user_n_targets(
+                    system,
+                    sim_params,
+                    user_models[0],
+                    int(block),
+                    target_bits_by_user,
+                    inference_counters=evaluation_cost_counters,
+                )
+            else:
+                shared_plan = _plan_fixed_target_block_with_shared_bs_precoder(
+                    system,
+                    sim_params,
+                    user_models[0],
+                    int(block),
+                    target_bits_by_user,
+                    inference_counters=evaluation_cost_counters,
+                )
+            allocation_snapshot = _clone_precoders(shared_plan["allocation_snapshot"])
+            committed_snapshot = _clone_precoders(shared_plan["committed_snapshot"])
+            corrected_plans = {
+                int(k): {
+                    **plan,
+                    "F_used": np.array(plan["F_used"], copy=True),
+                }
+                for k, plan in shared_plan["final_plans"].items()
+            }
         else:
             input_snapshot = _masked_precoder_snapshot(system, working_F, block, active_mask)
             for k in active_users:
@@ -1753,15 +2474,15 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
                     input_snapshot,
                     inference_counters=evaluation_cost_counters,
                 )
-        system.project_block_precoders_to_power(working_F, int(block), active_users=[int(k) for k in active_users])
-        for k in range(system.K):
-            if int(block_targets[k, block]) <= 0 and int(block) < len(working_F[k]):
-                _zero_block_precoder(system, working_F, k, block)
-        system.project_block_precoders_to_power(
-            working_F,
-            int(block),
-            active_users=[int(k) for k in active_users if int(block_targets[k, block]) > 0],
-        )
+            system.project_block_precoders_to_power(working_F, int(block), active_users=[int(k) for k in active_users])
+            for k in range(system.K):
+                if int(block_targets[k, block]) <= 0 and int(block) < len(working_F[k]):
+                    _zero_block_precoder(system, working_F, k, block)
+            system.project_block_precoders_to_power(
+                working_F,
+                int(block),
+                active_users=[int(k) for k in active_users if int(block_targets[k, block]) > 0],
+            )
 
         if verbose:
             print(
@@ -1774,80 +2495,93 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
                 )
             )
 
-        allocation_snapshot = _clone_precoders(working_F)
-        block_plans: dict[int, dict[str, Any]] = {}
-        for k in range(system.K):
-            target_bits = int(block_targets[k, block])
-            B_used, n_used, R_used, F_used = _allocate_fixed_target_for_user_block_precoder_net(
-                system,
-                allocation_snapshot,
-                user_models[int(k)],
-                int(k),
-                int(block),
-                int(target_bits),
-                sim_params,
-                active_mask,
-                allow_infeasible_zero=True,
-                inference_counters=evaluation_cost_counters,
-            )
-            block_plans[int(k)] = {
-                "B_used": int(B_used),
-                "n_used": int(n_used if B_used > 0 else int(system.T[int(k)])),
-                "R_used": float(R_used),
-                "F_used": np.array(F_used, copy=True),
-                "skipped": bool(target_bits > 0 and B_used <= 0),
-                "target_bits": int(target_bits),
-            }
-
-        committed_snapshot = _clone_precoders(working_F)
-        for k in range(system.K):
-            committed_snapshot[int(k)][block] = np.array(block_plans[int(k)]["F_used"], copy=True)
-
-        corrected_plans: dict[int, dict[str, Any]] = {}
-        for k in range(system.K):
-            plan = block_plans[int(k)]
-            if bool(plan["skipped"]):
-                corrected_plans[int(k)] = plan
-                continue
-
-            B_used = int(plan["B_used"])
-            n_used = int(plan["n_used"])
-            F_used = np.array(plan["F_used"], copy=True)
-            required_rate = float(B_used) / float(max(n_used, 1))
-            actual_rate = float(system.compute_block_rate(int(k), int(block), n_used, F_override=committed_snapshot))
-            if actual_rate >= required_rate:
-                corrected_plans[int(k)] = {
-                    **plan,
-                    "R_used": float(actual_rate),
-                    "F_used": F_used,
-                    "skipped": False,
+        if not _models_output_full_bs_precoder(user_models):
+            allocation_snapshot = _clone_precoders(working_F)
+            block_plans: dict[int, dict[str, Any]] = {}
+            for k in range(system.K):
+                target_bits = int(block_targets[k, block])
+                B_used, n_used, R_used, F_used = _allocate_fixed_target_for_user_block_precoder_net(
+                    system,
+                    allocation_snapshot,
+                    user_models[int(k)],
+                    int(k),
+                    int(block),
+                    int(target_bits),
+                    sim_params,
+                    active_mask,
+                    allow_infeasible_zero=True,
+                    inference_counters=evaluation_cost_counters,
+                )
+                block_plans[int(k)] = {
+                    "B_used": int(B_used),
+                    "n_used": int(n_used if B_used > 0 else int(system.T[int(k)])),
+                    "R_used": float(R_used),
+                    "F_used": np.array(F_used, copy=True),
+                    "skipped": bool(target_bits > 0 and B_used <= 0),
+                    "target_bits": int(target_bits),
                 }
-                continue
 
-            B_fix, n_fix, R_fix, F_fix = _allocate_fixed_target_for_user_block_precoder_net(
+            committed_snapshot = _clone_precoders(working_F)
+            for k in range(system.K):
+                committed_snapshot[int(k)][block] = np.array(block_plans[int(k)]["F_used"], copy=True)
+            system.project_block_precoders_to_power(committed_snapshot, int(block), active_users=[int(k) for k in active_users])
+
+            corrected_plans = {}
+            for k in range(system.K):
+                plan = block_plans[int(k)]
+                if bool(plan["skipped"]):
+                    corrected_plans[int(k)] = plan
+                    continue
+
+                B_used = int(plan["B_used"])
+                n_used = int(plan["n_used"])
+                F_used = np.array(plan["F_used"], copy=True)
+                required_rate = float(B_used) / float(max(n_used, 1))
+                actual_rate = float(system.compute_block_rate(int(k), int(block), n_used, F_override=committed_snapshot))
+                if actual_rate >= required_rate:
+                    corrected_plans[int(k)] = {
+                        **plan,
+                        "R_used": float(actual_rate),
+                        "F_used": F_used,
+                        "skipped": False,
+                    }
+                    continue
+
+                B_fix, n_fix, R_fix, F_fix = _allocate_fixed_target_for_user_block_precoder_net(
+                    system,
+                    committed_snapshot,
+                    user_models[int(k)],
+                    int(k),
+                    int(block),
+                    int(plan["target_bits"]),
+                    sim_params,
+                    active_mask,
+                    allow_infeasible_zero=True,
+                    inference_counters=evaluation_cost_counters,
+                )
+                corrected_plans[int(k)] = {
+                    "B_used": int(B_fix),
+                    "n_used": int(n_fix if B_fix > 0 else int(system.T[int(k)])),
+                    "R_used": float(R_fix),
+                    "F_used": np.array(F_fix, copy=True),
+                    "skipped": bool(B_fix <= 0),
+                    "target_bits": int(plan["target_bits"]),
+                }
+
+            for k in range(system.K):
+                final_plan = corrected_plans[int(k)]
+                committed_snapshot[int(k)][block] = np.array(final_plan["F_used"], copy=True)
+            _reconcile_fixed_target_plans_after_commit(
                 system,
+                user_models,
                 committed_snapshot,
-                user_models[int(k)],
-                int(k),
+                corrected_plans,
+                block_targets,
                 int(block),
-                int(plan["target_bits"]),
                 sim_params,
                 active_mask,
-                allow_infeasible_zero=True,
                 inference_counters=evaluation_cost_counters,
             )
-            corrected_plans[int(k)] = {
-                "B_used": int(B_fix),
-                "n_used": int(n_fix if B_fix > 0 else int(system.T[int(k)])),
-                "R_used": float(R_fix),
-                "F_used": np.array(F_fix, copy=True),
-                "skipped": bool(B_fix <= 0),
-                "target_bits": int(plan["target_bits"]),
-            }
-
-        for k in range(system.K):
-            final_plan = corrected_plans[int(k)]
-            committed_snapshot[int(k)][block] = np.array(final_plan["F_used"], copy=True)
 
         user_rates = []
         user_sinr_db = []
@@ -1971,7 +2705,6 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
 
     final_snr_db, final_sinr_db = system.get_snr_sinr_db()
     final_interference_diag = _collect_interference_diagnostics(system)
-    model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
 
     result = {
         "method_name": method_name,
@@ -1980,6 +2713,11 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
         "weight_strategy": "none",
         "precoder_parameterization": _downlink_monte_carlo_precoder_parameterization(model_scope),
         "downlink_precoder_net_scope": str(model_scope),
+        "bs_shared_net_fixed_target_n_target_mode": (
+            str(shared_fixed_target_n_target_mode)
+            if str(model_scope) == "bs_shared_net"
+            else "not_applicable"
+        ),
         "user_model_specs": export_user_model_specs(
             system.Nr,
             system.Nb,
@@ -2223,7 +2961,7 @@ def evaluate_downlink_precoder_net(
                 user_models[int(k)],
                 int(k),
                 int(block),
-                B_used,
+                int(remaining[int(k)]),
                 sim_params,
                 transmit_mask,
                 allow_infeasible_zero=True,
@@ -2240,6 +2978,17 @@ def evaluate_downlink_precoder_net(
         for k in active_users:
             final_plan = corrected_plans[int(k)]
             committed_snapshot[int(k)][block] = np.array(final_plan["F_used"], copy=True)
+        _reconcile_payload_plans_after_commit(
+            system,
+            user_models,
+            committed_snapshot,
+            corrected_plans,
+            remaining.copy(),
+            int(block),
+            sim_params,
+            transmit_mask,
+            inference_counters=evaluation_cost_counters,
+        )
 
         user_rates = []
         user_sinr_db = []
@@ -2365,6 +3114,13 @@ def evaluate_downlink_precoder_net(
         "weight_strategy": "none",
         "precoder_parameterization": _downlink_monte_carlo_precoder_parameterization(model_scope),
         "downlink_precoder_net_scope": str(model_scope),
+        "bs_shared_net_fixed_target_n_target_mode": (
+            _resolve_bs_shared_fixed_target_n_target_mode(
+                sim_params.get("bs_shared_net_fixed_target_n_target_mode", "shared_n_targets")
+            )
+            if str(model_scope) == "bs_shared_net"
+            else "not_applicable"
+        ),
         "user_model_specs": export_user_model_specs(
             system.Nr,
             system.Nb,
@@ -2417,6 +3173,9 @@ def build_precoder_net_artifact(
     training_dataset_sizes: Sequence[int],
 ) -> dict[str, Any]:
     model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
+    shared_fixed_target_n_target_mode = _resolve_bs_shared_fixed_target_n_target_mode(
+        sim_params.get("bs_shared_net_fixed_target_n_target_mode", "shared_n_targets")
+    )
     return {
         "system_params": system_params,
         "sim_params": sim_params,
@@ -2443,6 +3202,11 @@ def build_precoder_net_artifact(
         "user_model_states": export_user_model_states(user_models),
         "precoder_parameterization": _downlink_monte_carlo_precoder_parameterization(model_scope),
         "downlink_precoder_net_scope": str(model_scope),
+        "bs_shared_net_fixed_target_n_target_mode": (
+            str(shared_fixed_target_n_target_mode)
+            if str(model_scope) == "bs_shared_net"
+            else "not_applicable"
+        ),
         "training_objective": precoder_net_training_history.get(
             "training_objective",
             "lagrangian_sum_finite_blocklength_rate_with_online_full_block_anchor_bits",
