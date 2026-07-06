@@ -99,6 +99,12 @@ def _run_precoder_net_test(
         sim_cfg,
         seed=int(test_seed),
     )
+    naive_full_t_baseline = estimate_initial_random_precoder_schedule_for_scenario(
+        system_params,
+        sim_cfg,
+        seed=int(test_seed),
+        allow_n_reduction=False,
+    )
     print(
         format_latency_log_line(
             "[UL Initial Baseline]",
@@ -217,6 +223,7 @@ def _run_precoder_net_test(
         initial_bits_per_symbol_by_block=initial_bits_per_symbol_by_block,
         initial_interference_diag=initial_baseline.get("initial_interference_diag"),
         uplink_rate_model=sim_cfg.get("uplink_rate_model", "unknown"),
+        naive_full_t_baseline=naive_full_t_baseline,
     )
     result["experiment_scenario_mode"] = sim_cfg.get("experiment_scenario_mode", "payload_completion")
     result["experiment_scenario"] = test_scenario_summary

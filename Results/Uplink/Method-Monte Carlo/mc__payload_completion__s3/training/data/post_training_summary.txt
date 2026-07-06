@@ -1,60 +1,62 @@
 Uplink post-training summary
 Train-eval seed: 1
-Run started at: 2026-07-05T19:40:33+03:00
-Training started at: 2026-07-05T19:40:38+03:00
-Training completed at: 2026-07-05T19:51:18+03:00
+Run started at: 2026-07-05T23:56:11+03:00
+Training started at: 2026-07-05T23:56:14+03:00
+Training completed at: 2026-07-06T00:00:57+03:00
 Epochs requested: 100
 Configured max epochs: 100
 Base training dataset: channel_episodes_only
 Rollout anchor-bits mode: derived_online_from_current_episode_served_bits
-Per-user num epochs: [88, 88, 88]
-Per-user epochs completed: [88, 88, 88]
-Per-user training solve status: ['stationary_infeasible', 'stationary_infeasible', 'stationary_infeasible']
+Rollout query weighting mode: uniform_per_query
+Rollout phase weights: {'full_block': 1.0, 'tail_feasible': 1.0, 'tail_frontier': 1.5}
+Per-user num epochs: [79, 79, 79]
+Per-user epochs completed: [79, 79, 79]
+Per-user training solve status: ['kkt_converged', 'kkt_converged', 'kkt_converged']
 Per-user restored solution source: ['best_feasible', 'best_feasible', 'best_feasible']
 Training channel episodes: 2
-Last epoch mean per-user rollout rate: 14.969541
-Best epoch mean per-user rollout rate: 14.981433
-Last epoch mean per-user rollout Lagrangian: -14.889364
-Best epoch mean per-user rollout Lagrangian: -14.934135
-Per-user last epoch avg rate over rollout queries: [14.643901961190362, 14.439329973189702, 15.825390116698077]
-Per-user last epoch avg Lagrangian over rollout queries: [-14.509258991196047, -14.361601009235523, -15.797231284939517]
+Last epoch mean per-user rollout rate: 15.356252
+Best epoch mean per-user rollout rate: 15.371869
+Last epoch mean per-user rollout Lagrangian: -15.357472
+Best epoch mean per-user rollout Lagrangian: -15.374973
+Per-user last epoch avg rate over rollout queries: [15.125288523160494, 14.724115937948227, 16.219352469724768]
+Per-user last epoch avg Lagrangian over rollout queries: [-15.126298464261568, -14.72612351179123, -16.219993366914636]
 Last epoch feasible rollout queries: 87 / 92
-Per-user best lagrangian: [-14.635999592867766, -14.388035446335943, -15.862138099286158]
-Per-user final KKT primal residual: [0.34442776351767995, 0.24622500334683994, 0.16895315281593018]
-Per-user final KKT complementarity residual: [0.13582912455101548, 0.07833530017951235, 0.028386697055262457]
-Per-user final KKT stationarity residual: [0.00013720313462541763, 0.00010306475498966402, 0.0005131838818270952]
-Cumulative rollout queries by n_kl: {'5': 79, '6': 39, '7': 39, '8': 40, '9': 40, '10': 161, '11': 148, '12': 166, '13': 167, '14': 249, '15': 338, '16': 7, '17': 8, '18': 61, '19': 91, '20': 425, '21': 2, '22': 4, '23': 5, '24': 7, '25': 431, '27': 1, '28': 1, '29': 1, '30': 433, '31': 2, '32': 2, '33': 2, '34': 4, '35': 436, '36': 1, '37': 1, '38': 2, '39': 2, '40': 510, '41': 80, '42': 82, '43': 83, '44': 83, '45': 523, '46': 3, '47': 3, '48': 3, '49': 3, '50': 877, '51': 1, '52': 1, '53': 1, '54': 1, '55': 349, '57': 1, '58': 1, '59': 1, '60': 880, '65': 174, '70': 174, '73': 1, '74': 2, '75': 176, '80': 705}
-Cumulative frontier rollout queries by n_kl: {'5': 35, '6': 4, '8': 1, '10': 77, '11': 71, '12': 18, '13': 1, '14': 82, '15': 5, '16': 2, '17': 1, '18': 53, '19': 30, '20': 1, '21': 1, '22': 2, '23': 1, '24': 2, '27': 1, '30': 1, '31': 1, '34': 2, '36': 1, '38': 1, '40': 72, '41': 8, '42': 2, '43': 1, '45': 2, '46': 1, '50': 1, '57': 1, '73': 1, '74': 1}
+Per-user best lagrangian: [-15.126298464261568, -14.730674489339192, -16.27537915110588]
+Per-user final KKT primal residual: [0.0, 0.0, 0.0]
+Per-user final KKT complementarity residual: [0.0, 0.0, 0.0]
+Per-user final KKT stationarity residual: [0.00014046825527192853, 0.0001859134564587957, 0.0008833994288160516]
+Cumulative rollout queries by n_kl: {'5': 69, '6': 37, '7': 37, '8': 38, '9': 38, '10': 144, '11': 130, '12': 147, '13': 149, '14': 221, '15': 302, '16': 7, '17': 9, '18': 56, '19': 83, '20': 380, '21': 2, '22': 4, '23': 5, '24': 7, '25': 386, '27': 1, '28': 1, '29': 1, '30': 388, '31': 2, '32': 2, '33': 3, '34': 4, '35': 391, '36': 1, '37': 1, '38': 2, '39': 2, '40': 445, '41': 71, '42': 73, '43': 73, '44': 74, '45': 467, '46': 2, '47': 3, '48': 3, '49': 3, '50': 787, '51': 1, '52': 1, '53': 1, '54': 1, '55': 313, '57': 1, '58': 1, '59': 1, '60': 790, '65': 156, '70': 156, '72': 1, '73': 1, '74': 2, '75': 158, '80': 633}
+Cumulative frontier rollout queries by n_kl: {'5': 32, '6': 5, '8': 1, '10': 69, '11': 61, '12': 17, '13': 2, '14': 72, '15': 6, '16': 1, '17': 2, '18': 47, '19': 27, '20': 1, '21': 1, '22': 2, '23': 1, '24': 2, '27': 1, '30': 1, '31': 1, '33': 1, '34': 1, '36': 1, '38': 1, '40': 52, '41': 19, '42': 2, '44': 1, '46': 2, '47': 1, '50': 1, '57': 1, '72': 1, '74': 1}
 Last epoch rollout queries by n_kl: {'5': 1, '10': 2, '11': 2, '12': 2, '13': 2, '14': 3, '15': 4, '18': 1, '19': 1, '20': 5, '25': 5, '30': 5, '35': 5, '40': 6, '41': 1, '42': 1, '43': 1, '44': 1, '45': 6, '50': 10, '55': 4, '60': 10, '65': 2, '70': 2, '75': 2, '80': 8}
 Last epoch frontier rollout queries by n_kl: {'10': 1, '11': 1, '14': 1, '18': 1, '40': 1}
 Train-eval initial latency: [0.0056, 0.010933333333333333, 0.0168]
-Train-eval final latency: [0.004333333333333333, 0.0096, 0.0134]
+Train-eval final latency: [0.004333333333333333, 0.008466666666666667, 0.013466666666666667]
 Train-eval initial blocks per user: [2, 3, 4]
 Train-eval final blocks per user: [2, 3, 3]
 Train-eval initial total n per user: [84, 164, 252]
-Train-eval final total n per user: [65, 144, 201]
+Train-eval final total n per user: [65, 127, 202]
 Train-eval initial served bits per user: [1000, 2000, 3000]
 Train-eval final served bits per user: [1000, 2000, 3000]
 Train-eval initial skipped blocks per user: [0, 0, 0]
 Train-eval final skipped blocks per user: [0, 0, 0]
-Train-eval total latency reduction (%): 18.0000
+Train-eval total latency reduction (%): 21.2000
 Train-eval initial selected n_kl summary:
 {'global_selected_examples_by_n_kl': {'12': 1, '34': 1, '44': 1, '50': 1, '60': 2, '80': 3}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'34': 1, '50': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'44': 1, '60': 2}}, {'user': 2, 'selected_examples_by_n_kl': {'12': 1, '80': 3}}]}
 Train-eval selected n_kl summary:
-{'global_selected_examples_by_n_kl': {'15': 1, '24': 1, '41': 1, '50': 1, '60': 2, '80': 2}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'15': 1, '50': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'24': 1, '60': 2}}, {'user': 2, 'selected_examples_by_n_kl': {'41': 1, '80': 2}}]}
+{'global_selected_examples_by_n_kl': {'7': 1, '15': 1, '42': 1, '50': 1, '60': 2, '80': 2}, 'per_user': [{'user': 0, 'selected_examples_by_n_kl': {'15': 1, '50': 1}}, {'user': 1, 'selected_examples_by_n_kl': {'7': 1, '60': 2}}, {'user': 2, 'selected_examples_by_n_kl': {'42': 1, '80': 2}}]}
 
 Experiment cost
-Core wall time total (s): 639.768559
-Core wall time training (s): 639.768559
+Core wall time total (s): 282.902494
+Core wall time training (s): 282.902494
 Testing-phase wall time (s): 0.000000
-Forward+backward NN FLOPs: 3.749e+09
-Forward-only NN FLOPs: 1.817e+07
-Total NN FLOPs: 3.767e+09
-Total forward+backward NN evaluations: 8113
-Forward-only NN evaluations: 118
-Optimizer steps: 376
+Forward+backward NN FLOPs: 3.358e+09
+Forward-only NN FLOPs: 2.064e+07
+Total NN FLOPs: 3.379e+09
+Total forward+backward NN evaluations: 7268
+Forward-only NN evaluations: 134
+Optimizer steps: 334
 Workload counters:
-{'training_rollout_queries_per_user': [2271, 2926, 2916], 'train_eval_candidate_n_states_per_user': [37, 39, 42], 'batch_size': 32}
+{'training_rollout_queries_per_user': [2040, 2627, 2601], 'train_eval_candidate_n_states_per_user': [37, 56, 41], 'batch_size': 32}
 Notes:
 - Forward+backward NN FLOPs count the rollout-query training passes that optimize the uplink precoder net.
 - Forward-only NN FLOPs count the forward-only beam evaluations used in the post-training train-eval pass.

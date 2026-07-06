@@ -1,0 +1,408 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\graphicspath{{figures/interference/}}
+
+\title{Finite-Blocklength Latency Minimization for Uplink and Downlink Communications:\\Method Results: Interference}
+\author{}
+\date{July 6, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document collects the exported interference figures for uplink and
+downlink under both payload completion and fixed block targets. Throughout, the
+\emph{Training Only Method} is used as the benchmark for the
+\emph{Training + Testing Method}. The uplink figures mostly show moderate
+interference reshaping inside a similar operating regime. The downlink figures
+are more structural, especially when users are removed from the active set and
+their traces drop toward \(-300\) dB.
+\end{abstract}
+
+\section{Scope and Naming}
+
+This document is intentionally interference-only. The terminology is aligned
+with the companion theory report:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Training Only Method}: direct online optimization during scheduling,
+    \item \textbf{Training + Testing Method}: a separate training stage followed by testing-stage inference,
+    \item \textbf{Payload completion}: the scenario where each user continues until its remaining payload is exhausted,
+    \item \textbf{Fixed block targets}: the scenario with a prescribed blockwise service pattern over a fixed horizon.
+\end{itemize}
+
+\section{Uplink Payload Completion}
+
+The uplink payload-completion interference picture stays fairly close across the
+two methods. The benchmark does improve final SINR for users 1 and 2, but the
+overall difference remains moderate rather than dramatic.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Uplink payload-completion per-user SINR summary}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}p{0.10\textwidth} >{\centering\arraybackslash}p{0.18\textwidth} >{\centering\arraybackslash}p{0.18\textwidth} X}
+\toprule
+User & Training Only init/final & Training + Testing init/final & Reading \\
+\midrule
+0 & \(-3.359/-3.396\) dB & \(-3.359/-2.908\) dB & Training + Testing is better on this user, but not enough to change the system outcome. \\
+1 & \(-4.649/-4.006\) dB & \(-4.649/-4.592\) dB & Benchmark has the clearest SINR gain here. \\
+2 & \(-2.173/-2.459\) dB & \(-2.173/-2.743\) dB & Benchmark ends less negative. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_payload_training_only__per_user_interference_before_after.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_payload_training_testing__per_user_interference_before_after.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Uplink payload-completion per-user interference before/after comparison.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_payload_training_only__per_user_interference_profiles.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_payload_training_testing__per_user_interference_profiles.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Uplink payload-completion per-user interference profiles.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_payload_training_only__interference_heatmaps.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_payload_training_testing__interference_heatmaps.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Uplink payload-completion interference heatmaps.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_payload_training_only__interference_before_after_heatmaps.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_payload_training_testing__interference_before_after_heatmaps.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Uplink payload-completion before/after heatmap comparison.}
+\end{figure}
+
+\section{Uplink Fixed Block Targets}
+
+The uplink fixed-target case remains close across methods as well. All users are
+fully served, and the interference differences mainly appear as small SINR
+redistributions.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Uplink fixed-block-target per-user SINR summary}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}p{0.10\textwidth} >{\centering\arraybackslash}p{0.18\textwidth} >{\centering\arraybackslash}p{0.18\textwidth} X}
+\toprule
+User & Training Only init/final & Training + Testing init/final & Reading \\
+\midrule
+0 & \(-2.647/-3.093\) dB & \(-2.647/-2.807\) dB & Training + Testing is slightly better. \\
+1 & \(-4.329/-3.981\) dB & \(-4.329/-4.175\) dB & Benchmark is slightly better. \\
+2 & \(-3.071/-2.896\) dB & \(-3.071/-3.039\) dB & Benchmark is slightly better. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_fixed_training_only__per_user_interference_before_after.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_fixed_training_testing__per_user_interference_before_after.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Uplink fixed-block-target per-user interference before/after comparison.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_fixed_training_only__per_user_interference_profiles.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_fixed_training_testing__per_user_interference_profiles.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Uplink fixed-block-target per-user interference profiles.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_fixed_training_only__interference_heatmaps.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_fixed_training_testing__interference_heatmaps.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Uplink fixed-block-target interference heatmaps.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_fixed_training_only__interference_before_after_heatmaps.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{ul_fixed_training_testing__interference_before_after_heatmaps.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Uplink fixed-block-target before/after heatmap comparison.}
+\end{figure}
+
+\section{Downlink Payload Completion}
+
+The downlink payload-completion interference results are more structural. The
+benchmark clears users from the active set more decisively, and that shows up
+in both the \(-300\) dB inactive segments and the shorter schedule tail.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Downlink payload-completion per-user served-block SINR summary}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}p{0.10\textwidth} >{\centering\arraybackslash}p{0.18\textwidth} >{\centering\arraybackslash}p{0.18\textwidth} X}
+\toprule
+User & Training Only init/final & Training + Testing init/final & Reading \\
+\midrule
+0 & \(-3.003/18.920\) dB & \(-3.003/14.017\) dB & Benchmark is much stronger after skipped-block concentration. \\
+1 & \(-2.774/10.052\) dB & \(-2.774/13.141\) dB & Training + Testing is stronger on this easier user. \\
+2 & \(-2.764/12.894\) dB & \(-2.764/11.416\) dB & Benchmark is stronger and finishes earlier. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_payload_training_only__per_user_interference_before_after.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_payload_training_testing__per_user_interference_before_after.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Downlink payload-completion per-user interference before/after comparison.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_payload_training_only__per_user_interference_profiles.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_payload_training_testing__per_user_interference_profiles.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Downlink payload-completion per-user interference profiles.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_payload_training_only__interference_heatmaps.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_payload_training_testing__interference_heatmaps.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Downlink payload-completion interference heatmaps.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_payload_training_only__interference_before_after_heatmaps.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_payload_training_testing__interference_before_after_heatmaps.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Downlink payload-completion before/after heatmap comparison.}
+\end{figure}
+
+\section{Downlink Fixed Block Targets}
+
+The downlink fixed-target case is the most feasibility-limited interference
+setting. Users 0 and 2 can collapse to \(-300\) dB final block SINR when they
+receive no effective service, while user 1 remains the only consistently
+recoverable user.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Downlink fixed-block-target per-user served-block SINR summary}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}p{0.10\textwidth} >{\centering\arraybackslash}p{0.18\textwidth} >{\centering\arraybackslash}p{0.18\textwidth} X}
+\toprule
+User & Training Only init/final & Training + Testing init/final & Reading \\
+\midrule
+0 & \(-3.770/-300.000\) dB & \(-3.770/-300.000\) dB & No service under either method. \\
+1 & \(-3.904/12.801\) dB & \(-3.904/13.300\) dB & Both recover this user well; Training + Testing is slightly higher. \\
+2 & \(-4.298/11.894\) dB & \(-4.298/-300.000\) dB & Benchmark still serves this user partially, while Training + Testing fails completely. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_fixed_training_only__per_user_interference_before_after.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_fixed_training_testing__per_user_interference_before_after.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Downlink fixed-block-target per-user interference before/after comparison.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_fixed_training_only__per_user_interference_profiles.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_fixed_training_testing__per_user_interference_profiles.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Downlink fixed-block-target per-user interference profiles.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_fixed_training_only__interference_heatmaps.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_fixed_training_testing__interference_heatmaps.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Downlink fixed-block-target interference heatmaps.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_fixed_training_only__interference_before_after_heatmaps.png}
+    \caption{Training Only Method}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{dl_fixed_training_testing__interference_before_after_heatmaps.png}
+    \caption{Training + Testing Method}
+\end{subfigure}
+\caption{Downlink fixed-block-target before/after heatmap comparison.}
+\end{figure}
+
+\section{Interference Takeaways}
+
+Across all exported figures, the uplink remains the closer match between
+methods. Its interference figures mostly show small SINR redistributions inside
+a similar operating range. The downlink is more revealing. In payload
+completion, the benchmark concentrates service more decisively on the currently
+useful users. In fixed block targets, the same coordination problem becomes a
+feasibility issue, most clearly on downlink user 2.
+
+\end{document}

@@ -867,7 +867,9 @@ def plot_per_user_interference_profiles(system: DownlinkSystem, figs_dir: str) -
         ax_right.set_ylabel("Interference power")
         ax_right.grid(True, axis="y", alpha=0.3)
         if K <= 6:
-            ax_right.legend(fontsize=8, loc="best")
+            handles_right, labels_right = ax_right.get_legend_handles_labels()
+            if len(handles_right) > 0 and any(str(label).strip() for label in labels_right):
+                ax_right.legend(fontsize=8, loc="best")
 
     plt.tight_layout()
     plt.savefig(os.path.join(figs_dir, "per_user_interference_profiles.png"), dpi=250)

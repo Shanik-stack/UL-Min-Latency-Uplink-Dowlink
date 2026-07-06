@@ -103,6 +103,14 @@ convergence baseline, not to offline Monte Carlo training.
   - Total loss weight assigned to the first rejected joint tail state beyond
     the feasible `n_kl` frontier.
 
+- `simulation.monte_carlo_rollout_query_weighting_mode`
+  - Controls whether joint rollout queries are reweighted before Monte Carlo
+    training.
+  - `phase_balanced`: current behavior. The three rollout phases are balanced
+    using the configured phase weights.
+  - `uniform_per_query`: disables rollout `n_kl` weighting. Each visited query
+    keeps weight `1.0`.
+
 ### Lagrangian Training Weights
 
 - `simulation.initial_lambda_rate_constraint`

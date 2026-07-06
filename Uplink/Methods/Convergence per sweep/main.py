@@ -85,6 +85,12 @@ def run_convergence_experiment(
         sim_cfg,
         seed=int(seed),
     )
+    naive_full_t_baseline = estimate_initial_random_precoder_schedule_for_scenario(
+        system_params,
+        sim_cfg,
+        seed=int(seed),
+        allow_n_reduction=False,
+    )
     print(
         format_latency_log_line(
             "[UL Initial Baseline]",
@@ -138,6 +144,7 @@ def run_convergence_experiment(
         ],
         initial_interference_diag=initial_baseline.get("initial_interference_diag"),
         sim_cfg=sim_cfg,
+        naive_full_t_baseline=naive_full_t_baseline,
     )
     result["scenario_mode"] = convergence_data.get(
         "scenario_mode",

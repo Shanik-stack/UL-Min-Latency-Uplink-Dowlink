@@ -39,7 +39,7 @@ simulation:
   # convergence_precoder_update_mode: direct_precoder
   initial_lambda_rate_constraint: 0.1
   initial_lambda_power_constraint: 0.01
-  max_epochs: 1000
+  max_epochs: 120
   lr_net: 0.01
   lr_rate_constraint: 0.01
   lr_power_constraint: 0.001
@@ -51,7 +51,7 @@ simulation:
   # KKT-based stopping
   kkt_primal_tol: 1.0e-5
   kkt_complementarity_tol: 1.0e-5
-  kkt_stationarity_tol: 6.0e-4
+  kkt_stationarity_tol: 1e-3
   reduced_n_kl_log_interval: 10
 
   # Monte Carlo training data
@@ -63,6 +63,8 @@ simulation:
   monte_carlo_training_full_block_weight: 1.0
   monte_carlo_training_tail_feasible_weight: 1.0
   monte_carlo_training_tail_frontier_weight: 1.5
+  # monte_carlo_rollout_query_weighting_mode: phase_balanced
+  monte_carlo_rollout_query_weighting_mode: uniform_per_query
 
   # Experiment limits and rate model
   max_total_blocks: 256

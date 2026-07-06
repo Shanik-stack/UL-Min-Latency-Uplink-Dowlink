@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 import random
-from typing import Any, List
+from typing import Any, List, Sequence
 
 import numpy as np
 import torch
@@ -39,6 +39,7 @@ CONVERGENCE_OBJECTIVE_MODES = set(CONVERGENCE_OBJECTIVE_MODE_ALIASES.values())
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
 CONVERGENCE_PRECODER_UPDATE_MODES = {"precoder_net", "direct_precoder"}
 POWER_PROJECTION_SAFETY_MARGIN = 1e-6
+_Q_INV_CACHE: dict[tuple[str, int | None, float], torch.Tensor] = {}
 
 
 def resolve_convergence_objective_mode(sim_params: dict[str, Any]) -> str:
@@ -385,23 +386,26 @@ def _project_active_precoders_to_block_power(
         total_power = total_power + (torch.linalg.norm(precoders[int(k)], ord="fro") ** 2).real
     if float(total_power.detach().cpu()) <= float(eps):
         return precoders
-    scale = (
-        torch.sqrt(
-            torch.tensor(float(system.block_power_budget), device=DEVICE, dtype=torch.float32) / (total_power + eps)
-        )
-        * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
+    scale = torch.sqrt(float(system.block_power_budget) / (total_power + eps)) * (
+        1.0 - float(POWER_PROJECTION_SAFETY_MARGIN)
     )
     return {int(k): (precoders[int(k)] * scale.to(precoders[int(k)].dtype)) for k in active_users}
 
 
 def _q_inv(epsilon: float) -> torch.Tensor:
+    cache_key = (str(DEVICE.type), DEVICE.index, round(float(epsilon), 12))
+    cached = _Q_INV_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
     normal = torch.distributions.Normal(
         torch.tensor(0.0, dtype=torch.float64, device=DEVICE),
         torch.tensor(1.0, dtype=torch.float64, device=DEVICE),
     )
     p = torch.tensor(1.0 - float(epsilon), dtype=torch.float64, device=DEVICE)
     p = torch.clamp(p, 1e-12, 1.0 - 1e-12)
-    return normal.icdf(p).to(dtype=torch.float32)
+    value = normal.icdf(p).to(dtype=torch.float32)
+    _Q_INV_CACHE[cache_key] = value
+    return value
 
 
 def _resolve_user_n_kl(
@@ -689,7 +693,7 @@ def _evaluate_constrained_block_state(
     total_rate = torch.stack([rates[int(k)] for k in active_users]).sum() if active_users else torch.tensor(0.0, device=DEVICE)
     weighted_total = torch.stack(
         [
-            torch.tensor(float(user_weights.get(int(k), 1.0)), dtype=torch.float32, device=DEVICE) * rates[int(k)]
+            float(user_weights.get(int(k), 1.0)) * rates[int(k)]
             for k in active_users
         ]
     ).sum() if active_users else torch.tensor(0.0, device=DEVICE)
@@ -887,7 +891,7 @@ def _optimize_shared_block_precoders(
             )
             total_rate = total_rate + rate_j
             weighted_total = weighted_total + (
-                torch.tensor(float(user_weights.get(int(j), 1.0)), dtype=torch.float32, device=DEVICE) * rate_j
+                float(user_weights.get(int(j), 1.0)) * rate_j
             )
 
         if canonical_mode == REMAINING_BITS_WEIGHTED_SUM_RATE_MODE:
@@ -2130,6 +2134,7 @@ def _allocate_bits_for_user_block_greedy(
     remaining_bits: int,
     sim_params: dict[str, Any],
     allow_infeasible_zero: bool = False,
+    allow_n_reduction: bool = True,
 ) -> tuple[int, int, float]:
     k = int(user)
     l = int(block)
@@ -2150,7 +2155,7 @@ def _allocate_bits_for_user_block_greedy(
     B_used = int(min(int(remaining_bits), B_max))
     chosen_n = T_k
     chosen_R = R_T
-    if int(remaining_bits) <= B_max:
+    if allow_n_reduction and int(remaining_bits) <= B_max:
         candidate = T_k - n_step
         while candidate >= n_min:
             R_candidate = float(system.compute_block_rate(k, l, candidate, F_override=working_F))
@@ -2227,6 +2232,7 @@ def _allocate_bits_for_user_block(
     allocation_mode: str,
     queue_weight: float = 1.0,
     allow_infeasible_zero: bool = False,
+    allow_n_reduction: bool = True,
 ) -> tuple[int, int, float]:
     if allocation_mode == "weighted_utility":
         return _allocate_bits_for_user_block_weighted(
@@ -2247,6 +2253,7 @@ def _allocate_bits_for_user_block(
         remaining_bits,
         sim_params,
         allow_infeasible_zero=allow_infeasible_zero,
+        allow_n_reduction=allow_n_reduction,
     )
 
 
@@ -2257,6 +2264,7 @@ def _allocate_fixed_target_for_user_block(
     block: int,
     target_bits: int,
     sim_params: dict[str, Any],
+    allow_n_reduction: bool = True,
 ) -> tuple[int, int, float]:
     k = int(user)
     l = int(block)
@@ -2272,7 +2280,7 @@ def _allocate_fixed_target_for_user_block(
     chosen_n = int(T_k)
     chosen_R = float(R_T)
 
-    if int(B_used) >= int(target_bits) and int(target_bits) > 0:
+    if allow_n_reduction and int(B_used) >= int(target_bits) and int(target_bits) > 0:
         candidate = T_k - n_step
         while candidate >= n_min:
             R_candidate = float(system.compute_block_rate(k, l, candidate, F_override=working_F))
@@ -2290,6 +2298,7 @@ def estimate_initial_latency_from_random_precoders(
     system: DownlinkSystem,
     sim_params: dict[str, Any],
     allocation_mode: str,
+    allow_n_reduction: bool = True,
 ) -> tuple[list[float], dict[str, Any], dict[str, Any]]:
     baseline_system = DownlinkSystem(system.sc, seed=system.seed)
     # Keep the initial random-precoder baseline tied only to the experiment seed,
@@ -2346,6 +2355,7 @@ def estimate_initial_latency_from_random_precoders(
                 allocation_mode=allocation_mode,
                 queue_weight=float(queue_weights.get(int(k), 1.0)),
                 allow_infeasible_zero=True,
+                allow_n_reduction=allow_n_reduction,
             )
             if B_used <= 0:
                 _zero_block_precoder(baseline_system, working_F, k, block)
@@ -2371,6 +2381,7 @@ def _estimate_initial_latency_from_random_precoders_fixed_block_targets(
     system: DownlinkSystem,
     sim_params: dict[str, Any],
     scenario: dict[str, Any],
+    allow_n_reduction: bool = True,
 ) -> tuple[list[float], dict[str, Any], dict[str, Any]]:
     baseline_system = DownlinkSystem(system.sc, seed=system.seed)
     baseline_models = _build_user_precoder_models(
@@ -2407,6 +2418,7 @@ def _estimate_initial_latency_from_random_precoders_fixed_block_targets(
                 int(block),
                 int(target_bits),
                 sim_params,
+                allow_n_reduction=allow_n_reduction,
             )
             if int(B_used) <= 0:
                 _zero_block_precoder(baseline_system, working_F, int(k), int(block))
@@ -2437,18 +2449,41 @@ def estimate_initial_latency_from_random_precoders_for_scenario(
     system: DownlinkSystem,
     sim_params: dict[str, Any],
     scenario: dict[str, Any],
+    allow_n_reduction: bool = True,
 ) -> tuple[list[float], dict[str, Any], dict[str, Any]]:
     if str(scenario["mode"]) == FIXED_BLOCK_TARGETS_MODE:
         return _estimate_initial_latency_from_random_precoders_fixed_block_targets(
             system,
             sim_params,
             scenario,
+            allow_n_reduction=allow_n_reduction,
         )
     return estimate_initial_latency_from_random_precoders(
         system,
         sim_params,
         allocation_mode="greedy",
+        allow_n_reduction=allow_n_reduction,
     )
+
+
+def _build_initial_baseline_reference(
+    baseline_name: str,
+    latency: list[float],
+    plan: dict[str, Any],
+    *,
+    snr_db: Sequence[float],
+    sinr_db: Sequence[float],
+) -> dict[str, Any]:
+    return {
+        "schedule_source": str(baseline_name),
+        "latency": [float(v) for v in latency],
+        "n_kl": [list(map(int, values)) for values in plan.get("n_kl", [])],
+        "B_kl": [list(map(int, values)) for values in plan.get("B_kl", [])],
+        "R_alloc": [list(map(float, values)) for values in plan.get("R_alloc", [])],
+        "snr_db": [float(v) for v in snr_db],
+        "sinr_db": [float(v) for v in sinr_db],
+        "skipped_blocks_per_user": [int(v) for v in plan.get("skipped_blocks_per_user", [])],
+    }
 
 
 def _run_safe_sweep(
@@ -2468,6 +2503,12 @@ def _run_safe_sweep(
         system,
         sim_params,
         allocation_mode="greedy",
+    )
+    naive_full_t_latency, naive_full_t_plan, _ = estimate_initial_latency_from_random_precoders(
+        system,
+        sim_params,
+        allocation_mode="greedy",
+        allow_n_reduction=False,
     )
     if verbose:
         print(
@@ -2757,6 +2798,23 @@ def _run_safe_sweep(
         "R_alloc": copy.deepcopy(R_plan),
         "initial_latency": initial_latency,
         "initial_plan": initial_plan,
+        "initial_schedule_source": "random_precoder_baseline",
+        "baseline_references": {
+            "random_precoder_baseline": _build_initial_baseline_reference(
+                "random_precoder_baseline",
+                initial_latency,
+                initial_plan,
+                snr_db=initial_snr_db,
+                sinr_db=initial_sinr_db,
+            ),
+            "naive_full_T_baseline": _build_initial_baseline_reference(
+                "naive_full_T_baseline",
+                naive_full_t_latency,
+                naive_full_t_plan,
+                snr_db=initial_snr_db,
+                sinr_db=initial_sinr_db,
+            ),
+        },
         "initial_interference_diag": initial_interference_diag,
         "final_latency": system.latency.tolist(),
         "initial_snr_db": initial_snr_db,
@@ -2789,6 +2847,12 @@ def _run_safe_sweep_fixed_block_targets(
         system,
         sim_params,
         scenario,
+    )
+    naive_full_t_latency, naive_full_t_plan, _ = _estimate_initial_latency_from_random_precoders_fixed_block_targets(
+        system,
+        sim_params,
+        scenario,
+        allow_n_reduction=False,
     )
     if verbose:
         print(
@@ -3079,6 +3143,23 @@ def _run_safe_sweep_fixed_block_targets(
         "R_alloc": copy.deepcopy(R_plan),
         "initial_latency": initial_latency,
         "initial_plan": initial_plan,
+        "initial_schedule_source": "random_precoder_baseline",
+        "baseline_references": {
+            "random_precoder_baseline": _build_initial_baseline_reference(
+                "random_precoder_baseline",
+                initial_latency,
+                initial_plan,
+                snr_db=initial_snr_db,
+                sinr_db=initial_sinr_db,
+            ),
+            "naive_full_T_baseline": _build_initial_baseline_reference(
+                "naive_full_T_baseline",
+                naive_full_t_latency,
+                naive_full_t_plan,
+                snr_db=initial_snr_db,
+                sinr_db=initial_sinr_db,
+            ),
+        },
         "initial_interference_diag": initial_interference_diag,
         "final_latency": system.latency.tolist(),
         "initial_snr_db": initial_snr_db,

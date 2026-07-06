@@ -189,6 +189,7 @@ def estimate_initial_random_precoder_schedule(
     sim_cfg: dict,
     *,
     seed: int,
+    allow_n_reduction: bool = True,
 ) -> dict:
     from Optimizer_per_block import _compute_R_fbl_np
 
@@ -245,7 +246,7 @@ def estimate_initial_random_precoder_schedule(
 
             best_n = int(T_ref)
             best_R = float(R_T)
-            if B_used > 0:
+            if allow_n_reduction and B_used > 0:
                 candidate_n = int(T_ref) - int(n_kl_step)
                 while candidate_n >= int(n_kl_min):
                     R_candidate = _compute_R_fbl_np(
@@ -300,6 +301,11 @@ def estimate_initial_random_precoder_schedule(
         "initial_bits_per_symbol": initial_bits_per_symbol,
         "initial_bits_per_symbol_by_block": initial_bits_per_symbol_by_block,
         "initial_interference_diag": initial_interference_diag,
+        "initial_schedule_source": (
+            "random_precoder_baseline"
+            if allow_n_reduction
+            else "naive_full_T_baseline"
+        ),
     }
 
 
@@ -309,6 +315,7 @@ def _estimate_initial_random_precoder_schedule_fixed_block_targets(
     *,
     seed: int,
     scenario: dict,
+    allow_n_reduction: bool = True,
 ) -> dict:
     from Optimizer_per_block import _compute_R_fbl_np
 
@@ -356,7 +363,7 @@ def _estimate_initial_random_precoder_schedule_fixed_block_targets(
             best_n = int(T_ref)
             best_R = float(R_T)
 
-            if int(B_used) >= int(target_bits) and int(target_bits) > 0:
+            if allow_n_reduction and int(B_used) >= int(target_bits) and int(target_bits) > 0:
                 candidate_n = int(T_ref) - int(n_kl_step)
                 while candidate_n >= int(n_kl_min):
                     R_candidate = _compute_R_fbl_np(
@@ -417,6 +424,11 @@ def _estimate_initial_random_precoder_schedule_fixed_block_targets(
         "skipped_blocks_per_user": [int(v) for v in skipped_blocks_per_user],
         "scenario_mode": FIXED_BLOCK_TARGETS_MODE,
         "scenario_block_targets": block_targets.tolist(),
+        "initial_schedule_source": (
+            "random_precoder_baseline"
+            if allow_n_reduction
+            else "naive_full_T_baseline"
+        ),
     }
 
 
@@ -425,6 +437,7 @@ def estimate_initial_random_precoder_schedule_for_scenario(
     sim_cfg: dict,
     *,
     seed: int,
+    allow_n_reduction: bool = True,
 ) -> dict:
     scenario = build_experiment_scenario(system_params, sim_cfg, seed=int(seed))
     if str(scenario["mode"]) == FIXED_BLOCK_TARGETS_MODE:
@@ -433,9 +446,15 @@ def estimate_initial_random_precoder_schedule_for_scenario(
             sim_cfg,
             seed=int(seed),
             scenario=scenario,
+            allow_n_reduction=allow_n_reduction,
         )
 
-    baseline = estimate_initial_random_precoder_schedule(system_params, sim_cfg, seed=int(seed))
+    baseline = estimate_initial_random_precoder_schedule(
+        system_params,
+        sim_cfg,
+        seed=int(seed),
+        allow_n_reduction=allow_n_reduction,
+    )
     baseline["skipped_blocks_per_user"] = [0 for _ in range(int(system_params["K"]))]
     baseline["scenario_mode"] = PAYLOAD_COMPLETION_MODE
     return baseline

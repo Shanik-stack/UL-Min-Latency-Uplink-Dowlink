@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Sequence
 
 import numpy as np
@@ -20,20 +21,17 @@ def net_output_to_precoder(F_out: torch.Tensor, Nt: int, dk: int) -> torch.Tenso
 
 def project_precoder_power(Fmat: torch.Tensor, P: float, eps: float = 1e-12) -> torch.Tensor:
     fro = torch.linalg.norm(Fmat, ord="fro").real
+    sqrt_power = math.sqrt(max(float(P), 0.0))
     if float(fro.detach().cpu()) <= float(eps):
         fallback = torch.zeros_like(Fmat)
         diag_dim = min(int(Fmat.shape[0]), int(Fmat.shape[1]))
         fallback[:diag_dim, :diag_dim] = torch.eye(diag_dim, dtype=Fmat.dtype, device=Fmat.device)
         fro = torch.linalg.norm(fallback, ord="fro").real
         return fallback * (
-            (
-                torch.sqrt(torch.tensor(float(P), device=Fmat.device, dtype=torch.float32)) / (fro + eps)
-            ) * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
+            (sqrt_power / (fro + eps)) * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
         ).to(Fmat.dtype)
 
-    scale = (
-        torch.sqrt(torch.tensor(float(P), device=Fmat.device, dtype=torch.float32)) / (fro + eps)
-    ) * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
+    scale = (sqrt_power / (fro + eps)) * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
     return Fmat * scale.to(Fmat.dtype)
 
 
@@ -111,11 +109,7 @@ class ChannelAndSigmaToPrecoderNet(nn.Module):
         H_flat = H_kl.reshape(1, -1)
         x_h = torch.cat([H_flat.real, H_flat.imag], dim=1)
         sigma_safe = max(float(sigma2), 1e-12)
-        x_meta = torch.tensor(
-            [[np.log(sigma_safe), float(epsilon)]],
-            dtype=x_h.dtype,
-            device=H_kl.device,
-        )
+        x_meta = x_h.new_tensor([[np.log(sigma_safe), float(epsilon)]])
         x = torch.cat([x_h, x_meta], dim=1)
         return self.net(x)
 
@@ -161,11 +155,7 @@ class ChannelAndInterferenceToPrecoderNet(nn.Module):
         x_h = torch.cat([H_flat.real, H_flat.imag], dim=1)
         noise_flat = noise_plus_interference_cov.reshape(1, -1)
         x_noise = torch.cat([noise_flat.real, noise_flat.imag], dim=1)
-        x_meta = torch.tensor(
-            [[float(epsilon)]],
-            dtype=x_h.dtype,
-            device=H_kl.device,
-        )
+        x_meta = x_h.new_tensor([[float(epsilon)]])
         x = torch.cat([x_h, x_noise, x_meta], dim=1)
         return self.net(x)
 
@@ -213,11 +203,7 @@ class ChannelAndBlocklengthToPrecoderNet(nn.Module):
         noise_flat = noise_plus_interference_cov.reshape(1, -1)
         x_noise = torch.cat([noise_flat.real, noise_flat.imag], dim=1)
         n_safe = max(float(n_kl), 1.0)
-        x_meta = torch.tensor(
-            [[np.log1p(n_safe), float(epsilon)]],
-            dtype=x_h.dtype,
-            device=H_kl.device,
-        )
+        x_meta = x_h.new_tensor([[np.log1p(n_safe), float(epsilon)]])
         x = torch.cat([x_h, x_noise, x_meta], dim=1)
         return self.net(x)
 
@@ -264,11 +250,7 @@ class ChannelAndBlocklengthAndSigmaToPrecoderNet(nn.Module):
         x_h = torch.cat([H_flat.real, H_flat.imag], dim=1)
         n_safe = max(float(n_kl), 1.0)
         sigma_safe = max(float(sigma2), 1e-12)
-        x_meta = torch.tensor(
-            [[np.log1p(n_safe), np.log(sigma_safe), float(epsilon)]],
-            dtype=x_h.dtype,
-            device=H_kl.device,
-        )
+        x_meta = x_h.new_tensor([[np.log1p(n_safe), np.log(sigma_safe), float(epsilon)]])
         x = torch.cat([x_h, x_meta], dim=1)
         return self.net(x)
 
@@ -397,7 +379,7 @@ def infer_precoder_numpy(
     device: torch.device = DEVICE,
 ) -> np.ndarray:
     with torch.no_grad():
-        H_t = torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+        H_t = torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
         F_t = infer_precoder_torch(model, H_t, Nt, dk, P)
     return F_t.detach().cpu().numpy().astype(np.complex128)
 
@@ -414,7 +396,7 @@ def infer_precoder_numpy_with_sigma_context(
     device: torch.device = DEVICE,
 ) -> np.ndarray:
     with torch.no_grad():
-        H_t = torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+        H_t = torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
         F_t = infer_precoder_torch_with_sigma_context(
             model,
             H_t,
@@ -439,8 +421,12 @@ def infer_precoder_numpy_with_interference_context(
     device: torch.device = DEVICE,
 ) -> np.ndarray:
     with torch.no_grad():
-        H_t = torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
-        noise_cov_t = torch.tensor(np.asarray(noise_plus_interference_cov), dtype=torch.complex64, device=device)
+        H_t = torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+        noise_cov_t = torch.as_tensor(
+            np.asarray(noise_plus_interference_cov),
+            dtype=torch.complex64,
+            device=device,
+        )
         F_t = infer_precoder_torch_with_interference_context(
             model,
             H_t,
@@ -466,8 +452,12 @@ def infer_precoder_numpy_with_blocklength(
     device: torch.device = DEVICE,
 ) -> np.ndarray:
     with torch.no_grad():
-        H_t = torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
-        noise_cov_t = torch.tensor(np.asarray(noise_plus_interference_cov), dtype=torch.complex64, device=device)
+        H_t = torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+        noise_cov_t = torch.as_tensor(
+            np.asarray(noise_plus_interference_cov),
+            dtype=torch.complex64,
+            device=device,
+        )
         F_t = infer_precoder_torch_with_blocklength(model, H_t, n_kl, noise_cov_t, epsilon, Nt, dk, P)
     return F_t.detach().cpu().numpy().astype(np.complex128)
 
@@ -485,7 +475,7 @@ def infer_precoder_numpy_with_blocklength_and_sigma(
     device: torch.device = DEVICE,
 ) -> np.ndarray:
     with torch.no_grad():
-        H_t = torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+        H_t = torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
         F_t = infer_precoder_torch_with_blocklength_and_sigma(
             model,
             H_t,

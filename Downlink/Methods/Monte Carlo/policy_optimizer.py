@@ -46,6 +46,8 @@ from terminal_logging import format_log_line, format_latency_log_line, format_pr
 LOG2E_SQ = float(np.log2(np.e) ** 2)
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
 BS_SHARED_FIXED_TARGET_N_TARGET_MODES = {"shared_n_targets", "per_user_n_targets"}
+MONTE_CARLO_ROLLOUT_WEIGHTING_MODES = {"phase_balanced", "uniform_per_query"}
+_Q_INV_CACHE: dict[tuple[str, int | None, float], torch.Tensor] = {}
 
 
 def _to_complex_numpy(x) -> np.ndarray:
@@ -203,13 +205,47 @@ def _models_output_full_bs_precoder(models: Sequence[torch.nn.Module]) -> bool:
 
 
 def _q_inv_torch(epsilon: float, device: torch.device = DEVICE) -> torch.Tensor:
+    cache_key = (str(device.type), device.index, round(float(epsilon), 12))
+    cached = _Q_INV_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
     normal = torch.distributions.Normal(
         torch.tensor(0.0, device=device, dtype=torch.float64),
         torch.tensor(1.0, device=device, dtype=torch.float64),
     )
     p = torch.tensor(1.0 - float(epsilon), device=device, dtype=torch.float64)
     p = torch.clamp(p, 1e-12, 1.0 - 1e-12)
-    return normal.icdf(p).to(dtype=torch.float32)
+    value = normal.icdf(p).to(dtype=torch.float32)
+    _Q_INV_CACHE[cache_key] = value
+    return value
+
+
+def _get_scenario_tensor_cache(
+    scenario: dict[str, Any],
+    K: int,
+) -> dict[str, Any]:
+    cached = scenario.get("_tensor_cache")
+    if isinstance(cached, dict):
+        return cached
+    active_mask = np.asarray(scenario["active_mask"], dtype=np.float32)
+    cache = {
+        "active_mask_np": active_mask,
+        "active_mask_t": torch.as_tensor(active_mask, dtype=torch.float32, device=DEVICE),
+        "H_block_t": [
+            torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=DEVICE)
+            for H_kl in scenario["H_block"]
+        ],
+        "sigma2_t": torch.as_tensor(np.asarray(scenario["sigma2"]), dtype=torch.float32, device=DEVICE),
+        "epsilon_t": torch.as_tensor(np.asarray(scenario["epsilon"]), dtype=torch.float32, device=DEVICE),
+        "input_noise_covariances_t": [
+            torch.as_tensor(np.asarray(cov), dtype=torch.complex64, device=DEVICE)
+            for cov in scenario.get("input_noise_covariances", [])
+        ],
+        "n_targets_t_by_tuple": {},
+        "K": int(K),
+    }
+    scenario["_tensor_cache"] = cache
+    return cache
 
 
 def _compute_r_fbl_torch(
@@ -393,9 +429,7 @@ def _project_predicted_beams_to_block_power_torch(
     if float(total_power.detach().cpu()) <= float(eps):
         return [beam for beam in predicted_beams]
 
-    scale = torch.sqrt(
-        torch.tensor(float(block_power_budget), dtype=torch.float32, device=DEVICE) / (total_power + eps)
-    )
+    scale = torch.sqrt(float(block_power_budget) / (total_power + eps))
     projected: list[torch.Tensor] = []
     for k, beam in enumerate(predicted_beams):
         if k < len(active) and float(active[k]) > 0.5:
@@ -414,7 +448,8 @@ def _scenario_forward_pass(
     inference_counters: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     K = int(system_params["K"])
-    active_mask = np.asarray(scenario["active_mask"], dtype=np.float32)
+    cache = _get_scenario_tensor_cache(scenario, K)
+    active_mask = cache["active_mask_np"]
     n_targets_list = [int(v) for v in n_targets]
     anchor_bits_list = (
         [int(v) for v in anchor_bits]
@@ -423,11 +458,8 @@ def _scenario_forward_pass(
     )
     if len(anchor_bits_list) < K:
         anchor_bits_list = anchor_bits_list + [0 for _ in range(K - len(anchor_bits_list))]
-    active_mask_t = torch.tensor(active_mask, dtype=torch.float32, device=DEVICE)
-    H_block_t = [
-        torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=DEVICE)
-        for H_kl in scenario["H_block"]
-    ]
+    active_mask_t = cache["active_mask_t"]
+    H_block_t = cache["H_block_t"]
     predicted_beams: list[torch.Tensor] = []
     rates: list[torch.Tensor | None] = [None for _ in range(K)]
     powers: list[torch.Tensor | None] = [None for _ in range(K)]
@@ -442,15 +474,19 @@ def _scenario_forward_pass(
                 for k in range(K):
                     if float(active_mask[k]) > 0.5 and 0 <= int(k) < len(per_user):
                         per_user[int(k)] = int(per_user[int(k)]) + 1
-        sigma2_t = torch.tensor(np.asarray(scenario["sigma2"]), dtype=torch.float32, device=DEVICE)
-        epsilon_t = torch.tensor(np.asarray(scenario["epsilon"]), dtype=torch.float32, device=DEVICE)
+        n_targets_cache = cache["n_targets_t_by_tuple"]
+        n_targets_key = tuple(int(v) for v in n_targets_list)
+        n_targets_t = n_targets_cache.get(n_targets_key)
+        if n_targets_t is None:
+            n_targets_t = torch.as_tensor(n_targets_list, dtype=torch.float32, device=DEVICE)
+            n_targets_cache[n_targets_key] = n_targets_t
         predicted_beams = infer_raw_bs_precoders_torch_with_blocklength(
             user_models[0],
             H_block_t,
-            torch.tensor(n_targets_list, dtype=torch.float32, device=DEVICE),
+            n_targets_t,
             active_mask_t,
-            sigma2_t,
-            epsilon_t,
+            cache["sigma2_t"],
+            cache["epsilon_t"],
             system_params["Nb"],
             system_params["dk"],
         )
@@ -478,11 +514,14 @@ def _scenario_forward_pass(
                 per_user = inference_counters.get("per_user_forward_calls")
                 if isinstance(per_user, list) and 0 <= int(k) < len(per_user):
                     per_user[int(k)] = int(per_user[int(k)]) + 1
-            noise_cov_input_t = torch.tensor(
-                np.asarray(scenario["input_noise_covariances"][k]),
-                dtype=torch.complex64,
-                device=DEVICE,
-            )
+            if k < len(cache["input_noise_covariances_t"]):
+                noise_cov_input_t = cache["input_noise_covariances_t"][k]
+            else:
+                noise_cov_input_t = torch.as_tensor(
+                    np.asarray(scenario["input_noise_covariances"][k]),
+                    dtype=torch.complex64,
+                    device=DEVICE,
+                )
             predicted_beams.append(
                 infer_raw_precoder_torch_with_blocklength(
                     user_models[k],
@@ -535,11 +574,7 @@ def _scenario_forward_pass(
         sum_rate = sum_rate + rate
         block_power = block_power + power
 
-    block_power_gap = block_power - torch.tensor(
-        float(scenario["block_power_budget"]),
-        dtype=torch.float32,
-        device=DEVICE,
-    )
+    block_power_gap = block_power - float(scenario["block_power_budget"])
     block_power_violation = torch.relu(block_power_gap)
 
     return {
@@ -732,12 +767,43 @@ def _resolve_rollout_phase_weights(sim_params: dict[str, Any]) -> dict[str, floa
     }
 
 
+def _resolve_rollout_query_weighting_mode(sim_params: dict[str, Any]) -> str:
+    aliases = {
+        "phase_balanced": "phase_balanced",
+        "phase": "phase_balanced",
+        "enabled": "phase_balanced",
+        "on": "phase_balanced",
+        "uniform_per_query": "uniform_per_query",
+        "uniform": "uniform_per_query",
+        "disabled": "uniform_per_query",
+        "off": "uniform_per_query",
+        "none": "uniform_per_query",
+    }
+    raw_mode = str(sim_params.get("monte_carlo_rollout_query_weighting_mode", "phase_balanced")).strip().lower()
+    resolved = aliases.get(raw_mode)
+    if resolved not in MONTE_CARLO_ROLLOUT_WEIGHTING_MODES:
+        known = ", ".join(sorted(MONTE_CARLO_ROLLOUT_WEIGHTING_MODES))
+        raise ValueError(
+            f"Unknown Monte Carlo rollout query weighting mode '{raw_mode}'. Expected one of: {known}"
+        )
+    return resolved
+
+
 def _normalize_episode_query_weights(
     episode_queries: Sequence[dict[str, Any]],
     phase_weights: dict[str, float],
+    *,
+    weighting_mode: str,
 ) -> list[dict[str, Any]]:
     if len(episode_queries) == 0:
         return []
+    if str(weighting_mode) == "uniform_per_query":
+        normalized: list[dict[str, Any]] = []
+        for query in episode_queries:
+            updated = dict(query)
+            updated["query_weight"] = 1.0
+            normalized.append(updated)
+        return normalized
     phase_counts: dict[str, int] = {}
     for query in episode_queries:
         phase = str(query.get("rollout_phase", "full_block"))
@@ -943,6 +1009,7 @@ def _collect_downlink_episode_rollout_queries(
     scenario = dict(training_episode["scenario"])
     scenario_mode = str(scenario.get("mode", PAYLOAD_COMPLETION_MODE))
     phase_weights = _resolve_rollout_phase_weights(sim_params)
+    weighting_mode = _resolve_rollout_query_weighting_mode(sim_params)
     system = DownlinkSystem(system_params, seed=int(seed))
     working_F = system.clone_precoders()
     episode_queries: list[dict[str, Any]] = []
@@ -1057,7 +1124,11 @@ def _collect_downlink_episode_rollout_queries(
                 episode_queries.extend(tail_queries)
 
             _apply_forward_to_working_precoders(system, working_F, int(block), final_forward)
-        return _normalize_episode_query_weights(episode_queries, phase_weights)
+        return _normalize_episode_query_weights(
+            episode_queries,
+            phase_weights,
+            weighting_mode=weighting_mode,
+        )
 
     remaining = np.asarray(scenario["payload_bits_per_user"], dtype=int).copy()
     block = 0
@@ -1171,7 +1242,11 @@ def _collect_downlink_episode_rollout_queries(
         remaining = np.maximum(remaining - np.asarray(committed_bits, dtype=int), 0)
         block += 1
 
-    return _normalize_episode_query_weights(episode_queries, phase_weights)
+    return _normalize_episode_query_weights(
+        episode_queries,
+        phase_weights,
+        weighting_mode=weighting_mode,
+    )
 
 
 def _generate_rollout_queries_for_downlink(
@@ -1457,6 +1532,8 @@ def train_blocklength_aware_precoder_net(
         sim_params.get("bs_shared_net_fixed_target_n_target_mode", "shared_n_targets")
     )
     dataset_summary = summarize_training_dataset(training_episodes)
+    rollout_phase_weights = _resolve_rollout_phase_weights(sim_params)
+    rollout_query_weighting_mode = _resolve_rollout_query_weighting_mode(sim_params)
     models = _build_training_user_models(system_params, sim_params)
     optimizer = torch.optim.Adam(
         _unique_trainable_parameters(models),
@@ -1477,6 +1554,8 @@ def train_blocklength_aware_precoder_net(
         "training_epoch_status": [],
         "dataset_summary": dataset_summary,
         "epoch_rollout_query_summaries": [],
+        "rollout_phase_weights": dict(rollout_phase_weights),
+        "rollout_query_weighting_mode": str(rollout_query_weighting_mode),
         "downlink_precoder_net_scope": str(model_scope),
         "bs_shared_net_fixed_target_n_target_mode": (
             str(shared_fixed_target_n_target_mode)
@@ -1658,7 +1737,7 @@ def train_blocklength_aware_precoder_net(
                         continue
 
                     required_rate = float(forward["required_rates"][k])
-                    rate_violation = torch.tensor(required_rate, dtype=torch.float32, device=DEVICE) - rate
+                    rate_violation = rate.new_tensor(required_rate) - rate
                     rate_violation_pos = _constraint_violation_activation(rate_violation, constraint_loss_form)
                     term = (
                         -rate
@@ -1843,6 +1922,10 @@ def train_blocklength_aware_precoder_net(
         "base_dataset_kind": dataset_summary.get("base_dataset_kind", "channel_episodes_only"),
         "total_training_channel_episodes": int(dataset_summary.get("total_channel_episodes", 0)),
         "rollout_anchor_bits_mode": "derived_online_from_current_episode_served_bits",
+        "rollout_query_weighting_mode": str(
+            training_history.get("rollout_query_weighting_mode", "phase_balanced")
+        ),
+        "rollout_phase_weights": dict(training_history.get("rollout_phase_weights", {})),
         "per_user_final_lagrangian": [
             float(history[-1]) if len(history) > 0 else 0.0 for history in training_history["per_user_lagrangian"]
         ],
@@ -2019,6 +2102,7 @@ def _allocate_fixed_target_for_user_block_snapshot(
     sim_params: dict[str, Any],
     *,
     allow_infeasible_zero: bool = False,
+    allow_n_reduction: bool = True,
 ) -> tuple[int, int, float, np.ndarray]:
     k = int(user)
     l = int(block)
@@ -2041,7 +2125,7 @@ def _allocate_fixed_target_for_user_block_snapshot(
 
     chosen_n = int(T_k)
     chosen_R = float(R_T)
-    if int(B_used) >= int(target_bits) and int(target_bits) > 0:
+    if allow_n_reduction and int(B_used) >= int(target_bits) and int(target_bits) > 0:
         candidate = T_k - n_step
         while candidate >= n_min:
             R_candidate = float(system.compute_block_rate(k, l, int(candidate), F_override=snapshot))
@@ -2670,6 +2754,7 @@ def _estimate_initial_latency_from_random_precoders_fixed_block_targets(
     system: DownlinkSystem,
     sim_params: dict[str, Any],
     scenario: dict[str, Any],
+    allow_n_reduction: bool = True,
 ) -> tuple[list[float], dict[str, Any], dict[str, Any]]:
     baseline_system = DownlinkSystem(system.sc, seed=system.seed)
     baseline_models = _build_user_precoder_models(
@@ -2701,6 +2786,7 @@ def _estimate_initial_latency_from_random_precoders_fixed_block_targets(
                 int(target_bits),
                 sim_params,
                 allow_infeasible_zero=True,
+                allow_n_reduction=allow_n_reduction,
             )
             working_F[int(k)][int(block)] = np.array(F_used, copy=True)
             if B_used <= 0:
@@ -2733,12 +2819,34 @@ def _estimate_initial_latency_from_random_precoders_for_scenario(
     system: DownlinkSystem,
     sim_params: dict[str, Any],
     scenario: dict[str, Any],
+    allow_n_reduction: bool = True,
 ) -> tuple[list[float], dict[str, Any], dict[str, Any]]:
     return shared_estimate_initial_latency_from_random_precoders_for_scenario(
         system,
         sim_params,
         scenario,
+        allow_n_reduction=allow_n_reduction,
     )
+
+
+def _build_initial_baseline_reference(
+    baseline_name: str,
+    latency: Sequence[float],
+    plan: dict[str, Any],
+    *,
+    snr_db: Sequence[float],
+    sinr_db: Sequence[float],
+) -> dict[str, Any]:
+    return {
+        "schedule_source": str(baseline_name),
+        "latency": [float(v) for v in latency],
+        "n_kl": [list(map(int, values)) for values in plan.get("n_kl", [])],
+        "B_kl": [list(map(int, values)) for values in plan.get("B_kl", [])],
+        "R_alloc": [list(map(float, values)) for values in plan.get("R_alloc", [])],
+        "snr_db": [float(v) for v in snr_db],
+        "sinr_db": [float(v) for v in sinr_db],
+        "skipped_blocks_per_user": [int(v) for v in plan.get("skipped_blocks_per_user", [])],
+    }
 
 
 def _evaluate_downlink_precoder_net_fixed_block_targets(
@@ -2758,6 +2866,12 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
         system,
         sim_params,
         scenario,
+    )
+    naive_full_t_latency, naive_full_t_plan, _ = _estimate_initial_latency_from_random_precoders_for_scenario(
+        system,
+        sim_params,
+        scenario,
+        allow_n_reduction=False,
     )
     model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
     shared_fixed_target_n_target_mode = _resolve_bs_shared_fixed_target_n_target_mode(
@@ -3098,6 +3212,23 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
         "R_alloc": [list(map(float, v)) for v in R_plan],
         "initial_latency": list(map(float, initial_latency)),
         "initial_plan": initial_plan,
+        "initial_schedule_source": "random_precoder_baseline",
+        "baseline_references": {
+            "random_precoder_baseline": _build_initial_baseline_reference(
+                "random_precoder_baseline",
+                initial_latency,
+                initial_plan,
+                snr_db=initial_snr_db,
+                sinr_db=initial_sinr_db,
+            ),
+            "naive_full_T_baseline": _build_initial_baseline_reference(
+                "naive_full_T_baseline",
+                naive_full_t_latency,
+                naive_full_t_plan,
+                snr_db=initial_snr_db,
+                sinr_db=initial_sinr_db,
+            ),
+        },
         "initial_interference_diag": initial_interference_diag,
         "final_latency": system.latency.tolist(),
         "initial_snr_db": initial_snr_db,
@@ -3155,6 +3286,12 @@ def evaluate_downlink_precoder_net(
         system,
         sim_params,
         scenario,
+    )
+    naive_full_t_latency, naive_full_t_plan, _ = _estimate_initial_latency_from_random_precoders_for_scenario(
+        system,
+        sim_params,
+        scenario,
+        allow_n_reduction=False,
     )
     if verbose:
         print(
@@ -3501,6 +3638,23 @@ def evaluate_downlink_precoder_net(
         "R_alloc": [list(map(float, v)) for v in R_plan],
         "initial_latency": list(map(float, initial_latency)),
         "initial_plan": initial_plan,
+        "initial_schedule_source": "random_precoder_baseline",
+        "baseline_references": {
+            "random_precoder_baseline": _build_initial_baseline_reference(
+                "random_precoder_baseline",
+                initial_latency,
+                initial_plan,
+                snr_db=initial_snr_db,
+                sinr_db=initial_sinr_db,
+            ),
+            "naive_full_T_baseline": _build_initial_baseline_reference(
+                "naive_full_T_baseline",
+                naive_full_t_latency,
+                naive_full_t_plan,
+                snr_db=initial_snr_db,
+                sinr_db=initial_sinr_db,
+            ),
+        },
         "initial_interference_diag": initial_interference_diag,
         "final_latency": system.latency.tolist(),
         "initial_snr_db": initial_snr_db,

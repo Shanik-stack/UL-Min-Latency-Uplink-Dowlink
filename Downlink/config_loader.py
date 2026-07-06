@@ -226,6 +226,13 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
                 default=1.5,
             )
         ),
+        "monte_carlo_rollout_query_weighting_mode": str(
+            _first_present(
+                sim_cfg_raw,
+                "monte_carlo_rollout_query_weighting_mode",
+                default="phase_balanced",
+            )
+        ).strip().lower(),
         "monte_carlo_training_fallback_target_bits": int(
             _first_present(
                 sim_cfg_raw,

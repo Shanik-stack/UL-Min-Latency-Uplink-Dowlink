@@ -1,0 +1,647 @@
+{
+    "train_eval_seed": 1,
+    "epochs_requested": 100,
+    "configured_max_epochs": 100,
+    "per_user_epochs_completed": [
+        24,
+        24,
+        24
+    ],
+    "per_user_training_solve_status": [
+        "stationary_infeasible",
+        "stationary_infeasible",
+        "stationary_infeasible"
+    ],
+    "per_user_restored_solution_source": [
+        "best_feasible",
+        "best_feasible",
+        "best_feasible"
+    ],
+    "base_dataset_kind": "channel_episodes_only",
+    "total_training_channel_episodes": 2,
+    "rollout_anchor_bits_mode": "derived_online_from_current_episode_served_bits",
+    "cumulative_rollout_queries_by_n_kl": {
+        "global_rollout_queries_by_n_kl_over_all_epochs": {
+            "13": 67,
+            "14": 115,
+            "15": 227,
+            "16": 115,
+            "17": 115,
+            "18": 117,
+            "19": 121,
+            "20": 238,
+            "21": 3,
+            "22": 4,
+            "23": 4,
+            "24": 4,
+            "25": 240,
+            "26": 107,
+            "27": 174,
+            "28": 221,
+            "29": 228,
+            "30": 469,
+            "31": 1,
+            "32": 2,
+            "33": 2,
+            "34": 22,
+            "35": 515,
+            "36": 27,
+            "37": 52,
+            "38": 98,
+            "39": 104,
+            "40": 616,
+            "41": 43,
+            "42": 67,
+            "43": 91,
+            "44": 115,
+            "45": 711,
+            "46": 2,
+            "47": 3,
+            "48": 4,
+            "49": 6,
+            "50": 955,
+            "52": 1,
+            "53": 1,
+            "54": 1,
+            "55": 478,
+            "56": 3,
+            "57": 4,
+            "58": 4,
+            "59": 4,
+            "60": 720,
+            "65": 240,
+            "70": 240,
+            "75": 240,
+            "80": 480
+        },
+        "per_user_rollout_queries_by_n_kl_over_all_epochs": [
+            {
+                "13": 67,
+                "14": 115,
+                "15": 227,
+                "16": 115,
+                "17": 115,
+                "18": 117,
+                "19": 121,
+                "20": 238,
+                "21": 3,
+                "22": 4,
+                "23": 4,
+                "24": 4,
+                "25": 240,
+                "30": 240,
+                "35": 240,
+                "40": 240,
+                "45": 240,
+                "50": 480
+            },
+            {
+                "26": 107,
+                "27": 174,
+                "28": 221,
+                "29": 228,
+                "30": 229,
+                "31": 1,
+                "32": 2,
+                "33": 2,
+                "34": 2,
+                "35": 230,
+                "36": 1,
+                "37": 4,
+                "38": 5,
+                "39": 9,
+                "40": 239,
+                "45": 240,
+                "46": 1,
+                "47": 1,
+                "48": 1,
+                "49": 1,
+                "50": 240,
+                "55": 240,
+                "60": 480
+            },
+            {
+                "34": 20,
+                "35": 45,
+                "36": 26,
+                "37": 48,
+                "38": 93,
+                "39": 95,
+                "40": 137,
+                "41": 43,
+                "42": 67,
+                "43": 91,
+                "44": 115,
+                "45": 231,
+                "46": 1,
+                "47": 2,
+                "48": 3,
+                "49": 5,
+                "50": 235,
+                "52": 1,
+                "53": 1,
+                "54": 1,
+                "55": 238,
+                "56": 3,
+                "57": 4,
+                "58": 4,
+                "59": 4,
+                "60": 240,
+                "65": 240,
+                "70": 240,
+                "75": 240,
+                "80": 480
+            }
+        ]
+    },
+    "cumulative_frontier_rollout_queries_by_n_kl": {
+        "global_frontier_rollout_queries_by_n_kl_over_all_epochs": {
+            "13": 67,
+            "14": 48,
+            "15": 112,
+            "16": 3,
+            "18": 2,
+            "19": 4,
+            "20": 2,
+            "21": 1,
+            "22": 1,
+            "26": 107,
+            "27": 67,
+            "28": 47,
+            "29": 7,
+            "30": 1,
+            "32": 1,
+            "34": 20,
+            "35": 25,
+            "36": 2,
+            "37": 25,
+            "38": 46,
+            "39": 6,
+            "40": 22,
+            "41": 21,
+            "42": 24,
+            "43": 24,
+            "44": 24,
+            "45": 2,
+            "47": 1,
+            "48": 1,
+            "49": 2,
+            "52": 1,
+            "55": 2,
+            "56": 1,
+            "57": 1
+        },
+        "per_user_frontier_rollout_queries_by_n_kl_over_all_epochs": [
+            {
+                "13": 67,
+                "14": 48,
+                "15": 112,
+                "16": 3,
+                "18": 2,
+                "19": 4,
+                "20": 2,
+                "21": 1,
+                "22": 1
+            },
+            {
+                "26": 107,
+                "27": 67,
+                "28": 47,
+                "29": 7,
+                "30": 1,
+                "32": 1,
+                "36": 1,
+                "37": 3,
+                "38": 1,
+                "39": 4,
+                "45": 1
+            },
+            {
+                "34": 20,
+                "35": 25,
+                "36": 1,
+                "37": 22,
+                "38": 45,
+                "39": 2,
+                "40": 22,
+                "41": 21,
+                "42": 24,
+                "43": 24,
+                "44": 24,
+                "45": 1,
+                "47": 1,
+                "48": 1,
+                "49": 2,
+                "52": 1,
+                "55": 2,
+                "56": 1,
+                "57": 1
+            }
+        ]
+    },
+    "final_epoch_rollout_query_summary": {
+        "total_rollout_queries": 355,
+        "global_rollout_queries_by_n_kl": {
+            "13": 3,
+            "14": 5,
+            "15": 10,
+            "16": 5,
+            "17": 5,
+            "18": 5,
+            "19": 5,
+            "20": 10,
+            "25": 10,
+            "26": 5,
+            "27": 8,
+            "28": 10,
+            "29": 10,
+            "30": 20,
+            "34": 1,
+            "35": 22,
+            "36": 1,
+            "37": 2,
+            "38": 4,
+            "39": 4,
+            "40": 26,
+            "41": 2,
+            "42": 3,
+            "43": 4,
+            "44": 5,
+            "45": 30,
+            "50": 40,
+            "55": 20,
+            "60": 30,
+            "65": 10,
+            "70": 10,
+            "75": 10,
+            "80": 20
+        },
+        "global_frontier_rollout_queries_by_n_kl": {
+            "13": 3,
+            "14": 2,
+            "15": 5,
+            "26": 5,
+            "27": 3,
+            "28": 2,
+            "34": 1,
+            "35": 1,
+            "37": 1,
+            "38": 2,
+            "40": 1,
+            "41": 1,
+            "42": 1,
+            "43": 1,
+            "44": 1
+        },
+        "global_rollout_queries_by_feasibility": {
+            "feasible": 325,
+            "infeasible": 30,
+            "frontier": 30
+        },
+        "per_user": [
+            {
+                "user": 0,
+                "total_rollout_queries": 118,
+                "rollout_queries_by_n_kl": {
+                    "13": 3,
+                    "14": 5,
+                    "15": 10,
+                    "16": 5,
+                    "17": 5,
+                    "18": 5,
+                    "19": 5,
+                    "20": 10,
+                    "25": 10,
+                    "30": 10,
+                    "35": 10,
+                    "40": 10,
+                    "45": 10,
+                    "50": 20
+                },
+                "frontier_rollout_queries_by_n_kl": {
+                    "13": 3,
+                    "14": 2,
+                    "15": 5
+                },
+                "feasible_rollout_queries": 108,
+                "infeasible_rollout_queries": 10,
+                "frontier_rollout_queries": 10
+            },
+            {
+                "user": 1,
+                "total_rollout_queries": 113,
+                "rollout_queries_by_n_kl": {
+                    "26": 5,
+                    "27": 8,
+                    "28": 10,
+                    "29": 10,
+                    "30": 10,
+                    "35": 10,
+                    "40": 10,
+                    "45": 10,
+                    "50": 10,
+                    "55": 10,
+                    "60": 20
+                },
+                "frontier_rollout_queries_by_n_kl": {
+                    "26": 5,
+                    "27": 3,
+                    "28": 2
+                },
+                "feasible_rollout_queries": 103,
+                "infeasible_rollout_queries": 10,
+                "frontier_rollout_queries": 10
+            },
+            {
+                "user": 2,
+                "total_rollout_queries": 124,
+                "rollout_queries_by_n_kl": {
+                    "34": 1,
+                    "35": 2,
+                    "36": 1,
+                    "37": 2,
+                    "38": 4,
+                    "39": 4,
+                    "40": 6,
+                    "41": 2,
+                    "42": 3,
+                    "43": 4,
+                    "44": 5,
+                    "45": 10,
+                    "50": 10,
+                    "55": 10,
+                    "60": 10,
+                    "65": 10,
+                    "70": 10,
+                    "75": 10,
+                    "80": 20
+                },
+                "frontier_rollout_queries_by_n_kl": {
+                    "34": 1,
+                    "35": 1,
+                    "37": 1,
+                    "38": 2,
+                    "40": 1,
+                    "41": 1,
+                    "42": 1,
+                    "43": 1,
+                    "44": 1
+                },
+                "feasible_rollout_queries": 114,
+                "infeasible_rollout_queries": 10,
+                "frontier_rollout_queries": 10
+            }
+        ]
+    },
+    "per_user_num_epochs": [
+        24,
+        24,
+        24
+    ],
+    "per_user_final_lagrangian": [
+        -14.569102592509283,
+        -15.258863648627713,
+        -15.618362665630533
+    ],
+    "per_user_best_lagrangian": [
+        -14.578418084371064,
+        -15.25908366006661,
+        -15.618362665630533
+    ],
+    "per_user_final_rate": [
+        14.607379028413282,
+        15.264953975616857,
+        15.620683563474644
+    ],
+    "per_user_last_epoch_avg_rate_over_rollout_queries": [
+        14.607379028413282,
+        15.264953975616857,
+        15.620683563474644
+    ],
+    "per_user_last_epoch_avg_lagrangian_over_rollout_queries": [
+        -14.569102592509283,
+        -15.258863648627713,
+        -15.618362665630533
+    ],
+    "per_user_final_rate_violation": [
+        0.16392252735752555,
+        0.04536099911067148,
+        0.02153399621684687
+    ],
+    "per_user_final_power_violation": [
+        -5.783799929733335e-07,
+        -5.808960804053926e-07,
+        -5.79155803027082e-07
+    ],
+    "per_user_final_kkt_primal_residual": [
+        0.16392252735752555,
+        0.04536099911067148,
+        0.02153399621684687
+    ],
+    "per_user_final_kkt_complementarity_residual": [
+        0.03896493500645136,
+        0.006160922649278054,
+        0.0023352271662906315
+    ],
+    "per_user_final_kkt_stationarity_residual": [
+        0.0006568583116991444,
+        0.0008797107497708129,
+        0.0009137532606745304
+    ],
+    "final_avg_lagrangian": -15.148776302255845,
+    "best_avg_lagrangian": -15.151055878249693,
+    "last_epoch_mean_user_rollout_lagrangian": -15.148776302255845,
+    "best_epoch_mean_user_rollout_lagrangian": -15.151055878249693,
+    "final_avg_user_rate": 15.164338855834927,
+    "best_avg_user_rate": 15.164338855834927,
+    "last_epoch_mean_user_rollout_rate": 15.164338855834927,
+    "best_epoch_mean_user_rollout_rate": 15.164338855834927,
+    "final_avg_rate_violation": 0.07693917422834796,
+    "best_avg_rate_violation": -0.03863499070062663,
+    "final_avg_power_violation": -5.794772921352694e-07,
+    "best_avg_power_violation": -5.889190665746884e-07,
+    "per_user_final_loss": [
+        -14.569102592509283,
+        -15.258863648627713,
+        -15.618362665630533
+    ],
+    "per_user_best_loss": [
+        -14.578418084371064,
+        -15.25908366006661,
+        -15.618362665630533
+    ],
+    "last_epoch_total_rollout_queries": 355,
+    "last_epoch_feasible_rollout_queries": 325,
+    "last_epoch_infeasible_rollout_queries": 30,
+    "train_eval_initial_latency": [
+        0.006333333333333333,
+        0.0112,
+        0.018
+    ],
+    "train_eval_final_latency": [
+        0.0054,
+        0.0092,
+        0.0144
+    ],
+    "train_eval_initial_total_latency": 0.03553333333333333,
+    "train_eval_final_total_latency": 0.028999999999999998,
+    "train_eval_total_latency_reduction_percent": 18.38649155722327,
+    "train_eval_initial_blocks_per_user": [
+        5,
+        5,
+        5
+    ],
+    "train_eval_initial_total_n_per_user": [
+        95,
+        168,
+        270
+    ],
+    "train_eval_initial_served_bits_per_user": [
+        1000,
+        2000,
+        3000
+    ],
+    "train_eval_initial_selected_n_kl_summary": {
+        "global_selected_examples_by_n_kl": {
+            "17": 1,
+            "19": 3,
+            "21": 1,
+            "30": 1,
+            "34": 3,
+            "36": 1,
+            "49": 1,
+            "52": 1,
+            "53": 1,
+            "55": 1,
+            "61": 1
+        },
+        "per_user": [
+            {
+                "user": 0,
+                "selected_examples_by_n_kl": {
+                    "17": 1,
+                    "19": 3,
+                    "21": 1
+                }
+            },
+            {
+                "user": 1,
+                "selected_examples_by_n_kl": {
+                    "30": 1,
+                    "34": 3,
+                    "36": 1
+                }
+            },
+            {
+                "user": 2,
+                "selected_examples_by_n_kl": {
+                    "49": 1,
+                    "52": 1,
+                    "53": 1,
+                    "55": 1,
+                    "61": 1
+                }
+            }
+        ]
+    },
+    "train_eval_blocks_per_user": [
+        5,
+        5,
+        5
+    ],
+    "train_eval_total_n_per_user": [
+        81,
+        138,
+        216
+    ],
+    "train_eval_served_bits_per_user": [
+        1000,
+        2000,
+        3000
+    ],
+    "train_eval_initial_skipped_blocks_per_user": [
+        0,
+        0,
+        0
+    ],
+    "train_eval_skipped_blocks_per_user": [
+        0,
+        0,
+        0
+    ],
+    "train_eval_selected_n_kl_summary": {
+        "global_selected_examples_by_n_kl": {
+            "15": 1,
+            "16": 2,
+            "17": 2,
+            "27": 2,
+            "28": 3,
+            "41": 1,
+            "43": 2,
+            "44": 1,
+            "45": 1
+        },
+        "per_user": [
+            {
+                "user": 0,
+                "selected_examples_by_n_kl": {
+                    "15": 1,
+                    "16": 2,
+                    "17": 2
+                }
+            },
+            {
+                "user": 1,
+                "selected_examples_by_n_kl": {
+                    "27": 2,
+                    "28": 3
+                }
+            },
+            {
+                "user": 2,
+                "selected_examples_by_n_kl": {
+                    "41": 1,
+                    "43": 2,
+                    "44": 1,
+                    "45": 1
+                }
+            }
+        ]
+    },
+    "run_started_at_local": "2026-07-05T22:33:47+03:00",
+    "training_started_at_local": "2026-07-05T22:33:49+03:00",
+    "training_completed_at_local": "2026-07-05T22:37:43+03:00",
+    "experiment_cost": {
+        "core_wall_time_seconds_total": 234.1025171999936,
+        "core_wall_time_seconds_training": 234.1025171999936,
+        "core_wall_time_seconds_testing": 0.0,
+        "estimated_nn_training_flops": 3890906208.0,
+        "estimated_nn_inference_flops": 81628480.0,
+        "estimated_nn_total_flops": 3972534688.0,
+        "training_forward_backward_sample_equivalents": 8421,
+        "inference_forward_calls": 530,
+        "optimizer_steps": 287,
+        "per_user_forward_flops": [
+            154016,
+            154016,
+            154016
+        ],
+        "workload_counters": {
+            "training_rollout_queries_per_user": [
+                2810,
+                2658,
+                2953
+            ],
+            "train_eval_candidate_n_states_per_user": [
+                174,
+                167,
+                189
+            ],
+            "batch_size": 32
+        },
+        "notes": [
+            "Forward+backward NN FLOPs count the rollout-query training passes that optimize the uplink precoder net.",
+            "Forward-only NN FLOPs count the forward-only beam evaluations used in the post-training train-eval pass."
+        ]
+    }
+}

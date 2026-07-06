@@ -1,4 +1,5 @@
 import copy
+import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -22,12 +23,19 @@ LOG2E_SQ = (np.log2(np.e)) ** 2
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
 CONVERGENCE_PRECODER_UPDATE_MODES = {"precoder_net", "direct_precoder"}
 POWER_PROJECTION_SAFETY_MARGIN = 1e-6
+_Q_INV_CACHE: dict[tuple[str, int | None, str, float], torch.Tensor] = {}
 
 # ============================================================
 # Utils
 # ============================================================
 def Q_inv(eps: float, device=DEVICE, dtype=torch.float32) -> torch.Tensor:
-    return torch.tensor(norm.ppf(1.0 - float(eps)), device=device, dtype=dtype)
+    cache_key = (str(device.type), device.index, str(dtype), round(float(eps), 12))
+    cached = _Q_INV_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+    value = torch.tensor(norm.ppf(1.0 - float(eps)), device=device, dtype=dtype)
+    _Q_INV_CACHE[cache_key] = value
+    return value
 
 def update_lambdas(lambda_rate: float, lambda_power: float,
                    rate_violation_pos: torch.Tensor, power_violation_pos: torch.Tensor,
@@ -74,10 +82,7 @@ def project_power(Fmat: torch.Tensor, P: float, eps: float = 1e-12, delta: float
         return Fmat
 
     # Slightly under-scale to guarantee strict inequality
-    scale = torch.sqrt(
-        torch.tensor(float(P), device=Fmat.device, dtype=torch.float32)
-        / (power + eps)
-    )
+    scale = math.sqrt(max(float(P), 0.0)) / (power + eps)
 
     scale = scale * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
 

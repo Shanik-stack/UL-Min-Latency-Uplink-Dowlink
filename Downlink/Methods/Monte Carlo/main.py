@@ -117,6 +117,8 @@ def _build_post_training_summary_lines(post_training_summary: dict[str, object])
         f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}",
         f"Training channel episodes: {int(post_training_summary.get('total_training_channel_episodes', 0))}",
         f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}",
+        f"Rollout query weighting mode: {post_training_summary.get('rollout_query_weighting_mode', 'unknown')}",
+        f"Rollout phase weights: {post_training_summary.get('rollout_phase_weights', {})}",
         f"Final KKT primal residual: {float(post_training_summary.get('final_kkt_primal_residual', 0.0)):.6e}",
         f"Final KKT complementarity residual: {float(post_training_summary.get('final_kkt_complementarity_residual', 0.0)):.6e}",
         f"Final KKT stationarity residual: {float(post_training_summary.get('final_kkt_stationarity_residual', 0.0)):.6e}",
@@ -173,17 +175,30 @@ def _sum_per_user_summary_field(metrics: dict[str, object], field: str) -> int:
     return int(sum(int(row.get(field, 0)) for row in metrics.get("per_user_summary", [])))
 
 
+def _get_baseline_comparison_metric(metrics: dict[str, object], baseline_name: str) -> dict[str, object]:
+    baseline_metrics = metrics.get("baseline_comparison_metrics", {})
+    if not isinstance(baseline_metrics, dict):
+        return {}
+    value = baseline_metrics.get(baseline_name, {})
+    return value if isinstance(value, dict) else {}
+
+
 def _build_final_test_summary_lines(result: dict[str, object]) -> list[str]:
     metrics = result["summary_metrics"]
     assert isinstance(metrics, dict)
+    random_baseline_metrics = _get_baseline_comparison_metric(metrics, "random_precoder_baseline")
+    naive_full_t_metrics = _get_baseline_comparison_metric(metrics, "naive_full_T_baseline")
     lines = [
         "Final test results",
-        f"Initial total latency: {metrics['initial_total_latency']:.6f}",
+        f"Initial total latency (random baseline): {metrics['initial_total_latency']:.6f}",
         f"Final total latency: {metrics['final_total_latency']:.6f}",
-        f"Total latency reduction (%): {metrics['total_latency_reduction_percent']:.4f}",
-        f"Initial avg latency: {metrics['initial_avg_latency']:.6f}",
+        (
+            "Latency reduction vs random precoder baseline (%): "
+            f"{random_baseline_metrics.get('total_latency_reduction_percent', metrics['total_latency_reduction_percent']):.4f}"
+        ),
+        f"Initial avg latency (random baseline): {metrics['initial_avg_latency']:.6f}",
         f"Final avg latency: {metrics['final_avg_latency']:.6f}",
-        f"Initial asynchronality sum: {metrics['initial_asynchronality_sum']:.6f}",
+        f"Initial asynchronality sum (random baseline): {metrics['initial_asynchronality_sum']:.6f}",
         f"Final asynchronality sum: {metrics['final_asynchronality_sum']:.6f}",
         f"Asynchronality reduction (%): {metrics['asynchronality_reduction_percent']:.4f}",
         f"Initial avg SNR (dB): {metrics['initial_avg_snr_db']:.4f}",
@@ -193,6 +208,16 @@ def _build_final_test_summary_lines(result: dict[str, object]) -> list[str]:
         f"Total served bits: {_sum_per_user_summary_field(metrics, 'served_bits')}",
         f"Total skipped blocks: {_sum_per_user_summary_field(metrics, 'skipped_blocks')}",
     ]
+    if naive_full_t_metrics:
+        lines.extend(
+            [
+                f"Initial total latency (naive full-T baseline): {naive_full_t_metrics.get('initial_total_latency', 0.0):.6f}",
+                (
+                    "Latency reduction vs naive full-T baseline (%): "
+                    f"{naive_full_t_metrics.get('total_latency_reduction_percent', 0.0):.4f}"
+                ),
+            ]
+        )
     if metrics.get("scenario_mode", "") == FIXED_BLOCK_TARGETS_MODE:
         lines.extend(
             [
@@ -208,13 +233,15 @@ def _build_final_test_summary_lines(result: dict[str, object]) -> list[str]:
 def _build_per_user_test_lines(result: dict[str, object]) -> list[str]:
     metrics = result["summary_metrics"]
     assert isinstance(metrics, dict)
+    naive_full_t_metrics = _get_baseline_comparison_metric(metrics, "naive_full_T_baseline")
+    naive_per_user = naive_full_t_metrics.get("latency_reduction_per_user_percent", [])
     lines = ["Per-user final test details"]
     for row in metrics["per_user_summary"]:
         parts = [
             f"User {row['user']}",
             f"init_lat={row['initial_latency']:.6f}",
             f"final_lat={row['final_latency']:.6f}",
-            f"lat_red={row['latency_reduction_percent']:.4f}%",
+            f"lat_red_vs_random={row['latency_reduction_percent']:.4f}%",
             f"init_block_sinr={row['initial_sinr_db']:.4f} dB",
             f"final_block_sinr={row['final_sinr_db']:.4f} dB",
             f"blocks={row['blocks']}",
@@ -222,6 +249,8 @@ def _build_per_user_test_lines(result: dict[str, object]) -> list[str]:
             f"served_bits={row['served_bits']}",
             f"skipped_blocks={row['skipped_blocks']}",
         ]
+        if int(row["user"]) < len(naive_per_user):
+            parts.append(f"lat_red_vs_fullT={float(naive_per_user[int(row['user'])]):.4f}%")
         if metrics.get("scenario_mode", "") == FIXED_BLOCK_TARGETS_MODE:
             parts.extend(
                 [
@@ -262,6 +291,8 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
         ),
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
         f"Training objective: {result.get('training_objective', 'unknown')}",
+        f"Rollout query weighting mode: {result.get('rollout_query_weighting_mode', 'unknown')}",
+        f"Initial schedule source: {result.get('initial_schedule_source', 'random_precoder_baseline')}",
         f"Training dataset total channel episodes: {int(dataset_summary.get('total_channel_episodes', 0)) if isinstance(dataset_summary, dict) else 0}",
         f"Training channel-episode counts per user: {result.get('training_channel_episode_counts_per_user', result.get('training_active_user_case_counts_per_user', result.get('training_dataset_sizes', [])))}",
     ]
@@ -295,6 +326,16 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
                     f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}"
                     if isinstance(post_training_summary, dict)
                     else "Rollout anchor-bits mode: unknown"
+                ),
+                (
+                    f"Rollout query weighting mode: {post_training_summary.get('rollout_query_weighting_mode', 'unknown')}"
+                    if isinstance(post_training_summary, dict)
+                    else "Rollout query weighting mode: unknown"
+                ),
+                (
+                    f"Rollout phase weights: {post_training_summary.get('rollout_phase_weights', {})}"
+                    if isinstance(post_training_summary, dict)
+                    else "Rollout phase weights: {}"
                 ),
                 (
                     f"Last epoch rollout-weighted avg sum rate: {float(post_training_summary.get('last_epoch_rollout_weighted_avg_sum_rate', post_training_summary.get('final_avg_sum_rate', float(sum_rate_hist[-1])))):.6f}"
@@ -512,6 +553,12 @@ def main() -> None:
     result["sim_params"] = sim_params
     result["training_dataset_summary"] = dataset_summary
     result["post_training_summary"] = post_training_summary
+    result["rollout_query_weighting_mode"] = str(
+        post_training_summary.get(
+            "rollout_query_weighting_mode",
+            sim_params.get("monte_carlo_rollout_query_weighting_mode", "unknown"),
+        )
+    )
     result["experiment_scenario_mode"] = sim_params.get("experiment_scenario_mode", "payload_completion")
     result["experiment_scenario"] = test_scenario_summary
     result["training_experiment_scenarios"] = training_scenario_summaries

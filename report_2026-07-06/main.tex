@@ -1,0 +1,1399 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsfonts,mathtools}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\newcommand{\Kset}{\mathcal{K}}
+\newcommand{\Aset}{\mathcal{A}}
+\newcommand{\Qset}{\mathcal{Q}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\I}{\mathbf{I}}
+\newcommand{\Hc}{\mathbf{H}}
+\newcommand{\F}{\mathbf{F}}
+\newcommand{\A}{\mathbf{A}}
+\newcommand{\Sig}{\mathbf{\Sigma}}
+\newcommand{\Smat}{\mathbf{S}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\floor}[1]{\left\lfloor #1 \right\rfloor}
+\newcommand{\UL}{\mathrm{UL}}
+\newcommand{\DL}{\mathrm{DL}}
+\newcommand{\E}{\mathbb{E}}
+\emergencystretch=1.5em
+\allowdisplaybreaks
+
+\title{Finite-sub-blocklength Latency Minimization for Uplink and Downlink Communications:\\Theoretical Formulation and Solution Methods}
+\author{}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report presents the current uplink and downlink
+work on finite-sub-blocklength latency minimization. It introduces a common
+notation layer, defines the communication scenarios, derives the
+finite-sub-blocklength rate expressions used in both links, formulates the uplink
+and downlink latency-minimization problems, and then develops two solution
+frameworks: the \emph{Training Only Method} and the \emph{Training + Testing
+Method}. 
+\end{abstract}
+
+\section{Introduction}
+
+Short-packet communication cannot be analyzed accurately through asymptotic
+capacity alone. When the codeword length is finite, the achievable rate depends
+not only on channel quality and transmit power, but also on sub-blocklength and the
+required decoding reliability. For latency-sensitive multiuser communication,
+this creates a coupled design problem: the number of transmitted bits, the
+chosen sub-blocklength, and the precoder must be selected jointly.
+
+The present work studies this problem in both uplink and downlink settings. In
+the uplink, each user is handled through a user-wise sequence of transmission
+blocks, and the main difficulty is that the number of required blocks is not
+known a priori. In the downlink, all active users share the same transmission
+epoch, so the main difficulty is inter-user interference and the resulting
+coupling of feasible rates.
+
+The report
+\begin{enumerate}
+    \item establish a common mathematical notation for uplink and downlink,
+    \item define the communication scenarios that determine what each block is asked to deliver,
+    \item derive the corresponding finite-sub-blocklength uplink and downlink formulations, and
+    \item present the \emph{Training Only Method} and the \emph{Training + Testing Method} in algorithmic form.
+\end{enumerate}
+
+
+\section{System Model and Common Notation}
+
+\subsection{Core Variables}
+
+Table~\ref{tab:common-notation} lists the symbols that are shared throughout
+the report.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Common notation}
+\label{tab:common-notation}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.27\textwidth} X}
+\toprule
+Symbol & Meaning \\
+\midrule
+$\Kset = \{1,2,\dots,K\}$ & Set of users. \\
+$k \in \Kset$ & User index. \\
+$\ell$ & Transmission-block index. In uplink it is per user; in downlink it is per Base Station. \\
+$B_k$ & Total payload of user $k$ in bits. \\
+$b_{k,\ell}^{\mathrm{req}}$ & Requested bits to send for user $k$ in block $\ell$. In payload completion, $b_{k,\ell}^{\mathrm{req}} = B_{k,\mathrm{rem}}^{(\ell)}$; in fixed continuous communication, $b_{k,\ell}^{\mathrm{req}} = \bar b_{k,\ell}$. \\
+$b_{k,\ell}$ & Bits actually sent to user $k$ in block $\ell$. \\
+$B_{k,\mathrm{rem}}^{(\ell)}$ & Remaining unsent bits of user $k$ when block $\ell$ starts in payload-completion mode. \\
+$\bar b_{k,\ell}$ & Target bits to send for user $k$ in block $\ell$ in fixed continuous communication mode. \\
+$n_{k,\ell}$ & sub-blocklength assigned to user $k$ in block $\ell$, measured in channel uses. \\
+$T_k$ & Maximum admissible sub-blocklength for user $k$ within one coherence-limited transmission opportunity. \\
+$f_{s,k}$ & Symbol rate of user $k$ in symbols per second. \\
+$\tau_k$ & End-to-end latency of user $k$. \\
+$\varepsilon_k$ & Target packet error probability of user $k$. \\
+$P_k$ & Uplink power budget of user $k$. \\
+$P_B$ & Total transmit-power budget of the downlink Base Station Precoder. \\
+$d_k$ & Number of transmitted spatial streams of user $k$. \\
+$\Aset_\ell$ & Active-user set in downlink block $\ell$. \\
+$q$ & One query, i.e.\ one visited state presented to the learned model. \\
+$\Qset$ & Collection of training queries used in the Training + Testing Method. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The latency of user $k$ is defined by
+\begin{equation}
+\tau_k
+=
+\frac{1}{f_{s,k}}
+\sum_{\ell} n_{k,\ell},
+\label{eq:latency-user}
+\end{equation}
+and the network objective is to minimize the aggregate latency
+\begin{equation}
+\tau_{\mathrm{sum}}
+=
+\sum_{k\in\Kset}\tau_k.
+\label{eq:latency-sum}
+\end{equation}
+
+\subsection{Finite-sub-blocklength Template}
+
+For both uplink and downlink, the achievable rate is described through the normal
+approximation \cite{polyanskiy2010}. Once the specific  matrix
+$\A_{k,\ell}^{(m)}$ has been defined, the corresponding capacity term is
+\begin{equation}
+C_{k,\ell}^{(m)}
+=
+\log_2\det\!\bigl(\I+\A_{k,\ell}^{(m)}\bigr),
+\label{eq:common-C}
+\end{equation}
+and the channel-dispersion term is
+\begin{equation}
+V_{k,\ell}^{(m)}
+=
+(\log_2 e)^2
+\tr\!\left[
+\A_{k,\ell}^{(m)}
+\bigl(\A_{k,\ell}^{(m)}+2\I\bigr)
+\bigl(\A_{k,\ell}^{(m)}+\I\bigr)^{-2}
+\right].
+\label{eq:common-V}
+\end{equation}
+
+Therefore, for sub-blocklength $n_{k,\ell}$ and reliability target
+$\varepsilon_k$, the finite-sub-blocklength rate is
+\begin{equation}
+R_{k,\ell}^{(m)}
+=
+C_{k,\ell}^{(m)}
+-
+\sqrt{\frac{V_{k,\ell}^{(m)}}{n_{k,\ell}}}\,
+Q^{-1}(\varepsilon_k).
+\label{eq:common-rate}
+\end{equation}
+
+If $b_{k,\ell}$ information bits are sent over $n_{k,\ell}$ channel uses,
+feasibility requires
+\begin{equation}
+\frac{b_{k,\ell}}{n_{k,\ell}}
+\le
+R_{k,\ell}^{(m)}.
+\label{eq:common-feasibility-rate}
+\end{equation}
+Multiplying both sides by $n_{k,\ell}$ yields
+\begin{equation}
+b_{k,\ell}
+\le
+n_{k,\ell}R_{k,\ell}^{(m)}.
+\label{eq:common-feasibility-bits}
+\end{equation}
+Since the service variable is integer-valued, the largest feasible blockwise
+service is
+\begin{equation}
+b_{k,\ell}^{\max,(m)}
+=
+\floor{n_{k,\ell}R_{k,\ell}^{(m)}}.
+\label{eq:common-bmax}
+\end{equation}
+
+Equation~\eqref{eq:common-bmax} is central throughout the report: it converts a
+continuous finite-sub-blocklength rate into an integer blockwise service limit.
+
+\section{Communication Scenarios}
+
+Before separating uplink and downlink, it is useful to define the two traffic
+interpretations used throughout the report. These scenarios determine what each
+block is asked to transmit, how latency is accumulated across blocks, and how
+unserved bits are interpreted.
+
+\subsection{Payload Communication}
+
+In payload-completion mode, each user begins with a finite payload
+$B_k$. The scheduler stops only when this payload is fully
+drained. The number of bits to send in block $\ell$ is the current remainder:
+\begin{equation}
+b_{k,\ell}^{\mathrm{req}}=B_{k,\mathrm{rem}}^{(\ell)}.
+\label{eq:payload-request}
+\end{equation}
+After the block is committed, the remainder is updated as
+\begin{equation}
+B_{k,\mathrm{rem}}^{(\ell+1)}=B_{k,\mathrm{rem}}^{(\ell)}-b_{k,\ell}.
+\label{eq:payload-update}
+\end{equation}
+Thus, payload completion is a workload-draining problem: every decision is made
+with respect to the residual bits that still have to be delivered.
+
+\subsection{Continuous Communication (Fixed Bits per Block)}
+
+In continuous communication mode, the transmission length $L$ (total no. of sub-blocks) is known in
+advance and the blockwise targets are specified externally:
+\begin{equation}
+b_{k,\ell}^{\mathrm{req}}=\bar b_{k,\ell},
+\qquad \ell=1,\dots,L.
+\label{eq:fixed-request}
+\end{equation}
+The unmet service in a block is
+\begin{equation}
+u_{k,\ell}=\bar b_{k,\ell}-b_{k,\ell},
+\qquad
+u_{k,\ell}\ge 0,
+\label{eq:fixed-shortfall}
+\end{equation}
+which is recorded as an incomplete transmission of bits rather than being carried over to next sub-block. Thus, fixed continuous communication is a
+prescribed-demand problem: each block arrives with an externally given target.
+
+\subsection{Uplink Payload}
+
+For uplink payload completion, each user evolves independently according to its
+own remainder recursion. User $k$ creates a new block only if its current block
+cannot finish the entire remaining payload. Thus, the block count
+$L_k$ is an output of the optimization.
+
+\subsection{Uplink Continuous Communication}
+
+For uplink fixed continuous communication, the the block count
+$L_k$ is set in
+advance. Each epoch has a target $\bar b_{k,\ell}$, and the main question is
+how much of that target can be supported within the coherence and power limits
+of the user at that epoch.
+
+\subsection{Downlink Payload}
+
+For downlink payload completion, the active-user set changes with time:
+\begin{equation}
+\Aset_\ell = \{k\in\Kset : B_{k,\mathrm{rem}}^{(\ell)}>0\}.
+\label{eq:downlink-payload-active}
+\end{equation}
+As users finish their payloads they leave the active set, which changes both
+the interference structure and the feasible rate region of the remaining users.
+
+\subsection{Downlink Continuous Communication}
+
+For downlink fixed continuous communication, the the block count
+$L_k$ is prescribed and
+every block carries a target vector $\{\bar b_{k,\ell}\}_{k\in\Kset}$. The
+active-user set is determined by the users that are scheduled in that block. If
+the coupled downlink block cannot support a user's requested service, the user
+may receive zero service or partial service in that block, and this outcome is
+recorded.
+
+\section{Uplink Formulation}
+
+\subsection{Effective Uplink Signal Model}
+
+In the uplink, user $k$ in block $\ell$ is represented through the effective
+MIMO relation
+\begin{equation}
+\mathbf y_{k,\ell}^{(\UL)}
+=
+\Hc_{k,\ell}^{(\UL)}
+\F_{k,\ell}^{(\UL)}
+\mathbf s_{k,\ell}
++
+\mathbf z_{k,\ell}^{(\UL)},
+\label{eq:ul-signal}
+\end{equation}
+where
+\begin{equation}
+\Hc_{k,\ell}^{(\UL)} \in \C^{N_{r,k}\times N_{t,k}},
+\qquad
+\F_{k,\ell}^{(\UL)} \in \C^{N_{t,k}\times d_k},
+\label{eq:ul-dimensions}
+\end{equation}
+$\mathbf s_{k,\ell}$ is the transmitted symbol vector with identity covariance,
+and $\mathbf z_{k,\ell}^{(\UL)}$ is an AWGN vector. Hence its covariance matrix
+is
+\begin{equation}
+\Sig_{k,\ell}^{(\UL)}
+:=
+\sigma_k^2\I.
+\label{eq:ul-noise-cov}
+\end{equation}
+
+The desired-signal covariance is
+\begin{equation}
+\Smat_{k,\ell}^{(\UL)}
+=
+\Hc_{k,\ell}^{(\UL)}
+\F_{k,\ell}^{(\UL)}
+\bigl(\F_{k,\ell}^{(\UL)}\bigr)^H
+\bigl(\Hc_{k,\ell}^{(\UL)}\bigr)^H,
+\label{eq:ul-signal-cov}
+\end{equation}
+and the whitened matrix becomes
+\begin{equation}
+\A_{k,\ell}^{(\UL)}
+=
+\bigl(\Sig_{k,\ell}^{(\UL)}\bigr)^{-1/2}
+\Smat_{k,\ell}^{(\UL)}
+\bigl(\Sig_{k,\ell}^{(\UL)}\bigr)^{-1/2}.
+\label{eq:ul-A}
+\end{equation}
+Substituting \eqref{eq:ul-A} into
+\eqref{eq:common-C}--\eqref{eq:common-rate} gives
+$C_{k,\ell}^{(\UL)}$, $V_{k,\ell}^{(\UL)}$, and
+$R_{k,\ell}^{(\UL)}$.
+
+\subsection{Single-Block Uplink Design Problem}
+
+Suppose block $\ell$ of user $k$ is asked to serve
+$b_{k,\ell}^{\mathrm{req}}$ bits. In payload completion,
+$b_{k,\ell}^{\mathrm{req}} = B_{k,\mathrm{rem}}^{(\ell)}$; in fixed continuous
+communication, $b_{k,\ell}^{\mathrm{req}} = \bar b_{k,\ell}$. The objective is
+the total latency of user $k$, namely
+\(
+\tau_k = \frac{1}{f_{s,k}}\sum_{\ell'} n_{k,\ell'}
+\).
+When block $\ell$ is being designed, all terms except the current block are
+already fixed or deferred to the remaining schedule, so the blockwise design is
+written in the total-latency form
+\begin{subequations}
+\begin{align}
+\min_{n_{k,\ell},\,\F_{k,\ell}^{(\UL)}}
+\quad
+&
+\sum_{k\in\Kset}\frac{1}{f_{s,k}}\sum_{\ell'} n_{k,\ell'}
+\label{eq:ul-single-obj}
+\\
+\text{s.t.}\quad
+&
+\frac{b_{k,\ell}^{\mathrm{req}}}{n_{k,\ell}}
+\le
+R_{k,\ell}^{(\UL)},
+\label{eq:ul-single-rate}
+\\
+&
+n_{k,\ell} \in \{1,\dots,T_k\},
+\label{eq:ul-single-n}
+\\
+&
+\norm{\F_{k,\ell}^{(\UL)}}_F^2 \le P_k.
+\label{eq:ul-single-power}
+\end{align}
+\end{subequations}
+
+
+\subsection{Uplink Payload-Completion Formulation}
+
+In payload completion mode, the number of blocks required by user $k$ is not
+known in advance. Let $L_k$ denote the number of blocks eventually used by user
+$k$. This terminal block index is induced by the resulting optimization and is
+therefore an output of the optimization rather than an independent optimization
+parameter. The uplink payload problem is
+\begin{subequations}
+\begin{align}
+\min_{\{b_{k,\ell},n_{k,\ell},\F_{k,\ell}^{(\UL)}\}}
+\quad
+&
+\sum_{k\in\Kset}\frac{1}{f_{s,k}}\sum_{\ell=1}^{L_k} n_{k,\ell}
+\label{eq:ul-payload-obj}
+\\
+\text{s.t.}\quad
+&
+\frac{b_{k,\ell}}{n_{k,\ell}}
+\le
+R_{k,\ell}^{(\UL)},
+\qquad \forall k,\ell,
+\label{eq:ul-payload-fbl}
+\\
+&
+\sum_{\ell=1}^{L_k} b_{k,\ell} = B_k,
+\qquad \forall k,
+\label{eq:ul-payload-conservation}
+\\
+&
+n_{k,\ell} \in \{1,\dots,T_k\},
+\qquad \forall k,\ell,
+\label{eq:ul-payload-n}
+\\
+&
+\norm{\F_{k,\ell}^{(\UL)}}_F^2 \le P_k,
+\qquad \forall k,\ell.
+\label{eq:ul-payload-power}
+\end{align}
+\end{subequations}
+
+The remaining-bits recursion is
+\begin{equation}
+B_{k,\mathrm{rem}}^{(1)}=B_k,
+\qquad
+B_{k,\mathrm{rem}}^{(\ell+1)}=B_{k,\mathrm{rem}}^{(\ell)}-b_{k,\ell},
+\label{eq:ul-remaining-recursion}
+\end{equation}
+and the scheduler terminates once $B_{k,\mathrm{rem}}^{(\ell)}=0$.
+
+\subsection{Uplink Fixed Continuous Communication Formulation}
+
+In fixed continuous communication mode, the the block count $L_k$ is prescribed in
+advance, and each block carries a target $\bar b_{k,\ell}$. Here
+$b_{k,\ell}$ denotes the transmitted bits of the block, whereas the design
+variables are the sub-blocklength and precoder. The problem becomes
+\begin{subequations}
+\begin{align}
+\min_{\{n_{k,\ell},\F_{k,\ell}^{(\UL)}\}}
+\quad
+&
+\sum_{k\in\Kset}\frac{1}{f_{s,k}}\sum_{\ell=1}^{L} n_{k,\ell}
+\label{eq:ul-fixed-obj}
+\\
+\text{s.t.}\quad
+&
+\frac{b_{k,\ell}}{n_{k,\ell}}
+\le
+R_{k,\ell}^{(\UL)},
+\qquad \forall k,\ell,
+\label{eq:ul-fixed-fbl}
+\\
+&
+b_{k,\ell} \in \{1,\dots,\bar b_{k,\ell}\},
+\qquad \forall k,\ell,
+\label{eq:ul-fixed-target}
+\\
+&
+n_{k,\ell} \in \{1,\dots,T_k\},
+\qquad \forall k,\ell,
+\label{eq:ul-fixed-n}
+\\
+&
+\norm{\F_{k,\ell}^{(\UL)}}_F^2 \le P_k,
+\qquad \forall k,\ell.
+\label{eq:ul-fixed-power}
+\end{align}
+\end{subequations}
+
+The key difference from payload completion is that the the block count $L_k$ $L$ is
+fixed and blockwise shortfall
+$\bar b_{k,\ell}-b_{k,\ell}$ is recorded explicitly rather than being carried
+forward as an unscheduled residual payload.
+
+\section{Downlink Formulation}
+
+\subsection{Interference-Coupled Downlink Signal Model}
+
+In the downlink, all active users in block $\ell$ are transmitted
+simultaneously. The received signal of user $k$ is
+\begin{equation}
+\mathbf y_{k,\ell}^{(\DL)}
+=
+\Hc_{k,\ell}^{(\DL)}\F_{k,\ell}^{(\DL)}\mathbf s_{k,\ell}
++
+\sum_{j\in\Aset_\ell\setminus\{k\}}
+\Hc_{k,\ell}^{(\DL)}\F_{j,\ell}^{(\DL)}\mathbf s_{j,\ell}
++
+\mathbf z_{k,\ell}^{(\DL)},
+\label{eq:dl-signal}
+\end{equation}
+where
+\begin{equation}
+\Hc_{k,\ell}^{(\DL)} \in \C^{N_{r,k}\times N_b},
+\qquad
+\F_{k,\ell}^{(\DL)} \in \C^{N_b\times d_k},
+\label{eq:dl-dimensions}
+\end{equation}
+and $\mathbf z_{k,\ell}^{(\DL)}$ is receiver noise.
+
+The desired-signal covariance of user $k$ is
+\begin{equation}
+\Smat_{k,\ell}^{(\DL)}
+=
+\Hc_{k,\ell}^{(\DL)}
+\F_{k,\ell}^{(\DL)}
+\bigl(\F_{k,\ell}^{(\DL)}\bigr)^H
+\bigl(\Hc_{k,\ell}^{(\DL)}\bigr)^H.
+\label{eq:dl-signal-cov}
+\end{equation}
+Its interference-plus-noise covariance is
+\begin{equation}
+\Sig_{k,\ell}^{(\DL)}
+=
+\sigma_k^2\I
++
+\sum_{j\in\Aset_\ell\setminus\{k\}}
+\Hc_{k,\ell}^{(\DL)}
+\F_{j,\ell}^{(\DL)}
+\bigl(\F_{j,\ell}^{(\DL)}\bigr)^H
+\bigl(\Hc_{k,\ell}^{(\DL)}\bigr)^H.
+\label{eq:dl-disturbance-cov}
+\end{equation}
+
+Hence the downlink whitened matrix is
+\begin{equation}
+\A_{k,\ell}^{(\DL)}
+=
+\bigl(\Sig_{k,\ell}^{(\DL)}\bigr)^{-1/2}
+\Smat_{k,\ell}^{(\DL)}
+\bigl(\Sig_{k,\ell}^{(\DL)}\bigr)^{-1/2},
+\label{eq:dl-A}
+\end{equation}
+which leads directly to
+$C_{k,\ell}^{(\DL)}$, $V_{k,\ell}^{(\DL)}$, and
+$R_{k,\ell}^{(\DL)}$ through
+\eqref{eq:common-C}--\eqref{eq:common-rate}.
+
+\subsection{Downlink Design Problem}
+
+Let $\Aset_\ell$ be the active-user set in block $\ell$. For each
+$k\in\Aset_\ell$, let $b_{k,\ell}^{\mathrm{req}}$ denote the requested bits to be transmitted
+of the current block, where
+$b_{k,\ell}^{\mathrm{req}} = B_{k,\mathrm{rem}}^{(\ell)}$ in payload
+completion and $b_{k,\ell}^{\mathrm{req}} = \bar b_{k,\ell}$ in fixed
+continuous communication. The network objective remains the total latency
+\(
+\tau_{\mathrm{sum}}
+=
+\sum_{k\in\Kset}\frac{1}{f_{s,k}}\sum_{\ell'} n_{k,\ell'}
+\).
+During block $\ell$, only the active-user sub-blocklengths of the current block are
+free, so the one-block downlink problem is written as
+\begin{subequations}
+\begin{align}
+\min_{\{n_{k,\ell},\F_{k,\ell}^{(\DL)}\}_{k\in\Aset_\ell}}
+\quad
+&
+\sum_{k\in\Kset}\frac{1}{f_{s,k}}\sum_{\ell'} n_{k,\ell'}
+\label{eq:dl-single-obj}
+\\
+\text{s.t.}\quad
+&
+\frac{b_{k,\ell}^{\mathrm{req}}}{n_{k,\ell}}
+\le
+R_{k,\ell}^{(\DL)},
+\qquad \forall k\in\Aset_\ell,
+\label{eq:dl-single-rate}
+\\
+&
+n_{k,\ell} \in \{1,\dots,T_k\},
+\qquad \forall k\in\Aset_\ell,
+\label{eq:dl-single-n}
+\\
+&
+\sum_{k\in\Aset_\ell}\norm{\F_{k,\ell}^{(\DL)}}_F^2 \le P_B.
+\label{eq:dl-single-power}
+\end{align}
+\end{subequations}
+
+The complication relative to the uplink is immediate:
+$R_{k,\ell}^{(\DL)}$ depends on the entire active-user beam set through
+\eqref{eq:dl-disturbance-cov}. Thus, even if only per User's precoder is
+changed, the feasible rates of all other active users are altered as well.
+Hence the current-block decision cannot be separated from the coupled
+active-user state of the block.
+
+\subsection{Downlink Payload-Completion Formulation}
+
+In payload completion mode, the active-user set is induced by the remaining
+payload:
+\begin{equation}
+\Aset_\ell
+=
+\left\{
+k\in\Kset : B_{k,\mathrm{rem}}^{(\ell)}>0
+\right\}.
+\label{eq:dl-active-payload}
+\end{equation}
+
+The network-level problem is
+\begin{subequations}
+\begin{align}
+\min_{\{b_{k,\ell},n_{k,\ell},\F_{k,\ell}^{(\DL)}\}}
+\quad
+&
+\sum_{k\in\Kset}\frac{1}{f_{s,k}}\sum_{\ell} n_{k,\ell}
+\label{eq:dl-payload-obj}
+\\
+\text{s.t.}\quad
+&
+\frac{b_{k,\ell}}{n_{k,\ell}}
+\le
+R_{k,\ell}^{(\DL)},
+\qquad \forall k,\ell,
+\label{eq:dl-payload-fbl}
+\\
+&
+\sum_{\ell} b_{k,\ell} = B_k,
+\qquad \forall k,
+\label{eq:dl-payload-conservation}
+\\
+&
+n_{k,\ell} \in \{1,\dots,T_k\},
+\qquad \forall k,\ell,
+\label{eq:dl-payload-n}
+\\
+&
+\sum_{k\in\Aset_\ell}\norm{\F_{k,\ell}^{(\DL)}}_F^2 \le P_B,
+\qquad \forall \ell.
+\label{eq:dl-payload-power}
+\end{align}
+\end{subequations}
+
+The same remaining-bits recursion as in
+\eqref{eq:ul-remaining-recursion} applies, but now the block service of one
+user depends on the simultaneous service decisions of the others.
+
+\subsection{Downlink Fixed Continuous Communication Formulation}
+
+In fixed continuous communication mode, the the block count $L_k$ is prescribed and the
+blockwise transmission bits targets are fixed. Again, $b_{k,\ell}$ denotes the transmitted
+bits, whereas the design variables are the sub-blocklengths and precoders:
+\begin{subequations}
+\begin{align}
+\min_{\{n_{k,\ell},\F_{k,\ell}^{(\DL)}\}}
+\quad
+&
+\sum_{k\in\Kset}\frac{1}{f_{s,k}}\sum_{\ell=1}^{L} n_{k,\ell}
+\label{eq:dl-fixed-obj}
+\\
+\text{s.t.}\quad
+&
+\frac{b_{k,\ell}}{n_{k,\ell}}
+\le
+R_{k,\ell}^{(\DL)},
+\qquad \forall k,\ell,
+\label{eq:dl-fixed-fbl}
+\\
+&
+0 \le b_{k,\ell} \le \bar b_{k,\ell},
+\qquad \forall k,\ell,
+\label{eq:dl-fixed-target}
+\\
+&
+n_{k,\ell} \in \{1,\dots,T_k\},
+\qquad \forall k,\ell,
+\label{eq:dl-fixed-n}
+\\
+&
+\sum_{k\in\Aset_\ell}\norm{\F_{k,\ell}^{(\DL)}}_F^2 \le P_B,
+\qquad \forall \ell.
+\label{eq:dl-fixed-power}
+\end{align}
+\end{subequations}
+
+The difference from payload completion is again conceptual: the demand sequence
+is externally prescribed, so any shortfall
+$\bar b_{k,\ell}-b_{k,\ell}$ is treated as unmet service in that block rather
+than as a residual workload to be automatically rolled forward.
+
+\section{Training Only Method}
+
+\subsection{Common Primal-Dual Structure}
+
+The \emph{Training Only Method} performs optimization directly on the current
+channel realization. There is no offline learning stage. Instead, each decision
+block is solved online through a constrained primal-dual update. In payload
+completion, $b_{k,\ell}^{\mathrm{req}} = B_{k,\mathrm{rem}}^{(\ell)}$, whereas
+in fixed continuous communication,
+$b_{k,\ell}^{\mathrm{req}} = \bar b_{k,\ell}$.
+
+For uplink block $(k,\ell)$ with requested service $b_{k,\ell}^{\mathrm{req}}$, define the rate
+constraint residual
+\begin{equation}
+g_{k,\ell}^{(\UL,r)}
+=
+\frac{b_{k,\ell}^{\mathrm{req}}}{n_{k,\ell}} - R_{k,\ell}^{(\UL)},
+\label{eq:ul-rate-residual}
+\end{equation}
+and the power residual
+\begin{equation}
+g_{k,\ell}^{(\UL,p)}
+=
+\norm{\F_{k,\ell}^{(\UL)}}_F^2 - P_k.
+\label{eq:ul-power-residual}
+\end{equation}
+
+For the downlink block, define
+\begin{equation}
+g_{k,\ell}^{(\DL,r)}
+=
+\frac{b_{k,\ell}^{\mathrm{req}}}{n_{k,\ell}} - R_{k,\ell}^{(\DL)},
+\qquad k\in\Aset_\ell,
+\label{eq:dl-rate-residual}
+\end{equation}
+and the common block-power residual
+\begin{equation}
+g_{\ell}^{(\DL,p)}
+=
+\sum_{k\in\Aset_\ell}\norm{\F_{k,\ell}^{(\DL)}}_F^2 - P_B.
+\label{eq:dl-power-residual}
+\end{equation}
+
+The blockwise Lagrangian is then formed by combining a rate-maximizing primal
+objective with nonnegative dual penalties. In uplink,
+\begin{equation}
+\mathcal{L}_{k,\ell}^{(\UL)}
+=
+-R_{k,\ell}^{(\UL)}
++
+\lambda_{k,\ell}^{(\UL,r)}\bigl[g_{k,\ell}^{(\UL,r)}\bigr]_+
++
+\lambda_{k,\ell}^{(\UL,p)}\bigl[g_{k,\ell}^{(\UL,p)}\bigr]_+,
+\label{eq:ul-lagrangian}
+\end{equation}
+while in downlink,
+\begin{equation}
+\mathcal{L}_{\ell}^{(\DL)}
+=
+-\sum_{k\in\Aset_\ell} R_{k,\ell}^{(\DL)}
++
+\sum_{k\in\Aset_\ell}
+\lambda_{k,\ell}^{(\DL,r)}\bigl[g_{k,\ell}^{(\DL,r)}\bigr]_+
++
+\lambda_{\ell}^{(\DL,p)}\bigl[g_{\ell}^{(\DL,p)}\bigr]_+.
+\label{eq:dl-lagrangian}
+\end{equation}
+
+The primal variables are updated to reduce the Lagrangian, and the dual
+variables are updated to penalize persistent infeasibility. To monitor the
+solve, the method tracks three KKT residuals.
+
+For uplink block $(k,\ell)$,
+\begin{align}
+r_{p,k,\ell}^{(\UL)}
+&=
+\max\!\left\{
+\bigl[g_{k,\ell}^{(\UL,r)}\bigr]_+,\,
+\bigl[g_{k,\ell}^{(\UL,p)}\bigr]_+
+\right\},
+\label{eq:ul-rp}
+\\
+r_{c,k,\ell}^{(\UL)}
+&=
+\max\!\left\{
+\lambda_{k,\ell}^{(\UL,r)}\bigl[g_{k,\ell}^{(\UL,r)}\bigr]_+,\,
+\lambda_{k,\ell}^{(\UL,p)}\bigl[g_{k,\ell}^{(\UL,p)}\bigr]_+
+\right\},
+\label{eq:ul-rc}
+\\
+r_{s,k,\ell}^{(\UL)}
+&=
+\frac{
+\norm{
+\F_{k,\ell}^{(\UL),(t)}-\F_{k,\ell}^{(\UL),(t-1)}
+}_F
+}{
+\max\!\left\{
+\norm{\F_{k,\ell}^{(\UL),(t-1)}}_F,\,
+\delta_0
+\right\}
+},
+\label{eq:ul-rs}
+\end{align}
+where $\delta_0>0$ is a small safeguard constant.
+
+For downlink block $\ell$,
+\begin{align}
+r_{p,\ell}^{(\DL)}
+&=
+\max\!\left\{
+\max_{k\in\Aset_\ell}\bigl[g_{k,\ell}^{(\DL,r)}\bigr]_+,\,
+\bigl[g_{\ell}^{(\DL,p)}\bigr]_+
+\right\},
+\label{eq:dl-rp}
+\\
+r_{c,\ell}^{(\DL)}
+&=
+\max\!\left\{
+\max_{k\in\Aset_\ell}
+\lambda_{k,\ell}^{(\DL,r)}\bigl[g_{k,\ell}^{(\DL,r)}\bigr]_+,\,
+\lambda_{\ell}^{(\DL,p)}\bigl[g_{\ell}^{(\DL,p)}\bigr]_+
+\right\},
+\label{eq:dl-rc}
+\\
+r_{s,\ell}^{(\DL)}
+&=
+\max_{k\in\Aset_\ell}
+\frac{
+\norm{
+\F_{k,\ell}^{(\DL),(t)}-\F_{k,\ell}^{(\DL),(t-1)}
+}_F
+}{
+\max\!\left\{
+\norm{\F_{k,\ell}^{(\DL),(t-1)}}_F,\,
+\delta_0
+\right\}
+},
+\label{eq:dl-rs}
+\end{align}
+
+The online solve is declared converged when
+\begin{equation}
+r_p \le \epsilon_p,
+\qquad
+r_c \le \epsilon_c,
+\qquad
+r_s \le \epsilon_s,
+\label{eq:kkt-convergence}
+\end{equation}
+and it is declared stationary infeasible when
+\begin{equation}
+r_s \le \epsilon_s
+\qquad \text{but} \qquad
+r_p > \epsilon_p.
+\label{eq:kkt-stationary-infeasible}
+\end{equation}
+
+\subsection{Uplink Training Only Method}
+
+The uplink training-only method is fundamentally sequential, but it follows the
+same \emph{converge first, allocate second, reduce third} logic as the
+downlink method. For each user-local block, the solver first converges the
+full-sub-blocklength uplink precoder at $n_{k,\ell}=T_k$, then computes the
+supported bits, and only then attempts sub-blocklength reduction if the entire
+current request has already been met. In payload completion mode, the
+full-block service is
+\begin{equation}
+b_{k,\ell}^{(T)}
+=
+\min\!\left\{
+B_{k,\mathrm{rem}}^{(\ell)},
+\floor{T_k\,R_{k,\ell}^{(\UL)}(T_k)}
+\right\}.
+\label{eq:ul-full-block-service-payload}
+\end{equation}
+In fixed continuous communication mode, it is
+\begin{equation}
+b_{k,\ell}^{(T)}
+:=
+\min\!\left\{
+\bar b_{k,\ell},
+\floor{T_k\,R_{k,\ell}^{(\UL)}(T_k)}
+\right\}.
+\label{eq:ul-full-block-service-fixed}
+\end{equation}
+
+sub-blocklength reduction is attempted only after the current block request has
+been fully met. In payload completion, this means
+$b_{k,\ell}^{(T)} = B_{k,\mathrm{rem}}^{(\ell)}$. In fixed continuous
+communication, this means $b_{k,\ell}^{(T)} = \bar b_{k,\ell}$. If the current
+request is only partially served, the block is committed at $n_{k,\ell}=T_k$
+and the method moves to the next request without trying to reduce
+sub-blocklength.
+
+\begin{algorithm}[H]
+\caption{Training-Only Uplink User Solver}
+\label{alg:ul-train-only}
+\begin{algorithmic}[1]
+\Require Scenario mode, user $k$, payload $B_k$ or prescribed targets $\{\bar b_{k,\ell}\}$, tolerances $\epsilon_p,\epsilon_c,\epsilon_s$
+\Ensure Block sequence $\{(b_{k,\ell},n_{k,\ell},\F_{k,\ell}^{(\UL)})\}$
+\If{payload-completion mode}
+    \State Set $B_{k,\mathrm{rem}}^{(1)} \gets B_k$
+\EndIf
+\State Initialize $\ell \gets 1$
+\While{a new block request exists}
+    \If{payload-completion mode}
+        \State Set $b_{k,\ell}^{\mathrm{req}} \gets B_{k,\mathrm{rem}}^{(\ell)}$
+    \Else
+        \State Set $b_{k,\ell}^{\mathrm{req}} \gets \bar b_{k,\ell}$
+    \EndIf
+    \State Set $n_{k,\ell}\gets T_k$ and initialize $\F_{k,\ell}^{(\UL)}$, $\lambda_{k,\ell}^{(\UL,r)}$, and $\lambda_{k,\ell}^{(\UL,p)}$
+    \Repeat
+        \State Update $\F_{k,\ell}^{(\UL)}$ using the uplink Lagrangian \eqref{eq:ul-lagrangian}
+        \State Update $\lambda_{k,\ell}^{(\UL,r)}$ and $\lambda_{k,\ell}^{(\UL,p)}$
+        \State Measure $r_{p,k,\ell}^{(\UL)}$, $r_{c,k,\ell}^{(\UL)}$, and $r_{s,k,\ell}^{(\UL)}$ from \eqref{eq:ul-rp}--\eqref{eq:ul-rs}
+    \Until{the uplink solve satisfies \eqref{eq:kkt-convergence} or \eqref{eq:kkt-stationary-infeasible}}
+    \State Restore the best feasible state if one exists; otherwise restore the best minimum-violation state
+    \State Compute $b_{k,\ell}^{(T)}=\min\!\left\{b_{k,\ell}^{\mathrm{req}},\floor{T_k R_{k,\ell}^{(\UL)}(T_k)}\right\}$
+    \If{$b_{k,\ell}^{(T)} = 0$}
+        \State Set $b_{k,\ell}\gets 0$ and keep $n_{k,\ell}=T_k$
+        \If{payload-completion mode}
+            \State Declare the remaining payload infeasible under the current state and stop
+        \EndIf
+    \ElsIf{$b_{k,\ell}^{(T)} < b_{k,\ell}^{\mathrm{req}}$}
+        \State Commit $b_{k,\ell}=b_{k,\ell}^{(T)}$ and set $n_{k,\ell}=T_k$
+        \State Do not reduce sub-blocklength in this block
+    \Else
+        \State Set $b_{k,\ell}=b_{k,\ell}^{\mathrm{req}}$
+        \While{a smaller candidate sub-blocklength remains feasible after re-optimization}
+            \State Tentatively replace $n_{k,\ell}$ by the next smaller candidate
+            \State Re-solve the candidate state with the same primal-dual loop above
+            \State Restore the best feasible candidate state if one exists; otherwise restore the previously accepted state
+            \If{$\dfrac{b_{k,\ell}}{n_{k,\ell}} \le R_{k,\ell}^{(\UL)}$ and $\norm{\F_{k,\ell}^{(\UL)}}_F^2 \le P_k$}
+                \State Accept the candidate and continue
+            \Else
+                \State Restore the previous accepted sub-blocklength and stop reduction
+            \EndIf
+        \EndWhile
+        \State Commit the smallest accepted $n_{k,\ell}$
+    \EndIf
+    \If{payload-completion mode}
+        \State Update $B_{k,\mathrm{rem}}^{(\ell+1)} \gets B_{k,\mathrm{rem}}^{(\ell)} - b_{k,\ell}$
+    \Else
+        \State Record the shortfall $u_{k,\ell} \gets \bar b_{k,\ell} - b_{k,\ell}$
+    \EndIf
+    \State $\ell \gets \ell + 1$
+\EndWhile
+\end{algorithmic}
+\end{algorithm}
+
+Algorithm~\ref{alg:ul-train-only} solves both uplink scenarios. In payload
+completion mode, the next request is the remaining payload. In fixed continuous
+communication mode, the next request is simply the next prescribed target.
+
+\subsection{Downlink Training Only Method}
+
+In the downlink, a whole active-user block must be solved jointly. The same
+three-phase logic is applied, but now on a coupled active-user set. The method
+first converges the joint full-sub-blocklength precoder at the coherence limits
+$\{T_k\}_{k\in\Aset_\ell}$, then computes the supported bits of all requested
+users, removes users with zero supported service, and only then reduces
+sub-blocklength for the users whose full current requests are already
+supported. This produces the full-block supported service
+\begin{equation}
+b_{k,\ell}^{(T)}
+=
+\min\!\left\{
+b_{k,\ell}^{\mathrm{req}},
+\floor{T_k\,R_{k,\ell}^{(\DL)}(T_k)}
+\right\},
+\qquad k\in\Aset_\ell.
+\label{eq:dl-full-block-service}
+\end{equation}
+
+Users with $b_{k,\ell}^{(T)}=0$ are removed from transmission in that block.
+For users that satisfy
+$b_{k,\ell}^{(T)}=b_{k,\ell}^{\mathrm{req}}$, the method tries to reduce
+sub-blocklength while keeping the already committed bits fixed. Since the block
+is coupled, a candidate reduction may invalidate another user's committed
+service. The method therefore re-optimizes the affected active-user subset
+whenever necessary and accepts a candidate reduction only if all committed bits
+remain feasible.
+
+\begin{algorithm}[H]
+\caption{Training-Only Downlink Block Solver}
+\label{alg:dl-train-only}
+\begin{algorithmic}[1]
+\Require Scenario mode, active-user set $\Aset_\ell$, remaining payloads $\{B_{k,\mathrm{rem}}^{(\ell)}\}_{k\in\Aset_\ell}$ or targets $\{\bar b_{k,\ell}\}_{k\in\Aset_\ell}$, tolerances $\epsilon_p,\epsilon_c,\epsilon_s$
+\Ensure Block plan $\{(b_{k,\ell},n_{k,\ell},\F_{k,\ell}^{(\DL)})\}_{k\in\Aset_\ell}$
+\State Store the requested-user set as $\Aset_\ell^{\mathrm{req}}\gets \Aset_\ell$
+\For{each $k\in\Aset_\ell^{\mathrm{req}}$}
+    \If{payload-completion mode}
+        \State Set $b_{k,\ell}^{\mathrm{req}} \gets B_{k,\mathrm{rem}}^{(\ell)}$
+    \Else
+        \State Set $b_{k,\ell}^{\mathrm{req}} \gets \bar b_{k,\ell}$
+    \EndIf
+    \State Set $n_{k,\ell}\gets T_k$
+\EndFor
+\State Initialize the active-user precoders and multipliers
+\Repeat
+    \State Update the active-user precoders using the block Lagrangian \eqref{eq:dl-lagrangian}
+    \State Update the multipliers $\{\lambda_{k,\ell}^{(\DL,r)}\}$ and $\lambda_{\ell}^{(\DL,p)}$
+    \State Measure $r_{p,\ell}^{(\DL)}$, $r_{c,\ell}^{(\DL)}$, and $r_{s,\ell}^{(\DL)}$ from \eqref{eq:dl-rp}--\eqref{eq:dl-rs}
+\Until{the downlink solve satisfies \eqref{eq:kkt-convergence} or \eqref{eq:kkt-stationary-infeasible}}
+\State Restore the best feasible block state if one exists; otherwise restore the best minimum-violation state
+\For{each active user $k\in\Aset_\ell$}
+    \State Compute $b_{k,\ell}^{(T)}$ from \eqref{eq:dl-full-block-service}
+\EndFor
+\State Set $b_{k,\ell}\gets 0$ for each user satisfying $b_{k,\ell}^{(T)}=0$
+\State Remove users with zero supported service from the transmit set of the block
+\If{the transmit set changes}
+    \State Re-solve the reduced active-user block with the same primal-dual loop above
+    \State Restore the best feasible reduced-set state if one exists; otherwise restore the previously accepted state
+    \For{each remaining active user $k\in\Aset_\ell$}
+        \State Recompute $b_{k,\ell}^{(T)}$ from \eqref{eq:dl-full-block-service}
+    \EndFor
+\EndIf
+\For{each user satisfying $b_{k,\ell}^{(T)}=b_{k,\ell}^{\mathrm{req}}$}
+    \While{a smaller candidate sub-blocklength preserves all already committed bits}
+        \State Tentatively decrease $n_{k,\ell}$ while holding the other active-user sub-blocklengths fixed
+        \State Re-optimize the affected active-user subset with the same primal-dual loop above
+        \State Restore the best feasible candidate state if one exists; otherwise restore the previously accepted state
+        \If{$\dfrac{b_{j,\ell}^{\mathrm{req}}}{n_{j,\ell}} \le R_{j,\ell}^{(\DL)}$ for all active users $j\in\Aset_\ell$ and $\sum_{j\in\Aset_\ell}\norm{\F_{j,\ell}^{(\DL)}}_F^2 \le P_B$}
+            \State Accept the candidate and continue
+        \Else
+            \State Restore the previous accepted sub-blocklength of user $k$ and stop reducing that user
+        \EndIf
+    \EndWhile
+\EndFor
+\For{each requested user $k\in\Aset_\ell^{\mathrm{req}}$}
+    \If{$k\in\Aset_\ell$}
+        \State Set $b_{k,\ell}\gets \min\!\left\{b_{k,\ell}^{\mathrm{req}},\floor{n_{k,\ell}R_{k,\ell}^{(\DL)}(\mathbf n_\ell)}\right\}$
+    \EndIf
+    \If{payload-completion mode}
+        \State Update $B_{k,\mathrm{rem}}^{(\ell+1)} \gets B_{k,\mathrm{rem}}^{(\ell)} - b_{k,\ell}$
+    \Else
+        \State Record the shortfall $u_{k,\ell}\gets \bar b_{k,\ell} - b_{k,\ell}$
+    \EndIf
+\EndFor
+\State Commit the final joint block plan
+\end{algorithmic}
+\end{algorithm}
+
+The training-only downlink method is therefore a \emph{converge first, allocate
+second, reduce third} procedure. This ordering is essential because the
+finite-sub-blocklength rate of each user depends on the full active-user beam set.
+
+\section{Training + Testing Method}
+
+\subsection{Method Principle}
+
+The \emph{Training + Testing Method} separates optimization into two stages.
+During training, a precoder mapping is learned from a collection of queries
+produced by the same finite-sub-blocklength scheduling logic that will later be
+used at test time. During testing, the online optimization step is replaced by
+model inference, followed by the same feasibility checks and the same
+sub-blocklength-reduction logic.
+
+The central training object is a query. In general form, a query
+$q\in\Qset$ contains
+\begin{equation}
+\begin{aligned}
+q
+=
+\bigl(
+&
+\text{channel state},\,
+\text{active-user state},\,
+\text{candidate sub-blocklength state},\\
+&
+\text{bits-to-send state},\,
+\text{covariance state},\,
+\text{reliability target}
+\bigr).
+\end{aligned}
+\label{eq:general-query}
+\end{equation}
+
+Thus, a query is simply one scheduling state at which the model is asked to
+predict a feasible finite-sub-blocklength transmission strategy. In the present
+formulation, the training loss uses \emph{uniform-per-query} averaging, so every
+stored query contributes equally to the empirical objective.
+
+\subsection{Uplink Training + Testing Method}
+
+\subsubsection{Training stage}
+
+For uplink user $k$, a query at block $\ell$ has the form
+\begin{equation}
+q_{k,\ell}^{(\UL)}
+=
+\bigl(
+\Hc_{k,\ell}^{(\UL)},
+\Sig_{k,\ell}^{(\UL)},
+n,
+b_{k,\ell}^{\mathrm{req}},
+\varepsilon_k
+\bigr),
+\label{eq:ul-query}
+\end{equation}
+where $n$ is the candidate sub-blocklength being queried and
+$b_{k,\ell}^{\mathrm{req}}$ is the number of bits to send in that state. The
+query set $\Qset_k^{(\UL)}$ is built by running the same causal block logic
+used by the scheduler itself and recording every visited candidate state. In
+payload completion, the number of bits to send is
+$b_{k,\ell}^{\mathrm{req}} = B_{k,\mathrm{rem}}^{(\ell)}$. In fixed continuous
+communication, it is
+$b_{k,\ell}^{\mathrm{req}} = \bar b_{k,\ell}$.
+
+Let $\theta_k$ denote the trainable parameters of the uplink model for user $k$.
+The uniform-per-query training objective is
+\begin{equation}
+\mathcal{J}_k^{(\UL)}(\theta_k)
+=
+\frac{1}{\lvert\Qset_k^{(\UL)}\rvert}
+\sum_{q\in\Qset_k^{(\UL)}}
+\left(
+-R(q;\theta_k)
++
+\lambda_k^{(r)}\Bigl[\frac{b^{\mathrm{req}}(q)}{n(q)}-R(q;\theta_k)\Bigr]_+
++
+\lambda_k^{(p)}\bigl[P(q,\theta_k)-P_k\bigr]_+
+\right),
+\label{eq:ul-training-objective}
+\end{equation}
+where $R(q;\theta_k)$ is the finite-sub-blocklength rate induced by the predicted
+uplink precoder, $n(q)$ is the queried sub-blocklength, $b^{\mathrm{req}}(q)$ is
+the requested bit count encoded in query $q$, and $P(q,\theta_k)$ is the
+transmit power induced by the predicted precoder. The coefficient
+$\lambda_k^{(r)}$ penalizes rate shortfall relative to the requested service,
+whereas $\lambda_k^{(p)}$ penalizes power-budget violation.
+
+\begin{algorithm}[H]
+\caption{Uplink Training Stage}
+\label{alg:ul-train-stage}
+\begin{algorithmic}[1]
+\Require Scenario mode, training episodes for uplink user $k$
+\Ensure Query set $\Qset_k^{(\UL)}$ and trained parameters $\theta_k$
+\State Initialize $\Qset_k^{(\UL)}\gets\varnothing$
+\For{each training episode}
+    \If{payload-completion mode}
+        \State Initialize the episode remainder state from the episode payload
+    \EndIf
+    \For{each visited block $\ell$ of user $k$}
+        \State Set $b_{k,\ell}^{\mathrm{req}} \gets B_{k,\mathrm{rem}}^{(\ell)}$ in payload completion, or $b_{k,\ell}^{\mathrm{req}} \gets \bar b_{k,\ell}$ in fixed continuous communication
+        \State Set the first candidate sub-blocklength to $n\gets T_k$
+        \While{$n$ is under consideration}
+            \State Form the query $q_{k,\ell}^{(\UL)}$ in \eqref{eq:ul-query} and add it to $\Qset_k^{(\UL)}$
+            \State Evaluate the current state and compute
+            \[
+            b_{k,\ell}^{(n)}
+            =
+            \min\!\left\{
+            b_{k,\ell}^{\mathrm{req}},
+            \floor{n\,R_{k,\ell}^{(\UL)}(n)}
+            \right\}
+            \]
+            \If{$b_{k,\ell}^{(n)} < b_{k,\ell}^{\mathrm{req}}$}
+                \State Stop collecting additional queries for this sub-block
+            \Else
+                \State Replace $n$ by the next smaller candidate sub-blocklength
+            \EndIf
+        \EndWhile
+        \If{payload-completion mode}
+            \State Advance the episode remainder according to the committed service of the generating schedule
+        \Else
+            \State Advance to the next prescribed target of the generating schedule
+        \EndIf
+    \EndFor
+\EndFor
+\State Train $\theta_k$ by minimizing \eqref{eq:ul-training-objective}
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Testing stage}
+
+At test time, the trained model replaces the online uplink solve. The block is
+first examined at the full available sub-blocklength. If the full block does not
+support the complete request, the scheduler commits only the supported service
+at $n=T_k$. If the full block already supports the entire request, the
+sub-blocklength is reduced and the model is queried again at smaller candidate
+sub-blocklengths until the smallest feasible one is identified.
+
+\begin{algorithm}[H]
+\caption{Uplink Testing Stage}
+\label{alg:ul-test-stage}
+\begin{algorithmic}[1]
+\Require Scenario mode, trained uplink model $\theta_k$, user $k$, payload $B_k$ or prescribed targets $\{\bar b_{k,\ell}\}$
+\Ensure Final uplink block plan
+\If{payload-completion mode}
+    \State Set $B_{k,\mathrm{rem}}^{(1)} \gets B_k$
+\EndIf
+\For{each visited block $\ell$}
+    \State Set $b_{k,\ell}^{\mathrm{req}} \gets B_{k,\mathrm{rem}}^{(\ell)}$ in payload completion, or $b_{k,\ell}^{\mathrm{req}} \gets \bar b_{k,\ell}$ in fixed continuous communication
+    \State Infer the uplink precoder at $n=T_k$
+    \State Compute the full-block supported service
+    \[
+    b_{k,\ell}^{(T)}
+    =
+    \min\!\left\{
+    b_{k,\ell}^{\mathrm{req}},
+    \floor{T_k\,R_{k,\ell}^{(\UL)}(T_k)}
+    \right\}
+    \]
+    \If{$b_{k,\ell}^{(T)} < b_{k,\ell}^{\mathrm{req}}$}
+        \State Commit $n_{k,\ell}=T_k$ and $b_{k,\ell}=b_{k,\ell}^{(T)}$
+    \Else
+        \State Set $b_{k,\ell}=b_{k,\ell}^{\mathrm{req}}$
+        \State Set $n_{k,\ell}\gets T_k$
+        \While{a smaller candidate sub-blocklength exists}
+            \State Tentatively replace $n_{k,\ell}$ by the next smaller candidate
+            \State Infer the uplink precoder for the updated query
+            \If{$\dfrac{b_{k,\ell}^{\mathrm{req}}}{n_{k,\ell}} \le R_{k,\ell}^{(\UL)}(n_{k,\ell})$ and $P(q_{k,\ell}^{(\UL)},\theta_k)\le P_k$}
+                \State Accept the reduction and continue
+            \Else
+                \State Restore the previous sub-blocklength and stop reduction
+            \EndIf
+        \EndWhile
+    \EndIf
+    \If{payload-completion mode}
+        \State Update $B_{k,\mathrm{rem}}^{(\ell+1)} \gets B_{k,\mathrm{rem}}^{(\ell)} - b_{k,\ell}$
+    \Else
+        \State Record the shortfall $u_{k,\ell}\gets \bar b_{k,\ell} - b_{k,\ell}$
+    \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Downlink Training + Testing Method}
+
+\subsubsection{Training stage}
+
+The downlink training state is joint across the active users of a block. A
+query for block $\ell$ can be written as
+\begin{equation}
+q_{\ell}^{(\DL)}
+=
+\bigl(
+\{\Hc_{k,\ell}^{(\DL)}\}_{k\in\Aset_\ell},
+\Aset_\ell,
+\{n_{k,\ell}\}_{k\in\Aset_\ell},
+\{b_{k,\ell}^{\mathrm{req}}\}_{k\in\Aset_\ell},
+\{\Sig_{k,\ell}^{(\DL)}\}_{k\in\Aset_\ell},
+\{\varepsilon_k\}_{k\in\Aset_\ell}
+\bigr),
+\label{eq:dl-query}
+\end{equation}
+where $\Aset_\ell$ is the active-user set of the block. The query set
+$\Qset^{(\DL)}$ is built causally by running the same joint scheduling logic
+used at test time and recording every visited joint state. In payload
+completion, the number of bits to send is
+$b_{k,\ell}^{\mathrm{req}} = B_{k,\mathrm{rem}}^{(\ell)}$. In fixed continuous
+communication, it is
+$b_{k,\ell}^{\mathrm{req}} = \bar b_{k,\ell}$.
+
+Let $\theta=\{\theta_k\}_{k=1}^K$ denote the trainable parameters of the
+downlink model collection. The uniform-per-query training objective is
+\begin{equation}
+\begin{aligned}
+\mathcal{J}^{(\DL)}(\theta)
+=
+\frac{1}{\lvert\Qset^{(\DL)}\rvert}
+\sum_{q\in\Qset^{(\DL)}}
+\Biggl(
+&-\sum_{k\in\Aset(q)} R_k(q;\theta)\\
+&+ \sum_{k\in\Aset(q)}
+\lambda_k^{(r)}
+\Bigl[\frac{b_k^{\mathrm{req}}(q)}{n_k(q)}-R_k(q;\theta)\Bigr]_+\\
+&+ \lambda^{(p)}
+\Bigl[
+\sum_{k\in\Aset(q)}P_k(q,\theta)-P_B
+\Bigr]_+
+\Biggr)
+\Biggr).
+\end{aligned}
+\label{eq:dl-training-objective}
+\end{equation}
+where $\Aset(q)$ is the active-user set encoded in query $q$, $n_k(q)$ is the
+sub-blocklength associated with active user $k$ in that query,
+$b_k^{\mathrm{req}}(q)$ is the number of bits to send for active user $k$, and
+$P_k(q,\theta)$ is the transmit power induced for active user $k$ by the
+predicted downlink precoder. The penalty coefficients $\lambda_k^{(r)}$ and
+$\lambda^{(p)}$ enforce the rate constraints and the total base-station power
+constraint, respectively.
+
+\begin{algorithm}[H]
+\caption{Downlink Training Stage}
+\label{alg:dl-train-stage}
+\begin{algorithmic}[1]
+\Require Scenario mode and training episodes
+\Ensure Query set $\Qset^{(\DL)}$ and trained parameters $\theta$
+\State Initialize $\Qset^{(\DL)}\gets\varnothing$
+\For{each training episode}
+    \For{each visited communication block $\ell$}
+        \State Determine the active-user set $\Aset_\ell$
+        \State Store the queried-user set as $\Aset_\ell^{\mathrm{req}}\gets \Aset_\ell$
+        \For{each $k\in\Aset_\ell$}
+            \State Set $b_{k,\ell}^{\mathrm{req}} \gets B_{k,\mathrm{rem}}^{(\ell)}$ in payload completion, or $b_{k,\ell}^{\mathrm{req}} \gets \bar b_{k,\ell}$ in fixed continuous communication
+            \State Initialize $n_{k,\ell}\gets T_k$
+        \EndFor
+        \While{the current joint sub-blocklength state is under consideration}
+            \State Form the joint query $q_{\ell}^{(\DL)}$ in \eqref{eq:dl-query} and add it to $\Qset^{(\DL)}$
+            \State Evaluate the current joint state and compute, for each $k\in\Aset_\ell$,
+            \[
+            b_{k,\ell}^{(\mathbf n)}
+            =
+            \min\!\left\{
+            b_{k,\ell}^{\mathrm{req}},
+            \floor{n_{k,\ell}\,R_{k,\ell}^{(\DL)}(\mathbf n_\ell)}
+            \right\}
+            \]
+            \State Remove users with $b_{k,\ell}^{(\mathbf n)}=0$ from the transmit set if such users exist
+            \If{no user satisfies $b_{k,\ell}^{(\mathbf n)} = b_{k,\ell}^{\mathrm{req}}$}
+                \State Stop collecting additional queries for this block
+            \Else
+                \State Decrease the candidate sub-blocklengths of users already satisfying $b_{k,\ell}^{(\mathbf n)} = b_{k,\ell}^{\mathrm{req}}$
+            \EndIf
+        \EndWhile
+        \If{payload-completion mode}
+            \State Advance the episode remainders according to the committed service of the generating schedule
+        \Else
+            \State Advance to the next prescribed downlink block of the generating schedule
+        \EndIf
+    \EndFor
+\EndFor
+\State Train $\theta$ by minimizing \eqref{eq:dl-training-objective}
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Testing stage}
+
+At test time, the learned downlink model is queried on the current active-user
+state of the block. The full joint sub-blocklength vector is evaluated first. Users
+with zero supported service are removed from the transmit set, and joint
+sub-blocklength reduction is attempted only for users whose full requested service
+is already supported at the current state.
+
+\begin{algorithm}[H]
+\caption{Downlink Testing Stage}
+\label{alg:dl-test-stage}
+\begin{algorithmic}[1]
+\Require Scenario mode, trained downlink model $\theta$, remaining payloads $\{B_{k,\mathrm{rem}}^{(\ell)}\}$ or prescribed targets $\{\bar b_{k,\ell}\}$
+\Ensure Final downlink block plan
+\For{each communication block $\ell$}
+    \State Determine the active-user set $\Aset_\ell$
+    \State Store the requested-user set as $\Aset_\ell^{\mathrm{req}}\gets \Aset_\ell$
+    \For{each $k\in\Aset_\ell$}
+        \State Set $b_{k,\ell}^{\mathrm{req}} \gets B_{k,\mathrm{rem}}^{(\ell)}$ in payload completion, or $b_{k,\ell}^{\mathrm{req}} \gets \bar b_{k,\ell}$ in fixed continuous communication
+        \State Initialize $n_{k,\ell}\gets T_k$
+    \EndFor
+    \State Infer the joint downlink precoders at the full sub-blocklength vector
+    \State Compute, for each $k\in\Aset_\ell$,
+    \[
+    b_{k,\ell}^{(T)}
+    =
+    \min\!\left\{
+    b_{k,\ell}^{\mathrm{req}},
+    \floor{T_k\,R_{k,\ell}^{(\DL)}(\mathbf n_\ell)}
+    \right\}
+    \]
+    \State Set $b_{k,\ell}\gets 0$ for each user satisfying $b_{k,\ell}^{(T)}=0$
+    \State Remove users with $b_{k,\ell}^{(T)}=0$ from the transmit set and re-infer the joint precoders if the active-user set changes
+    \For{each user satisfying $b_{k,\ell}^{(T)} = b_{k,\ell}^{\mathrm{req}}$}
+        \While{a smaller candidate sub-blocklength exists for that user}
+            \State Tentatively decrease $n_{k,\ell}$ while holding the other active-user sub-blocklengths fixed
+            \State Infer the joint downlink precoders for the updated state
+            \If{$\dfrac{b_{j,\ell}^{\mathrm{req}}}{n_{j,\ell}} \le R_{j,\ell}^{(\DL)}(\mathbf n_\ell)$ for all active users $j$ and $\sum_{j\in\Aset_\ell}P_j(q_{\ell}^{(\DL)},\theta)\le P_B$}
+                \State Accept the reduction
+            \Else
+                \State Restore the previous sub-blocklength of user $k$ and stop reducing that user
+            \EndIf
+        \EndWhile
+    \EndFor
+    \For{each remaining active user $k\in\Aset_\ell$}
+        \State Set $b_{k,\ell}\gets \min\!\left\{b_{k,\ell}^{\mathrm{req}},\floor{n_{k,\ell}R_{k,\ell}^{(\DL)}(\mathbf n_\ell)}\right\}$
+    \EndFor
+    \For{each requested user $k\in\Aset_\ell^{\mathrm{req}}$}
+        \If{payload-completion mode}
+            \State Update $B_{k,\mathrm{rem}}^{(\ell+1)} \gets B_{k,\mathrm{rem}}^{(\ell)} - b_{k,\ell}$
+        \Else
+            \State Record the shortfall $u_{k,\ell}\gets \bar b_{k,\ell} - b_{k,\ell}$
+        \EndIf
+    \EndFor
+    \State Commit the final active-user set, sub-blocklengths, and transmitted bits of the block
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\section{Conclusion}
+
+The report has recast the current work into a theory-centered structure. The
+development proceeds from a common finite-sub-blocklength model and communication
+scenarios, to separate uplink and downlink formulations, and then to two
+solution frameworks.
+
+The uplink problem is characterized by user-wise sequential block creation under
+finite-sub-blocklength feasibility. The downlink problem is characterized by a
+jointly coupled interference structure that requires block-level coordination
+before blockwise service can be committed.
+
+The \emph{Training Only Method} solves each decision state online through
+constrained primal-dual optimization and feasibility-guided sub-blocklength
+reduction. The \emph{Training + Testing Method} replaces online optimization by
+learned precoder inference, but retains the same finite-sub-blocklength service
+logic through query-based offline training, feasibility checks, and causal
+sub-blocklength reduction.
+
+Taken together, these formulations provide a complete theoretical description of
+the current uplink and downlink methodology without relying on implementation
+details or numerical experiment summaries.
+
+\begin{thebibliography}{1}
+
+\bibitem{polyanskiy2010}
+Y.~Polyanskiy, H.~V.~Poor, and S.~Verd\'u,
+``Channel coding rate in the finite sub-blocklength regime,''
+\emph{IEEE Transactions on Information Theory},
+vol.~56, no.~5, pp.~2307--2359, 2010.
+
+\end{thebibliography}
+
+\end{document}

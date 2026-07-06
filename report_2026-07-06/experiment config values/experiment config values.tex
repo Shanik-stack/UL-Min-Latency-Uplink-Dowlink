@@ -1,0 +1,144 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+
+\setlength{\LTpre}{0pt}
+\setlength{\LTpost}{0pt}
+\renewcommand{\arraystretch}{1.12}
+
+\title{Experiment Configuration Values}
+\author{}
+\date{July 6, 2026}
+
+\begin{document}
+
+\maketitle
+
+\section*{Uplink}
+
+\subsection*{System and Scenario Values}
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.62\textwidth} >{\raggedright\arraybackslash}p{0.28\textwidth}}
+\toprule
+Variable & Value \\
+\midrule
+\endhead
+Users \((K)\) & 3 \\
+Receive antennas per user \((N_{r,k})\) & \((16,16,16)\) \\
+Transmit antennas per user \((N_{t,k})\) & \((4,4,4)\) \\
+Blocklength limits \((T_k)\) & \((50,60,80)\) \\
+Configured \(B\) for payload completion \((B_k)\) & \((1000,2000,3000)\) \\
+Configured \(B\) for continuous communication \((B_k)\) & \((200,400,600)\) \\
+Power \((P_k)\) & \((30,30,30)\) \\
+SNR (dB) & \((8,8,8)\) \\
+Symbol rate \((f_{s,k})\) (symbols/s) & \((15000,15000,15000)\) \\
+Error probability \((\varepsilon_k)\) & \((10^{-10},10^{-10},10^{-10})\) \\
+Continuous-communication blocks \((L)\) & 5 \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Optimization and Training Values}
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.62\textwidth} >{\raggedright\arraybackslash}p{0.28\textwidth}}
+\toprule
+Variable & Value \\
+\midrule
+\endhead
+Initial rate-constraint multiplier \((\lambda_{k,\ell}^{(\mathrm{UL},r)})\) & 0.1 \\
+Initial power-constraint multiplier \((\lambda_{k,\ell}^{(\mathrm{UL},p)})\) & 0.01 \\
+Maximum convergence epochs & 120 \\
+Network learning rate & 0.01 \\
+Rate-constraint learning rate & 0.01 \\
+Power-constraint learning rate & 0.001 \\
+Augmented-Lagrangian rho for rate constraint* & 1.0 \\
+Augmented-Lagrangian rho for power constraint* & 1.0 \\
+Print interval (epochs) & 1 \\
+KKT primal tolerance \((r_p)\) & \(10^{-5}\) \\
+KKT complementarity tolerance \((r_c)\) & \(10^{-5}\) \\
+KKT stationarity tolerance \((r_s)\) & \(10^{-3}\) \\
+Reduced-\(n\) logging interval & 10 \\
+Testing seed & 3 \\
+Number of training seeds & 3 \\
+Training maximum epochs & 100 \\
+Fallback target bits & 1 \\
+Coarse \(n\)-step for training & 5 \\
+Full-block rollout weight* & 1.0 \\
+Tail-feasible rollout weight* & 1.0 \\
+Tail-frontier rollout weight* & 1.5 \\
+Maximum total blocks & 256 \\
+Minimum \(n\) value & 1 \\
+\(n\)-search step & 1 \\
+\bottomrule
+\end{longtable}
+
+\section*{Downlink}
+
+\subsection*{System and Scenario Values}
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.62\textwidth} >{\raggedright\arraybackslash}p{0.28\textwidth}}
+\toprule
+Variable & Value \\
+\midrule
+\endhead
+Users \((K)\) & 3 \\
+Base-station antennas \((N_b)\) & 16 \\
+Receive antennas per user \((N_{r,k})\) & \((4,4,4)\) \\
+Blocklength limits \((T_k)\) & \((50,60,80)\) \\
+Configured \(B\) for payload completion \((B_k)\) & \((1000,2000,3000)\) \\
+Configured \(B\) for continuous communication \((B_k)\) & \((200,400,600)\) \\
+Power \((P_k)\) & \((30,30,30)\) \\
+SNR (dB) & \((8,8,8)\) \\
+Symbol rate \((f_{s,k})\) (symbols/s) & \((15000,15000,15000)\) \\
+Error probability \((\varepsilon_k)\) & \((10^{-10},10^{-10},10^{-10})\) \\
+Initial bits per symbol & \((4,4,4)\) \\
+Continuous-communication blocks \((L)\) & 5 \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Optimization and Training Values}
+\footnotesize
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.62\textwidth} >{\raggedright\arraybackslash}p{0.28\textwidth}}
+\toprule
+Variable & Value \\
+\midrule
+\endhead
+Maximum convergence epochs & 120 \\
+Print interval (epochs) & 5 \\
+User update steps per epoch & 1 \\
+User update learning rate & 0.001 \\
+Initial rate-constraint multiplier \((\lambda_{k,\ell}^{(\mathrm{DL},r)})\) & 0.1 \\
+Initial power-constraint multiplier \((\lambda_{\ell}^{(\mathrm{DL},p)})\) & 0.01 \\
+Rate-constraint learning rate & 0.01 \\
+Power-constraint learning rate & 0.01 (payload completion), 0.001 (continuous communication) \\
+Augmented-Lagrangian rho for rate constraint* & 1.0 \\
+Augmented-Lagrangian rho for power constraint* & 1.0 \\
+KKT primal tolerance \((r_p)\) & \(10^{-5}\) \\
+KKT complementarity tolerance \((r_c)\) & \(10^{-5}\) \\
+KKT stationarity tolerance \((r_s)\) & \(10^{-3}\) \\
+Testing seed & 3 \\
+Number of training seeds & 3 \\
+Training maximum epochs & 120 \\
+Fallback target bits & 1 \\
+Coarse \(n\)-step for training & 5 \\
+Full-block rollout weight* & 1.0 \\
+Tail-feasible rollout weight* & 1.0 \\
+Tail-frontier rollout weight* & 1.5 \\
+Remaining-bits weight power & 1.0 \\
+Minimum user weight & 0.25 \\
+Network-rate weight* & 0.15 \\
+Latency-penalty weight & 0.5 \\
+Maximum total blocks & 256 \\
+Minimum \(n\) value & 1 \\
+\(n\)-search step & 1 \\
+\bottomrule
+\end{longtable}
+
+\vspace{0.5em}
+\noindent\footnotesize * Configured numerically but inactive under the reported settings.
+
+\end{document}

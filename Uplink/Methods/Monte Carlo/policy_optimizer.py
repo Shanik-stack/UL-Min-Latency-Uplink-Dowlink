@@ -43,6 +43,8 @@ from terminal_logging import format_log_line, format_progress_log_line
 from uplink_rate_model import build_uplink_rate_covariance
 
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
+MONTE_CARLO_ROLLOUT_WEIGHTING_MODES = {"phase_balanced", "uniform_per_query"}
+_Q_INV_CACHE: dict[tuple[str, int | None, float], torch.Tensor] = {}
 
 
 def _to_complex_numpy(x) -> np.ndarray:
@@ -54,13 +56,19 @@ def _to_complex_numpy(x) -> np.ndarray:
 
 
 def _q_inv_torch(epsilon: float, device: torch.device = DEVICE) -> torch.Tensor:
+    cache_key = (str(device.type), device.index, round(float(epsilon), 12))
+    cached = _Q_INV_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
     normal = torch.distributions.Normal(
         torch.tensor(0.0, device=device, dtype=torch.float64),
         torch.tensor(1.0, device=device, dtype=torch.float64),
     )
     p = torch.tensor(1.0 - float(epsilon), device=device, dtype=torch.float64)
     p = torch.clamp(p, 1e-12, 1.0 - 1e-12)
-    return normal.icdf(p).to(dtype=torch.float32)
+    value = normal.icdf(p).to(dtype=torch.float32)
+    _Q_INV_CACHE[cache_key] = value
+    return value
 
 
 def _compute_r_fbl_torch(
@@ -262,11 +270,13 @@ def estimate_initial_random_precoder_schedule_for_scenario(
     sim_cfg: dict[str, Any],
     *,
     seed: int,
+    allow_n_reduction: bool = True,
 ) -> dict[str, Any]:
     return shared_estimate_initial_random_precoder_schedule_for_scenario(
         system_params,
         sim_cfg,
         seed=int(seed),
+        allow_n_reduction=allow_n_reduction,
     )
 
 
@@ -432,12 +442,43 @@ def _resolve_uplink_rollout_phase_weights(sim_cfg: dict[str, Any]) -> dict[str, 
     }
 
 
+def _resolve_uplink_rollout_query_weighting_mode(sim_cfg: dict[str, Any]) -> str:
+    aliases = {
+        "phase_balanced": "phase_balanced",
+        "phase": "phase_balanced",
+        "enabled": "phase_balanced",
+        "on": "phase_balanced",
+        "uniform_per_query": "uniform_per_query",
+        "uniform": "uniform_per_query",
+        "disabled": "uniform_per_query",
+        "off": "uniform_per_query",
+        "none": "uniform_per_query",
+    }
+    raw_mode = str(sim_cfg.get("monte_carlo_rollout_query_weighting_mode", "phase_balanced")).strip().lower()
+    resolved = aliases.get(raw_mode)
+    if resolved not in MONTE_CARLO_ROLLOUT_WEIGHTING_MODES:
+        known = ", ".join(sorted(MONTE_CARLO_ROLLOUT_WEIGHTING_MODES))
+        raise ValueError(
+            f"Unknown Monte Carlo rollout query weighting mode '{raw_mode}'. Expected one of: {known}"
+        )
+    return resolved
+
+
 def _normalize_uplink_episode_query_weights(
     episode_queries: Sequence[dict[str, Any]],
     phase_weights: dict[str, float],
+    *,
+    weighting_mode: str,
 ) -> list[dict[str, Any]]:
     if len(episode_queries) == 0:
         return []
+    if str(weighting_mode) == "uniform_per_query":
+        normalized: list[dict[str, Any]] = []
+        for query in episode_queries:
+            updated = dict(query)
+            updated["query_weight"] = 1.0
+            normalized.append(updated)
+        return normalized
     phase_counts: dict[str, int] = {}
     for query in episode_queries:
         phase = str(query.get("rollout_phase", "full_block"))
@@ -451,6 +492,17 @@ def _normalize_uplink_episode_query_weights(
         updated["query_weight"] = float(weight)
         normalized.append(updated)
     return normalized
+
+
+def _replace_snapshot_block(
+    snapshot: Sequence[Sequence[np.ndarray]],
+    user: int,
+    block: int,
+    precoder: np.ndarray,
+) -> list[list[np.ndarray]]:
+    replaced = [list(user_blocks) for user_blocks in snapshot]
+    replaced[int(user)][int(block)] = precoder
+    return replaced
 
 
 def _build_uplink_rollout_query(
@@ -519,6 +571,7 @@ def _collect_uplink_payload_rollout_queries_for_episode(
     K = int(system_params["K"])
     system = UplinkSystem(system_params, seed=int(seed))
     phase_weights = _resolve_uplink_rollout_phase_weights(sim_cfg)
+    weighting_mode = _resolve_uplink_rollout_query_weighting_mode(sim_cfg)
     remaining = np.asarray(scenario["payload_bits_per_user"], dtype=int).copy()
     max_blocks = int(sim_cfg.get("max_total_blocks", 256))
     queries_by_user: list[list[dict[str, Any]]] = [[] for _ in range(K)]
@@ -553,8 +606,7 @@ def _collect_uplink_payload_rollout_queries_for_episode(
                 P=P,
                 device=DEVICE,
             )
-            snapshot_candidate = copy.deepcopy(snapshot_full)
-            snapshot_candidate[int(k)][int(block)] = F_T
+            snapshot_candidate = _replace_snapshot_block(snapshot_full, int(k), int(block), F_T)
             cov_T = build_uplink_rate_covariance(
                 system,
                 sim_cfg,
@@ -705,7 +757,11 @@ def _collect_uplink_payload_rollout_queries_for_episode(
         block += 1
 
     return [
-        _normalize_uplink_episode_query_weights(user_queries, phase_weights)
+        _normalize_uplink_episode_query_weights(
+            user_queries,
+            phase_weights,
+            weighting_mode=weighting_mode,
+        )
         for user_queries in queries_by_user
     ]
 
@@ -723,6 +779,7 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
     K = int(system_params["K"])
     system = UplinkSystem(system_params, seed=int(seed))
     phase_weights = _resolve_uplink_rollout_phase_weights(sim_cfg)
+    weighting_mode = _resolve_uplink_rollout_query_weighting_mode(sim_cfg)
     queries_by_user: list[list[dict[str, Any]]] = [[] for _ in range(K)]
 
     for block in range(num_blocks):
@@ -750,8 +807,7 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
                 P=P,
                 device=DEVICE,
             )
-            snapshot_candidate = copy.deepcopy(snapshot_full)
-            snapshot_candidate[int(k)][int(block)] = F_T
+            snapshot_candidate = _replace_snapshot_block(snapshot_full, int(k), int(block), F_T)
             cov_T = build_uplink_rate_covariance(
                 system,
                 sim_cfg,
@@ -896,7 +952,11 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
                 queries_by_user[int(k)].append(first_infeasible_query)
 
     return [
-        _normalize_uplink_episode_query_weights(user_queries, phase_weights)
+        _normalize_uplink_episode_query_weights(
+            user_queries,
+            phase_weights,
+            weighting_mode=weighting_mode,
+        )
         for user_queries in queries_by_user
     ]
 
@@ -1046,6 +1106,10 @@ def _build_post_training_summary(
         "base_dataset_kind": dataset_summary.get("base_dataset_kind", "channel_episodes_only"),
         "total_training_channel_episodes": int(dataset_summary.get("total_channel_episodes", 0)),
         "rollout_anchor_bits_mode": "derived_online_from_current_episode_served_bits",
+        "rollout_query_weighting_mode": str(
+            training_history.get("rollout_query_weighting_mode", "phase_balanced")
+        ),
+        "rollout_phase_weights": dict(training_history.get("rollout_phase_weights", {})),
         "cumulative_rollout_queries_by_n_kl": training_history.get("cumulative_rollout_queries_by_n_kl", {}),
         "cumulative_frontier_rollout_queries_by_n_kl": training_history.get(
             "cumulative_frontier_rollout_queries_by_n_kl",
@@ -1164,6 +1228,8 @@ def train_blocklength_aware_precoder_net(
     )
     training_episodes = build_training_dataset(cfg_name, train_seeds)
     dataset_summary = summarize_training_dataset(training_episodes)
+    rollout_phase_weights = _resolve_uplink_rollout_phase_weights(sim_cfg)
+    rollout_query_weighting_mode = _resolve_uplink_rollout_query_weighting_mode(sim_cfg)
     training_history = {
         "per_user_lagrangian": [[] for _ in range(K)],
         "per_user_rate": [[] for _ in range(K)],
@@ -1179,6 +1245,8 @@ def train_blocklength_aware_precoder_net(
         "avg_power_violation_over_users": [],
         "dataset_summary": dataset_summary,
         "rollout_query_summaries_per_user": [[] for _ in range(K)],
+        "rollout_phase_weights": dict(rollout_phase_weights),
+        "rollout_query_weighting_mode": str(rollout_query_weighting_mode),
         "configured_max_epochs": int(max_epochs),
         "training_objective": "scenario_driven_episode_rollout_lagrangian_user_finite_blocklength_rate",
     }
@@ -1322,11 +1390,11 @@ def train_blocklength_aware_precoder_net(
                 for idx in batch_idx:
                     query = rollout_queries[int(idx)]
                     query_weight = float(query.get("query_weight", 1.0))
-                    H_t = torch.tensor(query["H"], dtype=torch.complex64, device=DEVICE)
+                    H_t = torch.as_tensor(query["H"], dtype=torch.complex64, device=DEVICE)
                     noise_cov_t = (
                         None
                         if query.get("noise_plus_interference_cov") is None
-                        else torch.tensor(
+                        else torch.as_tensor(
                             query["noise_plus_interference_cov"],
                             dtype=torch.complex64,
                             device=DEVICE,
@@ -1352,7 +1420,7 @@ def train_blocklength_aware_precoder_net(
                     )
                     power = (torch.linalg.norm(pred_t, ord="fro") ** 2).real
                     required_rate = float(query.get("required_rate", 0.0))
-                    rate_violation = torch.tensor(required_rate, dtype=torch.float32, device=DEVICE) - rate
+                    rate_violation = rate.new_tensor(required_rate) - rate
                     power_violation = power - float(query["P"])
                     rate_violation_pos = _constraint_violation_activation(rate_violation, constraint_loss_form)
                     power_violation_pos = _constraint_violation_activation(power_violation, constraint_loss_form)
@@ -1680,8 +1748,7 @@ def _evaluate_blocklength_precoder_net_fixed_block_targets(
                 P=P,
                 device=DEVICE,
             )
-            snapshot_candidate = copy.deepcopy(snapshot_full)
-            snapshot_candidate[k][block] = F_T
+            snapshot_candidate = _replace_snapshot_block(snapshot_full, int(k), int(block), F_T)
             cov_T = build_uplink_rate_covariance(
                 uplinksystem,
                 sim_cfg,
@@ -1765,8 +1832,7 @@ def _evaluate_blocklength_precoder_net_fixed_block_targets(
                     P=P,
                     device=DEVICE,
                 )
-                snapshot_candidate = copy.deepcopy(snapshot_full)
-                snapshot_candidate[k][block] = F_n
+                snapshot_candidate = _replace_snapshot_block(snapshot_full, int(k), int(block), F_n)
                 cov_n = build_uplink_rate_covariance(
                     uplinksystem,
                     sim_cfg,
@@ -1904,8 +1970,7 @@ def evaluate_blocklength_precoder_net(
                 P=P,
                 device=DEVICE,
             )
-            snapshot_candidate = copy.deepcopy(snapshot_full)
-            snapshot_candidate[k][ell] = F_T
+            snapshot_candidate = _replace_snapshot_block(snapshot_full, int(k), int(ell), F_T)
             cov_T = build_uplink_rate_covariance(
                 uplinksystem,
                 sim_cfg,
@@ -1985,8 +2050,7 @@ def evaluate_blocklength_precoder_net(
                     P=P,
                     device=DEVICE,
                 )
-                snapshot_candidate = copy.deepcopy(snapshot_full)
-                snapshot_candidate[k][ell] = F_n
+                snapshot_candidate = _replace_snapshot_block(snapshot_full, int(k), int(ell), F_n)
                 cov_n = build_uplink_rate_covariance(
                     uplinksystem,
                     sim_cfg,

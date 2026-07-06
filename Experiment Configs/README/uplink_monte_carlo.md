@@ -79,6 +79,14 @@ The uplink Monte Carlo method already uses one precoder net per user.
     feasible `n_kl` frontier.
   - Increasing this sharpens the learned feasible boundary.
 
+- `simulation.monte_carlo_rollout_query_weighting_mode`
+  - Controls whether rollout queries are reweighted before the training loss is
+    formed.
+  - `phase_balanced`: current behavior. Queries are balanced by rollout phase,
+    using the three phase weights above.
+  - `uniform_per_query`: disables rollout `n_kl` weighting. Every visited query
+    contributes with weight `1.0`.
+
 ### Training Loss And Dual Variables
 
 - `simulation.initial_lambda_rate_constraint`

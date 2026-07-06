@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Sequence
 
 import numpy as np
@@ -98,7 +99,7 @@ def _normalize_float_vector(
     if isinstance(values, torch.Tensor):
         vector = values.to(device=device, dtype=torch.float32).reshape(1, -1)
     else:
-        vector = torch.tensor([list(values)], dtype=torch.float32, device=device)
+        vector = torch.as_tensor(list(values), dtype=torch.float32, device=device).reshape(1, -1)
     if int(vector.shape[1]) < int(length):
         pad_width = int(length) - int(vector.shape[1])
         vector = torch.cat(
@@ -136,20 +137,17 @@ def split_full_bs_precoder_torch(
 
 def project_precoder_power(Fmat: torch.Tensor, power_limit: float, eps: float = 1e-12) -> torch.Tensor:
     fro = torch.linalg.norm(Fmat, ord="fro").real
+    sqrt_power_limit = math.sqrt(max(float(power_limit), 0.0))
     if float(fro.detach().cpu()) <= float(eps):
         fallback = torch.zeros_like(Fmat)
         diag_dim = min(int(Fmat.shape[0]), int(Fmat.shape[1]))
         fallback[:diag_dim, :diag_dim] = torch.eye(diag_dim, dtype=Fmat.dtype, device=Fmat.device)
         fro = torch.linalg.norm(fallback, ord="fro").real
         return fallback * (
-            (
-                torch.sqrt(torch.tensor(float(power_limit), device=Fmat.device, dtype=torch.float32)) / (fro + eps)
-            ) * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
+            (sqrt_power_limit / (fro + eps)) * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
         ).to(Fmat.dtype)
 
-    scale = (
-        torch.sqrt(torch.tensor(float(power_limit), device=Fmat.device, dtype=torch.float32)) / (fro + eps)
-    ) * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
+    scale = (sqrt_power_limit / (fro + eps)) * (1.0 - float(POWER_PROJECTION_SAFETY_MARGIN))
     return Fmat * scale.to(Fmat.dtype)
 
 
@@ -326,11 +324,7 @@ class ChannelToPrecoderNet(nn.Module):
             x = torch.cat(
                 [
                     x,
-                    torch.tensor(
-                        [[(0.0 if user_index is None else float(user_index)) / denom]],
-                        dtype=torch.float32,
-                        device=H_kl.device,
-                    ),
+                    x.new_tensor([[(0.0 if user_index is None else float(user_index)) / denom]]),
                 ],
                 dim=1,
             )
@@ -426,7 +420,7 @@ class BlockContextAndInterferenceToPrecoderNet(nn.Module):
         if isinstance(active_mask, torch.Tensor):
             mask_vals = active_mask.to(device=device, dtype=torch.float32).reshape(1, -1)
         else:
-            mask_vals = torch.tensor([list(active_mask)], dtype=torch.float32, device=device)
+            mask_vals = torch.as_tensor(list(active_mask), dtype=torch.float32, device=device).reshape(1, -1)
         if mask_vals.shape[1] < self.k_count:
             pad_width = self.k_count - int(mask_vals.shape[1])
             mask_vals = torch.cat([mask_vals, torch.zeros((1, pad_width), dtype=mask_vals.dtype, device=device)], dim=1)
@@ -440,21 +434,13 @@ class BlockContextAndInterferenceToPrecoderNet(nn.Module):
         )
         x_noise = torch.cat([noise_pad.real.reshape(1, -1), noise_pad.imag.reshape(1, -1)], dim=1)
 
-        x_meta = torch.tensor(
-            [[float(epsilon)]],
-            dtype=torch.float32,
-            device=device,
-        )
+        x_meta = x_h.new_tensor([[float(epsilon)]])
         if self.include_user_index:
             denom = float(max(self.k_count - 1, 1))
             x_meta = torch.cat(
                 [
                     x_meta,
-                    torch.tensor(
-                        [[(0.0 if user_index is None else float(user_index)) / denom]],
-                        dtype=torch.float32,
-                        device=device,
-                    ),
+                    x_meta.new_tensor([[(0.0 if user_index is None else float(user_index)) / denom]]),
                 ],
                 dim=1,
             )
@@ -551,7 +537,7 @@ class ChannelAndBlocklengthToPrecoderNet(nn.Module):
         if isinstance(active_mask, torch.Tensor):
             mask_vals = active_mask.to(device=device, dtype=torch.float32).reshape(1, -1)
         else:
-            mask_vals = torch.tensor([list(active_mask)], dtype=torch.float32, device=device)
+            mask_vals = torch.as_tensor(list(active_mask), dtype=torch.float32, device=device).reshape(1, -1)
         if mask_vals.shape[1] < self.k_count:
             pad_width = self.k_count - int(mask_vals.shape[1])
             mask_vals = torch.cat([mask_vals, torch.zeros((1, pad_width), dtype=mask_vals.dtype, device=device)], dim=1)
@@ -566,21 +552,13 @@ class ChannelAndBlocklengthToPrecoderNet(nn.Module):
         x_noise = torch.cat([noise_pad.real.reshape(1, -1), noise_pad.imag.reshape(1, -1)], dim=1)
 
         n_safe = max(float(n_kl), 1.0)
-        x_meta = torch.tensor(
-            [[np.log1p(n_safe), float(epsilon)]],
-            dtype=torch.float32,
-            device=device,
-        )
+        x_meta = x_h.new_tensor([[np.log1p(n_safe), float(epsilon)]])
         if self.include_user_index:
             denom = float(max(self.k_count - 1, 1))
             x_meta = torch.cat(
                 [
                     x_meta,
-                    torch.tensor(
-                        [[(0.0 if user_index is None else float(user_index)) / denom]],
-                        dtype=torch.float32,
-                        device=device,
-                    ),
+                    x_meta.new_tensor([[(0.0 if user_index is None else float(user_index)) / denom]]),
                 ],
                 dim=1,
             )
@@ -903,7 +881,7 @@ def infer_raw_precoder_numpy(
     user_index: int | float | None = None,
 ) -> np.ndarray:
     with torch.no_grad():
-        H_t = torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+        H_t = torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
         F_t = infer_raw_precoder_torch(model, H_t, nb, dk, user_index=user_index)
     return F_t.detach().cpu().numpy().astype(np.complex128)
 
@@ -922,14 +900,18 @@ def infer_raw_precoder_numpy_with_context(
 ) -> np.ndarray:
     with torch.no_grad():
         if isinstance(H_block, np.ndarray) and H_block.ndim == 2:
-            H_t = torch.tensor(np.asarray(H_block), dtype=torch.complex64, device=device)
+            H_t = torch.as_tensor(np.asarray(H_block), dtype=torch.complex64, device=device)
         else:
             H_t = [
-                torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+                torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
                 for H_kl in list(H_block)
             ]
-        mask_t = torch.tensor(np.asarray(active_mask), dtype=torch.float32, device=device)
-        noise_cov_t = torch.tensor(np.asarray(noise_plus_interference_cov), dtype=torch.complex64, device=device)
+        mask_t = torch.as_tensor(np.asarray(active_mask), dtype=torch.float32, device=device)
+        noise_cov_t = torch.as_tensor(
+            np.asarray(noise_plus_interference_cov),
+            dtype=torch.complex64,
+            device=device,
+        )
         F_t = infer_raw_precoder_torch_with_context(
             model,
             H_t,
@@ -958,14 +940,18 @@ def infer_raw_precoder_numpy_with_blocklength(
 ) -> np.ndarray:
     with torch.no_grad():
         if isinstance(H_block, np.ndarray) and H_block.ndim == 2:
-            H_t = torch.tensor(np.asarray(H_block), dtype=torch.complex64, device=device)
+            H_t = torch.as_tensor(np.asarray(H_block), dtype=torch.complex64, device=device)
         else:
             H_t = [
-                torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+                torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
                 for H_kl in list(H_block)
             ]
-        mask_t = torch.tensor(np.asarray(active_mask), dtype=torch.float32, device=device)
-        noise_cov_t = torch.tensor(np.asarray(noise_plus_interference_cov), dtype=torch.complex64, device=device)
+        mask_t = torch.as_tensor(np.asarray(active_mask), dtype=torch.float32, device=device)
+        noise_cov_t = torch.as_tensor(
+            np.asarray(noise_plus_interference_cov),
+            dtype=torch.complex64,
+            device=device,
+        )
         F_t = infer_raw_precoder_torch_with_blocklength(
             model,
             H_t,
@@ -991,10 +977,10 @@ def infer_raw_bs_precoders_numpy(
 ) -> list[np.ndarray]:
     with torch.no_grad():
         if isinstance(H_block, np.ndarray) and H_block.ndim == 2:
-            H_t = torch.tensor(np.asarray(H_block), dtype=torch.complex64, device=device)
+            H_t = torch.as_tensor(np.asarray(H_block), dtype=torch.complex64, device=device)
         else:
-            H_t = [torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device) for H_kl in list(H_block)]
-        mask_t = torch.tensor(np.asarray(active_mask), dtype=torch.float32, device=device)
+            H_t = [torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device) for H_kl in list(H_block)]
+        mask_t = torch.as_tensor(np.asarray(active_mask), dtype=torch.float32, device=device)
         F_list = infer_raw_bs_precoders_torch(model, H_t, mask_t, nb, dk)
     return [F_t.detach().cpu().numpy().astype(np.complex128) for F_t in F_list]
 
@@ -1013,13 +999,13 @@ def infer_raw_bs_precoders_numpy_with_blocklength(
 ) -> list[np.ndarray]:
     with torch.no_grad():
         if isinstance(H_block, np.ndarray) and H_block.ndim == 2:
-            H_t = torch.tensor(np.asarray(H_block), dtype=torch.complex64, device=device)
+            H_t = torch.as_tensor(np.asarray(H_block), dtype=torch.complex64, device=device)
         else:
-            H_t = [torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device) for H_kl in list(H_block)]
-        n_t = torch.tensor(np.asarray(n_targets), dtype=torch.float32, device=device)
-        mask_t = torch.tensor(np.asarray(active_mask), dtype=torch.float32, device=device)
-        sigma2_t = torch.tensor(np.asarray(sigma2), dtype=torch.float32, device=device)
-        epsilon_t = torch.tensor(np.asarray(epsilon), dtype=torch.float32, device=device)
+            H_t = [torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device) for H_kl in list(H_block)]
+        n_t = torch.as_tensor(np.asarray(n_targets), dtype=torch.float32, device=device)
+        mask_t = torch.as_tensor(np.asarray(active_mask), dtype=torch.float32, device=device)
+        sigma2_t = torch.as_tensor(np.asarray(sigma2), dtype=torch.float32, device=device)
+        epsilon_t = torch.as_tensor(np.asarray(epsilon), dtype=torch.float32, device=device)
         F_list = infer_raw_bs_precoders_torch_with_blocklength(
             model,
             H_t,
@@ -1044,7 +1030,7 @@ def infer_precoder_numpy(
     user_index: int | float | None = None,
 ) -> np.ndarray:
     with torch.no_grad():
-        H_t = torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+        H_t = torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
         F_t = infer_precoder_torch(model, H_t, nb, dk, power_limit, user_index=user_index)
     return F_t.detach().cpu().numpy().astype(np.complex128)
 
@@ -1064,14 +1050,18 @@ def infer_precoder_numpy_with_context(
 ) -> np.ndarray:
     with torch.no_grad():
         if isinstance(H_block, np.ndarray) and H_block.ndim == 2:
-            H_t = torch.tensor(np.asarray(H_block), dtype=torch.complex64, device=device)
+            H_t = torch.as_tensor(np.asarray(H_block), dtype=torch.complex64, device=device)
         else:
             H_t = [
-                torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+                torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
                 for H_kl in list(H_block)
             ]
-        mask_t = torch.tensor(np.asarray(active_mask), dtype=torch.float32, device=device)
-        noise_cov_t = torch.tensor(np.asarray(noise_plus_interference_cov), dtype=torch.complex64, device=device)
+        mask_t = torch.as_tensor(np.asarray(active_mask), dtype=torch.float32, device=device)
+        noise_cov_t = torch.as_tensor(
+            np.asarray(noise_plus_interference_cov),
+            dtype=torch.complex64,
+            device=device,
+        )
         F_t = infer_precoder_torch_with_context(
             model,
             H_t,
@@ -1102,14 +1092,18 @@ def infer_precoder_numpy_with_blocklength(
 ) -> np.ndarray:
     with torch.no_grad():
         if isinstance(H_block, np.ndarray) and H_block.ndim == 2:
-            H_t = torch.tensor(np.asarray(H_block), dtype=torch.complex64, device=device)
+            H_t = torch.as_tensor(np.asarray(H_block), dtype=torch.complex64, device=device)
         else:
             H_t = [
-                torch.tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
+                torch.as_tensor(np.asarray(H_kl), dtype=torch.complex64, device=device)
                 for H_kl in list(H_block)
             ]
-        mask_t = torch.tensor(np.asarray(active_mask), dtype=torch.float32, device=device)
-        noise_cov_t = torch.tensor(np.asarray(noise_plus_interference_cov), dtype=torch.complex64, device=device)
+        mask_t = torch.as_tensor(np.asarray(active_mask), dtype=torch.float32, device=device)
+        noise_cov_t = torch.as_tensor(
+            np.asarray(noise_plus_interference_cov),
+            dtype=torch.complex64,
+            device=device,
+        )
         F_t = infer_precoder_torch_with_blocklength(
             model,
             H_t,

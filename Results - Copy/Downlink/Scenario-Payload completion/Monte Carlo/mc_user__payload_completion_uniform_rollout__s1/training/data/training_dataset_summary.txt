@@ -1,0 +1,13 @@
+Downlink training dataset summary
+Total training channel episodes: 1
+Base dataset kind: channel_episodes_only
+Training scenario modes: ['payload_completion']
+Training channel episodes by seed: {'0': 1}
+Training channel episodes by block: {}
+Training channel episodes by active user count: {}
+Training channel episodes by active mask: {}
+Active-user channel episodes per user: [1, 1, 1]
+
+Terminology
+- channel episode: one (seed, block=0) block realization stored in the base dataset
+- active-user channel episode: one active user inside one stored channel episode

@@ -1,0 +1,16 @@
+{
+    "total_channel_episodes": 1,
+    "num_users": 3,
+    "base_dataset_kind": "channel_episodes_only",
+    "scenario_modes": [
+        "payload_completion"
+    ],
+    "channel_episodes_by_seed": {
+        "0": 1
+    },
+    "channel_episodes_per_user": [
+        1,
+        1,
+        1
+    ]
+}

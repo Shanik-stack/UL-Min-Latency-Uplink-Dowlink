@@ -23,6 +23,46 @@ def _pairwise_latency_diffs(latencies: Sequence[float]) -> tuple[list[list[float
     return matrix, pair_details, float(async_sum)
 
 
+def _compute_reference_latency_metrics(
+    reference_latency: Sequence[float],
+    final_latency: Sequence[float],
+) -> dict[str, Any]:
+    ref_latency = [float(x) for x in reference_latency]
+    fin_latency = [float(x) for x in final_latency]
+    per_user_reduction: list[float] = []
+    for init_val, final_val in zip(ref_latency, fin_latency):
+        if init_val > 0:
+            reduction = ((init_val - final_val) / init_val) * 100.0
+        else:
+            reduction = 0.0
+        per_user_reduction.append(float(reduction))
+
+    initial_total_latency = float(sum(ref_latency))
+    final_total_latency = float(sum(fin_latency))
+    if initial_total_latency > 0:
+        total_latency_reduction_percent = ((initial_total_latency - final_total_latency) / initial_total_latency) * 100.0
+    else:
+        total_latency_reduction_percent = 0.0
+
+    _, _, initial_async_sum = _pairwise_latency_diffs(ref_latency)
+    _, _, final_async_sum = _pairwise_latency_diffs(fin_latency)
+    if initial_async_sum > 0:
+        async_reduction_percent = ((initial_async_sum - final_async_sum) / initial_async_sum) * 100.0
+    else:
+        async_reduction_percent = 0.0
+
+    return {
+        "initial_latency": ref_latency,
+        "initial_total_latency": initial_total_latency,
+        "initial_avg_latency": float(initial_total_latency / max(len(ref_latency), 1)),
+        "latency_reduction_per_user_percent": per_user_reduction,
+        "total_latency_reduction_percent": float(total_latency_reduction_percent),
+        "initial_asynchronality_sum": float(initial_async_sum),
+        "final_asynchronality_sum": float(final_async_sum),
+        "asynchronality_reduction_percent": float(async_reduction_percent),
+    }
+
+
 def _flatten_uplink_epoch_history(all_user_block_results: Sequence[Sequence[Sequence[dict[str, Any]]]]) -> tuple[list[dict[str, Any]], dict[str, int]]:
     rows: list[dict[str, Any]] = []
     status_counts: dict[str, int] = {}
@@ -171,6 +211,18 @@ def compute_summary_metrics(result: dict[str, Any]) -> dict[str, Any]:
             }
         )
 
+    baseline_comparison_metrics: dict[str, dict[str, Any]] = {}
+    for baseline_name, baseline_payload in result.get("baseline_references", {}).items():
+        if not isinstance(baseline_payload, dict):
+            continue
+        ref_latency = baseline_payload.get("latency", [])
+        if not isinstance(ref_latency, Sequence):
+            continue
+        baseline_comparison_metrics[str(baseline_name)] = _compute_reference_latency_metrics(
+            ref_latency,
+            final_latency,
+        )
+
     return {
         "initial_total_latency": initial_total_latency,
         "final_total_latency": final_total_latency,
@@ -201,6 +253,7 @@ def compute_summary_metrics(result: dict[str, Any]) -> dict[str, Any]:
         "zero_service_blocks_per_user": zero_service_blocks_per_user,
         "skipped_blocks_per_user": skipped_blocks_per_user,
         "per_user_summary": per_user_summary,
+        "baseline_comparison_metrics": baseline_comparison_metrics,
     }
 
 
@@ -225,6 +278,7 @@ def build_precoder_net_result(
     initial_interference_diag: dict[str, Any] | None = None,
     final_interference_diag: dict[str, Any] | None = None,
     uplink_rate_model: str | None = None,
+    naive_full_t_baseline: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     _, final_snr_db = test_uplinksystem.get_SNR()
     _, final_sinr_db = test_uplinksystem.get_SINR()
@@ -265,6 +319,10 @@ def build_precoder_net_result(
         ],
         "training_dataset_summary": train_artifact.get("training_dataset_summary", {}),
         "post_training_summary": train_artifact.get("post_training_summary", {}),
+        "rollout_query_weighting_mode": train_artifact.get(
+            "post_training_summary",
+            {},
+        ).get("rollout_query_weighting_mode", "unknown"),
         "precoder_net_training_losses": train_artifact.get(
             "precoder_net_training_losses",
             train_artifact.get(
@@ -302,6 +360,19 @@ def build_precoder_net_result(
         "R_fbl": [list(map(float, values)) for values in test_data_dict["R_star_test"]],
         "blocks_per_user": [len(v) for v in test_uplinksystem.n_kl],
         "initial_schedule_source": "random_precoder_baseline",
+        "baseline_references": {
+            "random_precoder_baseline": {
+                "schedule_source": "random_precoder_baseline",
+                "latency": list(map(float, initial_latency)),
+                "n": list(map(float, initial_n)),
+                "n_kl": [list(map(float, np.atleast_1d(v))) for v in initial_n_kl],
+                "B_kl": [list(map(int, values)) for values in (initial_B_kl or [[] for _ in range(test_uplinksystem.K)])],
+                "R_fbl": [np.asarray(v).tolist() for v in initial_R_fbl],
+                "bits_per_symbol": list(map(float, initial_bits_per_symbol)),
+                "snr_db": list(map(float, initial_snr_db)),
+                "sinr_db": list(map(float, initial_sinr_db)),
+            },
+        },
         "scenario_mode": test_data_dict.get("scenario_mode", ""),
         "scenario_block_targets": test_data_dict.get("scenario_block_targets", []),
         "initial_interference_diag": initial_interference_diag,
@@ -323,6 +394,21 @@ def build_precoder_net_result(
             )
         ],
     }
+    if isinstance(naive_full_t_baseline, dict):
+        result["baseline_references"]["naive_full_T_baseline"] = {
+            "schedule_source": str(
+                naive_full_t_baseline.get("initial_schedule_source", "naive_full_T_baseline")
+            ),
+            "latency": [float(v) for v in naive_full_t_baseline.get("initial_latency", [])],
+            "n": [float(v) for v in naive_full_t_baseline.get("initial_n", [])],
+            "n_kl": [list(map(float, np.atleast_1d(v))) for v in naive_full_t_baseline.get("initial_n_kl", [])],
+            "B_kl": [list(map(int, values)) for values in naive_full_t_baseline.get("initial_B_kl", [])],
+            "R_fbl": [np.asarray(v).tolist() for v in naive_full_t_baseline.get("initial_R_fbl", [])],
+            "bits_per_symbol": [float(v) for v in naive_full_t_baseline.get("initial_bits_per_symbol", [])],
+            "snr_db": [float(v) for v in naive_full_t_baseline.get("initial_snr_db", [])],
+            "sinr_db": [float(v) for v in naive_full_t_baseline.get("initial_sinr_db", [])],
+            "skipped_blocks_per_user": [int(v) for v in naive_full_t_baseline.get("skipped_blocks_per_user", [])],
+        }
     result["summary_metrics"] = compute_summary_metrics(result)
     return result
 
@@ -354,6 +440,7 @@ def build_convergence_result(
     initial_interference_diag: dict[str, Any] | None = None,
     final_interference_diag: dict[str, Any] | None = None,
     sim_cfg: dict[str, Any] | None = None,
+    naive_full_t_baseline: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     _, final_snr_db = uplinksystem.get_SNR()
     _, final_sinr_db = uplinksystem.get_SINR()
@@ -403,6 +490,19 @@ def build_convergence_result(
         "R_fbl": [list(map(float, values)) for values in convergence_data_dict["R_star"]],
         "blocks_per_user": [len(values) for values in uplinksystem.n_kl],
         "initial_schedule_source": "random_precoder_baseline",
+        "baseline_references": {
+            "random_precoder_baseline": {
+                "schedule_source": "random_precoder_baseline",
+                "latency": list(map(float, initial_latency)),
+                "n": list(map(float, initial_n)),
+                "n_kl": [list(map(float, np.atleast_1d(v))) for v in initial_n_kl],
+                "B_kl": [list(map(int, values)) for values in (initial_B_kl or [[] for _ in range(uplinksystem.K)])],
+                "R_fbl": [np.asarray(v).tolist() for v in initial_R_fbl],
+                "bits_per_symbol": list(map(float, initial_bits_per_symbol)),
+                "snr_db": list(map(float, initial_snr_db)),
+                "sinr_db": list(map(float, initial_sinr_db)),
+            },
+        },
         "scenario_mode": convergence_data_dict.get("scenario_mode", ""),
         "scenario_block_targets": convergence_data_dict.get("scenario_block_targets", []),
         "initial_interference_diag": initial_interference_diag,
@@ -423,6 +523,21 @@ def build_convergence_result(
             )
         ],
     }
+    if isinstance(naive_full_t_baseline, dict):
+        result["baseline_references"]["naive_full_T_baseline"] = {
+            "schedule_source": str(
+                naive_full_t_baseline.get("initial_schedule_source", "naive_full_T_baseline")
+            ),
+            "latency": [float(v) for v in naive_full_t_baseline.get("initial_latency", [])],
+            "n": [float(v) for v in naive_full_t_baseline.get("initial_n", [])],
+            "n_kl": [list(map(float, np.atleast_1d(v))) for v in naive_full_t_baseline.get("initial_n_kl", [])],
+            "B_kl": [list(map(int, values)) for values in naive_full_t_baseline.get("initial_B_kl", [])],
+            "R_fbl": [np.asarray(v).tolist() for v in naive_full_t_baseline.get("initial_R_fbl", [])],
+            "bits_per_symbol": [float(v) for v in naive_full_t_baseline.get("initial_bits_per_symbol", [])],
+            "snr_db": [float(v) for v in naive_full_t_baseline.get("initial_snr_db", [])],
+            "sinr_db": [float(v) for v in naive_full_t_baseline.get("initial_sinr_db", [])],
+            "skipped_blocks_per_user": [int(v) for v in naive_full_t_baseline.get("skipped_blocks_per_user", [])],
+        }
     result["summary_metrics"] = compute_summary_metrics(result)
     return result
 
@@ -431,16 +546,32 @@ def _sum_per_user_summary_field(metrics: dict[str, Any], field: str) -> int:
     return int(sum(int(row.get(field, 0)) for row in metrics.get("per_user_summary", [])))
 
 
+def _get_baseline_comparison_metric(
+    metrics: dict[str, Any],
+    baseline_name: str,
+) -> dict[str, Any]:
+    baseline_metrics = metrics.get("baseline_comparison_metrics", {})
+    if not isinstance(baseline_metrics, dict):
+        return {}
+    value = baseline_metrics.get(baseline_name, {})
+    return value if isinstance(value, dict) else {}
+
+
 def _build_uplink_final_test_section_lines(result: dict[str, Any]) -> list[str]:
     metrics = result["summary_metrics"]
+    random_baseline_metrics = _get_baseline_comparison_metric(metrics, "random_precoder_baseline")
+    naive_full_t_metrics = _get_baseline_comparison_metric(metrics, "naive_full_T_baseline")
     lines = [
         "Final test results",
-        f"Initial total latency: {metrics['initial_total_latency']:.6f}",
+        f"Initial total latency (random baseline): {metrics['initial_total_latency']:.6f}",
         f"Final total latency: {metrics['final_total_latency']:.6f}",
-        f"Total latency reduction (%): {metrics['total_latency_reduction_percent']:.4f}",
-        f"Initial avg latency: {metrics['initial_avg_latency']:.6f}",
+        (
+            "Latency reduction vs random precoder baseline (%): "
+            f"{random_baseline_metrics.get('total_latency_reduction_percent', metrics['total_latency_reduction_percent']):.4f}"
+        ),
+        f"Initial avg latency (random baseline): {metrics['initial_avg_latency']:.6f}",
         f"Final avg latency: {metrics['final_avg_latency']:.6f}",
-        f"Initial asynchronality sum: {metrics['initial_asynchronality_sum']:.6f}",
+        f"Initial asynchronality sum (random baseline): {metrics['initial_asynchronality_sum']:.6f}",
         f"Final asynchronality sum: {metrics['final_asynchronality_sum']:.6f}",
         f"Asynchronality reduction (%): {metrics['asynchronality_reduction_percent']:.4f}",
         f"Initial avg SNR (dB): {metrics['initial_avg_snr_db']:.4f}",
@@ -450,6 +581,16 @@ def _build_uplink_final_test_section_lines(result: dict[str, Any]) -> list[str]:
         f"Total served bits: {_sum_per_user_summary_field(metrics, 'served_bits')}",
         f"Total skipped blocks: {_sum_per_user_summary_field(metrics, 'skipped_blocks')}",
     ]
+    if naive_full_t_metrics:
+        lines.extend(
+            [
+                f"Initial total latency (naive full-T baseline): {naive_full_t_metrics.get('initial_total_latency', 0.0):.6f}",
+                (
+                    "Latency reduction vs naive full-T baseline (%): "
+                    f"{naive_full_t_metrics.get('total_latency_reduction_percent', 0.0):.4f}"
+                ),
+            ]
+        )
     if metrics.get("scenario_mode", "") == FIXED_BLOCK_TARGETS_MODE:
         lines.extend(
             [
@@ -464,13 +605,15 @@ def _build_uplink_final_test_section_lines(result: dict[str, Any]) -> list[str]:
 
 def _build_uplink_per_user_test_lines(result: dict[str, Any]) -> list[str]:
     metrics = result["summary_metrics"]
+    naive_full_t_metrics = _get_baseline_comparison_metric(metrics, "naive_full_T_baseline")
+    naive_per_user = naive_full_t_metrics.get("latency_reduction_per_user_percent", [])
     lines = ["Per-user final test details"]
     for row in metrics["per_user_summary"]:
         parts = [
             f"User {row['user']}",
             f"init_lat={row['initial_latency']:.6f}",
             f"final_lat={row['final_latency']:.6f}",
-            f"lat_red={row['latency_reduction_percent']:.4f}%",
+            f"lat_red_vs_random={row['latency_reduction_percent']:.4f}%",
             f"init_snr={row['initial_snr_db']:.4f} dB",
             f"final_snr={row['final_snr_db']:.4f} dB",
             f"init_sinr={row['initial_sinr_db']:.4f} dB",
@@ -480,6 +623,8 @@ def _build_uplink_per_user_test_lines(result: dict[str, Any]) -> list[str]:
             f"served_bits={row['served_bits']}",
             f"skipped_blocks={row.get('skipped_blocks', 0)}",
         ]
+        if int(row["user"]) < len(naive_per_user):
+            parts.append(f"lat_red_vs_fullT={float(naive_per_user[int(row['user'])]):.4f}%")
         if metrics.get("scenario_mode", "") == FIXED_BLOCK_TARGETS_MODE:
             parts.extend(
                 [
@@ -551,6 +696,7 @@ def build_summary_lines(result: dict[str, Any]) -> list[str]:
         f"Uplink rate model: {result.get('uplink_rate_model', 'unknown')}",
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
         f"Training objective: {result.get('training_objective', 'unknown')}",
+        f"Rollout query weighting mode: {result.get('rollout_query_weighting_mode', 'unknown')}",
         f"Initial schedule source: {result.get('initial_schedule_source', 'unknown')}",
         f"Training dataset total channel episodes: {int(dataset_summary.get('total_channel_episodes', 0)) if isinstance(dataset_summary, dict) else 0}",
         f"Training channel-episode counts per user: {result.get('training_channel_episode_counts_per_user', result.get('training_sample_counts_per_user', result.get('training_dataset_sizes', [])))}",
@@ -569,6 +715,8 @@ def build_summary_lines(result: dict[str, Any]) -> list[str]:
                 f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}",
                 f"Training channel episodes: {int(post_training_summary.get('total_training_channel_episodes', 0))}",
                 f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}",
+                f"Rollout query weighting mode: {post_training_summary.get('rollout_query_weighting_mode', 'unknown')}",
+                f"Rollout phase weights: {post_training_summary.get('rollout_phase_weights', {})}",
                 f"Last epoch mean per-user rollout rate: {float(post_training_summary.get('last_epoch_mean_user_rollout_rate', post_training_summary.get('final_avg_user_rate', 0.0))):.6f}",
                 f"Best epoch mean per-user rollout rate: {float(post_training_summary.get('best_epoch_mean_user_rollout_rate', post_training_summary.get('best_avg_user_rate', 0.0))):.6f}",
                 f"Last epoch mean per-user rollout Lagrangian: {float(post_training_summary.get('last_epoch_mean_user_rollout_lagrangian', post_training_summary.get('final_avg_lagrangian', 0.0))):.6f}",
@@ -678,6 +826,8 @@ def build_post_training_summary_lines(post_training_summary: dict[str, Any]) -> 
         f"Configured max epochs: {int(post_training_summary.get('configured_max_epochs', post_training_summary.get('epochs_requested', 0)))}",
         f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}",
         f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}",
+        f"Rollout query weighting mode: {post_training_summary.get('rollout_query_weighting_mode', 'unknown')}",
+        f"Rollout phase weights: {post_training_summary.get('rollout_phase_weights', {})}",
         f"Per-user num epochs: {post_training_summary.get('per_user_num_epochs', [])}",
         f"Per-user epochs completed: {post_training_summary.get('per_user_epochs_completed', [])}",
         f"Per-user training solve status: {post_training_summary.get('per_user_training_solve_status', [])}",
