@@ -160,10 +160,6 @@ These parameters define the channel dimensions, payload, and timing.
   - Bit target used when building Monte Carlo training cases for payload-completion scenarios that do not already provide explicit per-block targets.
   - In your current setup this is usually `1`.
 
-- `monte_carlo_training_n_kl_coarse_step`
-  - Coarse step used when probing the feasible `n_kl` frontier during rollout query generation.
-  - Larger values speed up data generation but sample the frontier more sparsely.
-
 - `monte_carlo_training_full_block_weight`
   - Total episode-loss weight assigned to full-block states at `n_kl = T_k`.
   - Use this to control how strongly Monte Carlo training emphasizes rate-maximizing full blocks.
@@ -196,8 +192,28 @@ These parameters define the channel dimensions, payload, and timing.
   - Minimum allowed blocklength candidate.
 
 - `n_kl_range.step`
-  - Downward search step for `n_kl`.
+  - Base blocklength increment used by all search modes.
   - Smaller values are more precise but slower.
+
+- `n_search_direction`
+  - First search tier.
+  - `descending`: start from the full blocklength side and reduce `n_kl`.
+  - `ascending`: start from the minimum blocklength side and increase `n_kl` until feasibility is reached.
+
+- `n_search_strategy`
+  - Second search tier for convergence methods.
+  - `fixed_step`: test candidates using the base `n_kl_range.step`.
+  - `coarse_to_fine`: probe with `n_search_coarse_step`, then refine near the feasibility frontier using `n_kl_range.step`.
+  - `exponential`: expand candidate spacing geometrically, then refine near the frontier using `n_kl_range.step`.
+  - Monte Carlo currently uses `fixed_step` only so the training rollout states match the visited `n_kl` values directly.
+
+- `n_search_coarse_step`
+  - Coarse probe size used by `coarse_to_fine`.
+  - Keep it larger than or equal to `n_kl_range.step`.
+
+- `n_search_exponential_factor`
+  - Growth factor used by `exponential` search.
+  - Larger values spread the early probes farther apart.
 
 ## Downlink `simulation` Parameters
 
@@ -287,10 +303,6 @@ These parameters define the channel dimensions, payload, and timing.
   - Bit target used in payload-completion training episodes when there is no explicit block target.
   - In the current setup this is typically `1`.
 
-- `monte_carlo_training_n_kl_coarse_step`
-  - Coarse blocklength step used by rollout frontier probing.
-  - Larger values reduce training-data generation cost.
-
 - `monte_carlo_training_full_block_weight`
   - Total episode-loss weight assigned to full-block joint states.
 
@@ -309,19 +321,32 @@ These parameters define the channel dimensions, payload, and timing.
 
 - `convergence_block_objective_mode`
   - Objective used by the downlink convergence baseline.
-  - `user_rate`: local user-rate style objective.
-  - `weighted_sum_rate`: sum rate with remaining-bits weighting.
-  - `blended_network_rate`: blends pure sum rate with weighted network rate.
+  - `user_rate`: legacy alias for `unweighted_sum_rate`.
+  - `unweighted_sum_rate`: plain active-user sum rate.
+  - `asynchronality_weighted_sum_rate`: weighted active-user sum rate using projected completion latency gap.
+  - `inverse_cnr_weighted_sum_rate`: weighted active-user sum rate using inverse effective CNR.
+  - `remaining_bits_weighted_sum_rate`: weighted active-user sum rate using remaining payload or target backlog.
+  - `inverse_channel_gain_weighted_sum_rate`: weighted active-user sum rate using inverse raw channel gain.
+  - `blended_asynchronality_weighted_sum_rate`: blends pure sum rate with projected-latency-gap weighting.
+  - `blended_inverse_cnr_weighted_sum_rate`: blends pure sum rate with inverse-CNR weighted network rate.
+
+- `convergence_priority_weight_strategy`
+  - Used only when the downlink convergence objective applies user weights.
+  - `asynchronality_gap`: prioritizes users that are projected to finish later.
+  - `inverse_cnr`: prioritizes weaker users using inverse effective CNR.
+  - `remaining_bits`: prioritizes larger remaining payload or target backlog.
+  - `inverse_channel_gain`: prioritizes weaker raw channels using inverse channel gain.
+  - `uniform_active_user_weight`: keeps all active users at weight 1.0.
 
 - `remaining_bits_weight_power`
-  - Exponent used when turning remaining payload into a user priority weight.
-  - Larger values emphasize users with larger remaining payload.
+  - Exponent used when turning the raw weighting score into the final user weight.
+  - Larger values make the selected weighting rule more aggressive.
 
 - `minimum_user_weight`
   - Lower bound on each user's weight so low-payload users are not ignored.
 
 - `network_rate_weight`
-  - Weight used by the blended network-rate objective.
+  - Weight used by the blended weighted-network-rate objective.
   - Larger values put more emphasis on network-level weighted service.
 
 - `latency_penalty_weight`
@@ -337,7 +362,23 @@ These parameters define the channel dimensions, payload, and timing.
   - Minimum allowed downlink blocklength candidate.
 
 - `n_kl_range.step`
-  - Downward step for blocklength search.
+  - Base blocklength increment used by all search modes.
+
+- `n_search_direction`
+  - First search tier.
+  - `descending`: reduce `n_kl` from the full-block side.
+  - `ascending`: grow `n_kl` upward from the minimum side until feasibility appears.
+
+- `n_search_strategy`
+  - Second search tier for convergence methods.
+  - `fixed_step`, `coarse_to_fine`, and `exponential` follow the same meanings as the uplink guide above.
+  - Monte Carlo currently uses `fixed_step` only.
+
+- `n_search_coarse_step`
+  - Coarse probe size used by `coarse_to_fine`.
+
+- `n_search_exponential_factor`
+  - Geometric growth factor used by `exponential` search.
 
 ## `experiment_scenario` Parameters
 
@@ -386,7 +427,8 @@ These parameters define how the outer experiment interprets `test.B`.
 
 - If uplink convergence runs too long, first lower `max_epochs`.
 - If uplink KKT stop fires too early, lower `kkt_stationarity_tol`.
-- If uplink Monte Carlo samples the `n_kl` frontier too sparsely, lower `monte_carlo_training_n_kl_coarse_step`.
+- If convergence search spends too long scanning `n_kl`, try `n_search_strategy: coarse_to_fine` or `n_search_strategy: exponential`.
+- If you want a cleaner apples-to-apples Monte Carlo dataset, keep `n_search_strategy: fixed_step`.
 - If downlink repair solves are too expensive, lower `max_epochs` or use `n_kl_reduction_update_scope: infeasible_users_only`.
 - If downlink weighted scheduling is too aggressive toward large backlogs, lower `remaining_bits_weight_power`.
 - If fixed-block-target runs frequently leave bits unserved, lower `test.B`, increase `T`, or increase `P`.
@@ -405,7 +447,6 @@ break. The main legacy aliases are:
 - `reduced_n_kl_repair_max_epochs` -> `max_epochs`
 - `print_every_reduced_n_kl` -> `reduced_n_kl_log_interval`
 - `precoder_net_train_min_bits_required` -> `monte_carlo_training_fallback_target_bits`
-- `precoder_net_train_n_kl_coarse_step` -> `monte_carlo_training_n_kl_coarse_step`
 - `safe_sweep_objective_mode` -> `convergence_block_objective_mode`
 - `queue_weight_power` -> `remaining_bits_weight_power`
 - `queue_weight_min` -> `minimum_user_weight`

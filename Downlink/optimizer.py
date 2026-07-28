@@ -7,6 +7,7 @@ from typing import Any, List, Sequence
 import numpy as np
 import torch
 
+from blocklength_search import build_n_search_config, run_n_frontier_search
 from downlink_system import DownlinkSystem
 from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE, build_experiment_scenario
 from precoder_models import (
@@ -24,37 +25,91 @@ from precoder_models import (
 from terminal_logging import format_log_line, format_latency_log_line, format_progress_log_line
 LOG2E_SQ = float(np.log2(np.e) ** 2)
 USER_RATE_MODE = "user_rate"
-UNWEIGHTED_SUM_RATE_MODE = "unweighted_sum_rate"
-REMAINING_BITS_WEIGHTED_SUM_RATE_MODE = "remaining_bits_weighted_sum_rate"
+EQUAL_PRIORITY_SUM_RATE_MODE = "equal_priority_sum_rate"
+PRIORITY_WEIGHTED_SUM_RATE_MODE = "priority_weighted_sum_rate"
 BLENDED_NETWORK_RATE_MODE = "blended_network_rate"
+UNWEIGHTED_SUM_RATE_PUBLIC_NAME = "unweighted_sum_rate"
+UNIFORM_WEIGHTED_SUM_RATE_PUBLIC_NAME = "uniform_weighted_sum_rate"
+INVERSE_CNR_WEIGHTED_SUM_RATE_PUBLIC_NAME = "inverse_cnr_weighted_sum_rate"
+ASYNCHRONALITY_WEIGHTED_SUM_RATE_PUBLIC_NAME = "asynchronality_weighted_sum_rate"
+REMAINING_BITS_WEIGHTED_SUM_RATE_PUBLIC_NAME = "remaining_bits_weighted_sum_rate"
+INVERSE_CHANNEL_GAIN_WEIGHTED_SUM_RATE_PUBLIC_NAME = "inverse_channel_gain_weighted_sum_rate"
+BLENDED_UNIFORM_WEIGHTED_SUM_RATE_PUBLIC_NAME = "blended_uniform_weighted_sum_rate"
+BLENDED_INVERSE_CNR_WEIGHTED_SUM_RATE_PUBLIC_NAME = "blended_inverse_cnr_weighted_sum_rate"
+BLENDED_ASYNCHRONALITY_WEIGHTED_SUM_RATE_PUBLIC_NAME = "blended_asynchronality_weighted_sum_rate"
+BLENDED_REMAINING_BITS_WEIGHTED_SUM_RATE_PUBLIC_NAME = "blended_remaining_bits_weighted_sum_rate"
+BLENDED_INVERSE_CHANNEL_GAIN_WEIGHTED_SUM_RATE_PUBLIC_NAME = "blended_inverse_channel_gain_weighted_sum_rate"
+UNIFORM_ACTIVE_USER_WEIGHT_STRATEGY = "uniform_active_user_weight"
+REMAINING_BITS_WEIGHT_STRATEGY = "remaining_bits"
+INVERSE_CNR_WEIGHT_STRATEGY = "inverse_cnr"
+ASYNCHRONALITY_WEIGHT_STRATEGY = "asynchronality_gap"
+INVERSE_CHANNEL_GAIN_WEIGHT_STRATEGY = "inverse_channel_gain"
 CONVERGENCE_OBJECTIVE_MODE_ALIASES = {
-    USER_RATE_MODE: UNWEIGHTED_SUM_RATE_MODE,
-    "sum_rate": UNWEIGHTED_SUM_RATE_MODE,
-    UNWEIGHTED_SUM_RATE_MODE: UNWEIGHTED_SUM_RATE_MODE,
-    "weighted_sum_rate": REMAINING_BITS_WEIGHTED_SUM_RATE_MODE,
-    REMAINING_BITS_WEIGHTED_SUM_RATE_MODE: REMAINING_BITS_WEIGHTED_SUM_RATE_MODE,
+    USER_RATE_MODE: EQUAL_PRIORITY_SUM_RATE_MODE,
+    "sum_rate": EQUAL_PRIORITY_SUM_RATE_MODE,
+    "plain_sum_rate": EQUAL_PRIORITY_SUM_RATE_MODE,
+    "equal_weight_sum_rate": EQUAL_PRIORITY_SUM_RATE_MODE,
+    "equal_priority_sum_rate": EQUAL_PRIORITY_SUM_RATE_MODE,
+    "unweighted_sum_rate": EQUAL_PRIORITY_SUM_RATE_MODE,
+    EQUAL_PRIORITY_SUM_RATE_MODE: EQUAL_PRIORITY_SUM_RATE_MODE,
+    "weighted_sum_rate": PRIORITY_WEIGHTED_SUM_RATE_MODE,
+    "priority_weighted_sum_rate": PRIORITY_WEIGHTED_SUM_RATE_MODE,
+    "uniform_weighted_sum_rate": PRIORITY_WEIGHTED_SUM_RATE_MODE,
+    "inverse_cnr_weighted_sum_rate": PRIORITY_WEIGHTED_SUM_RATE_MODE,
+    "asynchronality_weighted_sum_rate": PRIORITY_WEIGHTED_SUM_RATE_MODE,
+    "projected_latency_gap_weighted_sum_rate": PRIORITY_WEIGHTED_SUM_RATE_MODE,
+    "projected_completion_latency_gap_weighted_sum_rate": PRIORITY_WEIGHTED_SUM_RATE_MODE,
+    "remaining_bits_weighted_sum_rate": PRIORITY_WEIGHTED_SUM_RATE_MODE,
+    "inverse_channel_gain_weighted_sum_rate": PRIORITY_WEIGHTED_SUM_RATE_MODE,
+    "backlog_weighted_sum_rate": PRIORITY_WEIGHTED_SUM_RATE_MODE,
+    PRIORITY_WEIGHTED_SUM_RATE_MODE: PRIORITY_WEIGHTED_SUM_RATE_MODE,
+    "blended_uniform_weighted_sum_rate": BLENDED_NETWORK_RATE_MODE,
+    "blended_inverse_cnr_weighted_sum_rate": BLENDED_NETWORK_RATE_MODE,
+    "blended_asynchronality_weighted_sum_rate": BLENDED_NETWORK_RATE_MODE,
+    "blended_remaining_bits_weighted_sum_rate": BLENDED_NETWORK_RATE_MODE,
+    "blended_inverse_channel_gain_weighted_sum_rate": BLENDED_NETWORK_RATE_MODE,
     BLENDED_NETWORK_RATE_MODE: BLENDED_NETWORK_RATE_MODE,
 }
 CONVERGENCE_OBJECTIVE_MODES = set(CONVERGENCE_OBJECTIVE_MODE_ALIASES.values())
+PRIORITY_WEIGHT_STRATEGY_ALIASES = {
+    "uniform": UNIFORM_ACTIVE_USER_WEIGHT_STRATEGY,
+    "uniform_active_user_weight": UNIFORM_ACTIVE_USER_WEIGHT_STRATEGY,
+    "none": UNIFORM_ACTIVE_USER_WEIGHT_STRATEGY,
+    "remaining_bits": REMAINING_BITS_WEIGHT_STRATEGY,
+    "backlog": REMAINING_BITS_WEIGHT_STRATEGY,
+    "queue": REMAINING_BITS_WEIGHT_STRATEGY,
+    "inverse_cnr": INVERSE_CNR_WEIGHT_STRATEGY,
+    "cnr_inverse": INVERSE_CNR_WEIGHT_STRATEGY,
+    "asynchronality_gap": ASYNCHRONALITY_WEIGHT_STRATEGY,
+    "projected_latency_gap": ASYNCHRONALITY_WEIGHT_STRATEGY,
+    "projected_completion_latency_gap": ASYNCHRONALITY_WEIGHT_STRATEGY,
+    "asynchronality": ASYNCHRONALITY_WEIGHT_STRATEGY,
+    "inverse_channel_gain": INVERSE_CHANNEL_GAIN_WEIGHT_STRATEGY,
+}
+PRIORITY_WEIGHT_STRATEGIES = set(PRIORITY_WEIGHT_STRATEGY_ALIASES.values())
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
 CONVERGENCE_PRECODER_UPDATE_MODES = {"precoder_net", "direct_precoder"}
 POWER_PROJECTION_SAFETY_MARGIN = 1e-6
 _Q_INV_CACHE: dict[tuple[str, int | None, float], torch.Tensor] = {}
 
 
-def resolve_convergence_objective_mode(sim_params: dict[str, Any]) -> str:
-    raw_mode = str(
+def _raw_configured_convergence_objective_mode(sim_params: dict[str, Any]) -> str:
+    return str(
         sim_params.get(
             "convergence_block_objective_mode",
             sim_params.get(
                 "safe_sweep_objective_mode",
                 sim_params.get(
                     "downlink_safe_sweep_objective_mode",
-                    sim_params.get("objective_mode", UNWEIGHTED_SUM_RATE_MODE),
+                    sim_params.get("objective_mode", EQUAL_PRIORITY_SUM_RATE_MODE),
                 ),
             ),
         )
     ).strip().lower()
+
+
+def resolve_convergence_objective_mode(sim_params: dict[str, Any]) -> str:
+    raw_mode = _raw_configured_convergence_objective_mode(sim_params)
     if raw_mode not in CONVERGENCE_OBJECTIVE_MODE_ALIASES:
         known = ", ".join(sorted(CONVERGENCE_OBJECTIVE_MODES))
         raise ValueError(
@@ -78,7 +133,7 @@ def resolve_convergence_precoder_update_mode(sim_params: dict[str, Any]) -> str:
 
 
 def convergence_objective_tag(objective_mode: str) -> str:
-    safe_mode = str(resolve_objective_mode_alias(objective_mode)).strip().lower().replace(" ", "_").replace("-", "_")
+    safe_mode = str(objective_display_name(objective_mode)).strip().lower().replace(" ", "_").replace("-", "_")
     return f"obj_{safe_mode}"
 
 
@@ -96,16 +151,107 @@ def resolve_objective_mode_alias(objective_mode: str) -> str:
     return str(CONVERGENCE_OBJECTIVE_MODE_ALIASES[raw_mode])
 
 
+def resolve_priority_weight_strategy(weight_strategy: str) -> str:
+    raw_strategy = str(weight_strategy).strip().lower()
+    if raw_strategy not in PRIORITY_WEIGHT_STRATEGY_ALIASES:
+        known = ", ".join(sorted(PRIORITY_WEIGHT_STRATEGIES))
+        raise ValueError(
+            f"Unknown convergence priority weight strategy '{raw_strategy}'. Expected one of: {known}"
+        )
+    return str(PRIORITY_WEIGHT_STRATEGY_ALIASES[raw_strategy])
+
+
+def resolve_convergence_priority_weight_strategy(sim_params: dict[str, Any]) -> str:
+    explicit = sim_params.get(
+        "convergence_priority_weight_strategy",
+        sim_params.get(
+            "priority_weight_strategy",
+            sim_params.get("user_weight_strategy"),
+        ),
+    )
+    if explicit is not None:
+        return resolve_priority_weight_strategy(str(explicit))
+
+    raw_objective = _raw_configured_convergence_objective_mode(sim_params)
+    if raw_objective in {"remaining_bits_weighted_sum_rate", "backlog_weighted_sum_rate"}:
+        return REMAINING_BITS_WEIGHT_STRATEGY
+    if raw_objective in {"uniform_weighted_sum_rate", "blended_uniform_weighted_sum_rate"}:
+        return UNIFORM_ACTIVE_USER_WEIGHT_STRATEGY
+    if raw_objective in {
+        "asynchronality_weighted_sum_rate",
+        "projected_latency_gap_weighted_sum_rate",
+        "projected_completion_latency_gap_weighted_sum_rate",
+        "blended_asynchronality_weighted_sum_rate",
+    }:
+        return ASYNCHRONALITY_WEIGHT_STRATEGY
+    if raw_objective in {
+        "inverse_channel_gain_weighted_sum_rate",
+        "blended_inverse_channel_gain_weighted_sum_rate",
+    }:
+        return INVERSE_CHANNEL_GAIN_WEIGHT_STRATEGY
+    if raw_objective in {
+        "inverse_cnr_weighted_sum_rate",
+        "blended_inverse_cnr_weighted_sum_rate",
+    }:
+        return INVERSE_CNR_WEIGHT_STRATEGY
+    return INVERSE_CNR_WEIGHT_STRATEGY
+
+
 def objective_uses_user_weights(objective_mode: str) -> bool:
     canonical_mode = resolve_objective_mode_alias(objective_mode)
     return canonical_mode in {
-        REMAINING_BITS_WEIGHTED_SUM_RATE_MODE,
+        PRIORITY_WEIGHTED_SUM_RATE_MODE,
         BLENDED_NETWORK_RATE_MODE,
     }
 
 
-def objective_display_name(objective_mode: str) -> str:
-    return str(resolve_objective_mode_alias(objective_mode))
+def _weighted_objective_public_name(weight_strategy: str) -> str:
+    resolved_strategy = resolve_priority_weight_strategy(weight_strategy)
+    if resolved_strategy == UNIFORM_ACTIVE_USER_WEIGHT_STRATEGY:
+        return UNIFORM_WEIGHTED_SUM_RATE_PUBLIC_NAME
+    if resolved_strategy == INVERSE_CNR_WEIGHT_STRATEGY:
+        return INVERSE_CNR_WEIGHTED_SUM_RATE_PUBLIC_NAME
+    if resolved_strategy == ASYNCHRONALITY_WEIGHT_STRATEGY:
+        return ASYNCHRONALITY_WEIGHTED_SUM_RATE_PUBLIC_NAME
+    if resolved_strategy == INVERSE_CHANNEL_GAIN_WEIGHT_STRATEGY:
+        return INVERSE_CHANNEL_GAIN_WEIGHTED_SUM_RATE_PUBLIC_NAME
+    return REMAINING_BITS_WEIGHTED_SUM_RATE_PUBLIC_NAME
+
+
+def _blended_objective_public_name(weight_strategy: str) -> str:
+    resolved_strategy = resolve_priority_weight_strategy(weight_strategy)
+    if resolved_strategy == UNIFORM_ACTIVE_USER_WEIGHT_STRATEGY:
+        return BLENDED_UNIFORM_WEIGHTED_SUM_RATE_PUBLIC_NAME
+    if resolved_strategy == INVERSE_CNR_WEIGHT_STRATEGY:
+        return BLENDED_INVERSE_CNR_WEIGHTED_SUM_RATE_PUBLIC_NAME
+    if resolved_strategy == ASYNCHRONALITY_WEIGHT_STRATEGY:
+        return BLENDED_ASYNCHRONALITY_WEIGHTED_SUM_RATE_PUBLIC_NAME
+    if resolved_strategy == INVERSE_CHANNEL_GAIN_WEIGHT_STRATEGY:
+        return BLENDED_INVERSE_CHANNEL_GAIN_WEIGHTED_SUM_RATE_PUBLIC_NAME
+    return BLENDED_REMAINING_BITS_WEIGHTED_SUM_RATE_PUBLIC_NAME
+
+
+def objective_display_name(
+    objective_mode: str,
+    configured_weight_strategy: str | None = None,
+) -> str:
+    canonical_mode = resolve_objective_mode_alias(objective_mode)
+    if canonical_mode == EQUAL_PRIORITY_SUM_RATE_MODE:
+        return UNWEIGHTED_SUM_RATE_PUBLIC_NAME
+    if canonical_mode == PRIORITY_WEIGHTED_SUM_RATE_MODE:
+        strategy = configured_weight_strategy or INVERSE_CNR_WEIGHT_STRATEGY
+        return _weighted_objective_public_name(strategy)
+    if canonical_mode == BLENDED_NETWORK_RATE_MODE:
+        strategy = configured_weight_strategy or INVERSE_CNR_WEIGHT_STRATEGY
+        return _blended_objective_public_name(strategy)
+    return canonical_mode
+
+
+def resolve_public_convergence_objective_name(sim_params: dict[str, Any]) -> str:
+    return objective_display_name(
+        resolve_convergence_objective_mode(sim_params),
+        resolve_convergence_priority_weight_strategy(sim_params),
+    )
 
 
 def objective_weight_strategy_name(
@@ -114,7 +260,7 @@ def objective_weight_strategy_name(
 ) -> str:
     if not objective_uses_user_weights(objective_mode):
         return "none"
-    return str(configured_weight_strategy)
+    return str(resolve_priority_weight_strategy(configured_weight_strategy))
 
 
 def resolve_constraint_loss_form(sim_params: dict[str, Any]) -> str:
@@ -510,7 +656,7 @@ def _evaluate_update_objective_numpy(
     for k in active_users:
         n_k = _resolve_user_n_kl(system, int(k), n_kl_overrides)
         rate_k = float(system.compute_block_rate(int(k), int(block), n_k, F_override=snapshot))
-        if canonical_mode == REMAINING_BITS_WEIGHTED_SUM_RATE_MODE:
+        if canonical_mode == PRIORITY_WEIGHTED_SUM_RATE_MODE:
             total += float(user_weights.get(int(k), 1.0)) * rate_k
         else:
             total += rate_k
@@ -539,7 +685,7 @@ def _evaluate_network_objective_numpy(
         total_rate += rate_k
         weighted_total += float(user_weights.get(int(k), 1.0)) * rate_k
 
-    if canonical_mode == REMAINING_BITS_WEIGHTED_SUM_RATE_MODE:
+    if canonical_mode == PRIORITY_WEIGHTED_SUM_RATE_MODE:
         return weighted_total
     if canonical_mode == BLENDED_NETWORK_RATE_MODE:
         return total_rate + float(network_weight_beta) * weighted_total
@@ -698,7 +844,7 @@ def _evaluate_constrained_block_state(
         ]
     ).sum() if active_users else torch.tensor(0.0, device=DEVICE)
     blended_total = total_rate + float(network_weight_beta) * weighted_total
-    if canonical_mode == REMAINING_BITS_WEIGHTED_SUM_RATE_MODE:
+    if canonical_mode == PRIORITY_WEIGHTED_SUM_RATE_MODE:
         objective = weighted_total
     elif canonical_mode == BLENDED_NETWORK_RATE_MODE:
         objective = blended_total
@@ -726,7 +872,7 @@ def _evaluate_constrained_block_state(
         "block_power_gap": block_power_gap,
         "block_power_violation_pos": block_power_violation_pos,
         "sum_rate": total_rate,
-        REMAINING_BITS_WEIGHTED_SUM_RATE_MODE: weighted_total,
+        PRIORITY_WEIGHTED_SUM_RATE_MODE: weighted_total,
         "weighted_sum_rate": weighted_total,
         "blended_objective": blended_total,
         "constraint_loss_form": constraint_loss_form,
@@ -779,14 +925,13 @@ def _zero_block_precoder(system: DownlinkSystem, working_F: List[List[np.ndarray
     working_F[k][l] = np.zeros((int(system.Nb[k]), int(system.dk[k])), dtype=np.complex128)
 
 
-def _effective_cnr_linear(
+def _channel_cnr_linear(
     system: DownlinkSystem,
-    working_F: List[List[np.ndarray]],
     user: int,
     block: int,
 ) -> float:
-    signal_power, _, noise_power, _ = _compute_user_link_budget(system, working_F, int(user), int(block))
-    return float(signal_power / max(noise_power, 1e-30))
+    channel_gain = _channel_gain_per_rx(system, int(user), int(block))
+    return float(channel_gain / max(float(system.sigma2[int(user)]), 1e-30))
 
 
 def _channel_gain_per_rx(
@@ -796,6 +941,45 @@ def _channel_gain_per_rx(
 ) -> float:
     Hk = np.asarray(system.H[int(user)][int(block)], dtype=np.complex128)
     return float(np.linalg.norm(Hk, ord="fro") ** 2 / max(1, int(system.Nr[int(user)])))
+
+
+def _committed_latency_before_block(
+    system: DownlinkSystem,
+    user: int,
+    block: int,
+) -> float:
+    k = int(user)
+    cutoff = max(min(int(block), len(system.n_kl[k])), 0)
+    committed_symbols = float(sum(int(v) for v in system.n_kl[k][:cutoff]))
+    return committed_symbols / max(float(system.fs[k]), 1e-30)
+
+
+def _full_block_supported_bits_proxy(
+    system: DownlinkSystem,
+    working_F: List[List[np.ndarray]],
+    user: int,
+    block: int,
+) -> int:
+    k = int(user)
+    n_full = int(system.T[k])
+    rate = float(system.compute_block_rate(k, int(block), n_full, F_override=working_F))
+    supported_bits = int(np.floor(max(rate, 0.0) * float(max(n_full, 1))))
+    return max(supported_bits, 1)
+
+
+def _projected_completion_latency_score(
+    system: DownlinkSystem,
+    working_F: List[List[np.ndarray]],
+    remaining_bits: np.ndarray,
+    user: int,
+    block: int,
+) -> float:
+    k = int(user)
+    committed_latency = _committed_latency_before_block(system, k, int(block))
+    supported_bits = _full_block_supported_bits_proxy(system, working_F, k, int(block))
+    block_duration = float(system.T[k]) / max(float(system.fs[k]), 1e-30)
+    projected_blocks = float(max(int(remaining_bits[k]), 0)) / max(float(supported_bits), 1.0)
+    return committed_latency + (projected_blocks * block_duration)
 
 
 def _build_user_weights(
@@ -809,16 +993,41 @@ def _build_user_weights(
 ) -> dict[int, float]:
     if len(active_users) == 0:
         return {}
+    resolved_strategy = resolve_priority_weight_strategy(strategy)
+    if resolved_strategy == UNIFORM_ACTIVE_USER_WEIGHT_STRATEGY:
+        return {int(k): 1.0 for k in active_users}
+
+    if resolved_strategy == INVERSE_CNR_WEIGHT_STRATEGY:
+        inverse_cnr_scores: dict[int, float] = {}
+        for k in active_users:
+            cnr_lin = _channel_cnr_linear(system, int(k), int(block))
+            inverse_cnr_scores[int(k)] = 1.0 / max(cnr_lin, 1e-30)
+        mean_inverse_cnr = float(np.mean(list(inverse_cnr_scores.values()))) if inverse_cnr_scores else 1.0
+        return {
+            int(k): float(inverse_cnr_scores[int(k)] / max(mean_inverse_cnr, 1e-30))
+            for k in active_users
+        }
 
     power = float(sim_params.get("remaining_bits_weight_power", 1.0))
     min_weight = float(sim_params.get("minimum_user_weight", 0.25))
     raw_scores: dict[int, float] = {}
 
-    if strategy == "inverse_cnr":
+    if resolved_strategy == ASYNCHRONALITY_WEIGHT_STRATEGY:
+        projected_latencies = {
+            int(k): _projected_completion_latency_score(
+                system,
+                working_F,
+                remaining_bits,
+                int(k),
+                int(block),
+            )
+            for k in active_users
+        }
+        min_latency = min(projected_latencies.values()) if projected_latencies else 1.0
+        denom_latency = max(float(min_latency), 1e-30)
         for k in active_users:
-            cnr_lin = _effective_cnr_linear(system, working_F, int(k), int(block))
-            raw_scores[int(k)] = 1.0 / max(cnr_lin, 1e-30)
-    elif strategy == "inverse_channel_gain":
+            raw_scores[int(k)] = float(projected_latencies[int(k)] / denom_latency)
+    elif resolved_strategy == INVERSE_CHANNEL_GAIN_WEIGHT_STRATEGY:
         for k in active_users:
             channel_gain = _channel_gain_per_rx(system, int(k), int(block))
             raw_scores[int(k)] = 1.0 / max(channel_gain, 1e-30)
@@ -836,6 +1045,39 @@ def _build_user_weights(
         normalized = (float(raw_scores[int(k)]) / denom) ** power
         weights[int(k)] = min_weight + (1.0 - min_weight) * normalized
     return weights
+
+
+def _resolve_block_user_weights(
+    system: DownlinkSystem,
+    working_F: List[List[np.ndarray]],
+    weight_source_bits: np.ndarray,
+    active_users: List[int],
+    block: int,
+    sim_params: dict[str, Any],
+    objective_mode: str,
+) -> tuple[dict[int, float], str]:
+    if len(active_users) <= 0:
+        return {}, UNIFORM_ACTIVE_USER_WEIGHT_STRATEGY
+
+    if not objective_uses_user_weights(objective_mode):
+        return (
+            {int(k): 1.0 for k in active_users},
+            UNIFORM_ACTIVE_USER_WEIGHT_STRATEGY,
+        )
+
+    resolved_strategy = resolve_convergence_priority_weight_strategy(sim_params)
+    return (
+        _build_user_weights(
+            system,
+            working_F,
+            weight_source_bits,
+            active_users,
+            block,
+            sim_params,
+            strategy=resolved_strategy,
+        ),
+        resolved_strategy,
+    )
 
 
 def _optimize_shared_block_precoders(
@@ -894,7 +1136,7 @@ def _optimize_shared_block_precoders(
                 float(user_weights.get(int(j), 1.0)) * rate_j
             )
 
-        if canonical_mode == REMAINING_BITS_WEIGHTED_SUM_RATE_MODE:
+        if canonical_mode == PRIORITY_WEIGHTED_SUM_RATE_MODE:
             objective = weighted_total
         elif canonical_mode == BLENDED_NETWORK_RATE_MODE:
             objective = total_rate + float(network_weight_beta) * weighted_total
@@ -990,7 +1232,7 @@ def _optimize_user_block_precoder(
             for j in active_users
         }
         precoders = _project_active_precoders_to_block_power(system, precoders, active_users)
-        if canonical_mode in {REMAINING_BITS_WEIGHTED_SUM_RATE_MODE, BLENDED_NETWORK_RATE_MODE}:
+        if canonical_mode in {PRIORITY_WEIGHTED_SUM_RATE_MODE, BLENDED_NETWORK_RATE_MODE}:
             objective = torch.tensor(0.0, dtype=torch.float32, device=DEVICE)
             for j in active_users:
                 n_j = _resolve_user_n_kl(system, int(j), n_kl_overrides)
@@ -1473,6 +1715,10 @@ def _reduce_blocklengths_with_reoptimization(
     refinement_history: list[dict[str, float]] = []
     current_dual_state = copy.deepcopy(dual_state) if dual_state is not None else None
     stopped_reduction_users: set[int] = set()
+    search_direction = str(sim_params.get("n_search_direction", "descending"))
+    search_strategy = str(sim_params.get("n_search_strategy", "fixed_step"))
+    search_coarse_step = int(sim_params.get("n_search_coarse_step", int(n_step)))
+    search_exponential_factor = int(sim_params.get("n_search_exponential_factor", 2))
 
     for k in active_users:
         k_int = int(k)
@@ -1524,130 +1770,187 @@ def _reduce_blocklengths_with_reoptimization(
                     "[DL Convergence Reduction]",
                     block=int(block),
                     epoch=int(epoch_idx + 1),
+                    direction=search_direction,
+                    strategy=search_strategy,
                     users=[int(k) for k in ordered_users],
                 )
             )
 
         for k_int in ordered_users:
             current_n = int(current_n_targets.get(k_int, int(system.T[k_int])))
-            candidate = int(current_n - int(n_step))
-            if candidate < int(n_min):
+            if current_n <= int(n_min):
                 stopped_reduction_users.add(int(k_int))
                 continue
 
-            candidate_targets = dict(current_n_targets)
-            candidate_targets[k_int] = int(candidate)
-            feasible_without_reopt, candidate_rates, infeasible_users = _all_committed_bits_feasible(
-                system,
-                working_F,
-                active_users,
-                block,
-                committed_bits,
-                candidate_targets,
+            search_cfg = build_n_search_config(
+                n_min=int(n_min),
+                n_max=int(current_n),
+                fine_step=int(n_step),
+                direction=search_direction,
+                strategy=search_strategy,
+                coarse_step=int(search_coarse_step),
+                exponential_factor=int(search_exponential_factor),
             )
-            if feasible_without_reopt:
-                current_n_targets = candidate_targets
-                current_rates = candidate_rates
-                plans[k_int]["n_used"] = int(candidate)
-                plans[k_int]["R_used"] = float(candidate_rates.get(k_int, current_rates.get(k_int, 0.0)))
-                progress_this_epoch = True
-                if verbose:
-                    print(
-                        f"  user={k_int:02d} block={block:02d} accepted smaller n_kl={int(candidate):4d} "
-                        "without fresh re-optimization."
-                    )
-                continue
-            if verbose:
-                infeasible_text = ", ".join(str(int(user_id)) for user_id in infeasible_users)
-                print(
-                    f"  user={k_int:02d} block={block:02d} candidate n_kl={int(candidate):4d} "
-                    f"breaks committed-user feasibility [{infeasible_text}]; trying fresh re-optimization."
-                )
 
-            update_users = _resolve_reduced_n_reoptimization_users(
-                active_users,
-                k_int,
-                infeasible_users,
-                reoptimization_scope,
-            )
-            solver_checkpoint = _capture_active_block_solver_state(
-                working_F,
-                user_models,
-                model_optimizers,
-                active_users,
-                (
-                    current_dual_state["lambda_rate"]
-                    if current_dual_state is not None
-                    else {
-                        int(user_id): float(sim_params.get("initial_lambda_rate_constraint", 0.1))
-                        for user_id in active_users
+            def _evaluate_candidate_n(candidate_n: int, stage_name: str) -> dict[str, Any]:
+                nonlocal current_dual_state
+                candidate_targets = dict(current_n_targets)
+                candidate_targets[k_int] = int(candidate_n)
+                feasible_without_reopt, candidate_rates, infeasible_users = _all_committed_bits_feasible(
+                    system,
+                    working_F,
+                    active_users,
+                    block,
+                    committed_bits,
+                    candidate_targets,
+                )
+                if feasible_without_reopt:
+                    if verbose:
+                        print(
+                            f"  user={k_int:02d} block={block:02d} candidate n_kl={int(candidate_n):4d} "
+                            f"accepted at search_stage={stage_name} without fresh re-optimization."
+                        )
+                    return {
+                        "feasible": True,
+                        "candidate_targets": candidate_targets,
+                        "candidate_rates": candidate_rates,
+                        "update_users": [],
+                        "history": [],
+                        "dual_state": copy.deepcopy(current_dual_state),
+                        "accepted_via": "no_reoptimization",
                     }
-                ),
-                (
-                    float(current_dual_state["lambda_power_block"])
-                    if current_dual_state is not None
-                    else float(sim_params.get("initial_lambda_power_constraint", 0.01))
-                ),
-            )
-            solve_result = optimize_precoders_for_block_constrained(
-                system,
-                working_F,
-                user_models,
-                model_optimizers,
-                active_users,
-                block,
-                committed_bits,
-                sim_params,
-                verbose=verbose,
-                objective_mode=objective_mode,
-                user_weights=user_weights,
-                n_kl_overrides=candidate_targets,
-                users_to_update=update_users,
-                dual_state=current_dual_state,
-                max_epochs=int(sim_params["max_epochs"]),
-            )
-            candidate_history = solve_result["history"]
-            feasible, candidate_rates, remaining_infeasible_users = _all_committed_bits_feasible(
-                system,
-                working_F,
-                active_users,
-                block,
-                committed_bits,
-                candidate_targets,
-            )
-            if not feasible:
-                _restore_active_block_solver_state(
+
+                if verbose:
+                    infeasible_text = ", ".join(str(int(user_id)) for user_id in infeasible_users)
+                    print(
+                        f"  user={k_int:02d} block={block:02d} candidate n_kl={int(candidate_n):4d} "
+                        f"breaks committed-user feasibility [{infeasible_text}] at search_stage={stage_name}; "
+                        "trying fresh re-optimization."
+                    )
+
+                update_users = _resolve_reduced_n_reoptimization_users(
+                    active_users,
+                    k_int,
+                    infeasible_users,
+                    reoptimization_scope,
+                )
+                solver_checkpoint = _capture_active_block_solver_state(
                     working_F,
                     user_models,
                     model_optimizers,
                     active_users,
-                    solver_checkpoint,
+                    (
+                        current_dual_state["lambda_rate"]
+                        if current_dual_state is not None
+                        else {
+                            int(user_id): float(sim_params.get("initial_lambda_rate_constraint", 0.1))
+                            for user_id in active_users
+                        }
+                    ),
+                    (
+                        float(current_dual_state["lambda_power_block"])
+                        if current_dual_state is not None
+                        else float(sim_params.get("initial_lambda_power_constraint", 0.01))
+                    ),
                 )
+                solve_result = optimize_precoders_for_block_constrained(
+                    system,
+                    working_F,
+                    user_models,
+                    model_optimizers,
+                    active_users,
+                    block,
+                    committed_bits,
+                    sim_params,
+                    verbose=verbose,
+                    objective_mode=objective_mode,
+                    user_weights=user_weights,
+                    n_kl_overrides=candidate_targets,
+                    users_to_update=update_users,
+                    dual_state=current_dual_state,
+                    max_epochs=int(sim_params["max_epochs"]),
+                )
+                candidate_history = solve_result["history"]
+                feasible, candidate_rates, remaining_infeasible_users = _all_committed_bits_feasible(
+                    system,
+                    working_F,
+                    active_users,
+                    block,
+                    committed_bits,
+                    candidate_targets,
+                )
+                if not feasible:
+                    _restore_active_block_solver_state(
+                        working_F,
+                        user_models,
+                        model_optimizers,
+                        active_users,
+                        solver_checkpoint,
+                    )
+                    if verbose:
+                        infeasible_text = ", ".join(str(int(user_id)) for user_id in remaining_infeasible_users)
+                        updated_text = ", ".join(str(int(user_id)) for user_id in update_users)
+                        print(
+                            f"  user={k_int:02d} block={block:02d} candidate n_kl={int(candidate_n):4d} "
+                            f"after updating users [{updated_text}] still leaves committed users infeasible "
+                            f"[{infeasible_text}] at search_stage={stage_name}."
+                        )
+                    return {
+                        "feasible": False,
+                        "candidate_targets": candidate_targets,
+                        "candidate_rates": candidate_rates,
+                        "update_users": [int(user_id) for user_id in update_users],
+                        "history": candidate_history,
+                        "dual_state": copy.deepcopy(current_dual_state),
+                        "remaining_infeasible_users": [int(user_id) for user_id in remaining_infeasible_users],
+                        "accepted_via": "reoptimization_failed",
+                    }
+
+                current_dual_state = copy.deepcopy(solve_result["dual_state"])
                 if verbose:
-                    infeasible_text = ", ".join(str(int(user_id)) for user_id in remaining_infeasible_users)
                     updated_text = ", ".join(str(int(user_id)) for user_id in update_users)
                     print(
-                        f"  user={k_int:02d} block={block:02d} candidate n_kl={int(candidate):4d} "
-                        f"after updating users [{updated_text}] "
-                        f"still leaves committed users infeasible [{infeasible_text}] after re-optimization; "
-                        "stopping further n_kl reduction for this user in this block."
+                        f"  user={k_int:02d} block={block:02d} candidate n_kl={int(candidate_n):4d} "
+                        f"accepted at search_stage={stage_name} after fresh re-optimization of users [{updated_text}]."
                     )
+                return {
+                    "feasible": True,
+                    "candidate_targets": candidate_targets,
+                    "candidate_rates": candidate_rates,
+                    "update_users": [int(user_id) for user_id in update_users],
+                    "history": candidate_history,
+                    "dual_state": copy.deepcopy(solve_result["dual_state"]),
+                    "accepted_via": "reoptimization",
+                }
+
+            search_result = run_n_frontier_search(search_cfg, _evaluate_candidate_n)
+            accepted_events = search_result["accepted"]
+            if len(accepted_events) <= 0:
                 stopped_reduction_users.add(int(k_int))
                 continue
 
-            current_n_targets = candidate_targets
-            current_rates = candidate_rates
-            refinement_history.extend(candidate_history)
-            current_dual_state = copy.deepcopy(solve_result["dual_state"])
-            plans[k_int]["n_used"] = int(candidate)
-            plans[k_int]["R_used"] = float(candidate_rates.get(k_int, current_rates.get(k_int, 0.0)))
-            progress_this_epoch = True
+            best_event = accepted_events[-1]
+            best_result = best_event["result"]
+            best_n = int(best_event["n_kl"])
+            current_n_targets = dict(best_result["candidate_targets"])
+            current_rates = dict(best_result["candidate_rates"])
+            plans[k_int]["n_used"] = int(best_n)
+            plans[k_int]["R_used"] = float(current_rates.get(k_int, current_rates.get(k_int, 0.0)))
+            for accepted_event in accepted_events:
+                candidate_history = accepted_event["result"].get("history", [])
+                if len(candidate_history) > 0:
+                    refinement_history.extend(candidate_history)
+            progress_this_epoch = bool(best_n != current_n)
+            if not progress_this_epoch:
+                stopped_reduction_users.add(int(k_int))
+                continue
             if verbose:
-                updated_text = ", ".join(str(int(user_id)) for user_id in update_users)
                 print(
-                    f"  user={k_int:02d} block={block:02d} accepted smaller n_kl={int(candidate):4d} "
-                    f"after fresh re-optimization of users [{updated_text}]."
+                    f"  user={k_int:02d} block={block:02d} committed best n_kl={int(best_n):4d} "
+                    f"after {len(accepted_events)} accepted search states."
                 )
+            if best_n <= int(n_min) or search_result.get("frontier_rejected") is not None:
+                stopped_reduction_users.add(int(k_int))
 
         if not progress_this_epoch:
             break
@@ -1683,7 +1986,7 @@ def optimize_precoders_for_block(
     block: int,
     sim_params: dict[str, Any],
     verbose: bool = True,
-    objective_mode: str = UNWEIGHTED_SUM_RATE_MODE,
+    objective_mode: str = EQUAL_PRIORITY_SUM_RATE_MODE,
     user_weights: dict[int, float] | None = None,
     n_kl_overrides: dict[int, int] | None = None,
     users_to_update: List[int] | None = None,
@@ -1698,12 +2001,12 @@ def optimize_precoders_for_block(
     print_every = max(1, int(sim_params.get("print_every_epoch", 1)))
     tol = float(sim_params.get("precoder_tol", 1e-4))
     canonical_mode = resolve_objective_mode_alias(objective_mode)
-    if canonical_mode == REMAINING_BITS_WEIGHTED_SUM_RATE_MODE:
-        objective_label = REMAINING_BITS_WEIGHTED_SUM_RATE_MODE
+    if canonical_mode == PRIORITY_WEIGHTED_SUM_RATE_MODE:
+        objective_label = PRIORITY_WEIGHTED_SUM_RATE_MODE
     elif canonical_mode == BLENDED_NETWORK_RATE_MODE:
         objective_label = "blended_objective"
     else:
-        objective_label = UNWEIGHTED_SUM_RATE_MODE
+        objective_label = EQUAL_PRIORITY_SUM_RATE_MODE
     network_weight_beta = float(sim_params.get("network_rate_weight", 0.15))
 
     for epoch_idx in range(int(sim_params["max_precoder_epochs"])):
@@ -1776,13 +2079,13 @@ def optimize_precoders_for_block(
                 "user_weights": [float(weights.get(int(k), 1.0)) for k in active_users],
                 "max_precoder_delta": float(delta),
                 "sum_rate": total_rate,
-                REMAINING_BITS_WEIGHTED_SUM_RATE_MODE: weighted_total,
+                PRIORITY_WEIGHTED_SUM_RATE_MODE: weighted_total,
                 "weighted_sum_rate": weighted_total,
                 "blended_objective": blended_total,
                 "objective_mode": canonical_mode,
             }
         )
-        if canonical_mode == REMAINING_BITS_WEIGHTED_SUM_RATE_MODE:
+        if canonical_mode == PRIORITY_WEIGHTED_SUM_RATE_MODE:
             objective_value = weighted_total
         elif canonical_mode == BLENDED_NETWORK_RATE_MODE:
             objective_value = blended_total
@@ -1814,7 +2117,7 @@ def optimize_precoders_for_block_constrained(
     sim_params: dict[str, Any],
     *,
     verbose: bool = True,
-    objective_mode: str = UNWEIGHTED_SUM_RATE_MODE,
+    objective_mode: str = EQUAL_PRIORITY_SUM_RATE_MODE,
     user_weights: dict[int, float] | None = None,
     n_kl_overrides: dict[int, int] | None = None,
     users_to_update: List[int] | None = None,
@@ -1842,12 +2145,12 @@ def optimize_precoders_for_block_constrained(
     kkt_stationarity_tol = float(sim_params.get("kkt_stationarity_tol", 1e-4))
     canonical_mode = resolve_objective_mode_alias(objective_mode)
 
-    if canonical_mode == REMAINING_BITS_WEIGHTED_SUM_RATE_MODE:
-        objective_label = REMAINING_BITS_WEIGHTED_SUM_RATE_MODE
+    if canonical_mode == PRIORITY_WEIGHTED_SUM_RATE_MODE:
+        objective_label = PRIORITY_WEIGHTED_SUM_RATE_MODE
     elif canonical_mode == BLENDED_NETWORK_RATE_MODE:
         objective_label = "blended_objective"
     else:
-        objective_label = UNWEIGHTED_SUM_RATE_MODE
+        objective_label = EQUAL_PRIORITY_SUM_RATE_MODE
 
     lambda_rate = {
         int(k): float((dual_state or {}).get("lambda_rate", {}).get(int(k), sim_params.get("initial_lambda_rate_constraint", 0.1)))
@@ -2000,7 +2303,7 @@ def optimize_precoders_for_block_constrained(
         weighted_total = float(state["weighted_sum_rate"].detach().cpu())
         blended_total = float(state["blended_objective"].detach().cpu())
         block_power = float(state["block_power"].detach().cpu())
-        if canonical_mode == REMAINING_BITS_WEIGHTED_SUM_RATE_MODE:
+        if canonical_mode == PRIORITY_WEIGHTED_SUM_RATE_MODE:
             objective_value = weighted_total
         elif canonical_mode == BLENDED_NETWORK_RATE_MODE:
             objective_value = blended_total
@@ -2025,7 +2328,7 @@ def optimize_precoders_for_block_constrained(
                 "user_rate_gaps": [float(rate_gaps[int(k)]) for k in active_users],
                 "max_precoder_delta": float(delta),
                 "sum_rate": total_rate,
-                REMAINING_BITS_WEIGHTED_SUM_RATE_MODE: weighted_total,
+                PRIORITY_WEIGHTED_SUM_RATE_MODE: weighted_total,
                 "weighted_sum_rate": weighted_total,
                 "blended_objective": blended_total,
                 "objective_mode": canonical_mode,
@@ -2156,15 +2459,27 @@ def _allocate_bits_for_user_block_greedy(
     chosen_n = T_k
     chosen_R = R_T
     if allow_n_reduction and int(remaining_bits) <= B_max:
-        candidate = T_k - n_step
-        while candidate >= n_min:
-            R_candidate = float(system.compute_block_rate(k, l, candidate, F_override=working_F))
-            if (float(B_used) / float(candidate)) <= R_candidate:
-                chosen_n = int(candidate)
-                chosen_R = R_candidate
-                candidate -= n_step
-            else:
-                break
+        search_cfg = build_n_search_config(
+            n_min=int(n_min),
+            n_max=int(T_k),
+            fine_step=int(n_step),
+            direction=sim_params.get("n_search_direction", "descending"),
+            strategy=sim_params.get("n_search_strategy", "fixed_step"),
+            coarse_step=sim_params.get("n_search_coarse_step", int(n_step)),
+            exponential_factor=sim_params.get("n_search_exponential_factor", 2),
+        )
+        search_result = run_n_frontier_search(
+            search_cfg,
+            lambda candidate, _stage: {
+                "feasible": (
+                    float(B_used) / float(max(int(candidate), 1))
+                ) <= float(system.compute_block_rate(k, l, int(candidate), F_override=working_F)),
+                "R_candidate": float(system.compute_block_rate(k, l, int(candidate), F_override=working_F)),
+            },
+        )
+        for accepted in search_result["accepted"]:
+            chosen_n = int(accepted["n_kl"])
+            chosen_R = float(accepted["result"]["R_candidate"])
 
     return B_used, chosen_n, chosen_R
 
@@ -2281,15 +2596,27 @@ def _allocate_fixed_target_for_user_block(
     chosen_R = float(R_T)
 
     if allow_n_reduction and int(B_used) >= int(target_bits) and int(target_bits) > 0:
-        candidate = T_k - n_step
-        while candidate >= n_min:
-            R_candidate = float(system.compute_block_rate(k, l, candidate, F_override=working_F))
-            if (float(target_bits) / float(max(candidate, 1))) <= R_candidate:
-                chosen_n = int(candidate)
-                chosen_R = float(R_candidate)
-                candidate -= int(n_step)
-            else:
-                break
+        search_cfg = build_n_search_config(
+            n_min=int(n_min),
+            n_max=int(T_k),
+            fine_step=int(n_step),
+            direction=sim_params.get("n_search_direction", "descending"),
+            strategy=sim_params.get("n_search_strategy", "fixed_step"),
+            coarse_step=sim_params.get("n_search_coarse_step", int(n_step)),
+            exponential_factor=sim_params.get("n_search_exponential_factor", 2),
+        )
+        search_result = run_n_frontier_search(
+            search_cfg,
+            lambda candidate, _stage: {
+                "feasible": (
+                    float(target_bits) / float(max(int(candidate), 1))
+                ) <= float(system.compute_block_rate(k, l, int(candidate), F_override=working_F)),
+                "R_candidate": float(system.compute_block_rate(k, l, int(candidate), F_override=working_F)),
+            },
+        )
+        for accepted in search_result["accepted"]:
+            chosen_n = int(accepted["n_kl"])
+            chosen_R = float(accepted["result"]["R_candidate"])
 
     return int(B_used), int(chosen_n), float(chosen_R)
 
@@ -2493,11 +2820,11 @@ def _run_safe_sweep(
     method_name: str,
     objective_mode: str,
     allocation_mode: str,
-    weight_strategy: str = "remaining_bits",
 ) -> dict[str, Any]:
     objective_mode = resolve_objective_mode_alias(objective_mode)
     model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
     update_mode = resolve_convergence_precoder_update_mode(sim_params)
+    configured_weight_strategy = resolve_convergence_priority_weight_strategy(sim_params)
     initial_snr_db, initial_sinr_db = system.get_snr_sinr_db()
     initial_latency, initial_plan, initial_interference_diag = estimate_initial_latency_from_random_precoders(
         system,
@@ -2558,14 +2885,14 @@ def _run_safe_sweep(
                 active_users,
                 block,
             )
-        queue_weights = _build_user_weights(
+        queue_weights, active_weight_strategy = _resolve_block_user_weights(
             system,
             working_F,
             remaining,
             active_users,
             block,
             sim_params,
-            strategy=weight_strategy,
+            objective_mode,
         )
         if verbose:
             print(
@@ -2579,7 +2906,7 @@ def _run_safe_sweep(
             )
             if objective_uses_user_weights(objective_mode):
                 weights_text = ", ".join(f"u{k}={queue_weights[k]:.3f}" for k in active_users)
-                print(f"    weight_strategy={weight_strategy} | user_weights: {weights_text}")
+                print(f"    weight_strategy={active_weight_strategy} | user_weights: {weights_text}")
 
         transmit_users = list(active_users)
         skipped_users: list[int] = []
@@ -2772,9 +3099,9 @@ def _run_safe_sweep(
     final_interference_diag = _collect_interference_diagnostics(system)
     return {
         "method_name": method_name,
-        "objective_mode": objective_display_name(objective_mode),
+        "objective_mode": objective_display_name(objective_mode, configured_weight_strategy),
         "allocation_mode": allocation_mode,
-        "weight_strategy": objective_weight_strategy_name(objective_mode, weight_strategy),
+        "weight_strategy": objective_weight_strategy_name(objective_mode, configured_weight_strategy),
         "convergence_precoder_update_mode": str(update_mode),
         "precoder_parameterization": _downlink_precoder_parameterization(model_scope, update_mode),
         "downlink_precoder_net_scope": str(model_scope),
@@ -2841,6 +3168,7 @@ def _run_safe_sweep_fixed_block_targets(
     block_targets = np.asarray(scenario["block_bit_targets"], dtype=int)
     num_blocks = int(scenario["num_blocks"])
     update_mode = resolve_convergence_precoder_update_mode(sim_params)
+    configured_weight_strategy = resolve_convergence_priority_weight_strategy(sim_params)
 
     initial_snr_db, initial_sinr_db = system.get_snr_sinr_db()
     initial_latency, initial_plan, initial_interference_diag = _estimate_initial_latency_from_random_precoders_fixed_block_targets(
@@ -2896,7 +3224,15 @@ def _run_safe_sweep_fixed_block_targets(
                 active_users,
                 block,
             )
-        queue_weights = {int(k): 1.0 for k in active_users}
+        queue_weights, active_weight_strategy = _resolve_block_user_weights(
+            system,
+            working_F,
+            block_targets[:, block].astype(int),
+            active_users,
+            block,
+            sim_params,
+            objective_mode,
+        )
         if verbose:
             print(
                 format_log_line(
@@ -2907,6 +3243,9 @@ def _run_safe_sweep_fixed_block_targets(
                     objective=str(objective_mode),
                 )
             )
+            if objective_uses_user_weights(objective_mode):
+                weights_text = ", ".join(f"u{k}={queue_weights[k]:.3f}" for k in active_users)
+                print(f"    weight_strategy={active_weight_strategy} | user_weights: {weights_text}")
 
         transmit_users = list(active_users)
         skipped_users: list[int] = []
@@ -2976,7 +3315,6 @@ def _run_safe_sweep_fixed_block_targets(
                 int(k): int(block_targets[int(k), block])
                 for k in transmit_users
             }
-            uniform_weights = {int(k): 1.0 for k in transmit_users}
             final_plans, refinement_history, block_dual_state = _reduce_blocklengths_with_reoptimization(
                 system,
                 working_F,
@@ -2987,7 +3325,7 @@ def _run_safe_sweep_fixed_block_targets(
                 requested_bits_block,
                 sim_params,
                 objective_mode=objective_mode,
-                user_weights=uniform_weights,
+                user_weights={int(k): float(queue_weights.get(int(k), 1.0)) for k in transmit_users},
                 verbose=verbose,
                 dual_state=block_dual_state,
             )
@@ -3017,7 +3355,7 @@ def _run_safe_sweep_fixed_block_targets(
                         "required_rate": 0.0,
                         "achieved_rate": float(R_zero),
                         "rate_margin": float(R_zero),
-                        "queue_weight": 1.0,
+                        "queue_weight": float(queue_weights.get(int(k), 1.0)),
                         "skipped": True,
                         "partially_served": False,
                     }
@@ -3061,7 +3399,7 @@ def _run_safe_sweep_fixed_block_targets(
                     "required_rate": required_rate,
                     "achieved_rate": float(R_used),
                     "rate_margin": rate_margin,
-                    "queue_weight": 1.0,
+                    "queue_weight": float(queue_weights.get(int(k), 1.0)),
                     "skipped": bool(int(B_used) <= 0),
                     "partially_served": bool(0 < int(B_used) < int(target_bits)),
                 }
@@ -3095,7 +3433,10 @@ def _run_safe_sweep_fixed_block_targets(
                 "remaining_bits": int(max(np.sum(block_targets[:, block + 1:]), 0)) if block + 1 < num_blocks else 0,
                 "feasible_users": int(block_eval["feasible_count"]),
                 "min_max_bits": int(block_eval["min_max_bits"]),
-                "queue_weights": {int(k): 1.0 for k in active_users},
+                "queue_weights": {
+                    int(k): float(queue_weights.get(int(k), 1.0))
+                    for k in active_users
+                },
                 "final_precoder_delta": float(block_history[-1]["max_precoder_delta"]) if block_history else 0.0,
             }
         )
@@ -3117,9 +3458,9 @@ def _run_safe_sweep_fixed_block_targets(
     final_interference_diag = _collect_interference_diagnostics(system)
     return {
         "method_name": method_name,
-        "objective_mode": objective_display_name(objective_mode),
+        "objective_mode": objective_display_name(objective_mode, configured_weight_strategy),
         "allocation_mode": "fixed_block_targets",
-        "weight_strategy": objective_weight_strategy_name(objective_mode, "uniform_active_user_weight"),
+        "weight_strategy": objective_weight_strategy_name(objective_mode, configured_weight_strategy),
         "convergence_precoder_update_mode": str(update_mode),
         "precoder_parameterization": _downlink_precoder_parameterization(model_scope, update_mode),
         "downlink_precoder_net_scope": str(model_scope),
@@ -3199,7 +3540,6 @@ def optimize_downlink_safe_sweep(
         method_name="convergence_per_epoch_baseline",
         objective_mode=objective_mode,
         allocation_mode="greedy",
-        weight_strategy="remaining_bits",
     )
 
 

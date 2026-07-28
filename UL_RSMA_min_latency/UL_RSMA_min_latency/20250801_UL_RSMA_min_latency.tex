@@ -1,0 +1,515 @@
+%\documentclass[a4paper, 10pt, twocolumn, journal, twoside]{IEEEtran}
+\documentclass[a4paper, 12pt, onecolumn, journal, twoside, draftclsnofoot]{IEEEtran}
+
+\newcommand*{\DOUBLECOL}{}	% turns this on for double column
+\newlength{\subfigureheight}
+\newlength{\figurewidth}
+\ifdefined\DOUBLECOL
+\setlength{\subfigureheight}{2.45in}
+\setlength{\figurewidth}{3.5in}
+\else
+\setlength{\subfigureheight}{2.35in}
+\setlength{\figurewidth}{6.5in}
+\fi
+\usepackage{amsfonts,amsmath,amssymb,bm,cancel,color,comment,epsfig,enumerate,empheq,floatrow,hyperref,mathdots,mathrsfs}
+\usepackage{placeins}%\usepackage{algorithmic}
+\usepackage[vlined,ruled,linesnumbered]{algorithm2e}
+\usepackage{graphicx}
+%\usepackage{amsthm}
+\usepackage[super]{nth}
+\usepackage[noadjust]{cite}
+\usepackage{subcaption}
+\usepackage{tabularx}
+\usepackage{tabularray}		% make thing horizontal lines in tabular
+\UseTblrLibrary{booktabs}	% make thing horizontal lines in tabular
+
+\graphicspath{{eps/}}
+
+\hypersetup{
+	colorlinks=true,
+	linkcolor=red,
+	citecolor=green,
+	filecolor=magenta,
+	urlcolor=blue
+}
+
+\newenvironment{Ualgorithm}[1][htpb]{\def\@algocf@post@ruled{\kern\interspacealgoruled\hrule  height\algoheightrule\kern3pt\relax}%
+\def\@algocf@capt@ruled{under}
+\begin{algorithm}[#1]}
+{\end{algorithm}}
+
+\setcounter{MaxMatrixCols}{30}
+\DeclareSymbolFont{grb}{OML}{cmm}{b}{it}
+\DeclareMathSymbol{\zetab}{\mathord}{grb}{"10}
+\DeclareMathSymbol{\etab}{\mathord}{grb}{"11}
+\DeclareMathSymbol{\thetab}{\mathord}{grb}{"12}
+\DeclareMathSymbol{\kappab}{\mathord}{grb}{"14}
+\DeclareMathSymbol{\lambdab}{\mathord}{grb}{"15}
+\DeclareMathSymbol{\mub}{\mathord}{grb}{"16}
+\DeclareMathSymbol{\nub}{\mathord}{grb}{"17}
+\DeclareMathSymbol{\rhob}{\mathord}{grb}{"1A}
+\DeclareMathSymbol{\sigmab}{\mathord}{grb}{"1B}
+\DeclareMathSymbol{\taub}{\mathord}{grb}{"1C}
+\DeclareMathSymbol{\phib}{\mathord}{grb}{"1E}
+\DeclareMathSymbol{\psib}{\mathord}{grb}{"20}
+\DeclareMathSymbol{\omegab}{\mathord}{grb}{"21}
+\DeclareMathSymbol{\epsilonb}{\mathord}{grb}{"22}
+\DeclareMathSymbol{\varphib}{\mathord}{grb}{"27}
+\input{Symbol_Shortcut.tex}
+
+\SetKwRepeat{Do}{do}{while}%
+
+\newtheorem{theorem}{\bf Theorem}		% by Victor
+\newtheorem{corollary}{\bf Corollary}	% by Victor
+\newtheorem{definition}{\bf Definition}	% by Victor
+
+%\centerfigcaptionstrue
+
+%\pagestyle{empty}
+
+\makeatletter
+\def\ifundefined{\@ifundefined}
+\makeatother
+
+\setlength{\parskip}{0ex}
+
+% generating the double accent on o, i.e. \fH{o}, e.g. Erdos Renyi 
+\newcommand\fH[1]{\sbox0{#1}\dimen0=\ht0 \advance\dimen0 -1ex
+  \sbox2{\'{}}\sbox2{\raise\dimen0\box2}%
+  {\ooalign{\hidewidth\kern.1em\copy2\kern-.5\wd2\box2\hidewidth\cr\box0\crcr}}}
+
+\title{\vspace{-0.2em} \huge Model-Driven Neural Network Based MIMO Channel Estimator}
+
+\ifdefined \BLIND
+\author{Carrson C. Fung $^1$ \\ %and Author 2$^2$ \\
+$^1$ NYCU  \\
+%email: \emph{Author 1's email, Author 2's email} \\
+\thanks{Funding sources.}
+}
+\else
+\author{Shanik Hubert, ~\IEEEmembership{Student Member,~IEEE}, and Carrson C. Fung$^*$,~\IEEEmembership{Member,~IEEE} \\
+%Institute of Electronics, College of ECE, National Chiao Tung University, Hsinchu, Taiwan 300 %\\
+%Voice: +886-3-573-1862$^2$ Fax: +886-3-572-4361$^2$ email: \emph{rusly.eic04g@nctu.edu.tw, c.fung@ieee.org \vspace{-1.5em}} 
+\thanks{This work has been partially supported by Google exploreCSR Grant 111Q90004C.
+
+Shanik Hubert and Carrson C. Fung  are both affiliated with the Department of Electrical and Computer Engineering, National Yang Ming Chiao Tung University, Hsinchu 300, Taiwan. (e-mail: dmytro.ivakhnenkov@gmail.com, c.fung@ieee.org)}
+}
+\fi
+
+
+\markboth{IEEE Trans. on Communications}{Latency Minimization for Uplink RSMA System}
+\begin{document}
+\maketitle
+
+%******************************************************************
+\begin{abstract}
+%******************************************************************
+\end{abstract}
+
+\begin{IEEEkeywords}
+\end{IEEEkeywords}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}	\label{intro}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methodology} \label{sec_meth}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Uplink Latency Minimization}
+%******************************************************************
+For MIMO uplink (UL), the receive signal is written as
+\begin{equation*}
+	\y = \sum_{k=1}^K  \H_k \F_k \s_k + \w \in \complex^{N_R},
+\end{equation*}
+where 
+$\H_k \in \complex^{N_R \times N_k}$ denotes the uplink channel between the $k$th user and the AP, $\F_k \in \complex^{N_k \times d_k}$ denotes the precoding matrix for the $k$th user, $d_k$ denotes the number of spatial streams user $k$ is sending to the AP (and $d_k \leq N_k$), $\s_k \in \complex^{d_k}$ denotes the transmitted signal for the $k$th user, $\w \in \complex^{N_R}$  denotes the AWGN, with $N_k$ denoting the number of antennas at the $k$th user and $N_R$ denotes the number of antennas at the AP.  It is assumed that $E \left[ \s_k \s_k^H \right] = \I_{N_k}$.  Let 
+\begin{equation*}
+	x_k = \F_k \s_k,
+\end{equation*}
+so
+\begin{align*}
+	E \left[ \left| \x_k \right\|_2^2 \right] &= \F_k E \left[ \s_k \s_k^H \right] \F_k^H \\
+	&= \F_k \F_k^H  \\
+	&=  \left\| \F_k \right\|_F^2  \leq P_k,
+\end{align*}
+where $P_k$ is the transmit power from the $k$th user.  If SIC is used at the receiver, then the achievable rate at the receiver is
+\begin{equation*}
+	R_{sum} = \sum_{k=1}^K  \log_2 \det \left(  \I_{N_R}  +  \H_k \F_k     \left(  \sigma_w^2 \I_{N_R}  + \sum_{j \neq k}  \H_j \F_j \F_j^H \H_j^H  \right)^{-1}     \F_k^H \H_k^H  \right) 
+\end{equation*}
+
+Then it seems we can formulate the latency minimization problem as
+\begin{equation}
+	\begin{split}
+		\min_{\F_k, B_k, \forall k}  &\;  \sum_{k=1}^K  \frac{ B_k } { R_{sum}  }  \\
+		s.t. &\;  \left\| \F_k \right\|_F^2  \leq P_k,  \forall k, \\
+		&\; B_k \in \left\{  B_{k,\min}, \ldots, B_{k,\max} \right\}.
+	\end{split}
+\label{eq_prob_form_basic}
+\end{equation}
+Possible extension include optimizing not with the sum rate, but using rate such as
+\begin{enumerate}[1.]
+	\item Max-min rate: 
+	\begin{equation*}
+		\max_{\F_k, \forall k}  \min_k  R_k.
+	\end{equation*}
+This has a strong fairness guarantee, often leads to equal rates across all users if we can find a feasible solution.  This is the worst-case that Carrson was talking about.
+	\item The proportional fairness:
+	\begin{equation*}
+		\max_{\F_k, \forall k}   \sum_{k=1}^K  \log (\R_k), 
+	\end{equation*}
+which balances the throughput and fairness. 
+	\item Weighted fairness 
+	\begin{equation*}
+		\max_{\F_k, w_k, \forall k}  w_k \log (R_k), 
+	\end{equation*}
+where $w_k$ are weights for QoS differentiation, i.e., higher $w_k$ is, more resource will be allocated the $k$th user.
+\end{enumerate}
+
+
+\subsection{Uplink Latency Minimization Using RSMA}
+%******************************************************************
+ 
+\begin{comment}
+%***************************************************************************
+\begin{figure}[ht]
+    \centering
+	\subcaptionbox{Indoor factory (InF-DL) channel at 2.5 GHz. \label{fig_NMSE_vs_snr_InF_2_5_ISTA_Net}} {
+		\includegraphics[width = 0.47\columnwidth]{./figs/ISTA_LS_Net_eigenmode_CNN03_vs_ISTA_Net_InF_DL_2_5.png}
+	} %
+	\subcaptionbox{Urban Macro (UMa) channel at 28 GHz.    \label{fig_NMSE_vs_snr_UMa_28_ISTA_Net}} { 
+		\includegraphics[width = 0.47\columnwidth]{./figs/ISTA_LS_Net_eigenmode_CNN03_vs_ISTA_Net_UMa_28.png}
+	}
+    \caption{Normalized mean-squared error (NMSE) vs. SNR (both in dB) results for MIMO channel estimation for our proposed ISTA-LS-Net eigenmode with CNN with L = 5 layers, least squares (LS), linear minimum mean-squared estimator (LMMSE) and ISTA-Net \cite{liu2021} with $L = 10$ layers.  $n_T = 36$, $n_R = 4$, $T = 36$.  The results are plotted using the InF-DL 2.5 GHz and UMa channels at 28 GHz as stated in  \cite{PL_for}.}
+    \label{fig_ISTA_LS_Net}
+\end{figure}   
+%***************************************************************************
+\end{comment}
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Simulation Results} \label{sec_simu}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+\begin{comment}
+%*************************************************************************
+\begin{table}[!htb]
+	\small
+	\caption{Simulation parameters for PN-IEKF.}
+	\centering
+	\begin{tabularx}{\textwidth}{Xllll}
+		\hline
+  		\multicolumn{4}{c}{Simulation Parameters}\\%{Precoder Design Parameters} \\
+		\hline
+		Number of vertices $(M)$ & 10 & 10 & 30 \\
+		SNR & 5 dB & 20 dB & 20 dB\\
+		Variance of process noise $\widebar{\u}[n]$ ($\sigma_u^2$) & 1 & 1 & 1 \\
+		Variance of process noise $\u_\omega[n]$ ($\sigma_\omega^2$) & 0.045 & 0.002 & 0.001\\
+		Sampling period $(T)$ & 1 & 1 & 1\\
+		Number of Monte Carlo experiments & 100 & 100 & 100 \\
+		Number of time samples for Warm start & 90 & 90 & 90\\
+		Max. number of IEKF iterations (MaxIter) & 3 & 4 & 6 \\
+		Max. number of ISTA iterations & 15000 & 15000 & 15000\\
+		Transition time $(n_0)$ & 14000 & 14000 & 14000\\
+		Number of time samples used in $T$-squared test $(N)$& 200 & 200 & 200\\
+		Sparsity regularization factor $(\beta)$ & 0.18 & 0.029 & 0.01\\
+		Edge probability parameter $(p)$ & 0.4 & 0.4 & 0.4\\
+		False alarm rate $(\alpha)$ & $10^{-4}$ & $10^{-5}$ & $10^{-5}$\\
+		Cool down time samples & 6000 & 6000 & 6000 \\
+		Initial MSE of estimated graph signals $(a)$ & 100 & 100 & 100 \\
+		Initial MSE of estimated graph $(b)$ & 1 & 1 & 1 \\
+		\hline
+	\end{tabularx}
+	\label{tab_sim_params_pn_iekf}
+\end{table}
+%*************************************************************************
+%**************************************************************************
+\begin{figure}[htp]
+    \centering
+    \subcaptionbox{NMSD vs. time sample $n$. \label{fig_NMSD_snr20dB_M10}} {
+		%\includegraphics[width=0.47\columnwidth]{eps/PN_IEKF/NMSD_RE/20dB_10node_all_NMSD.eps}
+	}%
+	\subcaptionbox{RE vs. time sample $n$. \label{fig_RE_snr20dB_M10}} {
+		%\includegraphics[width=0.47\columnwidth]{eps/PN_IEKF/NMSD_RE/20dB_10node_all_RE.eps}
+	}
+\caption{NMSD and RE vs. time sample $n$ comparison between the oracle, the PN-IEKF method, three LMS approaches proposed in \cite{vlaski2018}. $M=10$, $\text{SNR} = 20 \text{ dB}$. Transition occurs at $n_0 = 14000$ sample.}
+\label{fig_NMSD_RE_snr20dB_M10}
+\end{figure}
+%**************************************************************************
+
+
+\subsection{Simulation Results of the PN-IEKF-VAR Using the VAR Model}
+%******************************************************************
+
+\end{comment}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusion}		\label{sec_concl}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%****************************************
+\begin{thebibliography}{25}
+
+
+\bibitem{chang2015semm}
+C.-Y. Chang and C.C. Fung, ``Sparsity enhanced mismatch model for robust spatial intercell interference cancelation in heterogeneous networks,'' \emph{IEEE Trans. on Communications}, vol. 63(1), pp. 125-139, Jan. 2015.
+
+\bibitem{daubechies2004}
+I. Daubechies, M. Defrise and C. De Mol, ``An iterative thresholding algorithm for linear inverse problems with a sparsity constraint,'' \emph{Communications on Pure and Applied Mathematics}, vol. 57(11), pp. 1413-1457, 2004.
+
+\bibitem{beck2009}
+A. Beck and M. Teboullen, ``A fast iterative shrinkage-thresholding algorithm for linear inverse problems,'' \emph{SIAM Journal on Imaging Sciences}, vol. 2(1), pp. 183-202, 2009.
+
+\bibitem{parikh2013}
+N. Parikh and S. Boyd, ``Proximal algorithms,'' \emph{Foundations and Trends in  Optimization}, vol. 1(3), pp. 123-231, 2013.
+
+\bibitem{cohen2019}
+R. Cohen \emph{et al.}, ``Deep convolutional robust PCA with application to ultrasound imaging,'' \emph{Proc. of the IEEE Intl. Conf. on Acoustics, Speech and Signal Processing}, pp. 3212-3216, Brighton, UK, May 2019.
+
+\bibitem{soloman2019}
+O. Soloman \emph{et al.}, ``Deep unfolded robust PCA with application to clutter suppression in ultrasound,'' \emph{IEEE Trans. on Medical Imaging}, vol. 39(4), pp. 1051-1063, Sep. 2019.
+
+\bibitem{heath2016}
+R.W. Heath Jr., N. Gonz\'alez-Prelcic, S. Rangan, W. Roh and A.M. Sayeed, ``An overview of signal processing techniques for millimeter wave MIMO systems,'' \emph{IEEE Journal of Selected Topics in Signal Processing}, vol. 10(3), pp. 436-453, Dec. 2016.
+
+
+
+\bibitem{kay1993}
+S. Kay, \emph{Statistical Signal Processing: Estimation Theory}, Prentice Hall, 1993.
+
+\bibitem{eisen2019}
+M. Eisen, C. Zhang, L.F.O. Chamon, D.D. Lee and A. Ribeiro, ``Learning optimal power allocations in wireless systems,'' \emph{IEEE Trans. on Signal Processing}, vol. 67(10), pp. 2775-2790, May 2019.
+
+\bibitem{nesterov2017}
+Y. Nesterov and V. Spokoiny, ``Random gradient-free minimization of convex functions,'' \emph{Foundations of Computational Mathematics}, vol. 17(2), pp. 527-566, 2017.
+
+\bibitem{sutton2000}
+R.S. Sutton, D.A. McAllester, S.P. Singh and Y. Mansour, ``Policy gradient methods for reinforcement learning with function approximation,'' \emph{Proc. of the Advances in Neural Information Processing Systems}, pp. 1057-1063, 2000.
+
+\bibitem{eisen2020}
+M. Eisen and A. Ribeiro, ``Optimal wireless resource allocation with random edge graph neural networks,'' \emph{IEEE Trans. on Signal Processing}, vol. 68, pp. 2977-2991, 2020.
+
+\bibitem{PL_for}
+3GPP, ``Section 7: Channel model(s) for 0.5-100 GHz'' \emph{5G Study on channel model for frequencies from 0.5 to 100 GHz (3GPP TR 38.901 version 16.1.0 Release 16)}, 2020.
+
+\bibitem{liu2021}
+S. Liu and X. Huang, ``Sparsity-aware channel estimation for mmWave massive MIMO: A deep CNN-based approach,'' \emph{China Communications}, Jun. 2021.
+
+
+
+
+
+
+\begin{comment}
+\bibitem{bridgeford2022}
+E.W. Bridgeford, A. Loftus and J.T. Vogelstein, \emph{Hands-on Network Machine Learning with Scikit-Learn and Graspolgic}. [Online]. Available: \href{http://docs.neurodata.io/graph-stats-book/appendix/ch12/rdpgs.html}{\textit{http://docs.neurodata.io/graph-stats-book/appendix/ch12/rdpgs.html}}.
+
+% cvx
+\bibitem{grant}
+M. Grant and S. Boyd, \emph{CVX: Matlab software for disciplined convex programming}, \href{http://cvxr.com/cvx/}{\textit{http://cvxr.com/cvx/}}.
+
+% YALMIP
+\bibitem{yalmip}
+%YALMIP, ``Yet Another Linear Matrix Inequality Parser,'', \textcolor{blue}{\url{http://users.isy.liu.se/johanl/yalmip/}}.
+YALMIP, ``Yet Another Linear Matrix Inequality Parser,'', \href{http://users.isy.liu.se/johanl/yalmip/}{\textit{http://users.isy.liu.se/johanl/yalmip/}}.
+
+% Graph toolbox
+\bibitem{girault2017}
+B. Girault, S. S. Narayanan, A. Ortega, P. Gonalves, and E. Fleury, ``Grasp: A matlab toolbox for graph signal processing,'' \emph{IEEE International Conference on Acoustics, Speech and Signal Processing}, pp. 6574-6575, Mar. 2017.  Available: \emph{\textcolor{blue}{https://gforge.inria.fr/projects/grasp}}.
+
+\bibitem{defferrard}
+M. Defferrard, L. Martin, R. Pena, and N. Perraudin, ``Pygsp: Graph signal processing in python''. Online. \href{https://github.com/epfl-lts2/pygsp}{\textit{https://github.com/epfl-lts2/pygsp}}.
+
+
+% Graph neural net
+\bibitem{bruna2014}
+J. Bruna, W. Zaremba, A. Szlam, and Y. LeCun, ``Spectral networks and locally connected networks on graphs,'' \emph{Proc. of the Intl. Conf. on Learning Representations}, Banff, AB, Canada, Apr. 2014.
+
+\bibitem{kipf2017}
+T.N. Kiph and M. Welling, ``Semi-supervised classification with graph convolutional networks,'' \emph{Proc. of the International Conf. on Learning Representations}, 2017.
+
+\bibitem{du2018TAGCN}
+J. Du \emph{et al.}, ``Topology adaptive graph convolutional networks,'' \emph{arXiv:1710.10370v5}, Feb. 2018.
+
+
+\bibitem{bronstein2017}
+M.M. Bronstein, J. Bruna, Y. LeCun, A. Szlam, and P. Vandergheynst, ``Geometric deep learning,'' \emph{IEEE Signal Processing Magazine}, vol. 34(4), pp. 18-42, Jul. 2017.
+
+%\bibitem{shi2019}
+%J. Shi and J.M.F. Moura, ``Graph signal processing: Modulation, convolution, and %sampling,'' \emph{arXiv:1912.06762}, Dec. 2019.
+
+
+\bibitem{yuan2006}
+M. Yuan and Y. Lin, ``Model selection and estimation in regression with grouped variables,'' \emph{Journal of the Royal Society. Series B,} vol 68(1), pp. 49-67, 2006.
+
+\bibitem{bassett2011}
+D.S. Bassett, N.F. Wymbs, M.A. Porter, P.J. Mucha, J.M. Carlson, and S.T. Grafton, ``Dynamic reconfiguration of human brain networks during learning,'' \emph{Proceedings of the National Academy of Sciences}, vol. 108(18), pp. 7641-7646, May 2011.
+
+\bibitem{cressie2011}
+N. Cressie and C.K. Wilke, \emph{Statistics for Spatio-Temporal Data}, Hoboken, NJ, USA, Wiley, 2011.
+
+\bibitem{condat2013}
+L. Condat, ``A primal-dual splitting method for convex optimization involving Lipschitzian, proximable and linear composite terms,'' \emph{Journal of Optimization Theory and Applications}, vol. 158(2), pp. 460-479, 2013.
+
+\bibitem{combettes2012}
+P.L. Combettes and J.C. Pesquet, ``Primal-dual splitting algorithm for solving inclusions with mixtures of composite, Lipschitzian, and parallel-sum type monotone operators,'' \emph{Set-Valued and Variational Analysis}, vol. 20(2), pp. 307-330, 2012.
+
+\bibitem{komodakis2015}
+N. Komodakis and J.-C. Pesquet, ``Playing with duality: An overview of recent primal-dual approaches for solving large-scale optimization problems,'' \emph{IEEE Signal Processing Magazine}, vol. 32(6) pp. 31-54, Nov. 2015.
+
+\bibitem{liu2019}
+Y. Liu \emph{et al.}, ``Graph learning based on spatiotemporal smoothness for time-varying graph signal,'' \emph{IEEE Access}, vol. 7, pp. 62372-62386, May 2019.
+
+\bibitem{wu2023}
+Z.-Y. Wu and C.C. Fung, ``Online graph topology estimation using proximal Newton iterated Kalman filtering,'' \emph{Under preparation}.
+
+\bibitem{lee2014}
+J.D. Lee, Y. Sun and M.A. Saunders, ``Proximal Newton-type methods for minimizing composite functions,'' \emph{SIAM Journal on Optimization}, vol. 24(3), pp. 1420-1443, 2014.  
+
+\bibitem{jazwinski1970}
+A.J. Jazwinski, \emph{Stochastic processes and filtering theory}, Academic Press, New York, 1970.
+
+\bibitem{bell1993}
+B.M. Bell and F.W. Cathey, ``The iterated Kalman filter update as a Gauss-Newton method,'' \emph{IEEE Trans. on Automatic Control}, vol. 38(2), pp. 294-297, Feb. 1993.
+
+\bibitem{bell1994}
+B.M. Bell, ``The iterated Kalman smoother as a Gauss-Newton method,'' \emph{SIAM Journal on Optimization}, vol. 4(3), pp. 626-636, Aug. 1994.
+
+\bibitem{skoglund2015}
+M.A. Skoglund, G. Hendeby and D. Axehill, ``Extended kalman filter modifications based on an optimization view point,'' \emph{18th Intl. Conf. on Information Fusion}, pp. 1856-1861, 2015.
+
+\bibitem{parikh2013}
+N. Parikh and S. Boyd, ``Proximal algorithms,'' \emph{Foundations and Trends in Optimization}, vol. 1(3), pp. 123-231, 2013.
+
+\bibitem{evap}
+\emph{California Irrigation Management Information System}. [Online].  Available: \href{https://cimis.water.ca.gov/}{\textit{https://cimis.water.ca.gov/}}
+
+\bibitem{adni}
+\emph{Alzheimer's Disease Neuroimaging Inititative}. [Online]. Available:\href{http://adni.loni.usc.edu/}{\textit{http://adni.loni.usc.edu/}}
+
+\bibitem{openneuro}
+\emph{OpenNEURO}.  [Online]. Available: \href{https://openneuro.org/}{\textit{https://openneuro.org/}}
+
+\bibitem{bielczyk2019}
+N. Z. Bielczyk, S. Uithol, T. van Mourik, P. Anderson, J.C. Glennon, J.K. Buitelaar, ``Disentangling causal webs in the brain using functional magnetic resonance imaging: A review of current approaches,'' \emph{Network Neuroscience}, vol. 3(2), pp. 237-273, 2019.
+
+\bibitem{baingana2013}
+B. Baingana, G. Mateo, and G.B. Giannakis, ``Dynamical structural equation models for tracking topologies of social networks,'' \emph{Proc. of Workshop on Computational Advances in Multi-sensor Adaptive Processing}, Saint-Martin, pp. 292-295, Dec. 2013.
+
+\bibitem{baingana2015}
+B. Baingana and G.B. Giannakis, ``Switched dynamic structural equation models for tracking social network topologies,'' \emph{Proc. of the IEEE Global Conf. on Signal and Information Processing}, Orlando, FL, USA, Dec. 2015.
+
+\bibitem{baingana2017}
+B. Baingana and G.B. Giannakis, ``Tracking switched dynamic network topologies from information cascades,'' \emph{IEEE Trans. on Signal Processing}, vol. 65(4), pp. 985-997, 2017.
+
+\bibitem{shen2017dyn}
+Y. Shen, B. Baingana, and G.B. Giannakis, ``Tensor decompositions for identifying directed graph topologies and tracking dynamic networks,'' \emph{IEEE Trans. on Signal Processing}, vol. 65(14), pp. 3675-3687, Jul. 2017.
+
+\bibitem{bishop2006}
+C.M. Bishop, \emph{Pattern recognition and Machine Learning}, in Information Science and Statistics, New York, NY, USA, Springer-Verlag, 2006.
+
+\bibitem{harring2012}
+J. Harring, B. Weiss, and J.-C. Hsu, ``A comparison of methods for estimating quadratic effects in nonlinear structural equation models,'' \emph{Psychological Methods}, vol. 17, pp. 193-214, 2012.
+
+\bibitem{finch2015}
+W.H. Finch, ``Modeling nonlinear structural equation models: A comparison of the two-stage generalized additive models and the finite mixture structural equation model,'' \emph{Structural Equation Modeling: A Multidisciplinary Journal}, vol. 22(1), pp. 60-75, 2015.
+
+\bibitem{lim2015}
+N. Lim, F. D'Alche-Buc, C. Auliac, and G. Michailidis, ``Operator-value kernel-based vector autoregressive models for network inference,'' \emph{Machine Learning}, vo. 99(3), pp. 489-513, 2015.
+
+
+% Graph neural net
+\bibitem{scarselli2009}
+G. Scarselli, M. Gori, A.C. Tsoi, M. Hagenbuchner, and G. Monfardini, ``The graph neural network model,'' \emph{IEEE Trans. on Neural Networks}, vol. 20(1), pp. 61-80, Jan. 2009.
+
+
+%\bibitem{shafipour2019}
+%R. Shafipour, S. Segarra, A.G. Marques, G. Mateos, ``Identifying the topology of undirected networks from diffused non-stationary graph signals,'' \emph{arXiv:1801:03862v2}, Jan. 2019.
+
+
+%\bibitem{boyd2010}
+%S. Boyd, N. Parikh, E. Chu, B. Peleato, and J. Eckstein, ``Distributed optimization and statistical learning via the alternating direction of method of multipliers,'' \emph{Foundations and Trends in Machine Learning}, vol. 3(1), pp. 1-122, 2010.
+
+     
+%\bibitem{girault2015}
+%B. Girault, P. Goncalves, and E. Fleury, ``Translation on graphs: an isometric shift operator,'' \emph{IEEE Signal Processing Letters}, vol. 22(12), pp. 2416-2420, Dec. 2015.
+
+     
+%\bibitem{bruna2014}
+%J. Bruna, W. Zaremba, A. Szlam, and Y. LeCun, ``Spectral networks and locally connected networks on graphs,'' \emph{Proc. of the Intl. Conf. on Learning Representations}, Banff, AB, Canada, Apr. 2014.
+
+%\bibitem{bronstein2017}
+%M.M. Bronstein, J. Bruna, Y. LeCun, A. Szlam, and P. Vandergheynst, ``Geometric deep learning,'' \emph{IEEE Signal Processing Magazine}, vol. 34(4), pp. 18-42, Jul. 2017.
+
+\bibitem{du2018}
+J. Du, S. Zhang, G. Wu. J.M.F. Moura and S. Kar, ``Topology adaptive graph convolutional networks,'' \emph{arXiv:1710.10370v5}, Feb. 2018.
+
+\bibitem{cheung2020}
+M. Cheung, J. Shi, O. Wright, L.Y. Jiang, X. Liu, and J.M.F. Moura, ``Graph signal processing and deep learning: convolution, pooling and topology,'' vol. 37 (6), pp. 139-149. Nov. 2020.
+     
+\bibitem{gama2020}
+F. Gama, E. Isufi, G. Leus, and A. Ribeiro, ``Graphs, convolutions, and neural networks,'' \emph{IEEE Signal Processing Magazine}, vol. 37 (6), pp. 128-138, Nov. 2020.
+
+\bibitem{zhang2019}
+S. Zhang, H. Tong, J. Xu, and R. Maciejewski, ``Graph convolutional networks: A comprehensive review,'' \emph{Computational Social Networks}, vol. 6(11), 2019.
+
+\bibitem{wu2020}
+Z. Wu, S. Pan, F. Chen, G. Long, C. Zhang, and P.S. Yu, ``A comprehensive survey on graph neural networks,'' \emph{IEEE Trans. on Neural Networks and Learning Systems}, vol. , pp. 1-21, Mar. 2020.
+
+\bibitem{sahoo2018}
+D. Sahoo, Q. Pham, J. Lu, S.C.H. Hoi, ``Online deep learning: Learning deep neural networks on the fly,'' \emph{Proc. of the 27th Intl. Joint Conf. on Artificial Intelligence}, 2018.
+
+\bibitem{monga2021}
+V. Monga, Y. Li, and Y.C. Eldar, ``Algorithm unrolling: Interpretable, efficient deep learning for signal and image processing,'' \emph{IEEE Signal Processing Magazine}, vol. 38(2), pp. 18-44, Feb. 2021.
+
+\bibitem{soloman2019}
+O. Soloman \emph{et al.}, ``Deep unfolded robust PCA with application to clutter suppression in ultrasound,'' \emph{IEEE Trans. on Medical Imaging}, vol. 39(4), pp. 1051-1063, Sep. 2019.
+
+\bibitem{servetnyk2019}
+M. Servetnyk and C.C. Fung, ``Distributed Joint Transmitter Design and Selection Using Augmented ADMM,'' \emph{Proc. of the IEEE Intl. Conf. on Speech, Acoustics and Signal Processing}, Brighton, UK, May 2019.
+
+\bibitem{servetnyk2020}
+M. Servetnyk, C.C. Fung, and Z. Han, ``Unsupervised federated learning for unbalanced data,'' \emph{Proc. of the IEEE Global Communications Conference}, Taipei, Taiwan, Dec. 2020.
+
+% SCIP-SDP
+\bibitem{scip_sdp}
+SCIP-SDP, ``A mixed-integer semidefinite programming plugin for SCIP,'', \href{http://www.opt.tu-darmstadt.de/scipsdp/}{\textit{http://www.opt.tu-darmstadt.de/scipsdp/}}.
+
+
+% Wireless InSite
+\bibitem{insite}
+Wireless InSite, 3D Wireless Prediction Software, \emph{\textcolor{blue}{https://www.remcom.com/wireless-insite-em-propagation-software}}.
+
+% IEEE DataPort
+\bibitem{dataport}
+IEEE DataPort, \emph{\textcolor{blue}{http://ieee-dataport.org}}.
+
+\bibitem{shuman2017}
+D.I. Shuman, P. Vandergheynst, D. Kressner, and P. Frossard, ``Distributed signal processing via Chebyshev polynomial approximation,'' \emph{arXiv1111.5239v3}, Jul. 2017.
+\end{comment}
+
+% Multitarget Tracking 
+%\bibitem{vo2015multitarget}
+%B.-N. Vo \emph{et al.}, ``Multitarget tracking,'' \emph{Wiley Encyclopedia of Electrical and Electronics Engineering}, Sep. 2015.
+
+%\bibitem{qiu2015survey}
+%C. Qiu \emph{et al.}, ``A survey of motion-based multitarget tracking methods,'' \emph{Progress In Electromagnetics Research B}, vol. 62, pp. 195-223, 2015.
+
+\end{thebibliography}
+
+\end{document}
+
+
+
+

@@ -1,0 +1,601 @@
+
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=0.75in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\newcommand{\na}{--}
+\newcommand{\toh}{\shortstack{Train\\Only}}
+\newcommand{\tth}{\shortstack{Train+\\Test}}
+
+\title{Finite-Blocklength Latency Minimization for Uplink and Downlink Communications:\\Topic-Split Summary Tables}
+\author{}
+\date{July 28, 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Naming}
+
+\begingroup
+\small
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{p{0.32\textwidth} p{0.60\textwidth}}
+\caption{Document naming}\\
+\toprule
+Document label & Meaning \\
+\midrule
+\endfirsthead
+\caption[]{Document naming (continued)}\\
+\toprule
+Document label & Meaning \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Training Only Method & Direct online optimization during scheduling. \\
+Training + Testing Method & Separate training stage followed by testing-stage inference. \\
+Payload completion & Each user continues until its remaining payload is exhausted. \\
+\end{longtable}
+\endgroup
+
+\section{Coverage}
+
+\subsection{Uplink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.26\textwidth} >{\raggedright\arraybackslash}p{0.20\textwidth} >{\raggedright\arraybackslash}p{0.24\textwidth} >{\raggedright\arraybackslash}p{0.16\textwidth}}
+\caption{Uplink coverage used in this document}\\
+\toprule
+Scenario & Training Only & Training + Testing & Config \\
+\midrule
+\endfirsthead
+\caption[]{Uplink coverage used in this document (continued)}\\
+\toprule
+Scenario & Training Only & Training + Testing & Config \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Payload completion & Seed 3 & Train [1, 2], test 3 & UL payload \\
+Payload completion direction and weighting sweep & Seed 3, unweighted / inverse-CNR, asc. / desc. & Train [1, 2], test 3 & Sweep 20260727\_215427 \\
+Payload completion binary test-time search & \na & Shared trained model, test 3, asc. / desc. / binary & Held-out search \\
+\end{longtable}
+\endgroup
+
+\subsection{Downlink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.26\textwidth} >{\raggedright\arraybackslash}p{0.20\textwidth} >{\raggedright\arraybackslash}p{0.24\textwidth} >{\raggedright\arraybackslash}p{0.16\textwidth}}
+\caption{Downlink coverage used in this document}\\
+\toprule
+Scenario & Training Only & Training + Testing & Config \\
+\midrule
+\endfirsthead
+\caption[]{Downlink coverage used in this document (continued)}\\
+\toprule
+Scenario & Training Only & Training + Testing & Config \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Payload completion & Seed 3 & Train [1, 2], test 3 & DL payload \\
+Payload completion direction and weighting sweep & Seed 3, unweighted / inverse-CNR, asc. / desc. & Train [1, 2], test 3 & Sweep 20260727\_215427 \\
+\end{longtable}
+\endgroup
+
+
+
+\section{Latency, Synchronization, and Service}
+
+\subsection{Uplink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.40\textwidth} *{2}{>{\raggedright\arraybackslash}p{0.18\textwidth}}}
+\caption{Uplink latency, synchronization, and service summary}\\
+\toprule
+Metric & \multicolumn{2}{c}{Payload completion} \\
+\cmidrule(lr){2-3}
+ & \toh & \tth \\
+\midrule
+\endfirsthead
+\caption[]{Uplink latency, synchronization, and service summary (continued)}\\
+\toprule
+Metric & \multicolumn{2}{c}{Payload completion} \\
+\cmidrule(lr){2-3}
+ & \toh & \tth \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Init. total & 0.030733 & 0.030733 \\
+Final total & 0.024667 & 0.025200 \\
+Red. (\%) & 19.7397 & 18.0043 \\
+\addlinespace
+Init. avg & 0.010244 & 0.010244 \\
+Final avg & 0.008222 & 0.008400 \\
+\addlinespace
+Init. async. & 0.016667 & 0.016667 \\
+Final async. & 0.015333 & 0.015333 \\
+Async. red. (\%) & 8.0000 & 8.0000 \\
+\addlinespace
+Served bits & 6000 & 6000 \\
+Skipped blocks & 0 & 0 \\
+\end{longtable}
+\endgroup
+
+\subsection{Downlink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.40\textwidth} *{2}{>{\raggedright\arraybackslash}p{0.18\textwidth}}}
+\caption{Downlink latency, synchronization, and service summary}\\
+\toprule
+Metric & \multicolumn{2}{c}{Payload completion} \\
+\cmidrule(lr){2-3}
+ & \toh & \tth \\
+\midrule
+\endfirsthead
+\caption[]{Downlink latency, synchronization, and service summary (continued)}\\
+\toprule
+Metric & \multicolumn{2}{c}{Payload completion} \\
+\cmidrule(lr){2-3}
+ & \toh & \tth \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Init. total & 0.305000 & 0.305000 \\
+Final total & 0.035800 & 0.073533 \\
+Red. (\%) & 88.2623 & 75.8907 \\
+\addlinespace
+Init. avg & 0.101667 & 0.101667 \\
+Final avg & 0.011933 & 0.024511 \\
+\addlinespace
+Init. async. & 0.131600 & 0.131600 \\
+Final async. & 0.007867 & 0.046400 \\
+Async. red. (\%) & 94.0223 & 64.7416 \\
+\addlinespace
+Served bits & 6000 & 6000 \\
+Skipped blocks & 3 & 10 \\
+\end{longtable}
+\endgroup
+
+\section{Radio Quality}
+
+\subsection{Uplink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.40\textwidth} *{2}{>{\raggedright\arraybackslash}p{0.18\textwidth}}}
+\caption{Uplink radio-quality summary}\\
+\toprule
+Metric & \multicolumn{2}{c}{Payload completion} \\
+\cmidrule(lr){2-3}
+ & \toh & \tth \\
+\midrule
+\endfirsthead
+\caption[]{Uplink radio-quality summary (continued)}\\
+\toprule
+Metric & \multicolumn{2}{c}{Payload completion} \\
+\cmidrule(lr){2-3}
+ & \toh & \tth \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Init. SNR (dB) & 8.1078 & 8.1078 \\
+Final SNR (dB) & 8.2627 & 8.3355 \\
+\addlinespace
+Init. SINR (dB) & -3.3939 & -3.3939 \\
+Final SINR (dB) & -3.2868 & -3.4146 \\
+\end{longtable}
+\endgroup
+
+\subsection{Downlink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.40\textwidth} *{2}{>{\raggedright\arraybackslash}p{0.18\textwidth}}}
+\caption{Downlink radio-quality summary}\\
+\toprule
+Metric & \multicolumn{2}{c}{Payload completion} \\
+\cmidrule(lr){2-3}
+ & \toh & \tth \\
+\midrule
+\endfirsthead
+\caption[]{Downlink radio-quality summary (continued)}\\
+\toprule
+Metric & \multicolumn{2}{c}{Payload completion} \\
+\cmidrule(lr){2-3}
+ & \toh & \tth \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Init. SNR (dB) & 8.0000 & 8.0000 \\
+Final SNR (dB) & 13.9912 & 9.9357 \\
+\end{longtable}
+\endgroup
+
+\section{Training and Runtime}
+
+\subsection{Uplink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.40\textwidth} *{2}{>{\raggedright\arraybackslash}p{0.18\textwidth}}}
+\caption{Uplink training and runtime summary}\\
+\toprule
+Metric & \multicolumn{2}{c}{Payload completion} \\
+\cmidrule(lr){2-3}
+ & \toh & \tth \\
+\midrule
+\endfirsthead
+\caption[]{Uplink training and runtime summary (continued)}\\
+\toprule
+Metric & \multicolumn{2}{c}{Payload completion} \\
+\cmidrule(lr){2-3}
+ & \toh & \tth \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Train episodes & \na & 2 \\
+Epoch plan & \na & max 100 \\
+Solve status & \na & \shortstack[l]{kkt\_converged,\\ kkt\_converged,\\ kkt\_converged} \\
+Feasible queries & \na & 87 / 92 \\
+Best mean rate & \na & 15.371869 \\
+\addlinespace
+Train time (s) & 95.283 & 282.902 \\
+Test time (s) & 0.000 & 52.887 \\
+Total time (s) & 95.283 & 335.790 \\
+\addlinespace
+FB evals & 835 & 7268 \\
+Fwd evals & 97 & 284 \\
+Opt. steps & \na & 334 \\
+Opt. updates & 738 & \na \\
+\end{longtable}
+\endgroup
+
+\subsection{Downlink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.40\textwidth} *{2}{>{\raggedright\arraybackslash}p{0.18\textwidth}}}
+\caption{Downlink training and runtime summary}\\
+\toprule
+Metric & \multicolumn{2}{c}{Payload completion} \\
+\cmidrule(lr){2-3}
+ & \toh & \tth \\
+\midrule
+\endfirsthead
+\caption[]{Downlink training and runtime summary (continued)}\\
+\toprule
+Metric & \multicolumn{2}{c}{Payload completion} \\
+\cmidrule(lr){2-3}
+ & \toh & \tth \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Train episodes & \na & 2 \\
+Epoch plan & \na & 120 / 96 \\
+Solve status & \na & kkt\_converged \\
+Feasible queries & \na & 26 / 51 (0.509804) \\
+Best mean rate & \na & 17.961083 \\
+Best sum rate & \na & 22.545255 \\
+\addlinespace
+Train time (s) & 419.069 & 311.368 \\
+Test time (s) & 0.000 & 1.764 \\
+Total time (s) & 419.069 & 313.132 \\
+\addlinespace
+FB evals & 3525 & 0 \\
+Fwd evals & 1238 & 118 \\
+Opt. steps / updates & 2287 & 193 \\
+\end{longtable}
+\endgroup
+
+\newpage
+\section{Ascending vs.\ Descending Search}
+
+This comparison isolates search order. The objective and scenario are kept fixed so the tables show whether changing the traversal direction changes the final schedule quality or mainly the runtime.
+
+\subsection{Uplink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.26\textwidth} *{4}{>{\raggedright\arraybackslash}p{0.14\textwidth}}}
+\caption{Uplink payload-completion comparison for ascending vs.\ descending search}\\
+\toprule
+Metric & \multicolumn{4}{c}{Payload completion} \\
+\cmidrule(lr){2-5}
+ & \shortstack{Training\\Only\\Desc.} & \shortstack{Training\\Only\\Asc.} & \shortstack{Training +\\Testing\\Desc.} & \shortstack{Training +\\Testing\\Asc.} \\
+\midrule
+\endfirsthead
+\caption[]{Uplink payload-completion comparison for ascending vs.\ descending search (continued)}\\
+\toprule
+Metric & \multicolumn{4}{c}{Payload completion} \\
+\cmidrule(lr){2-5}
+ & \shortstack{Training\\Only\\Desc.} & \shortstack{Training\\Only\\Asc.} & \shortstack{Training +\\Testing\\Desc.} & \shortstack{Training +\\Testing\\Asc.} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Init. total & 0.030733 & 0.030733 & 0.030733 & 0.030733 \\
+Final total & 0.024667 & 0.024667 & 0.024933 & 0.027467 \\
+Red. (\%) & 19.7397 & 19.7397 & 18.8720 & 10.6291 \\
+\addlinespace
+Init. avg & 0.010244 & 0.010244 & 0.010244 & 0.010244 \\
+Final avg & 0.008222 & 0.008222 & 0.008311 & 0.009156 \\
+\addlinespace
+Init. async. & 0.016667 & 0.016667 & 0.016667 & 0.016667 \\
+Final async. & 0.015333 & 0.015333 & 0.015333 & 0.016267 \\
+Async. red. (\%) & 8.0000 & 8.0000 & 8.0000 & 2.4000 \\
+\addlinespace
+Init. SNR (dB) & 8.1078 & 8.1078 & 8.1078 & 8.1078 \\
+Final SNR (dB) & 8.4196 & 8.2859 & 8.3865 & 8.1852 \\
+\addlinespace
+Init. SINR (dB) & -3.3939 & -3.3939 & -3.3939 & -3.3939 \\
+Final SINR (dB) & -3.3022 & -3.3125 & -3.3269 & -3.4335 \\
+\addlinespace
+Train time (s) & 34.315 & 118.882 & 146.092 & 240.023 \\
+Test time (s) & 0.000 & 0.000 & 43.488 & 64.752 \\
+Total time (s) & 34.315 & 118.882 & 189.581 & 304.776 \\
+\end{longtable}
+\endgroup
+
+\subsection{Downlink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.26\textwidth} *{4}{>{\raggedright\arraybackslash}p{0.14\textwidth}}}
+\caption{Downlink payload-completion comparison for ascending vs.\ descending search}\\
+\toprule
+Metric & \multicolumn{4}{c}{Payload completion} \\
+\cmidrule(lr){2-5}
+ & \shortstack{Training\\Only\\Desc.} & \shortstack{Training\\Only\\Asc.} & \shortstack{Training +\\Testing\\Desc.} & \shortstack{Training +\\Testing\\Asc.} \\
+\midrule
+\endfirsthead
+\caption[]{Downlink payload-completion comparison for ascending vs.\ descending search (continued)}\\
+\toprule
+Metric & \multicolumn{4}{c}{Payload completion} \\
+\cmidrule(lr){2-5}
+ & \shortstack{Training\\Only\\Desc.} & \shortstack{Training\\Only\\Asc.} & \shortstack{Training +\\Testing\\Desc.} & \shortstack{Training +\\Testing\\Asc.} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Init. total & 0.305000 & 0.305000 & 0.305000 & 0.305000 \\
+Final total & 0.049333 & 0.049333 & 0.075667 & 0.180467 \\
+Red. (\%) & 83.8251 & 83.8251 & 75.1913 & 40.8306 \\
+\addlinespace
+Init. avg & 0.101667 & 0.101667 & 0.101667 & 0.101667 \\
+Final avg & 0.016444 & 0.016444 & 0.025222 & 0.060156 \\
+\addlinespace
+Init. async. & 0.131600 & 0.131600 & 0.131600 & 0.131600 \\
+Final async. & 0.003733 & 0.003733 & 0.048267 & 0.066800 \\
+Async. red. (\%) & 97.1631 & 97.1631 & 63.3232 & 49.2401 \\
+\addlinespace
+Init. SNR (dB) & 8.0000 & 8.0000 & 8.0000 & 8.0000 \\
+Final SNR (dB) & 14.1792 & 14.1792 & 9.3594 & 7.5048 \\
+\addlinespace
+Init. SINR (dB) & -2.8373 & -2.8373 & -2.8373 & -2.8373 \\
+Final SINR (dB) & 8.2492 & 8.2492 & 11.9746 & 2.3859 \\
+\addlinespace
+Train time (s) & 148.755 & 375.812 & 117.507 & 1190.145 \\
+Test time (s) & 0.000 & 0.000 & 1.976 & 7.217 \\
+Total time (s) & 148.755 & 375.812 & 119.483 & 1197.362 \\
+\end{longtable}
+\endgroup
+
+\section{Binary Test-Time Search}
+
+This comparison keeps the Training + Testing method fixed and changes only the held-out test search rule. The goal is to check whether binary search reduces test-time effort without changing the final latency outcome.
+
+\subsection{Uplink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.28\textwidth} *{3}{>{\raggedright\arraybackslash}p{0.17\textwidth}}}
+\caption{Uplink Training + Testing payload-completion comparison for test-time search rules}\\
+\toprule
+Metric & \shortstack{Descending\\fixed-step} & \shortstack{Ascending\\fixed-step} & Binary \\
+\midrule
+\endfirsthead
+\caption[]{Uplink Training + Testing payload-completion comparison for test-time search rules (continued)}\\
+\toprule
+Metric & \shortstack{Descending\\fixed-step} & \shortstack{Ascending\\fixed-step} & Binary \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Init. total & 0.030733 & 0.030733 & 0.030733 \\
+Final total & 0.024933 & 0.024933 & 0.024933 \\
+Red. (\%) & 18.8720 & 18.8720 & 18.8720 \\
+\addlinespace
+Init. avg & 0.010244 & 0.010244 & 0.010244 \\
+Final avg & 0.008311 & 0.008311 & 0.008311 \\
+\addlinespace
+Init. async. & 0.016667 & 0.016667 & 0.016667 \\
+Final async. & 0.015333 & 0.015333 & 0.015333 \\
+Async. red. (\%) & 8.0000 & 8.0000 & 8.0000 \\
+\addlinespace
+Init. SNR (dB) & 8.1078 & 8.1078 & 8.1078 \\
+Final SNR (dB) & 8.3865 & 8.3865 & 8.3865 \\
+\addlinespace
+Init. SINR (dB) & -3.3939 & -3.3939 & -3.3939 \\
+Final SINR (dB) & -3.3269 & -3.3269 & -3.3269 \\
+\addlinespace
+Train time (s) & 146.092 & 146.092 & 146.092 \\
+Test time (s) & 82.205 & 81.313 & 81.076 \\
+Total time (s) & 228.298 & 227.405 & 227.168 \\
+\addlinespace
+Inference forward calls & 288 & 145 & 153 \\
+Test candidate $n_{k,\ell}$ states & 154 & 11 & 19 \\
+Test-time red. vs desc. (\%) & 0.0000 & 1.0856 & 1.3739 \\
+Forward-call red. vs desc. (\%) & 0.0000 & 49.6528 & 46.8750 \\
+State-count red. vs desc. (\%) & 0.0000 & 92.8571 & 87.6623 \\
+\end{longtable}
+\endgroup
+
+\subsection{Downlink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.28\textwidth} *{3}{>{\raggedright\arraybackslash}p{0.17\textwidth}}}
+\caption{Downlink Training + Testing payload-completion comparison for test-time search rules}\\
+\toprule
+Metric & \shortstack{Descending\\fixed-step} & \shortstack{Ascending\\fixed-step} & Binary \\
+\midrule
+\endfirsthead
+\caption[]{Downlink Training + Testing payload-completion comparison for test-time search rules (continued)}\\
+\toprule
+Metric & \shortstack{Descending\\fixed-step} & \shortstack{Ascending\\fixed-step} & Binary \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Init. total & 0.305000 & 0.305000 & 0.305000 \\
+Final total & 0.075667 & 0.075667 & 0.075667 \\
+Red. (\%) & 75.1913 & 75.1913 & 75.1913 \\
+\addlinespace
+Init. avg & 0.101667 & 0.101667 & 0.101667 \\
+Final avg & 0.025222 & 0.025222 & 0.025222 \\
+\addlinespace
+Init. async. & 0.131600 & 0.131600 & 0.131600 \\
+Final async. & 0.048267 & 0.048267 & 0.048267 \\
+Async. red. (\%) & 63.3232 & 63.3232 & 63.3232 \\
+\addlinespace
+Init. SNR (dB) & 8.0000 & 8.0000 & 8.0000 \\
+Final SNR (dB) & 9.3594 & 9.3594 & 9.3594 \\
+\addlinespace
+Init. SINR (dB) & -2.8373 & -2.8373 & -2.8373 \\
+Final SINR (dB) & 11.9746 & 11.9746 & 11.9746 \\
+\addlinespace
+Train time (s) & 117.507 & 117.507 & 117.507 \\
+Test time (s) & 3.502 & 4.148 & 3.127 \\
+Total time (s) & 121.010 & 121.655 & 120.634 \\
+\addlinespace
+Inference forward calls & 86 & 163 & 47 \\
+Per-user test forward calls & 25, 19, 42 & 48, 54, 61 & 17, 12, 18 \\
+Test-time red. vs desc. (\%) & 0.0000 & -18.4320 & 10.7167 \\
+Forward-call red. vs desc. (\%) & 0.0000 & -89.5349 & 45.3488 \\
+\end{longtable}
+\endgroup
+
+\section{Inverse-CNR Weighting vs.\ Unweighted Objective}
+
+This comparison keeps the search direction fixed to descending and changes only the objective weighting. The tables show whether inverse-CNR weighting improves latency, synchronization, or radio quality relative to the unweighted objective.
+
+\subsection{Uplink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.26\textwidth} *{4}{>{\raggedright\arraybackslash}p{0.14\textwidth}}}
+\caption{Uplink payload-completion comparison for inverse-CNR weighting}\\
+\toprule
+Metric & \shortstack{Training\\Only\\Unweighted} & \shortstack{Training\\Only\\Inv.-CNR} & \shortstack{Training +\\Testing\\Unweighted} & \shortstack{Training +\\Testing\\Inv.-CNR} \\
+\midrule
+\endfirsthead
+\caption[]{Uplink payload-completion comparison for inverse-CNR weighting (continued)}\\
+\toprule
+Metric & \shortstack{Training\\Only\\Unweighted} & \shortstack{Training\\Only\\Inv.-CNR} & \shortstack{Training +\\Testing\\Unweighted} & \shortstack{Training +\\Testing\\Inv.-CNR} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Init. total & 0.030733 & 0.030733 & 0.030733 & 0.030733 \\
+Final total & 0.024667 & 0.024733 & 0.024933 & 0.024933 \\
+Red. (\%) & 19.7397 & 19.5228 & 18.8720 & 18.8720 \\
+\addlinespace
+Init. avg & 0.010244 & 0.010244 & 0.010244 & 0.010244 \\
+Final avg & 0.008222 & 0.008244 & 0.008311 & 0.008311 \\
+\addlinespace
+Init. async. & 0.016667 & 0.016667 & 0.016667 & 0.016667 \\
+Final async. & 0.015333 & 0.015733 & 0.015333 & 0.015333 \\
+Async. red. (\%) & 8.0000 & 5.6000 & 8.0000 & 8.0000 \\
+\addlinespace
+Init. SNR (dB) & 8.1078 & 8.1078 & 8.1078 & 8.1078 \\
+Final SNR (dB) & 8.4196 & 8.3587 & 8.3865 & 8.4089 \\
+\addlinespace
+Init. SINR (dB) & -3.3939 & -3.3939 & -3.3939 & -3.3939 \\
+Final SINR (dB) & -3.3022 & -3.3800 & -3.3269 & -3.3250 \\
+\addlinespace
+Train time (s) & 34.315 & 35.132 & 146.092 & 135.961 \\
+Test time (s) & 0.000 & 0.000 & 43.488 & 47.455 \\
+Total time (s) & 34.315 & 35.132 & 189.581 & 183.416 \\
+\end{longtable}
+\endgroup
+
+\subsection{Downlink}
+\begingroup
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.26\textwidth} *{4}{>{\raggedright\arraybackslash}p{0.14\textwidth}}}
+\caption{Downlink payload-completion comparison for inverse-CNR weighting}\\
+\toprule
+Metric & \shortstack{Training\\Only\\Unweighted} & \shortstack{Training\\Only\\Inv.-CNR} & \shortstack{Training +\\Testing\\Unweighted} & \shortstack{Training +\\Testing\\Inv.-CNR} \\
+\midrule
+\endfirsthead
+\caption[]{Downlink payload-completion comparison for inverse-CNR weighting (continued)}\\
+\toprule
+Metric & \shortstack{Training\\Only\\Unweighted} & \shortstack{Training\\Only\\Inv.-CNR} & \shortstack{Training +\\Testing\\Unweighted} & \shortstack{Training +\\Testing\\Inv.-CNR} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Init. total & 0.305000 & 0.305000 & 0.305000 & 0.305000 \\
+Final total & 0.049333 & 0.040267 & 0.075667 & 0.073600 \\
+Red. (\%) & 83.8251 & 86.7978 & 75.1913 & 75.8689 \\
+\addlinespace
+Init. avg & 0.101667 & 0.101667 & 0.101667 & 0.101667 \\
+Final avg & 0.016444 & 0.013422 & 0.025222 & 0.024533 \\
+\addlinespace
+Init. async. & 0.131600 & 0.131600 & 0.131600 & 0.131600 \\
+Final async. & 0.003733 & 0.013467 & 0.048267 & 0.021733 \\
+Async. red. (\%) & 97.1631 & 89.7670 & 63.3232 & 83.4853 \\
+\addlinespace
+Init. SNR (dB) & 8.0000 & 8.0000 & 8.0000 & 8.0000 \\
+Final SNR (dB) & 14.1792 & 15.3203 & 9.3594 & 9.8556 \\
+\addlinespace
+Init. SINR (dB) & -2.8373 & -2.8373 & -2.8373 & -2.8373 \\
+Final SINR (dB) & 8.2492 & 18.6234 & 11.9746 & 13.0376 \\
+\addlinespace
+Train time (s) & 148.755 & 95.509 & 117.507 & 97.422 \\
+Test time (s) & 0.000 & 0.000 & 1.976 & 2.110 \\
+Total time (s) & 148.755 & 95.509 & 119.483 & 99.531 \\
+\end{longtable}
+\endgroup
+
+\end{document}

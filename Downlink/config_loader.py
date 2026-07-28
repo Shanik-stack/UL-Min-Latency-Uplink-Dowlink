@@ -6,6 +6,7 @@ from typing import Any, Sequence
 import numpy as np
 import yaml
 
+from blocklength_search import normalize_n_search_direction, normalize_n_search_strategy
 from experiment_scenarios import normalize_experiment_scenario_config
 
 
@@ -177,6 +178,14 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
         "max_total_blocks": int(sim_cfg_raw.get("max_total_blocks", 256)),
         "n_kl_min": int(n_range.get("min", 5)),
         "n_kl_step": int(n_range.get("step", 1)),
+        "n_search_direction": normalize_n_search_direction(
+            sim_cfg_raw.get("n_search_direction", "descending")
+        ),
+        "n_search_strategy": normalize_n_search_strategy(
+            sim_cfg_raw.get("n_search_strategy", "fixed_step")
+        ),
+        "n_search_coarse_step": int(sim_cfg_raw.get("n_search_coarse_step", int(n_range.get("step", 1)))),
+        "n_search_exponential_factor": int(sim_cfg_raw.get("n_search_exponential_factor", 2)),
         "n_kl_reduction_update_scope": str(
             _first_present(
                 sim_cfg_raw,
@@ -274,6 +283,26 @@ def load_config(cfg_name: str) -> tuple[dict[str, Any], dict[str, Any], dict[str
                 default="unweighted_sum_rate",
             )
         ).strip().lower(),
+        "convergence_priority_weight_strategy": (
+            None
+            if _first_present(
+                sim_cfg_raw,
+                "convergence_priority_weight_strategy",
+                "priority_weight_strategy",
+                "user_weight_strategy",
+                default=None,
+            )
+            is None
+            else str(
+                _first_present(
+                    sim_cfg_raw,
+                    "convergence_priority_weight_strategy",
+                    "priority_weight_strategy",
+                    "user_weight_strategy",
+                    default=None,
+                )
+            ).strip().lower()
+        ),
         "remaining_bits_weight_power": float(
             _first_present(
                 sim_cfg_raw,

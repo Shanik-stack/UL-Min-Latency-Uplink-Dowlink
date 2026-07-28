@@ -1,0 +1,62 @@
+Downlink post-training summary
+Run started at: 2026-07-27T22:08:51+03:00
+Training started at: 2026-07-27T22:08:55+03:00
+Training completed at: 2026-07-27T22:10:33+03:00
+Epochs requested: 120
+Epochs completed: 56
+Training solve status: kkt_converged
+Restored solution source: best_primal
+Downlink precoder-net scope: per_user_nets
+Base training dataset: channel_episodes_only
+Training channel episodes: 2
+Rollout anchor-bits mode: derived_online_from_current_episode_served_bits
+Rollout query weighting mode: uniform_per_query
+Rollout phase weights: {'full_block': 1.0, 'tail_feasible': 1.0, 'tail_frontier': 1.5}
+Final KKT primal residual: 1.311302e-06
+Final KKT complementarity residual: 1.311502e-08
+Final KKT stationarity residual: 8.309536e-04
+Last epoch rollout-weighted avg sum rate: 21.748439
+Best epoch rollout-weighted avg sum rate: 22.011981
+Last epoch mean per-user rollout rate: 15.138930
+Best epoch mean per-user rollout rate: 15.971878
+Last epoch mean per-user Lagrangian: -14.903802
+Best epoch mean per-user Lagrangian: -15.736782
+Last epoch feasible rollout queries: 7 / 32 (0.218750)
+Per-user last epoch avg Lagrangian over active rollout queries: [-9.833808302475761, -16.050836052636015, -18.826761518205917]
+Per-user best Lagrangian: [-12.335357089488147, -17.616238375150022, -18.924043879789465]
+Per-user last epoch avg rate over active rollout queries: [9.827552574810882, 16.76247559372774, 18.826761518205917]
+Global active-user rollout queries by n_kl over all epochs:
+{'45': 1, '46': 4, '47': 11, '48': 25, '49': 112, '50': 809, '53': 1, '54': 1, '55': 3, '56': 8, '57': 13, '58': 38, '59': 112, '60': 907, '76': 5, '77': 11, '78': 34, '79': 112, '80': 773}
+Per-user active-user rollout queries by n_kl over all epochs:
+[{'45': 1, '46': 4, '47': 11, '48': 25, '49': 112, '50': 809}, {'53': 1, '54': 1, '55': 3, '56': 8, '57': 13, '58': 38, '59': 112, '60': 907}, {'76': 5, '77': 11, '78': 34, '79': 112, '80': 773}]
+Global active-user frontier rollout queries by n_kl over all epochs:
+{'45': 1, '46': 3, '47': 7, '48': 14, '49': 87, '50': 2, '53': 1, '55': 2, '56': 5, '57': 5, '58': 25, '59': 74, '76': 5, '77': 6, '78': 23, '79': 78, '80': 2}
+Per-user active-user frontier rollout queries by n_kl over all epochs:
+[{'45': 1, '46': 3, '47': 7, '48': 14, '49': 87, '50': 2}, {'53': 1, '55': 2, '56': 5, '57': 5, '58': 25, '59': 74}, {'76': 5, '77': 6, '78': 23, '79': 78, '80': 2}]
+Last epoch active-user rollout queries by n_kl:
+{'49': 2, '50': 13, '59': 2, '60': 15, '79': 2, '80': 12}
+Last epoch active-user frontier rollout queries by n_kl:
+{'49': 2, '59': 2, '79': 2}
+
+Experiment cost
+Core wall time total (s): 97.421736
+Core wall time training (s): 97.421736
+Testing-phase wall time (s): 0.000000
+Forward+backward NN FLOPs: 0.000e+00
+Forward-only NN FLOPs: 0.000e+00
+Total NN FLOPs: 0.000e+00
+Total forward+backward NN evaluations: 0
+Forward-only NN evaluations: 0
+Optimizer steps: 109
+Workload counters:
+{'training_active_user_rollout_queries_per_user': [], 'batch_size': 32}
+Notes:
+- Forward+backward NN FLOPs count the active-user rollout-query training passes that optimize the downlink precoder nets.
+- Forward-only NN FLOPs are 0.0 here because the downlink training phase does not include a separate train-eval pass.
+
+Terminology
+- channel episode: one (seed, block=0) block realization stored in the base dataset
+- active-user channel episode: one active user inside one stored channel episode
+- rollout query: one visited joint (episode, n_targets) state generated online from the current precoder nets
+- last epoch rollout-weighted avg sum rate: average sum rate over the visited rollout queries in the last epoch, using the trainer's rollout weights
+- last epoch mean per-user rollout rate: first average each user's rate over that user's active rollout queries in the last epoch, then average over users

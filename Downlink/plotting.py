@@ -670,6 +670,168 @@ def plot_blocklength_sweep_curves(system: DownlinkSystem, result: dict[str, Any]
     plot_blocklength_feasibility_curves(system, result, figs_dir)
 
 
+def _plot_downlink_rfbl_vs_n_axis(ax: plt.Axes, result: dict[str, Any], user_idx: int) -> None:
+    user_points = [point for point in result.get("rate_points", []) if int(point.get("user", -1)) == int(user_idx)]
+    if len(user_points) == 0:
+        ax.set_title(f"User {user_idx}: Achieved vs required rate")
+        ax.text(0.5, 0.5, "No payload rate points available", ha="center", va="center", transform=ax.transAxes)
+        ax.set_axis_off()
+        return
+
+    n_vals = np.asarray([float(point.get("n_kl", np.nan)) for point in user_points], dtype=float)
+    achieved = np.asarray([float(point.get("achieved_rate", np.nan)) for point in user_points], dtype=float)
+    required = np.asarray([float(point.get("required_rate", np.nan)) for point in user_points], dtype=float)
+    blocks = np.asarray([int(point.get("block", idx)) for idx, point in enumerate(user_points)], dtype=int)
+    order = np.argsort(n_vals)
+
+    ax.plot(n_vals[order], achieved[order], marker="o", color="tab:blue", label="Achieved R_fbl")
+    ax.plot(n_vals[order], required[order], marker="x", linestyle="--", color="tab:green", label="Required R_fbl")
+    for idx in order:
+        ax.annotate(f"b{int(blocks[idx])}", (n_vals[idx], achieved[idx]), textcoords="offset points", xytext=(4, 4), fontsize=8)
+
+    ax.set_xlabel(r"$n_{k,\ell}$")
+    ax.set_ylabel("Rate (bits/channel-use)")
+    ax.set_title(f"User {user_idx}: Achieved vs required rate")
+    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=8, loc="best")
+    ax.invert_xaxis()
+
+
+def _downlink_epoch_rate_panel_data(result: dict[str, Any], user_idx: int) -> dict[str, Any] | None:
+    training_history = result.get("precoder_net_training_history", {})
+    if isinstance(training_history, dict):
+        per_user_rate = training_history.get("per_user_rate", [])
+        if user_idx < len(per_user_rate):
+            user_rates = [float(v) for v in list(per_user_rate[user_idx]) if np.isfinite(float(v))]
+            if len(user_rates) > 0:
+                return {
+                    "source_label": "Training R_fbl over epoch",
+                    "x_label": "Training epoch",
+                    "segments": [
+                        {
+                            "x": np.arange(1, len(user_rates) + 1, dtype=float),
+                            "y": np.asarray(user_rates, dtype=float),
+                            "label": "training",
+                            "color_index": 0,
+                        }
+                    ],
+                    "separators": [],
+                }
+
+    epoch_history = _epoch_history_rows(result)
+    if len(epoch_history) == 0:
+        return None
+
+    user_block_rates: dict[int, list[tuple[int, float]]] = {}
+    for row in epoch_history:
+        block = int(row["block"])
+        user_ids = row.get("user_ids", [])
+        user_rates = row.get("user_rates", [])
+        epoch = _row_epoch(row)
+        for row_user_id, user_rate in zip(user_ids, user_rates):
+            if int(row_user_id) != int(user_idx):
+                continue
+            user_block_rates.setdefault(block, []).append((epoch, float(user_rate)))
+
+    if len(user_block_rates) == 0:
+        return None
+
+    segments = []
+    separators = []
+    cursor = 0.0
+    for color_index, block in enumerate(sorted(user_block_rates.keys())):
+        block_points = sorted(user_block_rates[block], key=lambda item: item[0])
+        if len(block_points) == 0:
+            continue
+        x_vals = cursor + np.arange(1, len(block_points) + 1, dtype=float)
+        y_vals = np.asarray([float(rate) for _, rate in block_points], dtype=float)
+        segments.append(
+            {
+                "x": x_vals,
+                "y": y_vals,
+                "label": f"block {int(block)}",
+                "color_index": int(color_index),
+            }
+        )
+        cursor = float(x_vals[-1]) + 1.5
+        separators.append(float(x_vals[-1]) + 0.5)
+
+    return {
+        "source_label": "Optimization R_fbl over epoch",
+        "x_label": "Epoch within block",
+        "segments": segments,
+        "separators": separators[:-1],
+    }
+
+
+def _plot_downlink_epoch_rate_axis(ax: plt.Axes, result: dict[str, Any], user_idx: int) -> None:
+    panel_data = _downlink_epoch_rate_panel_data(result, user_idx)
+    if panel_data is None:
+        ax.set_title(f"User {user_idx}: R_fbl over epoch")
+        ax.text(0.5, 0.5, "No epoch-rate history available", ha="center", va="center", transform=ax.transAxes)
+        ax.set_axis_off()
+        return
+
+    cmap = plt.get_cmap("tab20")
+    shown_labels = set()
+    for segment in panel_data["segments"]:
+        label = segment["label"] if segment["label"] not in shown_labels else None
+        if label is not None:
+            shown_labels.add(label)
+        ax.plot(
+            segment["x"],
+            segment["y"],
+            marker="o",
+            markersize=3,
+            linewidth=1.4,
+            alpha=0.9,
+            color=cmap(int(segment["color_index"]) % cmap.N),
+            label=label,
+        )
+    for separator_x in panel_data.get("separators", []):
+        ax.axvline(separator_x, color="black", linestyle=":", linewidth=0.8, alpha=0.3)
+
+    ax.set_title(f"User {user_idx}: {panel_data['source_label']}")
+    ax.set_xlabel(panel_data["x_label"])
+    ax.set_ylabel("Achieved R_fbl")
+    ax.grid(True, alpha=0.3)
+    if len(shown_labels) > 0 and len(shown_labels) <= 8:
+        ax.legend(fontsize=8, loc="best")
+
+
+def plot_payload_rfbl_vs_n_with_epoch(result: dict[str, Any], figs_dir: str) -> None:
+    K = len(result.get("n_kl", []))
+    if K == 0:
+        return
+
+    save_dir = os.path.join(figs_dir, "F_vs_n")
+    os.makedirs(save_dir, exist_ok=True)
+
+    for user_idx in range(K):
+        fig, axes = plt.subplots(1, 2, figsize=(13, 4.8), squeeze=False)
+        _plot_downlink_rfbl_vs_n_axis(axes[0, 0], result, user_idx)
+        _plot_downlink_epoch_rate_axis(axes[0, 1], result, user_idx)
+        fig.tight_layout()
+        fig.savefig(
+            os.path.join(save_dir, f"user{user_idx}_Rfbl_vs_n.png"),
+            dpi=300,
+            bbox_inches="tight",
+        )
+        plt.close(fig)
+
+    fig, axes = plt.subplots(K, 2, figsize=(14, max(4 * K, 5)), squeeze=False)
+    for user_idx in range(K):
+        _plot_downlink_rfbl_vs_n_axis(axes[user_idx, 0], result, user_idx)
+        _plot_downlink_epoch_rate_axis(axes[user_idx, 1], result, user_idx)
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(save_dir, "all_users_Rfbl_vs_n_with_epoch.png"),
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close(fig)
+
+
 def plot_optimization_history(result: dict[str, Any], figs_dir: str) -> None:
     epoch_history = _epoch_history_rows(result)
     outer_history = result.get("outer_history", [])
@@ -705,13 +867,10 @@ def plot_optimization_history(result: dict[str, Any], figs_dir: str) -> None:
     if len(outer_history) > 0:
         block_ids = np.asarray([row["block"] for row in outer_history], dtype=int)
         allocated_bits = np.asarray([row["allocated_bits"] for row in outer_history], dtype=float)
-        uses_fixed_block_targets = str(result.get("scenario_mode", "")) == "fixed_block_targets"
-        remaining_key = "future_target_bits" if uses_fixed_block_targets else "remaining_bits"
-        remaining_label = "Future target bits" if uses_fixed_block_targets else "Remaining bits"
-        remaining_bits = np.asarray([row.get(remaining_key, row.get("remaining_bits", 0.0)) for row in outer_history], dtype=float)
+        remaining_bits = np.asarray([row.get("remaining_bits", 0.0) for row in outer_history], dtype=float)
 
         axes[2].bar(block_ids - 0.2, allocated_bits, width=0.4, label="Served bits")
-        axes[2].plot(block_ids + 0.2, remaining_bits, marker="o", label=remaining_label)
+        axes[2].plot(block_ids + 0.2, remaining_bits, marker="o", label="Remaining bits")
         axes[2].set_title("Per-block bit allocation")
         axes[2].set_xlabel("Block index")
         axes[2].set_ylabel("Bits")

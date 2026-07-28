@@ -28,6 +28,9 @@ decision_grids:
       simulation.uplink_rate_model:
         - snr
         - sinr
+      simulation.uplink_objective_mode:
+        - unweighted_sum_rate
+        - inverse_cnr_weighted_sum_rate
 
     monte_carlo:
       simulation.constraint_loss_form:
@@ -36,6 +39,12 @@ decision_grids:
       simulation.uplink_rate_model:
         - snr
         - sinr
+      simulation.uplink_objective_mode:
+        - unweighted_sum_rate
+        - inverse_cnr_weighted_sum_rate
+      simulation.n_search_direction:
+        - descending
+        - ascending
 
   downlink:
     convergence:
@@ -47,22 +56,22 @@ decision_grids:
         - augmented_lagrangian
       simulation.convergence_block_objective_mode:
         - unweighted_sum_rate
-        - remaining_bits_weighted_sum_rate
-        - blended_network_rate
+        - inverse_cnr_weighted_sum_rate
+        - blended_inverse_cnr_weighted_sum_rate
       simulation.downlink_precoder_net_scope:
         - per_user_nets
         - bs_shared_net
-      simulation.bs_shared_net_fixed_target_n_target_mode:
-        - shared_n_targets
-        - per_user_n_targets
 
     monte_carlo:
       simulation.constraint_loss_form:
         - plain_lagrangian
         - augmented_lagrangian
+      simulation.convergence_block_objective_mode:
+        - unweighted_sum_rate
+        - inverse_cnr_weighted_sum_rate
+      simulation.n_search_direction:
+        - descending
+        - ascending
       simulation.downlink_precoder_net_scope:
         - per_user_nets
         - bs_shared_net
-      simulation.bs_shared_net_fixed_target_n_target_mode:
-        - shared_n_targets
-        - per_user_n_targets

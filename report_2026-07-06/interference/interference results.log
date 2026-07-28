@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.10.3)  6 JUL 2026 06:30
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.10.3)  6 JUL 2026 11:35
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -459,22 +459,22 @@ Package hyperref Info: Link coloring ON on input line 29.
 \openout3 = `"interference results.out"'.
 
 <figures/interference/ul_payload_training_only__per_user_interference_before_af
-ter.png, id=28, 1156.32pt x 867.24pt>
+ter.png, id=20, 1156.32pt x 867.24pt>
 File: figures/interference/ul_payload_training_only__per_user_interference_befo
 re_after.png Graphic file (type png)
 <use figures/interference/ul_payload_training_only__per_user_interference_befor
 e_after.png>
 Package pdftex.def Info: figures/interference/ul_payload_training_only__per_use
-r_interference_before_after.png  used on input line 80.
+r_interference_before_after.png  used on input line 78.
 (pdftex.def)             Requested size: 217.42265pt x 163.05702pt.
 <figures/interference/ul_payload_training_testing__per_user_interference_before
-_after.png, id=30, 1156.32pt x 867.24pt>
+_after.png, id=22, 1156.32pt x 867.24pt>
 File: figures/interference/ul_payload_training_testing__per_user_interference_b
 efore_after.png Graphic file (type png)
 <use figures/interference/ul_payload_training_testing__per_user_interference_be
 fore_after.png>
 Package pdftex.def Info: figures/interference/ul_payload_training_testing__per_
-user_interference_before_after.png  used on input line 86.
+user_interference_before_after.png  used on input line 84.
 (pdftex.def)             Requested size: 217.42265pt x 163.05702pt.
 
 
@@ -484,57 +484,57 @@ user_interference_before_after.png  used on input line 86.
 texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}{c:/texlive/2025/texmf-dist
 /fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
 <figures/interference/ul_payload_training_only__per_user_interference_profiles.
-png, id=49, 1084.05pt x 867.24pt>
+png, id=41, 1084.05pt x 867.24pt>
 File: figures/interference/ul_payload_training_only__per_user_interference_prof
 iles.png Graphic file (type png)
 <use figures/interference/ul_payload_training_only__per_user_interference_profi
 les.png>
 Package pdftex.def Info: figures/interference/ul_payload_training_only__per_use
-r_interference_profiles.png  used on input line 96.
+r_interference_profiles.png  used on input line 94.
 (pdftex.def)             Requested size: 217.42265pt x 173.93454pt.
 <figures/interference/ul_payload_training_testing__per_user_interference_profil
-es.png, id=50, 1084.05pt x 867.24pt>
+es.png, id=42, 1084.05pt x 867.24pt>
 File: figures/interference/ul_payload_training_testing__per_user_interference_p
 rofiles.png Graphic file (type png)
 <use figures/interference/ul_payload_training_testing__per_user_interference_pr
 ofiles.png>
 Package pdftex.def Info: figures/interference/ul_payload_training_testing__per_
-user_interference_profiles.png  used on input line 102.
+user_interference_profiles.png  used on input line 100.
 (pdftex.def)             Requested size: 217.42265pt x 173.93454pt.
-<figures/interference/ul_payload_training_only__interference_heatmaps.png, id=5
-1, 1011.78pt x 794.97pt>
+<figures/interference/ul_payload_training_only__interference_heatmaps.png, id=4
+3, 1011.78pt x 794.97pt>
 File: figures/interference/ul_payload_training_only__interference_heatmaps.png 
 Graphic file (type png)
 <use figures/interference/ul_payload_training_only__interference_heatmaps.png>
 Package pdftex.def Info: figures/interference/ul_payload_training_only__interfe
-rence_heatmaps.png  used on input line 112.
+rence_heatmaps.png  used on input line 110.
 (pdftex.def)             Requested size: 217.42265pt x 170.8303pt.
 <figures/interference/ul_payload_training_testing__interference_heatmaps.png, i
-d=52, 1011.78pt x 794.97pt>
+d=44, 1011.78pt x 794.97pt>
 File: figures/interference/ul_payload_training_testing__interference_heatmaps.p
 ng Graphic file (type png)
 <use figures/interference/ul_payload_training_testing__interference_heatmaps.pn
 g>
 Package pdftex.def Info: figures/interference/ul_payload_training_testing__inte
-rference_heatmaps.png  used on input line 118.
+rference_heatmaps.png  used on input line 116.
 (pdftex.def)             Requested size: 217.42265pt x 170.8303pt.
 <figures/interference/ul_payload_training_only__interference_before_after_heatm
-aps.png, id=53, 1300.86pt x 794.97pt>
+aps.png, id=45, 1300.86pt x 794.97pt>
 File: figures/interference/ul_payload_training_only__interference_before_after_
 heatmaps.png Graphic file (type png)
 <use figures/interference/ul_payload_training_only__interference_before_after_h
 eatmaps.png>
 Package pdftex.def Info: figures/interference/ul_payload_training_only__interfe
-rence_before_after_heatmaps.png  used on input line 128.
+rence_before_after_heatmaps.png  used on input line 126.
 (pdftex.def)             Requested size: 217.42265pt x 132.86263pt.
 <figures/interference/ul_payload_training_testing__interference_before_after_he
-atmaps.png, id=54, 1300.86pt x 794.97pt>
+atmaps.png, id=46, 1300.86pt x 794.97pt>
 File: figures/interference/ul_payload_training_testing__interference_before_aft
 er_heatmaps.png Graphic file (type png)
 <use figures/interference/ul_payload_training_testing__interference_before_afte
 r_heatmaps.png>
 Package pdftex.def Info: figures/interference/ul_payload_training_testing__inte
-rference_before_after_heatmaps.png  used on input line 134.
+rference_before_after_heatmaps.png  used on input line 132.
 (pdftex.def)             Requested size: 217.42265pt x 132.86263pt.
 
 
@@ -545,275 +545,108 @@ er_user_interference_profiles.png> <./figures/interference/ul_payload_training_
 testing__per_user_interference_profiles.png> <./figures/interference/ul_payload
 _training_only__interference_heatmaps.png> <./figures/interference/ul_payload_t
 raining_testing__interference_heatmaps.png>]
-<figures/interference/ul_fixed_training_only__per_user_interference_before_afte
-r.png, id=68, 1156.32pt x 867.24pt>
-File: figures/interference/ul_fixed_training_only__per_user_interference_before
-_after.png Graphic file (type png)
-<use figures/interference/ul_fixed_training_only__per_user_interference_before_
-after.png>
-Package pdftex.def Info: figures/interference/ul_fixed_training_only__per_user_
-interference_before_after.png  used on input line 166.
-(pdftex.def)             Requested size: 217.42265pt x 163.05702pt.
-<figures/interference/ul_fixed_training_testing__per_user_interference_before_a
-fter.png, id=69, 1156.32pt x 867.24pt>
-File: figures/interference/ul_fixed_training_testing__per_user_interference_bef
-ore_after.png Graphic file (type png)
-<use figures/interference/ul_fixed_training_testing__per_user_interference_befo
-re_after.png>
-Package pdftex.def Info: figures/interference/ul_fixed_training_testing__per_us
-er_interference_before_after.png  used on input line 172.
-(pdftex.def)             Requested size: 217.42265pt x 163.05702pt.
-<figures/interference/ul_fixed_training_only__per_user_interference_profiles.pn
-g, id=70, 1084.05pt x 867.24pt>
-File: figures/interference/ul_fixed_training_only__per_user_interference_profil
-es.png Graphic file (type png)
-<use figures/interference/ul_fixed_training_only__per_user_interference_profile
-s.png>
-Package pdftex.def Info: figures/interference/ul_fixed_training_only__per_user_
-interference_profiles.png  used on input line 182.
-(pdftex.def)             Requested size: 217.42265pt x 173.93454pt.
-<figures/interference/ul_fixed_training_testing__per_user_interference_profiles
-.png, id=71, 1084.05pt x 867.24pt>
-File: figures/interference/ul_fixed_training_testing__per_user_interference_pro
-files.png Graphic file (type png)
-<use figures/interference/ul_fixed_training_testing__per_user_interference_prof
-iles.png>
-Package pdftex.def Info: figures/interference/ul_fixed_training_testing__per_us
-er_interference_profiles.png  used on input line 188.
-(pdftex.def)             Requested size: 217.42265pt x 173.93454pt.
-
-
-[3 <./figures/interference/ul_payload_training_only__interference_before_after_
-heatmaps.png> <./figures/interference/ul_payload_training_testing__interference
-_before_after_heatmaps.png> <./figures/interference/ul_fixed_training_only__per
-_user_interference_before_after.png> <./figures/interference/ul_fixed_training_
-testing__per_user_interference_before_after.png>]
-<figures/interference/ul_fixed_training_only__interference_heatmaps.png, id=83,
- 1011.78pt x 794.97pt>
-File: figures/interference/ul_fixed_training_only__interference_heatmaps.png Gr
-aphic file (type png)
-<use figures/interference/ul_fixed_training_only__interference_heatmaps.png>
-Package pdftex.def Info: figures/interference/ul_fixed_training_only__interfere
-nce_heatmaps.png  used on input line 198.
-(pdftex.def)             Requested size: 217.42265pt x 170.8303pt.
-<figures/interference/ul_fixed_training_testing__interference_heatmaps.png, id=
-84, 1011.78pt x 794.97pt>
-File: figures/interference/ul_fixed_training_testing__interference_heatmaps.png
- Graphic file (type png)
-<use figures/interference/ul_fixed_training_testing__interference_heatmaps.png>
-
-Package pdftex.def Info: figures/interference/ul_fixed_training_testing__interf
-erence_heatmaps.png  used on input line 204.
-(pdftex.def)             Requested size: 217.42265pt x 170.8303pt.
-<figures/interference/ul_fixed_training_only__interference_before_after_heatmap
-s.png, id=85, 1300.86pt x 794.97pt>
-File: figures/interference/ul_fixed_training_only__interference_before_after_he
-atmaps.png Graphic file (type png)
-<use figures/interference/ul_fixed_training_only__interference_before_after_hea
-tmaps.png>
-Package pdftex.def Info: figures/interference/ul_fixed_training_only__interfere
-nce_before_after_heatmaps.png  used on input line 214.
-(pdftex.def)             Requested size: 217.42265pt x 132.86263pt.
-<figures/interference/ul_fixed_training_testing__interference_before_after_heat
-maps.png, id=86, 1300.86pt x 794.97pt>
-File: figures/interference/ul_fixed_training_testing__interference_before_after
-_heatmaps.png Graphic file (type png)
-<use figures/interference/ul_fixed_training_testing__interference_before_after_
-heatmaps.png>
-Package pdftex.def Info: figures/interference/ul_fixed_training_testing__interf
-erence_before_after_heatmaps.png  used on input line 220.
-(pdftex.def)             Requested size: 217.42265pt x 132.86263pt.
-
-
-[4 <./figures/interference/ul_fixed_training_only__per_user_interference_profil
-es.png> <./figures/interference/ul_fixed_training_testing__per_user_interferenc
-e_profiles.png> <./figures/interference/ul_fixed_training_only__interference_he
-atmaps.png> <./figures/interference/ul_fixed_training_testing__interference_hea
-tmaps.png> <./figures/interference/ul_fixed_training_only__interference_before_
-after_heatmaps.png> <./figures/interference/ul_fixed_training_testing__interfer
-ence_before_after_heatmaps.png>]
 <figures/interference/dl_payload_training_only__per_user_interference_before_af
-ter.png, id=100, 1156.32pt x 867.24pt>
+ter.png, id=60, 1156.32pt x 867.24pt>
 File: figures/interference/dl_payload_training_only__per_user_interference_befo
 re_after.png Graphic file (type png)
 <use figures/interference/dl_payload_training_only__per_user_interference_befor
 e_after.png>
 Package pdftex.def Info: figures/interference/dl_payload_training_only__per_use
-r_interference_before_after.png  used on input line 252.
+r_interference_before_after.png  used on input line 164.
 (pdftex.def)             Requested size: 217.42265pt x 163.05702pt.
 <figures/interference/dl_payload_training_testing__per_user_interference_before
-_after.png, id=101, 1156.32pt x 867.24pt>
+_after.png, id=61, 1156.32pt x 867.24pt>
 File: figures/interference/dl_payload_training_testing__per_user_interference_b
 efore_after.png Graphic file (type png)
 <use figures/interference/dl_payload_training_testing__per_user_interference_be
 fore_after.png>
 Package pdftex.def Info: figures/interference/dl_payload_training_testing__per_
-user_interference_before_after.png  used on input line 258.
+user_interference_before_after.png  used on input line 170.
 (pdftex.def)             Requested size: 217.42265pt x 163.05702pt.
 <figures/interference/dl_payload_training_only__per_user_interference_profiles.
-png, id=102, 1084.05pt x 867.24pt>
+png, id=62, 1084.05pt x 867.24pt>
 File: figures/interference/dl_payload_training_only__per_user_interference_prof
 iles.png Graphic file (type png)
 <use figures/interference/dl_payload_training_only__per_user_interference_profi
 les.png>
 Package pdftex.def Info: figures/interference/dl_payload_training_only__per_use
-r_interference_profiles.png  used on input line 268.
+r_interference_profiles.png  used on input line 180.
 (pdftex.def)             Requested size: 217.42265pt x 173.93454pt.
 <figures/interference/dl_payload_training_testing__per_user_interference_profil
-es.png, id=103, 1084.05pt x 867.24pt>
+es.png, id=63, 1084.05pt x 867.24pt>
 File: figures/interference/dl_payload_training_testing__per_user_interference_p
 rofiles.png Graphic file (type png)
 <use figures/interference/dl_payload_training_testing__per_user_interference_pr
 ofiles.png>
 Package pdftex.def Info: figures/interference/dl_payload_training_testing__per_
-user_interference_profiles.png  used on input line 274.
+user_interference_profiles.png  used on input line 186.
 (pdftex.def)             Requested size: 217.42265pt x 173.93454pt.
-<figures/interference/dl_payload_training_only__interference_heatmaps.png, id=1
-04, 1011.78pt x 794.97pt>
+
+
+[3 <./figures/interference/ul_payload_training_only__interference_before_after_
+heatmaps.png> <./figures/interference/ul_payload_training_testing__interference
+_before_after_heatmaps.png> <./figures/interference/dl_payload_training_only__p
+er_user_interference_before_after.png> <./figures/interference/dl_payload_train
+ing_testing__per_user_interference_before_after.png>]
+<figures/interference/dl_payload_training_only__interference_heatmaps.png, id=7
+5, 1011.78pt x 794.97pt>
 File: figures/interference/dl_payload_training_only__interference_heatmaps.png 
 Graphic file (type png)
 <use figures/interference/dl_payload_training_only__interference_heatmaps.png>
 Package pdftex.def Info: figures/interference/dl_payload_training_only__interfe
-rence_heatmaps.png  used on input line 284.
+rence_heatmaps.png  used on input line 196.
 (pdftex.def)             Requested size: 217.42265pt x 170.8303pt.
 <figures/interference/dl_payload_training_testing__interference_heatmaps.png, i
-d=105, 1011.78pt x 794.97pt>
+d=76, 1011.78pt x 794.97pt>
 File: figures/interference/dl_payload_training_testing__interference_heatmaps.p
 ng Graphic file (type png)
 <use figures/interference/dl_payload_training_testing__interference_heatmaps.pn
 g>
 Package pdftex.def Info: figures/interference/dl_payload_training_testing__inte
-rference_heatmaps.png  used on input line 290.
+rference_heatmaps.png  used on input line 202.
 (pdftex.def)             Requested size: 217.42265pt x 170.8303pt.
-
-
-[5 <./figures/interference/dl_payload_training_only__per_user_interference_befo
-re_after.png> <./figures/interference/dl_payload_training_testing__per_user_int
-erference_before_after.png> <./figures/interference/dl_payload_training_only__p
-er_user_interference_profiles.png> <./figures/interference/dl_payload_training_
-testing__per_user_interference_profiles.png>]
 <figures/interference/dl_payload_training_only__interference_before_after_heatm
-aps.png, id=117, 1300.86pt x 794.97pt>
+aps.png, id=77, 1300.86pt x 794.97pt>
 File: figures/interference/dl_payload_training_only__interference_before_after_
 heatmaps.png Graphic file (type png)
 <use figures/interference/dl_payload_training_only__interference_before_after_h
 eatmaps.png>
 Package pdftex.def Info: figures/interference/dl_payload_training_only__interfe
-rence_before_after_heatmaps.png  used on input line 300.
+rence_before_after_heatmaps.png  used on input line 212.
 (pdftex.def)             Requested size: 217.42265pt x 132.86263pt.
 <figures/interference/dl_payload_training_testing__interference_before_after_he
-atmaps.png, id=118, 1300.86pt x 794.97pt>
+atmaps.png, id=78, 1300.86pt x 794.97pt>
 File: figures/interference/dl_payload_training_testing__interference_before_aft
 er_heatmaps.png Graphic file (type png)
 <use figures/interference/dl_payload_training_testing__interference_before_afte
 r_heatmaps.png>
 Package pdftex.def Info: figures/interference/dl_payload_training_testing__inte
-rference_before_after_heatmaps.png  used on input line 306.
-(pdftex.def)             Requested size: 217.42265pt x 132.86263pt.
-<figures/interference/dl_fixed_training_only__per_user_interference_before_afte
-r.png, id=119, 1156.32pt x 867.24pt>
-File: figures/interference/dl_fixed_training_only__per_user_interference_before
-_after.png Graphic file (type png)
-<use figures/interference/dl_fixed_training_only__per_user_interference_before_
-after.png>
-Package pdftex.def Info: figures/interference/dl_fixed_training_only__per_user_
-interference_before_after.png  used on input line 339.
-(pdftex.def)             Requested size: 217.42265pt x 163.05702pt.
-<figures/interference/dl_fixed_training_testing__per_user_interference_before_a
-fter.png, id=120, 1156.32pt x 867.24pt>
-File: figures/interference/dl_fixed_training_testing__per_user_interference_bef
-ore_after.png Graphic file (type png)
-<use figures/interference/dl_fixed_training_testing__per_user_interference_befo
-re_after.png>
-Package pdftex.def Info: figures/interference/dl_fixed_training_testing__per_us
-er_interference_before_after.png  used on input line 345.
-(pdftex.def)             Requested size: 217.42265pt x 163.05702pt.
-
-
-[6 <./figures/interference/dl_payload_training_only__interference_heatmaps.png>
- <./figures/interference/dl_payload_training_testing__interference_heatmaps.png
-> <./figures/interference/dl_payload_training_only__interference_before_after_h
-eatmaps.png> <./figures/interference/dl_payload_training_testing__interference_
-before_after_heatmaps.png>]
-<figures/interference/dl_fixed_training_only__per_user_interference_profiles.pn
-g, id=132, 1084.05pt x 867.24pt>
-File: figures/interference/dl_fixed_training_only__per_user_interference_profil
-es.png Graphic file (type png)
-<use figures/interference/dl_fixed_training_only__per_user_interference_profile
-s.png>
-Package pdftex.def Info: figures/interference/dl_fixed_training_only__per_user_
-interference_profiles.png  used on input line 355.
-(pdftex.def)             Requested size: 217.42265pt x 173.93454pt.
-<figures/interference/dl_fixed_training_testing__per_user_interference_profiles
-.png, id=133, 1084.05pt x 867.24pt>
-File: figures/interference/dl_fixed_training_testing__per_user_interference_pro
-files.png Graphic file (type png)
-<use figures/interference/dl_fixed_training_testing__per_user_interference_prof
-iles.png>
-Package pdftex.def Info: figures/interference/dl_fixed_training_testing__per_us
-er_interference_profiles.png  used on input line 361.
-(pdftex.def)             Requested size: 217.42265pt x 173.93454pt.
-<figures/interference/dl_fixed_training_only__interference_heatmaps.png, id=134
-, 1011.78pt x 794.97pt>
-File: figures/interference/dl_fixed_training_only__interference_heatmaps.png Gr
-aphic file (type png)
-<use figures/interference/dl_fixed_training_only__interference_heatmaps.png>
-Package pdftex.def Info: figures/interference/dl_fixed_training_only__interfere
-nce_heatmaps.png  used on input line 371.
-(pdftex.def)             Requested size: 217.42265pt x 170.8303pt.
-<figures/interference/dl_fixed_training_testing__interference_heatmaps.png, id=
-135, 1011.78pt x 794.97pt>
-File: figures/interference/dl_fixed_training_testing__interference_heatmaps.png
- Graphic file (type png)
-<use figures/interference/dl_fixed_training_testing__interference_heatmaps.png>
-
-Package pdftex.def Info: figures/interference/dl_fixed_training_testing__interf
-erence_heatmaps.png  used on input line 377.
-(pdftex.def)             Requested size: 217.42265pt x 170.8303pt.
-<figures/interference/dl_fixed_training_only__interference_before_after_heatmap
-s.png, id=136, 1300.86pt x 794.97pt>
-File: figures/interference/dl_fixed_training_only__interference_before_after_he
-atmaps.png Graphic file (type png)
-<use figures/interference/dl_fixed_training_only__interference_before_after_hea
-tmaps.png>
-Package pdftex.def Info: figures/interference/dl_fixed_training_only__interfere
-nce_before_after_heatmaps.png  used on input line 387.
-(pdftex.def)             Requested size: 217.42265pt x 132.86263pt.
-<figures/interference/dl_fixed_training_testing__interference_before_after_heat
-maps.png, id=137, 1300.86pt x 794.97pt>
-File: figures/interference/dl_fixed_training_testing__interference_before_after
-_heatmaps.png Graphic file (type png)
-<use figures/interference/dl_fixed_training_testing__interference_before_after_
-heatmaps.png>
-Package pdftex.def Info: figures/interference/dl_fixed_training_testing__interf
-erence_before_after_heatmaps.png  used on input line 393.
+rference_before_after_heatmaps.png  used on input line 218.
 (pdftex.def)             Requested size: 217.42265pt x 132.86263pt.
 
 
-[7 <./figures/interference/dl_fixed_training_only__per_user_interference_before
-_after.png> <./figures/interference/dl_fixed_training_testing__per_user_interfe
-rence_before_after.png> <./figures/interference/dl_fixed_training_only__per_use
-r_interference_profiles.png> <./figures/interference/dl_fixed_training_testing_
-_per_user_interference_profiles.png> <./figures/interference/dl_fixed_training_
-only__interference_heatmaps.png> <./figures/interference/dl_fixed_training_test
-ing__interference_heatmaps.png>]
+[4 <./figures/interference/dl_payload_training_only__per_user_interference_prof
+iles.png> <./figures/interference/dl_payload_training_testing__per_user_interfe
+rence_profiles.png> <./figures/interference/dl_payload_training_only__interfere
+nce_heatmaps.png> <./figures/interference/dl_payload_training_testing__interfer
+ence_heatmaps.png> <./figures/interference/dl_payload_training_only__interferen
+ce_before_after_heatmaps.png> <./figures/interference/dl_payload_training_testi
+ng__interference_before_after_heatmaps.png>]
 
-[8 <./figures/interference/dl_fixed_training_only__interference_before_after_he
-atmaps.png> <./figures/interference/dl_fixed_training_testing__interference_bef
-ore_after_heatmaps.png>] (./interference results.aux)
+[5] (./interference results.aux)
  ***********
 LaTeX2e <2025-06-01> patch level 1
 L3 programming layer <2025-09-02>
  ***********
 Package rerunfilecheck Info: File `"interference results".out' has not changed.
 
-(rerunfilecheck)             Checksum: 64F43413659D186F66E51227DEF62726;1017.
+(rerunfilecheck)             Checksum: 7EEE6CAA91874AF5BA9C3672349988DF;643.
  ) 
 Here is how much of TeX's memory you used:
- 12242 strings out of 469686
- 211571 string characters out of 5476674
+ 12081 strings out of 469686
+ 199501 string characters out of 5476674
  608214 words of memory out of 5000000
- 40519 multiletter control sequences out of 15000+600000
+ 40373 multiletter control sequences out of 15000+600000
  639918 words of font info for 68 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
  75i,11n,79p,316b,538s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -827,10 +660,10 @@ sfrm1000.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.p
 fb><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb><c:/tex
 live/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1728.pfb><c:/texlive/2025/
 texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb>
-Output written on "interference results.pdf" (8 pages, 11721923 bytes).
+Output written on "interference results.pdf" (5 pages, 5917980 bytes).
 PDF statistics:
- 220 PDF objects out of 1000 (max. 8388607)
- 121 compressed objects within 2 object streams
- 35 named destinations out of 1000 (max. 500000)
- 209 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 153 PDF objects out of 1000 (max. 8388607)
+ 90 compressed objects within 1 object stream
+ 20 named destinations out of 1000 (max. 500000)
+ 113 words of extra memory for PDF output out of 10000 (max. 10000000)
 

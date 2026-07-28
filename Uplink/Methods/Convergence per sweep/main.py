@@ -19,11 +19,12 @@ from advanced_methods_common import (
     apply_training_solution,
     estimate_initial_random_precoder_schedule_for_scenario,
 )
-from config_loader import _resolve_config_path, get_config
+from config_loader import _resolve_config_path, get_config, resolve_uplink_objective_mode
 from experiment_cost import build_uplink_convergence_cost
 from experiment_report import build_convergence_result, build_convergence_summary_lines
 from experiment_utils import (
     compact_method_tag,
+    compact_objective_tag,
     compact_update_mode_tag,
     current_local_timestamp,
     join_compact_tag_parts,
@@ -176,8 +177,15 @@ def main() -> None:
     run_seed = _resolve_run_seed(args)
     _, sim_cfg = get_config(args.cfg_name)
     update_mode = str(sim_cfg.get("convergence_precoder_update_mode", "precoder_net")).strip().lower()
+    objective_mode = resolve_uplink_objective_mode(
+        sim_cfg.get("uplink_objective_mode", "unweighted_sum_rate")
+    )
     result_tag = make_method_result_tag(
-        join_compact_tag_parts(compact_method_tag(METHOD_NAME), compact_update_mode_tag(update_mode)),
+        join_compact_tag_parts(
+            compact_method_tag(METHOD_NAME),
+            compact_objective_tag(objective_mode),
+            compact_update_mode_tag(update_mode),
+        ),
         args.cfg_name,
         seed=run_seed,
     )

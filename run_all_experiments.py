@@ -139,6 +139,7 @@ def _discover_config_names_for_link(link_name: str) -> list[str]:
         path.name
         for path in EXPERIMENT_CONFIGS_DIR.glob(f"{prefix}*.yaml")
         if path.is_file()
+        and "fixed_block_targets" not in path.name.lower()
     )
     if len(config_names) == 0:
         raise FileNotFoundError(f"No config files found for link '{link_name}' under {EXPERIMENT_CONFIGS_DIR}.")

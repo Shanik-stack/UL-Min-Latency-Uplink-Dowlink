@@ -1,0 +1,270 @@
+{
+    "epochs_requested": 120,
+    "configured_max_epochs": 120,
+    "epochs_completed": 56,
+    "training_solve_status": "kkt_converged",
+    "restored_solution_source": "best_primal",
+    "downlink_precoder_net_scope": "per_user_nets",
+    "objective_mode": "inverse_cnr_weighted_sum_rate",
+    "weight_strategy": "inverse_cnr",
+    "bs_shared_net_fixed_target_n_target_mode": "not_applicable",
+    "base_dataset_kind": "channel_episodes_only",
+    "total_training_channel_episodes": 2,
+    "rollout_anchor_bits_mode": "derived_online_from_current_episode_served_bits",
+    "rollout_query_weighting_mode": "uniform_per_query",
+    "rollout_phase_weights": {
+        "full_block": 1.0,
+        "tail_feasible": 1.0,
+        "tail_frontier": 1.5
+    },
+    "per_user_final_lagrangian": [
+        -9.833808302475761,
+        -16.050836052636015,
+        -18.826761518205917
+    ],
+    "per_user_best_lagrangian": [
+        -12.335357089488147,
+        -17.616238375150022,
+        -18.924043879789465
+    ],
+    "per_user_final_rate": [
+        9.827552574810882,
+        16.76247559372774,
+        18.826761518205917
+    ],
+    "per_user_last_epoch_avg_lagrangian_over_active_rollout_queries": [
+        -9.833808302475761,
+        -16.050836052636015,
+        -18.826761518205917
+    ],
+    "per_user_last_epoch_avg_rate_over_active_rollout_queries": [
+        9.827552574810882,
+        16.76247559372774,
+        18.826761518205917
+    ],
+    "per_user_final_rate_violation": [
+        -0.03023657320688168,
+        -0.1414800200282651,
+        -0.16133033723703452
+    ],
+    "final_avg_sum_rate": 21.74843853712082,
+    "best_avg_sum_rate": 22.0119809286935,
+    "last_epoch_rollout_weighted_avg_sum_rate": 21.74843853712082,
+    "best_epoch_rollout_weighted_avg_sum_rate": 22.0119809286935,
+    "final_avg_user_rate": 15.138929895581512,
+    "best_avg_user_rate": 15.971878118748762,
+    "last_epoch_mean_user_rollout_rate": 15.138929895581512,
+    "best_epoch_mean_user_rollout_rate": 15.971878118748762,
+    "final_avg_lagrangian": -14.903801957772563,
+    "best_avg_lagrangian": -15.73678213093279,
+    "last_epoch_mean_user_lagrangian": -14.903801957772563,
+    "best_epoch_mean_user_lagrangian": -15.73678213093279,
+    "final_avg_rate_violation": -0.11101564349072708,
+    "best_avg_rate_violation": -0.11119859761902247,
+    "final_avg_block_power_violation": 1.3113021850585938e-06,
+    "best_avg_block_power_violation": 9.80922154017857e-07,
+    "final_kkt_primal_residual": 1.3113021850585938e-06,
+    "best_kkt_primal_residual": 9.80922154017857e-07,
+    "final_kkt_complementarity_residual": 1.3115018234678847e-08,
+    "best_kkt_complementarity_residual": 9.809791464253707e-09,
+    "final_kkt_stationarity_residual": 0.0008309536156545655,
+    "best_kkt_stationarity_residual": 0.0008309536156545655,
+    "final_feasible_rollout_query_fraction": 0.21875,
+    "last_epoch_total_rollout_queries": 32,
+    "last_epoch_feasible_rollout_queries": 7,
+    "last_epoch_infeasible_rollout_queries": 25,
+    "last_epoch_frontier_rollout_queries": 6,
+    "cumulative_rollout_queries_by_n_kl": {
+        "global_active_user_rollout_queries_by_n_kl_over_all_epochs": {
+            "45": 1,
+            "46": 4,
+            "47": 11,
+            "48": 25,
+            "49": 112,
+            "50": 809,
+            "53": 1,
+            "54": 1,
+            "55": 3,
+            "56": 8,
+            "57": 13,
+            "58": 38,
+            "59": 112,
+            "60": 907,
+            "76": 5,
+            "77": 11,
+            "78": 34,
+            "79": 112,
+            "80": 773
+        },
+        "per_user_active_user_rollout_queries_by_n_kl_over_all_epochs": [
+            {
+                "45": 1,
+                "46": 4,
+                "47": 11,
+                "48": 25,
+                "49": 112,
+                "50": 809
+            },
+            {
+                "53": 1,
+                "54": 1,
+                "55": 3,
+                "56": 8,
+                "57": 13,
+                "58": 38,
+                "59": 112,
+                "60": 907
+            },
+            {
+                "76": 5,
+                "77": 11,
+                "78": 34,
+                "79": 112,
+                "80": 773
+            }
+        ]
+    },
+    "cumulative_frontier_rollout_queries_by_n_kl": {
+        "global_active_user_frontier_rollout_queries_by_n_kl_over_all_epochs": {
+            "45": 1,
+            "46": 3,
+            "47": 7,
+            "48": 14,
+            "49": 87,
+            "50": 2,
+            "53": 1,
+            "55": 2,
+            "56": 5,
+            "57": 5,
+            "58": 25,
+            "59": 74,
+            "76": 5,
+            "77": 6,
+            "78": 23,
+            "79": 78,
+            "80": 2
+        },
+        "per_user_active_user_frontier_rollout_queries_by_n_kl_over_all_epochs": [
+            {
+                "45": 1,
+                "46": 3,
+                "47": 7,
+                "48": 14,
+                "49": 87,
+                "50": 2
+            },
+            {
+                "53": 1,
+                "55": 2,
+                "56": 5,
+                "57": 5,
+                "58": 25,
+                "59": 74
+            },
+            {
+                "76": 5,
+                "77": 6,
+                "78": 23,
+                "79": 78,
+                "80": 2
+            }
+        ]
+    },
+    "final_epoch_rollout_query_summary": {
+        "total_channel_episodes": 6,
+        "channel_episodes_by_seed": {
+            "1": 3,
+            "2": 3
+        },
+        "channel_episodes_by_block": {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 2,
+            "5": 1
+        },
+        "channel_episodes_by_active_user_count": {
+            "1": 6
+        },
+        "channel_episodes_by_active_mask": {
+            "001": 2,
+            "010": 2,
+            "100": 2
+        },
+        "channel_episodes_per_user": [
+            2,
+            2,
+            2
+        ],
+        "global_active_user_rollout_queries_by_n_kl": {
+            "49": 2,
+            "50": 13,
+            "59": 2,
+            "60": 15,
+            "79": 2,
+            "80": 12
+        },
+        "per_user_active_user_rollout_queries_by_n_kl": [
+            {
+                "49": 2,
+                "50": 13
+            },
+            {
+                "59": 2,
+                "60": 15
+            },
+            {
+                "79": 2,
+                "80": 12
+            }
+        ],
+        "global_active_user_frontier_rollout_queries_by_n_kl": {
+            "49": 2,
+            "59": 2,
+            "79": 2
+        },
+        "per_user_active_user_frontier_rollout_queries_by_n_kl": [
+            {
+                "49": 2
+            },
+            {
+                "59": 2
+            },
+            {
+                "79": 2
+            }
+        ],
+        "total_rollout_queries": 32,
+        "feasible_rollout_queries": 7,
+        "infeasible_rollout_queries": 25,
+        "frontier_rollout_queries": 6,
+        "epoch": 56
+    },
+    "experiment_cost": {
+        "core_wall_time_seconds_total": 97.42173580000235,
+        "core_wall_time_seconds_training": 97.42173580000235,
+        "core_wall_time_seconds_testing": 0.0,
+        "estimated_nn_training_flops": 0.0,
+        "estimated_nn_inference_flops": 0.0,
+        "estimated_nn_total_flops": 0.0,
+        "training_forward_backward_sample_equivalents": 0,
+        "inference_forward_calls": 0,
+        "optimizer_steps": 109,
+        "per_user_forward_flops": [
+            2242176,
+            2242176,
+            2242176
+        ],
+        "workload_counters": {
+            "training_active_user_rollout_queries_per_user": [],
+            "batch_size": 32
+        },
+        "notes": [
+            "Forward+backward NN FLOPs count the active-user rollout-query training passes that optimize the downlink precoder nets.",
+            "Forward-only NN FLOPs are 0.0 here because the downlink training phase does not include a separate train-eval pass."
+        ]
+    },
+    "run_started_at_local": "2026-07-27T22:08:51+03:00",
+    "training_started_at_local": "2026-07-27T22:08:55+03:00",
+    "training_completed_at_local": "2026-07-27T22:10:33+03:00"
+}

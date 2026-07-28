@@ -41,11 +41,31 @@ The two entry points share the same cleaned config surface.
 - `simulation.convergence_block_objective_mode`
   - `unweighted_sum_rate`
     - All active users contribute equally to the block objective.
+  - `asynchronality_weighted_sum_rate`
+    - Active users are weighted by projected completion latency gap.
+    - Recommended when the goal is to reduce asynchronality directly.
+  - `inverse_cnr_weighted_sum_rate`
+    - Active users are weighted by inverse effective CNR.
+    - Useful when you want a weaker-user proxy instead of the direct latency-gap objective.
   - `remaining_bits_weighted_sum_rate`
-    - Users with larger remaining backlog or future target load get larger
-      weight.
-  - `blended_network_rate`
-    - Mixes plain sum rate with a weighted network-rate term.
+    - Active users are weighted by remaining payload or backlog.
+  - `inverse_channel_gain_weighted_sum_rate`
+    - Active users are weighted by inverse raw channel gain.
+  - `blended_asynchronality_weighted_sum_rate`
+    - Mixes plain sum rate with a projected-latency-gap weighted network-rate term.
+  - `blended_inverse_cnr_weighted_sum_rate`
+    - Mixes plain sum rate with an inverse-CNR weighted network-rate term.
+
+- `simulation.convergence_priority_weight_strategy`
+  - `inverse_cnr`
+    - Uses the inverse of the current effective CNR, so weaker users get
+      larger weight.
+  - `remaining_bits`
+    - Uses remaining payload or block-target backlog.
+  - `inverse_channel_gain`
+    - Uses the inverse of the raw channel Frobenius gain.
+  - `uniform_active_user_weight`
+    - Forces all active users to weight 1.0 even inside a weighted mode.
 
 - `simulation.constraint_loss_form`
   - `plain_lagrangian`
@@ -125,7 +145,7 @@ The two entry points share the same cleaned config surface.
 
 - `simulation.network_rate_weight`
   - Strength of the network-level weighted term in
-    `blended_network_rate`.
+    a blended weighted mode such as `blended_asynchronality_weighted_sum_rate`.
 
 - `simulation.latency_penalty_weight`
   - Penalty weight used by the weighted utility allocation logic.
@@ -136,7 +156,22 @@ The two entry points share the same cleaned config surface.
   - Minimum allowed downlink blocklength.
 
 - `simulation.n_kl_range.step`
-  - Downward search step for `n_kl`.
+  - Base blocklength increment used by the `n_kl` search.
+
+- `simulation.n_search_direction`
+  - First search tier.
+  - `descending`: reduce from the full blocklength side.
+  - `ascending`: grow from the minimum blocklength side until feasibility appears.
+
+- `simulation.n_search_strategy`
+  - Second search tier.
+  - `fixed_step`, `coarse_to_fine`, and `exponential` follow the same meanings as in uplink convergence.
+
+- `simulation.n_search_coarse_step`
+  - Coarse probe size used by `coarse_to_fine`.
+
+- `simulation.n_search_exponential_factor`
+  - Growth factor used by `exponential` search.
 
 - `simulation.max_total_blocks`
   - Maximum block horizon of the outer experiment.

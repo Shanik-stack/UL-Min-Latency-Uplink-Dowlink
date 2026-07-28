@@ -1,0 +1,11 @@
+{
+    "reused_training_artifact": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Method-Monte Carlo\\mc_unwt__ul_payload_completion_sweep_20260727_215427_mc_obj_unwt_ndir_desc__s3\\training\\data\\train_artifact.pt",
+    "train_seeds": [
+        1,
+        2
+    ],
+    "test_seed": 3,
+    "test_search_overrides": {
+        "monte_carlo_test_n_search_strategy": "binary"
+    }
+}

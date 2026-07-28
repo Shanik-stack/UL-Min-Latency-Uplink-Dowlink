@@ -60,11 +60,6 @@ The uplink Monte Carlo method already uses one precoder net per user.
     that do not already come with explicit block targets.
   - In the current cleaned setup this is usually `1`.
 
-- `simulation.monte_carlo_training_n_kl_coarse_step`
-  - Coarse step used when probing the `n_kl` frontier during rollout-query
-    generation.
-  - Larger values make rollout generation faster but less dense.
-
 - `simulation.monte_carlo_training_full_block_weight`
   - Total loss weight assigned to full-block rate-maximization states inside
     one training episode.
@@ -116,7 +111,22 @@ The uplink Monte Carlo method already uses one precoder net per user.
   - Minimum allowed candidate blocklength.
 
 - `simulation.n_kl_range.step`
-  - Downward search step for `n_kl`.
+  - Base blocklength increment used by Monte Carlo `n_kl` search.
+
+- `simulation.n_search_direction`
+  - Monte Carlo respects the first search tier for uplink payload rollouts and testing.
+  - `descending`: visit smaller `n_kl` values from the full-block side.
+  - `ascending`: visit from the minimum side upward until feasibility appears.
+
+- `simulation.n_search_strategy`
+  - Monte Carlo currently supports `fixed_step` only.
+  - This keeps the rollout dataset aligned with the actual visited `n_kl` states.
+
+- `simulation.n_search_coarse_step`
+  - Present for consistency with convergence configs, but not used by the current Monte Carlo rollout.
+
+- `simulation.n_search_exponential_factor`
+  - Present for consistency with convergence configs, but not used by the current Monte Carlo rollout.
 
 - `simulation.max_total_blocks`
   - Safety cap on how many blocks a test episode may create.

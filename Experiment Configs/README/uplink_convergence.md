@@ -116,8 +116,25 @@ The current cleaned setup uses one shared config surface for both entry points.
   - Minimum allowed blocklength candidate.
 
 - `simulation.n_kl_range.step`
-  - Downward search step for `n_kl`.
+  - Base blocklength increment used by the `n_kl` search.
   - Smaller values give finer blocklength search but cost more runtime.
+
+- `simulation.n_search_direction`
+  - First search tier.
+  - `descending`: start from `T_k` and reduce `n_kl`.
+  - `ascending`: start from `n_kl_range.min` and increase `n_kl` until feasibility is reached.
+
+- `simulation.n_search_strategy`
+  - Second search tier.
+  - `fixed_step`: use the base `n_kl_range.step`.
+  - `coarse_to_fine`: probe with `n_search_coarse_step`, then refine near the feasible frontier.
+  - `exponential`: probe with exponentially growing jumps, then refine with `n_kl_range.step`.
+
+- `simulation.n_search_coarse_step`
+  - Coarse probe size used by `coarse_to_fine`.
+
+- `simulation.n_search_exponential_factor`
+  - Growth factor used by `exponential` search.
 
 - `simulation.max_total_blocks`
   - Maximum number of outer blocks the run may create.

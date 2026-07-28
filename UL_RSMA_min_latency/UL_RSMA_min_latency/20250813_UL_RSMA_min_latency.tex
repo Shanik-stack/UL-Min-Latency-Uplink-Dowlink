@@ -1,0 +1,386 @@
+%\documentclass[a4paper, 10pt, twocolumn, journal, twoside]{IEEEtran}
+\documentclass[a4paper, 12pt, onecolumn, journal, twoside, draftclsnofoot]{IEEEtran}
+
+\newcommand*{\DOUBLECOL}{}	% turns this on for double column
+\newlength{\subfigureheight}
+\newlength{\figurewidth}
+\ifdefined\DOUBLECOL
+\setlength{\subfigureheight}{2.45in}
+\setlength{\figurewidth}{3.5in}
+\else
+\setlength{\subfigureheight}{2.35in}
+\setlength{\figurewidth}{6.5in}
+\fi
+\usepackage{amsfonts,amsmath,amssymb,bm,cancel,color,comment,epsfig,enumerate,empheq,floatrow,hyperref,mathdots,mathrsfs}
+\usepackage{placeins}%\usepackage{algorithmic}
+\usepackage[vlined,ruled,linesnumbered]{algorithm2e}
+\usepackage{graphicx}
+%\usepackage{amsthm}
+\usepackage[super]{nth}
+\usepackage[noadjust]{cite}
+\usepackage{subcaption}
+\usepackage{tabularx}
+\usepackage{tabularray}		% make thing horizontal lines in tabular
+\UseTblrLibrary{booktabs}	% make thing horizontal lines in tabular
+%\usepackage[yyyymmdd,hhmmss]{datetime}
+\graphicspath{{eps/}}
+
+\hypersetup{
+	colorlinks=true,
+	linkcolor=red,
+	citecolor=green,
+	filecolor=magenta,
+	urlcolor=blue
+}
+
+\newenvironment{Ualgorithm}[1][htpb]{\def\@algocf@post@ruled{\kern\interspacealgoruled\hrule  height\algoheightrule\kern3pt\relax}%
+\def\@algocf@capt@ruled{under}
+\begin{algorithm}[#1]}
+{\end{algorithm}}
+
+\setcounter{MaxMatrixCols}{30}
+\DeclareSymbolFont{grb}{OML}{cmm}{b}{it}
+\DeclareMathSymbol{\zetab}{\mathord}{grb}{"10}
+\DeclareMathSymbol{\etab}{\mathord}{grb}{"11}
+\DeclareMathSymbol{\thetab}{\mathord}{grb}{"12}
+\DeclareMathSymbol{\kappab}{\mathord}{grb}{"14}
+\DeclareMathSymbol{\lambdab}{\mathord}{grb}{"15}
+\DeclareMathSymbol{\mub}{\mathord}{grb}{"16}
+\DeclareMathSymbol{\nub}{\mathord}{grb}{"17}
+\DeclareMathSymbol{\rhob}{\mathord}{grb}{"1A}
+\DeclareMathSymbol{\sigmab}{\mathord}{grb}{"1B}
+\DeclareMathSymbol{\taub}{\mathord}{grb}{"1C}
+\DeclareMathSymbol{\phib}{\mathord}{grb}{"1E}
+\DeclareMathSymbol{\psib}{\mathord}{grb}{"20}
+\DeclareMathSymbol{\omegab}{\mathord}{grb}{"21}
+\DeclareMathSymbol{\epsilonb}{\mathord}{grb}{"22}
+\DeclareMathSymbol{\varphib}{\mathord}{grb}{"27}
+\input{Symbol_Shortcut.tex}
+
+\SetKwRepeat{Do}{do}{while}%
+
+\newtheorem{theorem}{\bf Theorem}		% by Victor
+\newtheorem{corollary}{\bf Corollary}	% by Victor
+\newtheorem{definition}{\bf Definition}	% by Victor
+
+%\centerfigcaptionstrue
+
+%\pagestyle{empty}
+
+\makeatletter
+\def\ifundefined{\@ifundefined}
+\makeatother
+
+\setlength{\parskip}{0ex}
+
+% generating the double accent on o, i.e. \fH{o}, e.g. Erdos Renyi 
+\newcommand\fH[1]{\sbox0{#1}\dimen0=\ht0 \advance\dimen0 -1ex
+  \sbox2{\'{}}\sbox2{\raise\dimen0\box2}%
+  {\ooalign{\hidewidth\kern.1em\copy2\kern-.5\wd2\box2\hidewidth\cr\box0\crcr}}}
+
+\title{\vspace{-0.2em} \huge Latency Minimization for Uplink RSMA System}
+
+\ifdefined \BLIND
+\author{Carrson C. Fung $^1$ \\ %and Author 2$^2$ \\
+$^1$ NYCU  \\
+%email: \emph{Author 1's email, Author 2's email} \\
+\thanks{Funding sources.}
+}
+\else
+\author{Shanik Hubert, ~\IEEEmembership{Student Member,~IEEE}, and Carrson C. Fung$^*$,~\IEEEmembership{Member,~IEEE} \\
+%Institute of Electronics, College of ECE, National Chiao Tung University, Hsinchu, Taiwan 300 %\\
+%Voice: +886-3-573-1862$^2$ Fax: +886-3-572-4361$^2$ email: \emph{rusly.eic04g@nctu.edu.tw, c.fung@ieee.org \vspace{-1.5em}} 
+\thanks{This work has been partially supported by Google exploreCSR Grant 111Q90004C.
+
+Shanik Hubert and Carrson C. Fung  are both affiliated with the Department of Electrical and Computer Engineering, National Yang Ming Chiao Tung University, Hsinchu 300, Taiwan. (e-mail: dmytro.ivakhnenkov@gmail.com, c.fung@ieee.org)}
+}
+\fi
+
+
+\markboth{IEEE Trans. on Communications}{Latency Minimization for Uplink RSMA System}
+\begin{document}
+\maketitle
+
+%******************************************************************
+\begin{abstract}
+%******************************************************************
+\end{abstract}
+
+\begin{IEEEkeywords}
+\end{IEEEkeywords}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}	\label{intro}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methodology} \label{sec_meth}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Uplink Blocklength Minimization for Reduction of Asynchronicity}
+%******************************************************************
+For MIMO uplink (UL), the receive signal is written as
+\begin{equation*}
+	\y = \sum_{k=1}^K  \H_k \F_k \s_k + \w \in \complex^{N_R},
+\end{equation*}
+where 
+$\H_k \in \complex^{N_R \times N_k}$ denotes the uplink channel between the $k$th user and the AP, $\F_k \in \complex^{N_k \times d_k}$ denotes the precoding matrix for the $k$th user, $d_k$ denotes the number of spatial streams user $k$ is sending to the AP (and $d_k \leq N_k$), $\s_k \in \complex^{d_k}$ denotes the transmitted signal for the $k$th user, $\w \in \complex^{N_R}$  denotes the AWGN, with $N_k$ denoting the number of antennas at the $k$th user and $N_R$ denotes the number of antennas at the AP.  It is assumed that $E \left[ \s_k \s_k^H \right] = \I_{N_k}$. \\
+
+For the purpose of our current model, we will assume the case where number of users $k = 2$ and number of spatial stream $d_k =1$ 1.
+
+Let 
+\begin{equation*}
+	\x_k = \F_k \s_k,
+\end{equation*}
+so
+\begin{align*}
+	E \left[ \left| \x_k \right\|_2^2 \right] &= \F_k E \left[ \s_k \s_k^H \right] \F_k^H \\
+	&= \F_k \F_k^H  \\
+	&=  \left\| \F_k \right\|_F^2  \leq P_k,
+\end{align*}
+where $P_k$ is the transmit power from the $k$th user.  The instantaneous Shannon rate at the $k$th receiver can be defined as 
+\begin{equation*}
+	R_{k} =  \log_2 \det \left(  \I_{N_R}  +  \H_k \F_k     \left(  \sigma_w^2 \I_{N_R}  + \sum_{j \neq k}  \H_j \F_j \F_j^H \H_j^H  \right)^{-1}     \F_k^H \H_k^H  \right) 
+\end{equation*}
+
+The latency of the $k$th user can then be written as
+\begin{equation*}
+    T_{k} = \frac{n_k}{f_s}
+\end{equation*}
+where $T_{k}$ is the latency, integer $n$ is the channel uses and $f_s$ is the symbol rate. \\
+
+Considering error probability $\epsilon_k$ of the $k$th user, then the probability and expected value of $n_k$ retransmissions are 
+\begin{equation*}
+    \begin{split}
+        &\text{P}(n \ \text{transmissions}) = \epsilon_k^{n-1}(1-\epsilon_k). \\
+        &\mathbb{E}( \text{no. of transmissions}) = n_{mean} = \frac{1}{1-\epsilon_k},
+    \end{split}
+\end{equation*}
+so that the latency of the $k$th user becomes 
+\begin{equation*}
+    T_k  = \frac{n_k}{f_s} \times \frac{1}{1-\epsilon_k}.
+\end{equation*}
+Since a finite blocklength $n_k$ is considered for the $k$th user, the effective rate of the $k$th user is 
+\begin{equation*}
+	%R_k^*(n, \epsilon) = \frac{B_k}{n_k} \leq R_k - \sqrt{\frac{V_k}{n_k}}Q^{-1}(\epsilon_k), 
+	R_k^*(n, \epsilon) = R_k - \sqrt{\frac{V_k}{n_k}}Q^{-1}(\epsilon_k), 
+\end{equation*}
+where $B_k$ is the fixed number of bits that need to sent by $k$th user and $n_k$ is the number of blocklength of the $k$th user or number of channels use (or symbols) of the $k$th user, thus $R_k^*(n, \epsilon)$ is defined in the unit of bits/channel use.  Then it the latency minimization problem can be formulated as 
+\begin{equation}
+	\begin{split}
+		\min_{n_k, F_k} &\; \sum_{k \in \mcK} w_k \frac{n_k}{f_s} \\
+		%s.t. &\; \frac{B_k}{n_k} \leq R_k - \sqrt{\frac{V_k}{n_k}}Q^{-1}(\epsilon_k) \geq \gamma_k, \forall k, \\
+		s.t. &\;  R_k - \sqrt{\frac{V_k}{n_k}}Q^{-1}(\epsilon_k) \geq \gamma_k, \forall k, \\
+		&\; n_k \in [ n_{\text{min}}, n_{\text{max}}], n_k \in \mathbb{Z}_+, \forall k \\
+		&\; \left\| \F_k \right\|_F^2  \leq P_k, \forall k, 
+	\end{split}
+\label{eq_prob_form_basic}
+\end{equation}
+where $w_k$ is a weight factor for the $k$th user to determine how much emphasis to place on optimizing its latency, $\gamma_k$ is the rate threshold of the $k$th user and $\mcK \triangleq \left\{1, 2, \ldots, K \right\}$, with $K$ denoting the maximum number of uplink users.
+
+If retransmissions are also considered, which affects the latency, then (\ref{eq_prob_form_basic}) can be reformulated as
+%A more complete formulation by considering user specific $\epsilon_k$ and retransmission affected latency can be considered,
+\begin{equation}
+	\begin{split}
+		\min_{n_k, F_k} &\; \sum_{k \in \mcK} w_k \frac{n_k}{f_s} \frac{1}{1-\epsilon_k} \\
+		%&\; \frac{B_k}{n_k} \leq R_k - \sqrt{\frac{V_k}{n_k}}Q^{-1}(\epsilon_k) \\
+		s.t. &\;  R_k - \sqrt{\frac{V_k}{n_k}}Q^{-1}(\epsilon_k) \geq \gamma_k, \forall k, \\
+		&\; n_k \in [ n_{\text{min}}, n_{\text{max}}], n_k \in \mathbb{Z}_+, \forall k \\
+		&\; \epsilon_k \in [0, \epsilon_0], \forall k \\
+		&\; \left\| \F_k \right\|_F^2  \leq P_k, \forall k. 
+	\end{split}
+\label{eq_prob_form_basic}
+\end{equation} 
+
+Thoughts on the system of equations,
+\begin{enumerate}
+
+    \item Reducing $n_k$ reduces the latency $\frac{n_k}{f_S}$.
+    \item Reducing $n_k$ increases the rate $R^*(n,\epsilon)$, however it restricts the upper bound that $R^*(n,\epsilon)$ can achieve by increasing the penalty term $\displaystyle \lim_{n_k \to 0} \sqrt{\frac{V_k}{n_k}}Q^{-1}(\epsilon_k) = \infty$. Thus $n_k$ must be optimized carefully to keep the upper bound high and come close to achieve it.
+    \item Since latency is the biggest factor of performance and fairness in AUFL, our problem purely on re-balancing the latency to reduce asynchronality. This allows us to change the $R^*_k$ and $\epsilon_k$ in a large degree to balance the rate among the users. I believe this is the novelty as i have not come across papers that do this, especially if we optimise the $F_k$. 
+    \item Considering $\epsilon_k$ in our optimisation has a huge benefit as there would be exceptionally strong users for whom re-transmission time would be very low. Thus re-transmission would be desired to increase $T_{\text{strong-user}}$ and  match the $T_{\text{weak-user}}$ thereby reducing asynchronality. This will allow also us to achieve very high rates for these strong users. 
+
+\end{enumerate}
+
+
+\noindent\rule{16cm}{0.4pt} \\
+
+Everything after this is the same as the Review 12-8-25 file. \\
+
+Possible extension include optimizing not with the sum rate, but using rate such as
+\begin{enumerate}[1.]
+	\item Max-min rate: 
+	\begin{equation*}
+		\max_{\F_k, \forall k}  \min_k  R_k.
+	\end{equation*}
+This has a strong fairness guarantee, often leads to equal rates across all users if we can find a feasible solution.  This is the worst-case that Carrson was talking about.
+	\item The proportional fairness:
+	\begin{equation*}
+		\max_{\F_k, \forall k}   \sum_{k=1}^K  \log (\R_k), 
+	\end{equation*}
+which balances the throughput and fairness. 
+	\item Weighted fairness 
+	\begin{equation*}
+		\max_{\F_k, w_k, \forall k}  w_k \log (R_k), 
+	\end{equation*}
+where $w_k$ are weights for QoS differentiation, i.e., higher $w_k$ is, more resource will be allocated the $k$th user.
+\end{enumerate}
+
+
+\subsection{Uplink Latency Minimization Using RSMA}
+Using RSMA for uplink transmission can theoretically acheive the optimal rate region acording to [1] by splitting the original $K$ input channels to $2K-1$ inputs (though the $K$th user message need not be split most papers consider splitting the last user message for simplicity). \\
+
+
+At user-$k$ the transmitted message of $x_k$ is split into:
+\begin{equation*}
+	x_k = \sum_{k=1}^2  \\F_k \s_k,
+\end{equation*}
+
+
+The receive signal at the BS can be written by,
+
+\begin{equation*}
+	\y = \sum_{k=1}^K \sum_{i=1}^2 \H_k \F_{ki} \s_{ki} + \w \in \complex^{N_R},
+\end{equation*}
+where
+\begin{equation*}
+    \sum_{i=1}^2 \left\| \F_{ki} \right\|_F^2  \leq P_k
+\end{equation*}
+
+While decoding at the BS SIC is used, this involves the use of a decoding order $\pi$, let the permutation $\pi$ belong to the set $\Pi$ defined as the set of all possible decoding order of all $2K$ messages from $K$ users. \\
+
+
+Let the decoding order of message $s_{ki}$ from the user-$k$ be $\pi_{ki}$, then achievable rate of decoding message $s_{ki}$ can be given as, \\
+Let $\K$ be the set of user devices, Let $\J$ be the number of split streams $\{1,2\}$
+\begin{equation*}
+	R_{ki} = \log_2 \det \left(  \I_{N_R}  +  \H_k \F_{ki}     \left(  \sigma_w^2 \I_{N_R}  + \sum_{\{(j{\in}\mathcal{K},i{\in}\mathcal{J})|\pi_{ji}{>}\pi_{ki}\}}  \H_j \F_{ji} \F_{ji}^H \H_j^H  \right)^{-1}     \F_{ki}^H \H_k^H  \right) 
+\end{equation*}
+
+The set $\{(j{\in}\mathcal{K},i{\in}\mathcal{J})|\pi_{ji}{>}\pi_{ki}\}$ represent the messages $s_{ji}$ that are decoded after  message $s_{ki}$.
+
+\begin{equation*}
+    R_k = \sum^2_{i=1} R_{ki}
+\end{equation*}
+
+To optimize for the rate in Uplink RSMA, a joint optimization of both the power management and message decoding order must be done. \\
+
+Max-Min Rate
+
+
+\begin{equation*}
+    \begin{split}
+    &\max_{\F_k, \forall k}  \min_{k, \pi}  R_k.  \\
+    \mathrm{s.t.} 
+    &\sum_{i=1}^2 \left\| \F_{ki} \right\|_F^2  \leq P_k \\
+    &\pi \in \Pi, \left\| \F_{ki} \right\|_F^2 \geq  0, \forall k \in \K, j \in \J 
+    \end{split}
+\end{equation*}
+
+This is similar to the optimization problem modeled in [2] where they optimize for the sum rate.
+
+
+\subsection{Uplink Latency Minimization Using Finite Blocklength Minimzation}
+
+To consider latency in URRLC systems with finite blocklength, let us model channel rate not in terms of (bits/s) but as (bits/channel use). \\
+
+Let blocklength = $n$ be the (channel uses), and let $T_s$ be the time taken to transmit one symbol. \\
+
+Then,
+\begin{equation*}
+\begin{split}
+\text{Latency} 
+    &= n \times T_s \\ 
+    &= \frac{B (\text{bits})}{R\text{(bits/channel use)}} \times T_s (\text{sec})
+\end{split}
+\end{equation*}
+
+And thus latency is optimised for by optimising for $n$(blocklength). \\
+
+\textbf{Rate under Finite Blocklength} according to [3],
+
+\begin{equation*}
+    R^*(n,\epsilon)=C-\sqrt{\frac{V}{n}}Q^{-1}(\epsilon)+\mathcal{O}\left(\frac{\log n}{n}\right)
+\end{equation*}
+
+where $C$ is Shannon capacity of channel, $Q^{-1}(\cdot)$ is the inverse of the Gaussian Q function, $V$ is the channel dispersion.  \\
+
+This rate equation according to [3] says that, to sustain the desired error probability $\epsilon$ for a given packet size $n$, one incurs a penalty on the rate (compared to the channel capacity) that is proportional to $\frac{1}{\sqrt{n}}$ \\
+
+\textbf{Rate under Finite Blocklength in Massive MIMO systems} according to [4], 
+
+
+Rate in high SNR regime is approximated as,
+\begin{equation*}
+    R_k\approx d_k\log\left(1+\rho_k\right)-\sqrt{\frac{d_k}{n_k}}Q^{-1}\left(\varepsilon_k\right).
+\end{equation*}
+(I am not sure why they removed the variance $V$.)\\
+$R_k$ is rate of user-k,  $\rho_k$ is the SNR of user-k and $Q^{-1}(\cdot)$ denotes the inverse of Gaussian Q function. 
+
+
+\begin{equation*}
+Q^{-1}(x) \overset{\Delta}{\operatorname*{=}}\int_{x}^{\infty}\frac{1}{\sqrt{2\pi}}e^{-t^{2}/2}\mathrm{d}t.
+\end{equation*}
+
+Re-arranging the equation, when $d_k$ is large enough, 
+\begin{equation*}
+    n_k\approx\frac{d_k\left[Q^{-1}\left(\varepsilon_k\right)\right]^2}{\left[d_k\mathrm{log}_2\left(1+\rho_k\right)-R_k\right]^2}\propto\frac{1}{d_k},
+\end{equation*}
+
+This shows that the latency in the time domain can be reduced by increasing the DoFs in the space domain, for the purpose of maintaining a certain level of performance target. [4] 
+
+\begin{equation*}
+\begin{split}
+    &n_k = B_k/R_k \\
+    &n_k = \frac{B_k}{d_k\log\left(1+\rho_k\right)-\sqrt{\frac{d_k}{n_k}}Q^{-1}\left(\varepsilon_k\right).}\\
+\end{split}
+\end{equation*}
+Solving this equation would give another equation that describe $n_k$ if we know the bits $B_k$. I am not sure how this fits in with the other formulas.\\
+
+From the equations it can also be seen that to decrease $n_k$, we can:
+\begin{enumerate}
+    \item Increase spacial DoF $d_k$
+    \item Increase SNR $\rho_k$
+    \item Increase error probability $\epsilon_k$ (reliability)
+\end{enumerate}
+
+\textbf{Min-Max Blocklength/Latency}
+
+\begin{equation*}
+    \min_{\forall k}  \max_{k,R_k,\epsilon_k, }  n_k. 
+\end{equation*}
+
+\subsection{Uplink Latency Minimization with RSMA and Finite Blocklength Minimzation}
+
+The paper to read on this topic is [5], it deals with almost the exact same problem setup as us. \\
+They consider minimizing the blocklength in Uplink RSMA in a simple 2 user system. \\
+
+However in our setup, since we want to improve the latency of the worst performing user, we should consider increasing: $d_k$, $\rho_k$, $\epsilon_k$ of the weakest user through precoder design etc, while decreasing the same parameters of the stronger users to increase their blocklength thus their latency and reduce asynchronality. \\
+
+I feel this has a naturally synergestic approach, as eventhough you increase the error probability of the weaker user, the weighing mechanism in Fed-async takes care to reduce the impact of data from these users on the training.\\
+
+Similiarly reducing the error probability of the stronger user will be helpful as the data from teh stronger user is weighed higher. \\
+
+This helps reduce the unfariness of asynchronality and ensure that the weaker users still have an impact on the training while taking care not to weigh it too highly due to their high error probability.\\
+
+This is something that i do not believe is explored in [5].
+
+\begin{thebibliography}{25} 
+
+\bibitem{chang2015semm}
+B. Rimoldi and R. Urbanke, “A rate-splitting approach to the Gaussian multiple-access channel,” IEEE Trans. Inf. Theory,  vol. 42, no. 2, pp. 364–375, Mar. 1996.
+
+\bibitem{}
+Z. Yang, M. Chen, W. Saad, W. Xu and M. Shikh-Bahaei, "Sum-Rate Maximization of Uplink Rate Splitting Multiple Access (RSMA) Communication," 2019 IEEE Global Communications Conference (GLOBECOM), Waikoloa, HI, USA, 2019, pp. 1-6, doi: 10.1109/GLOBECOM38437.2019.9013344.
+
+\bibitem{}
+G. Durisi, T. Koch and P. Popovski, "Toward Massive, Ultrareliable, and Low-Latency Wireless Communication With Short Packets," in Proceedings of the IEEE
+
+\bibitem{}
+X. You et al., "Closed-Form Approximation for Performance Bound of Finite Blocklength Massive MIMO Transmission," in IEEE Transactions on Communications, vol. 71, no. 12, pp. 6939-6951, Dec. 2023
+
+\bibitem{}
+Y. Zhang, W. Cheng, J. Wang and W. Zhang, "Performance Analysis and Blocklength Minimization of Uplink RSMA for Short Packet Transmissions in URLLC," GLOBECOM 2023 - 2023 IEEE Global Communications Conference, Kuala Lumpur, Malaysia, 2023, pp. 6765-6770
+\end{thebibliography}
+\end{document}

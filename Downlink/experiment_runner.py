@@ -22,8 +22,8 @@ from experiment_utils import (
 )
 from optimizer import (
     optimize_downlink_convergence_epoch,
-    resolve_convergence_objective_mode,
     optimize_downlink_safe_sweep,
+    resolve_public_convergence_objective_name,
 )
 from plotting import (
     initialize_output_dirs,
@@ -36,6 +36,7 @@ from plotting import (
     plot_latency,
     plot_link_quality,
     plot_optimization_history,
+    plot_payload_rfbl_vs_n_with_epoch,
     plot_per_user_convergence,
     plot_per_user_interference_before_after,
     plot_per_user_interference_profiles,
@@ -504,7 +505,7 @@ def run_downlink_experiment(
     run_started_at_local = current_local_timestamp()
     system_params, sim_params, run_meta = load_config(cfg_name)
     objective_mode_tag = (
-        resolve_convergence_objective_mode(sim_params)
+        resolve_public_convergence_objective_name(sim_params)
         if method_name in {"greedy_safe_sweep", "convergence_per_epoch_baseline"}
         else None
     )
@@ -549,6 +550,7 @@ def run_downlink_experiment(
     plot_per_user_schedule_details(result, output_dirs["schedule_details"])
     plot_per_user_convergence(result, output_dirs["optimization_history"])
     plot_blocklength_feasibility_curves(system, result, output_dirs["optimization_history"])
+    plot_payload_rfbl_vs_n_with_epoch(result, output_dirs["optimization_history"])
     plot_interference_before_after_heatmaps(result, output_dirs["interference"])
     plot_per_user_interference_before_after(result, output_dirs["interference"])
     plot_interference_heatmaps(system, output_dirs["interference"])

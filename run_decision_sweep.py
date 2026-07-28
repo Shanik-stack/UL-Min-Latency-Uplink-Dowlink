@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-
 from experiment_utils import (
     build_train_seeds_from_num_train_seeds,
     compact_cfg_stem,
@@ -86,9 +85,10 @@ DECISION_PATH_TAG_PREFIX = {
     "simulation.convergence_precoder_update_mode": "upd",
     "simulation.constraint_loss_form": "loss",
     "simulation.uplink_rate_model": "rate",
+    "simulation.uplink_objective_mode": "obj",
     "simulation.convergence_block_objective_mode": "obj",
+    "simulation.n_search_direction": "ndir",
     "simulation.downlink_precoder_net_scope": "scope",
-    "simulation.bs_shared_net_fixed_target_n_target_mode": "ntgt",
     "simulation.n_kl_reduction_update_scope": "repair",
 }
 
@@ -105,26 +105,41 @@ DECISION_VALUE_ALIASES: dict[str, dict[str, str]] = {
         "snr": "snr",
         "sinr": "sinr",
     },
+    "simulation.uplink_objective_mode": {
+        "user_rate": "unweighted_sum_rate",
+        "equal_priority_sum_rate": "unweighted_sum_rate",
+        "unweighted_sum_rate": "unweighted_sum_rate",
+        "priority_weighted_sum_rate": "inverse_cnr_weighted_sum_rate",
+        "inverse_cnr_weighted_sum_rate": "inverse_cnr_weighted_sum_rate",
+    },
     "simulation.convergence_block_objective_mode": {
         "user_rate": "unweighted_sum_rate",
+        "equal_priority_sum_rate": "unweighted_sum_rate",
+        "priority_weighted_sum_rate": "priority_weighted_sum_rate",
         "unweighted_sum_rate": "unweighted_sum_rate",
+        "uniform_weighted_sum_rate": "uniform_weighted_sum_rate",
         "weighted_sum_rate": "remaining_bits_weighted_sum_rate",
         "remaining_bits_weighted_sum_rate": "remaining_bits_weighted_sum_rate",
+        "inverse_cnr_weighted_sum_rate": "inverse_cnr_weighted_sum_rate",
+        "inverse_channel_gain_weighted_sum_rate": "inverse_channel_gain_weighted_sum_rate",
+        "backlog_weighted_sum_rate": "remaining_bits_weighted_sum_rate",
         "blended_network_rate": "blended_network_rate",
+        "blended_uniform_weighted_sum_rate": "blended_uniform_weighted_sum_rate",
+        "blended_inverse_cnr_weighted_sum_rate": "blended_inverse_cnr_weighted_sum_rate",
+        "blended_remaining_bits_weighted_sum_rate": "blended_remaining_bits_weighted_sum_rate",
+        "blended_inverse_channel_gain_weighted_sum_rate": "blended_inverse_channel_gain_weighted_sum_rate",
+    },
+    "simulation.n_search_direction": {
+        "asc": "ascending",
+        "ascending": "ascending",
+        "low_to_high": "ascending",
+        "desc": "descending",
+        "descending": "descending",
+        "high_to_low": "descending",
     },
     "simulation.downlink_precoder_net_scope": {
         "per_user_nets": "per_user_nets",
         "bs_shared_net": "bs_shared_net",
-    },
-    "simulation.bs_shared_net_fixed_target_n_target_mode": {
-        "joint": "shared_n_targets",
-        "shared": "shared_n_targets",
-        "shared_n_targets": "shared_n_targets",
-        "joint_n_targets": "shared_n_targets",
-        "per_user": "per_user_n_targets",
-        "user": "per_user_n_targets",
-        "per_user_n_targets": "per_user_n_targets",
-        "user_n_targets": "per_user_n_targets",
     },
     "simulation.n_kl_reduction_update_scope": {
         "all_active_users": "all_active_users",
@@ -146,18 +161,30 @@ DECISION_VALUE_TAGS: dict[str, dict[str, str]] = {
         "snr": "snr",
         "sinr": "sinr",
     },
+    "simulation.uplink_objective_mode": {
+        "unweighted_sum_rate": "unwt",
+        "inverse_cnr_weighted_sum_rate": "invcnr",
+    },
     "simulation.convergence_block_objective_mode": {
-        "unweighted_sum_rate": "sum",
-        "remaining_bits_weighted_sum_rate": "bitsw",
+        "priority_weighted_sum_rate": "weighted",
+        "unweighted_sum_rate": "unwt",
+        "uniform_weighted_sum_rate": "uniwt",
+        "remaining_bits_weighted_sum_rate": "rembits",
+        "inverse_cnr_weighted_sum_rate": "invcnr",
+        "inverse_channel_gain_weighted_sum_rate": "invgain",
         "blended_network_rate": "blend",
+        "blended_uniform_weighted_sum_rate": "blenduni",
+        "blended_inverse_cnr_weighted_sum_rate": "blendcnr",
+        "blended_remaining_bits_weighted_sum_rate": "blendbits",
+        "blended_inverse_channel_gain_weighted_sum_rate": "blendgain",
+    },
+    "simulation.n_search_direction": {
+        "ascending": "asc",
+        "descending": "desc",
     },
     "simulation.downlink_precoder_net_scope": {
         "per_user_nets": "user",
         "bs_shared_net": "bs",
-    },
-    "simulation.bs_shared_net_fixed_target_n_target_mode": {
-        "shared_n_targets": "jointn",
-        "per_user_n_targets": "usern",
     },
     "simulation.n_kl_reduction_update_scope": {
         "all_active_users": "allact",
@@ -170,9 +197,10 @@ DECISION_DISPLAY_NAMES = {
     "simulation.convergence_precoder_update_mode": "Convergence precoder update mode",
     "simulation.constraint_loss_form": "Constraint loss form",
     "simulation.uplink_rate_model": "Uplink rate model",
+    "simulation.uplink_objective_mode": "Uplink objective",
     "simulation.convergence_block_objective_mode": "Downlink convergence objective",
+    "simulation.n_search_direction": "n_kl search direction",
     "simulation.downlink_precoder_net_scope": "Downlink precoder scope",
-    "simulation.bs_shared_net_fixed_target_n_target_mode": "BS-shared fixed-target n handling",
     "simulation.n_kl_reduction_update_scope": "Reduced n_kl re-optimization scope",
 }
 
@@ -255,10 +283,27 @@ def _sorted_effective_decisions(effective_decisions: dict[str, Any]) -> list[tup
     return sorted(effective_decisions.items(), key=lambda item: item[0])
 
 
+def _normalize_report_text(value: Any) -> str:
+    text = str(value)
+    replacements = {
+        "equal_priority_sum_rate": "unweighted_sum_rate",
+        "priority_weighted_sum_rate": "inverse_cnr_weighted_sum_rate",
+        "blended_network_rate": "blended_inverse_cnr_weighted_sum_rate",
+        "obj-eqsum": "obj-unwt",
+        "obj-prio": "obj-invcnr",
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    return text
+
+
 def _highlighted_configuration_text(effective_decisions: dict[str, Any]) -> str:
     if len(effective_decisions) == 0:
         return "base_configuration_only"
-    return "; ".join(f"{path.split('.')[-1]}={value}" for path, value in _sorted_effective_decisions(effective_decisions))
+    return "; ".join(
+        f"{path.split('.')[-1]}={_normalize_report_text(value)}"
+        for path, value in _sorted_effective_decisions(effective_decisions)
+    )
 
 
 def _report_sort_key(row: dict[str, Any]) -> tuple[Any, ...]:
@@ -407,7 +452,11 @@ def _set_nested(mapping: dict[str, Any], dotted_path: str, value: Any) -> None:
 
 def _discover_base_configs(link_name: str) -> list[str]:
     prefix = "uplink_" if link_name == "uplink" else "downlink_"
-    names = sorted(path.name for path in EXPERIMENT_CONFIGS_DIR.glob(f"{prefix}*.yaml") if path.is_file())
+    names = sorted(
+        path.name
+        for path in EXPERIMENT_CONFIGS_DIR.glob(f"{prefix}*.yaml")
+        if path.is_file()
+    )
     if len(names) == 0:
         raise FileNotFoundError(f"No base configs found for link '{link_name}' under {EXPERIMENT_CONFIGS_DIR}.")
     return names
@@ -469,8 +518,11 @@ def _decision_is_applicable(
     if path == "simulation.uplink_rate_model":
         return link_name == "uplink"
 
+    if path == "simulation.uplink_objective_mode":
+        return link_name == "uplink"
+
     if path == "simulation.convergence_block_objective_mode":
-        return link_name == "downlink" and method_name == "convergence"
+        return link_name == "downlink"
 
     if path == "simulation.n_kl_reduction_update_scope":
         return link_name == "downlink" and method_name == "convergence"
@@ -481,14 +533,6 @@ def _decision_is_applicable(
         if method_name == "monte_carlo":
             return True
         return str(chosen_values.get("simulation.convergence_precoder_update_mode", "precoder_net")) == "precoder_net"
-
-    if path == "simulation.bs_shared_net_fixed_target_n_target_mode":
-        if link_name != "downlink" or scenario_mode != "fixed_block_targets":
-            return False
-        if method_name == "convergence":
-            if str(chosen_values.get("simulation.convergence_precoder_update_mode", "precoder_net")) != "precoder_net":
-                return False
-        return str(chosen_values.get("simulation.downlink_precoder_net_scope", "per_user_nets")) == "bs_shared_net"
 
     return True
 
@@ -617,8 +661,47 @@ def _build_command(
     return cmd
 
 
-def _resolve_downlink_objective_mode(value: Any) -> str:
-    return str(_normalize_decision_value("simulation.convergence_block_objective_mode", value) or "unweighted_sum_rate")
+def _resolve_downlink_weight_strategy(value: Any) -> str:
+    text = "" if value is None else str(value).strip().lower()
+    if text in {"", "none"}:
+        return "inverse_cnr"
+    if text in {"uniform", "uniform_active_user_weight"}:
+        return "uniform_active_user_weight"
+    if text in {"backlog", "queue", "remaining_bits"}:
+        return "remaining_bits"
+    if text in {"inverse_channel_gain"}:
+        return "inverse_channel_gain"
+    return "inverse_cnr"
+
+
+def _resolve_uplink_objective_mode(value: Any) -> str:
+    return str(
+        _normalize_decision_value("simulation.uplink_objective_mode", value) or "unweighted_sum_rate"
+    )
+
+
+def _resolve_downlink_objective_mode(value: Any, *, weight_strategy: Any = None) -> str:
+    normalized = str(
+        _normalize_decision_value("simulation.convergence_block_objective_mode", value) or "unweighted_sum_rate"
+    )
+    resolved_weight_strategy = _resolve_downlink_weight_strategy(weight_strategy)
+    if normalized == "priority_weighted_sum_rate":
+        if resolved_weight_strategy == "uniform_active_user_weight":
+            return "uniform_weighted_sum_rate"
+        if resolved_weight_strategy == "remaining_bits":
+            return "remaining_bits_weighted_sum_rate"
+        if resolved_weight_strategy == "inverse_channel_gain":
+            return "inverse_channel_gain_weighted_sum_rate"
+        return "inverse_cnr_weighted_sum_rate"
+    if normalized == "blended_network_rate":
+        if resolved_weight_strategy == "uniform_active_user_weight":
+            return "blended_uniform_weighted_sum_rate"
+        if resolved_weight_strategy == "remaining_bits":
+            return "blended_remaining_bits_weighted_sum_rate"
+        if resolved_weight_strategy == "inverse_channel_gain":
+            return "blended_inverse_channel_gain_weighted_sum_rate"
+        return "blended_inverse_cnr_weighted_sum_rate"
+    return normalized
 
 
 def _expected_result_json_path(
@@ -635,9 +718,13 @@ def _expected_result_json_path(
 
     if link_name == "uplink" and method_name == "convergence":
         update_mode = str(sim_cfg.get("convergence_precoder_update_mode", "precoder_net")).strip().lower()
+        objective_mode = _resolve_uplink_objective_mode(
+            sim_cfg.get("uplink_objective_mode", "unweighted_sum_rate")
+        )
         result_tag = make_method_result_tag(
             join_compact_tag_parts(
                 compact_method_tag("convergence_per_epoch_baseline"),
+                compact_objective_tag(objective_mode),
                 compact_update_mode_tag(update_mode),
             ),
             cfg_name,
@@ -647,8 +734,14 @@ def _expected_result_json_path(
 
     if link_name == "uplink" and method_name == "monte_carlo":
         _, _, test_seed = _resolve_monte_carlo_seed_args(defaults)
+        objective_mode = _resolve_uplink_objective_mode(
+            sim_cfg.get("uplink_objective_mode", "unweighted_sum_rate")
+        )
         result_tag = make_method_result_tag(
-            compact_method_tag("monte_carlo_precoder_net_train_test"),
+            join_compact_tag_parts(
+                compact_method_tag("monte_carlo_precoder_net_train_test"),
+                compact_objective_tag(objective_mode),
+            ),
             cfg_name,
             seed=int(test_seed),
         )
@@ -656,7 +749,10 @@ def _expected_result_json_path(
 
     if link_name == "downlink" and method_name == "convergence":
         solver_mode = str(sim_cfg.get("convergence_precoder_update_mode", "precoder_net")).strip().lower()
-        objective_mode = _resolve_downlink_objective_mode(sim_cfg.get("convergence_block_objective_mode"))
+        objective_mode = _resolve_downlink_objective_mode(
+            sim_cfg.get("convergence_block_objective_mode"),
+            weight_strategy=sim_cfg.get("convergence_priority_weight_strategy"),
+        )
         model_scope = str(sim_cfg.get("downlink_precoder_net_scope", "per_user_nets")).strip().lower()
         method_parts = [compact_method_tag("convergence_per_epoch_baseline"), compact_objective_tag(objective_mode)]
         solver_tag = compact_update_mode_tag(solver_mode)
@@ -673,16 +769,15 @@ def _expected_result_json_path(
     if link_name == "downlink" and method_name == "monte_carlo":
         _, _, test_seed = _resolve_monte_carlo_seed_args(defaults)
         scope_name = str(sim_cfg.get("downlink_precoder_net_scope", "per_user_nets")).strip().lower()
-        shared_n_target_mode_tag = None
-        if scope_name == "bs_shared_net" and scenario_mode == "fixed_block_targets":
-            shared_n_target_mode_tag = compact_shared_n_target_mode_tag(
-                str(sim_cfg.get("bs_shared_net_fixed_target_n_target_mode", "shared_n_targets"))
-            )
+        objective_mode = _resolve_downlink_objective_mode(
+            sim_cfg.get("convergence_block_objective_mode"),
+            weight_strategy=sim_cfg.get("convergence_priority_weight_strategy"),
+        )
         result_tag = make_method_result_tag(
             join_compact_tag_parts(
                 compact_method_tag("monte_carlo_precoder_net_train_test"),
+                compact_objective_tag(objective_mode),
                 compact_scope_tag(scope_name),
-                shared_n_target_mode_tag,
             ),
             cfg_name,
             seed=int(test_seed),
@@ -818,6 +913,20 @@ def _float_or_none(value: Any) -> float | None:
     return float(value)
 
 
+def _best_row_by_metric(
+    rows: list[dict[str, Any]],
+    metric_key: str,
+    *,
+    prefer: str,
+) -> dict[str, Any] | None:
+    usable_rows = [row for row in rows if _float_or_none(row.get(metric_key)) is not None]
+    if len(usable_rows) == 0:
+        return None
+    if prefer == "min":
+        return min(usable_rows, key=lambda row: float(row[metric_key]))
+    return max(usable_rows, key=lambda row: float(row[metric_key]))
+
+
 def _apply_base_deltas(rows: list[dict[str, Any]]) -> None:
     metric_pairs = [
         ("final_total_latency", "delta_final_total_latency_vs_base"),
@@ -927,12 +1036,12 @@ def _build_markdown_report(
             ]
         )
         if base_row is not None:
-            lines.append(f"- Base configuration: `{base_row['highlighted_configuration']}`")
+            lines.append(f"- Base configuration: `{_normalize_report_text(base_row['highlighted_configuration'])}`")
         lines.extend(
             [
                 "",
-                "| Variant | Base | Status | Highlighted configuration | Final total latency | Delta vs base | Latency reduction % | Delta vs base | Final avg SINR (dB) | Delta vs base | Served bits | Log |",
-                "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+                "| Variant | Base | Status | Highlighted configuration | Final total latency | Delta vs base | Latency reduction % | Delta vs base | Final asynchronality | Delta vs base | Asynchronality reduction % | Delta vs base | Final avg SINR (dB) | Served bits | Log |",
+                "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
             ]
         )
         for row in group_rows:
@@ -940,16 +1049,19 @@ def _build_markdown_report(
                 "| "
                 + " | ".join(
                     [
-                        str(row["decision_tag"]),
+                        _normalize_report_text(row["decision_tag"]),
                         "yes" if bool(row["is_base_configuration"]) else "",
                         str(row["status"]),
-                        str(row["highlighted_configuration"]),
+                        _normalize_report_text(row["highlighted_configuration"]),
                         _metric_text(row.get("final_total_latency"), digits=6),
                         _metric_text(row.get("delta_final_total_latency_vs_base"), digits=6),
                         _metric_text(row.get("total_latency_reduction_percent"), digits=4),
                         _metric_text(row.get("delta_total_latency_reduction_percent_vs_base"), digits=4),
+                        _metric_text(row.get("final_asynchronality_sum"), digits=6),
+                        _metric_text(row.get("delta_final_asynchronality_sum_vs_base"), digits=6),
+                        _metric_text(row.get("asynchronality_reduction_percent"), digits=4),
+                        _metric_text(row.get("delta_asynchronality_reduction_percent_vs_base"), digits=4),
                         _metric_text(row.get("final_avg_sinr_db"), digits=4),
-                        _metric_text(row.get("delta_final_avg_sinr_db_vs_base"), digits=4),
                         _metric_text(row.get("total_served_bits"), digits=0),
                         f"`{Path(str(row['log_path'])).name}`",
                     ]
@@ -959,23 +1071,47 @@ def _build_markdown_report(
 
         completed_rows = [row for row in group_rows if row["status"] == "completed"]
         if len(completed_rows) > 0:
-            best_latency = min(
+            best_latency = _best_row_by_metric(completed_rows, "final_total_latency", prefer="min")
+            best_reduction = _best_row_by_metric(completed_rows, "total_latency_reduction_percent", prefer="max")
+            best_async = _best_row_by_metric(completed_rows, "final_asynchronality_sum", prefer="min")
+            best_async_reduction = _best_row_by_metric(
                 completed_rows,
-                key=lambda row: float(row["final_total_latency"]) if row["final_total_latency"] is not None else float("inf"),
-            )
-            best_reduction = max(
-                completed_rows,
-                key=lambda row: float(row["total_latency_reduction_percent"]) if row["total_latency_reduction_percent"] is not None else float("-inf"),
+                "asynchronality_reduction_percent",
+                prefer="max",
             )
             lines.extend(
                 [
                     "",
-                    f"- Best final total latency: `{best_latency['decision_tag']}` -> `{_metric_text(best_latency.get('final_total_latency'), digits=6)}`",
-                    f"- Best-latency configuration: `{best_latency['highlighted_configuration']}`",
-                    f"- Best latency reduction: `{best_reduction['decision_tag']}` -> `{_metric_text(best_reduction.get('total_latency_reduction_percent'), digits=4)}%`",
-                    f"- Best-reduction configuration: `{best_reduction['highlighted_configuration']}`",
                 ]
             )
+            if best_latency is not None:
+                lines.extend(
+                    [
+                        f"- Best final total latency: `{_normalize_report_text(best_latency['decision_tag'])}` -> `{_metric_text(best_latency.get('final_total_latency'), digits=6)}`",
+                        f"- Best-latency configuration: `{_normalize_report_text(best_latency['highlighted_configuration'])}`",
+                    ]
+                )
+            if best_reduction is not None:
+                lines.extend(
+                    [
+                        f"- Best latency reduction: `{_normalize_report_text(best_reduction['decision_tag'])}` -> `{_metric_text(best_reduction.get('total_latency_reduction_percent'), digits=4)}%`",
+                        f"- Best-reduction configuration: `{_normalize_report_text(best_reduction['highlighted_configuration'])}`",
+                    ]
+                )
+            if best_async is not None:
+                lines.extend(
+                    [
+                        f"- Best final asynchronality: `{_normalize_report_text(best_async['decision_tag'])}` -> `{_metric_text(best_async.get('final_asynchronality_sum'), digits=6)}`",
+                        f"- Best-asynchronality configuration: `{_normalize_report_text(best_async['highlighted_configuration'])}`",
+                    ]
+                )
+            if best_async_reduction is not None:
+                lines.extend(
+                    [
+                        f"- Best asynchronality reduction: `{_normalize_report_text(best_async_reduction['decision_tag'])}` -> `{_metric_text(best_async_reduction.get('asynchronality_reduction_percent'), digits=4)}%`",
+                        f"- Best asynchronality-reduction configuration: `{_normalize_report_text(best_async_reduction['highlighted_configuration'])}`",
+                    ]
+                )
 
     return lines
 
@@ -1002,18 +1138,10 @@ def _best_rows_by_group(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         completed = _completed_rows(grouped[group_key])
         if len(completed) == 0:
             continue
-        best_latency = min(
-            completed,
-            key=lambda row: _float_or_none(row.get("final_total_latency"))
-            if _float_or_none(row.get("final_total_latency")) is not None
-            else float("inf"),
-        )
-        best_reduction = max(
-            completed,
-            key=lambda row: _float_or_none(row.get("total_latency_reduction_percent"))
-            if _float_or_none(row.get("total_latency_reduction_percent")) is not None
-            else float("-inf"),
-        )
+        best_latency = _best_row_by_metric(completed, "final_total_latency", prefer="min")
+        best_reduction = _best_row_by_metric(completed, "total_latency_reduction_percent", prefer="max")
+        if best_latency is None or best_reduction is None:
+            continue
         best_rows.append(
             {
                 "selection_type": "best_final_total_latency",
@@ -1024,6 +1152,8 @@ def _best_rows_by_group(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "highlighted_configuration": best_latency["highlighted_configuration"],
                 "final_total_latency": best_latency.get("final_total_latency"),
                 "total_latency_reduction_percent": best_latency.get("total_latency_reduction_percent"),
+                "final_asynchronality_sum": best_latency.get("final_asynchronality_sum"),
+                "asynchronality_reduction_percent": best_latency.get("asynchronality_reduction_percent"),
                 "final_avg_sinr_db": best_latency.get("final_avg_sinr_db"),
                 "total_served_bits": best_latency.get("total_served_bits"),
                 "result_json_path": best_latency.get("result_json_path"),
@@ -1040,6 +1170,8 @@ def _best_rows_by_group(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "highlighted_configuration": best_reduction["highlighted_configuration"],
                 "final_total_latency": best_reduction.get("final_total_latency"),
                 "total_latency_reduction_percent": best_reduction.get("total_latency_reduction_percent"),
+                "final_asynchronality_sum": best_reduction.get("final_asynchronality_sum"),
+                "asynchronality_reduction_percent": best_reduction.get("asynchronality_reduction_percent"),
                 "final_avg_sinr_db": best_reduction.get("final_avg_sinr_db"),
                 "total_served_bits": best_reduction.get("total_served_bits"),
                 "result_json_path": best_reduction.get("result_json_path"),
@@ -1062,18 +1194,10 @@ def _decision_value_best_rows(rows: list[dict[str, Any]], decision_path: str) ->
         completed = _completed_rows(decision_rows)
         if len(completed) == 0:
             continue
-        best_latency = min(
-            completed,
-            key=lambda row: _float_or_none(row.get("final_total_latency"))
-            if _float_or_none(row.get("final_total_latency")) is not None
-            else float("inf"),
-        )
-        best_reduction = max(
-            completed,
-            key=lambda row: _float_or_none(row.get("total_latency_reduction_percent"))
-            if _float_or_none(row.get("total_latency_reduction_percent")) is not None
-            else float("-inf"),
-        )
+        best_latency = _best_row_by_metric(completed, "final_total_latency", prefer="min")
+        best_reduction = _best_row_by_metric(completed, "total_latency_reduction_percent", prefer="max")
+        if best_latency is None or best_reduction is None:
+            continue
         summary_rows.append(
             {
                 "decision_path": decision_path,
@@ -1087,6 +1211,8 @@ def _decision_value_best_rows(rows: list[dict[str, Any]], decision_path: str) ->
                 "base_config_name": best_latency["base_config_name"],
                 "final_total_latency": best_latency.get("final_total_latency"),
                 "total_latency_reduction_percent": best_latency.get("total_latency_reduction_percent"),
+                "final_asynchronality_sum": best_latency.get("final_asynchronality_sum"),
+                "asynchronality_reduction_percent": best_latency.get("asynchronality_reduction_percent"),
                 "final_avg_sinr_db": best_latency.get("final_avg_sinr_db"),
                 "total_served_bits": best_latency.get("total_served_bits"),
                 "result_json_path": best_latency.get("result_json_path"),
@@ -1106,6 +1232,8 @@ def _decision_value_best_rows(rows: list[dict[str, Any]], decision_path: str) ->
                 "base_config_name": best_reduction["base_config_name"],
                 "final_total_latency": best_reduction.get("final_total_latency"),
                 "total_latency_reduction_percent": best_reduction.get("total_latency_reduction_percent"),
+                "final_asynchronality_sum": best_reduction.get("final_asynchronality_sum"),
+                "asynchronality_reduction_percent": best_reduction.get("asynchronality_reduction_percent"),
                 "final_avg_sinr_db": best_reduction.get("final_avg_sinr_db"),
                 "total_served_bits": best_reduction.get("total_served_bits"),
                 "result_json_path": best_reduction.get("result_json_path"),
@@ -1124,13 +1252,13 @@ def _build_decision_value_report(
     completed = _completed_rows(rows)
     sorted_rows = sorted(rows, key=_report_sort_key)
     lines = [
-        f"# Decision Value Comparison: {_decision_label(decision_path)} = {decision_value}",
+        f"# Decision Value Comparison: {_decision_label(decision_path)} = {_normalize_report_text(decision_value)}",
         "",
         f"- Decision path: `{decision_path}`",
         f"- Completed runs: `{len(completed)}` / `{len(rows)}`",
         "",
-        "| Link | Method | Base config | Variant | Final total latency | Latency reduction % | Final avg SINR (dB) | Served bits | Highlighted configuration |",
-        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |",
+        "| Link | Method | Base config | Variant | Final total latency | Latency reduction % | Final asynchronality | Asynchronality reduction % | Final avg SINR (dB) | Served bits | Highlighted configuration |",
+        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     for row in sorted_rows:
         lines.append(
@@ -1140,38 +1268,60 @@ def _build_decision_value_report(
                     str(row["link"]),
                     str(row["method"]),
                     str(row["base_config_name"]),
-                    str(row["decision_tag"]),
+                    _normalize_report_text(row["decision_tag"]),
                     _metric_text(row.get("final_total_latency"), digits=6),
                     _metric_text(row.get("total_latency_reduction_percent"), digits=4),
+                    _metric_text(row.get("final_asynchronality_sum"), digits=6),
+                    _metric_text(row.get("asynchronality_reduction_percent"), digits=4),
                     _metric_text(row.get("final_avg_sinr_db"), digits=4),
                     _metric_text(row.get("total_served_bits"), digits=0),
-                    str(row["highlighted_configuration"]),
+                    _normalize_report_text(row["highlighted_configuration"]),
                 ]
             )
             + " |"
         )
     if len(completed) > 0:
-        best_latency = min(
+        best_latency = _best_row_by_metric(completed, "final_total_latency", prefer="min")
+        best_reduction = _best_row_by_metric(completed, "total_latency_reduction_percent", prefer="max")
+        best_async = _best_row_by_metric(completed, "final_asynchronality_sum", prefer="min")
+        best_async_reduction = _best_row_by_metric(
             completed,
-            key=lambda row: _float_or_none(row.get("final_total_latency"))
-            if _float_or_none(row.get("final_total_latency")) is not None
-            else float("inf"),
-        )
-        best_reduction = max(
-            completed,
-            key=lambda row: _float_or_none(row.get("total_latency_reduction_percent"))
-            if _float_or_none(row.get("total_latency_reduction_percent")) is not None
-            else float("-inf"),
+            "asynchronality_reduction_percent",
+            prefer="max",
         )
         lines.extend(
             [
                 "",
-                f"- Best final total latency: `{best_latency['decision_tag']}` -> `{_metric_text(best_latency.get('final_total_latency'), digits=6)}`",
-                f"- Best latency configuration: `{best_latency['highlighted_configuration']}`",
-                f"- Best latency reduction: `{best_reduction['decision_tag']}` -> `{_metric_text(best_reduction.get('total_latency_reduction_percent'), digits=4)}%`",
-                f"- Best reduction configuration: `{best_reduction['highlighted_configuration']}`",
             ]
         )
+        if best_latency is not None:
+            lines.extend(
+                [
+                    f"- Best final total latency: `{_normalize_report_text(best_latency['decision_tag'])}` -> `{_metric_text(best_latency.get('final_total_latency'), digits=6)}`",
+                    f"- Best latency configuration: `{_normalize_report_text(best_latency['highlighted_configuration'])}`",
+                ]
+            )
+        if best_reduction is not None:
+            lines.extend(
+                [
+                    f"- Best latency reduction: `{_normalize_report_text(best_reduction['decision_tag'])}` -> `{_metric_text(best_reduction.get('total_latency_reduction_percent'), digits=4)}%`",
+                    f"- Best reduction configuration: `{_normalize_report_text(best_reduction['highlighted_configuration'])}`",
+                ]
+            )
+        if best_async is not None:
+            lines.extend(
+                [
+                    f"- Best final asynchronality: `{_normalize_report_text(best_async['decision_tag'])}` -> `{_metric_text(best_async.get('final_asynchronality_sum'), digits=6)}`",
+                    f"- Best asynchronality configuration: `{_normalize_report_text(best_async['highlighted_configuration'])}`",
+                ]
+            )
+        if best_async_reduction is not None:
+            lines.extend(
+                [
+                    f"- Best asynchronality reduction: `{_normalize_report_text(best_async_reduction['decision_tag'])}` -> `{_metric_text(best_async_reduction.get('asynchronality_reduction_percent'), digits=4)}%`",
+                    f"- Best asynchronality-reduction configuration: `{_normalize_report_text(best_async_reduction['highlighted_configuration'])}`",
+                ]
+            )
     return lines
 
 
@@ -1188,23 +1338,25 @@ def _build_decision_report(
         f"- Total runs touching this decision: `{len(rows)}`",
         f"- Completed runs: `{len(_completed_rows(rows))}`",
         "",
-        "| Decision value | Best criterion | Link | Method | Base config | Variant | Final total latency | Latency reduction % | Highlighted configuration |",
-        "| --- | --- | --- | --- | --- | --- | ---: | ---: | --- |",
+        "| Decision value | Best criterion | Link | Method | Base config | Variant | Final total latency | Latency reduction % | Final asynchronality | Asynchronality reduction % | Highlighted configuration |",
+        "| --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |",
     ]
     for row in summary_rows:
         lines.append(
             "| "
             + " | ".join(
                 [
-                    str(row["decision_value"]),
+                    _normalize_report_text(row["decision_value"]),
                     str(row["selection_type"]),
                     str(row["link"]),
                     str(row["method"]),
                     str(row["base_config_name"]),
-                    str(row["decision_tag"]),
+                    _normalize_report_text(row["decision_tag"]),
                     _metric_text(row.get("final_total_latency"), digits=6),
                     _metric_text(row.get("total_latency_reduction_percent"), digits=4),
-                    str(row["highlighted_configuration"]),
+                    _metric_text(row.get("final_asynchronality_sum"), digits=6),
+                    _metric_text(row.get("asynchronality_reduction_percent"), digits=4),
+                    _normalize_report_text(row["highlighted_configuration"]),
                 ]
             )
             + " |"
@@ -1214,7 +1366,7 @@ def _build_decision_report(
     else:
         lines.extend(["", "## Value folders", ""])
         for value in sorted(value_rows):
-            lines.append(f"- `{value}` -> `values/{_safe_path_token(value)}`")
+            lines.append(f"- `{_normalize_report_text(value)}` -> `values/{_safe_path_token(value)}`")
     return lines
 
 

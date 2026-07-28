@@ -1,0 +1,77 @@
+Resolved Monte Carlo train seeds: [1, 2]
+Resolved Monte Carlo test seed: 3
+[DL Monte Carlo Dataset] | phase=collect | seed=1 | base_dataset=channel_episode_only
+[DL Monte Carlo Dataset] | phase=collect | seed=2 | base_dataset=channel_episode_only
+[DL Monte Carlo Train] | phase=start | scope=joint | channel_episodes=2 | channel_episodes_per_user=[2, 2, 2] | epochs=120 | batch_size=32 | precoder_net_scope=per_user_nets
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=1/120 | objective=-2.993267 | sum_rate=7.403129 | avg_user_rate=3.302069 | r_p=0.227707 | r_c=0.024387 | r_s=inf | status=running
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=5/120 | objective=-10.432750 | sum_rate=14.960810 | avg_user_rate=10.531642 | r_p=0.078963 | r_c=0.009200 | r_s=0.024048 | status=running
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=10/120 | objective=-13.568921 | sum_rate=19.155856 | avg_user_rate=13.723222 | r_p=1.573563e-06 | r_c=1.573609e-08 | r_s=0.015422 | status=running
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=15/120 | objective=-14.175209 | sum_rate=20.595807 | avg_user_rate=14.369760 | r_p=0.016698 | r_c=0.001951 | r_s=0.011794 | status=running
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=20/120 | objective=-13.991791 | sum_rate=20.232955 | avg_user_rate=14.227788 | r_p=1.609325e-06 | r_c=1.609410e-08 | r_s=0.005676 | status=running
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=25/120 | objective=-14.357696 | sum_rate=20.941964 | avg_user_rate=14.575385 | r_p=0.040920 | r_c=0.004735 | r_s=0.004755 | status=running
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=30/120 | objective=-15.019206 | sum_rate=21.500899 | avg_user_rate=15.205430 | r_p=0.002730 | r_c=3.275846e-04 | r_s=0.007224 | status=running
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=35/120 | objective=-15.146273 | sum_rate=21.642904 | avg_user_rate=15.374234 | r_p=1.458561e-06 | r_c=1.458700e-08 | r_s=0.004765 | status=running
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=40/120 | objective=-14.870807 | sum_rate=21.523894 | avg_user_rate=15.102083 | r_p=1.514659e-06 | r_c=1.514823e-08 | r_s=0.003528 | status=running
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=45/120 | objective=-14.925136 | sum_rate=21.526548 | avg_user_rate=15.157983 | r_p=2.125331e-06 | r_c=2.125588e-08 | r_s=0.002848 | status=running
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=50/120 | objective=-15.287212 | sum_rate=21.786882 | avg_user_rate=15.476065 | r_p=1.165602e-06 | r_c=1.165759e-08 | r_s=0.002520 | status=running
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=55/120 | objective=-15.736782 | sum_rate=22.011981 | avg_user_rate=15.971878 | r_p=1.307896e-06 | r_c=1.308094e-08 | r_s=0.001685 | status=running
+[DL Monte Carlo] | phase=train | method=monte_carlo | scope=joint | epoch=56/120 | objective=-14.903802 | sum_rate=21.748439 | avg_user_rate=15.138930 | r_p=1.311302e-06 | r_c=1.311502e-08 | r_s=8.309536e-04 | status=kkt_converged
+[DL Initial Baseline] | seed=3 | scenario=payload_completion | method=monte_carlo | users=3 | initial_total_latency=0.305000 | initial_avg_latency=0.101667 | initial_min_latency=0.069867 | initial_max_latency=0.135667
+[DL Monte Carlo Eval] | block=0 | active_users=3 | remaining_bits=6000 | mode=payload_completion
+[DL Monte Carlo Eval] | block=0 | skipped_users=[0, 1]
+[DL Monte Carlo Allocation] | user=0 | block=0 | status=skipped
+[DL Monte Carlo Allocation] | user=1 | block=0 | status=skipped
+[DL Monte Carlo Allocation] | user=2 | block=0 | served_bits=878 | n_kl=80 | required_rate=10.975000 | achieved_rate=10.985839
+[DL Monte Carlo Eval] | block=0 | status=complete | allocated_bits=878 | remaining_bits=5122
+[DL Monte Carlo Eval] | block=1 | active_users=3 | remaining_bits=5122 | mode=payload_completion
+[DL Monte Carlo Eval] | block=1 | skipped_users=[0, 1]
+[DL Monte Carlo Allocation] | user=0 | block=1 | status=skipped
+[DL Monte Carlo Allocation] | user=1 | block=1 | status=skipped
+[DL Monte Carlo Allocation] | user=2 | block=1 | served_bits=888 | n_kl=80 | required_rate=11.100000 | achieved_rate=11.112393
+[DL Monte Carlo Eval] | block=1 | status=complete | allocated_bits=888 | remaining_bits=4234
+[DL Monte Carlo Eval] | block=2 | active_users=3 | remaining_bits=4234 | mode=payload_completion
+[DL Monte Carlo Eval] | block=2 | skipped_users=[0, 1]
+[DL Monte Carlo Allocation] | user=0 | block=2 | status=skipped
+[DL Monte Carlo Allocation] | user=1 | block=2 | status=skipped
+[DL Monte Carlo Allocation] | user=2 | block=2 | served_bits=898 | n_kl=80 | required_rate=11.225000 | achieved_rate=11.232069
+[DL Monte Carlo Eval] | block=2 | status=complete | allocated_bits=898 | remaining_bits=3336
+[DL Monte Carlo Eval] | block=3 | active_users=3 | remaining_bits=3336 | mode=payload_completion
+[DL Monte Carlo Eval] | block=3 | skipped_users=[0, 1]
+[DL Monte Carlo Allocation] | user=0 | block=3 | status=skipped
+[DL Monte Carlo Allocation] | user=1 | block=3 | status=skipped
+[DL Monte Carlo Allocation] | user=2 | block=3 | served_bits=336 | n_kl=33 | required_rate=10.181818 | achieved_rate=10.509864
+[DL Monte Carlo Eval] | block=3 | status=complete | allocated_bits=336 | remaining_bits=3000
+[DL Monte Carlo Eval] | block=4 | active_users=2 | remaining_bits=3000 | mode=payload_completion
+[DL Monte Carlo Eval] | block=4 | skipped_users=[0]
+[DL Monte Carlo Allocation] | user=0 | block=4 | status=skipped
+[DL Monte Carlo Allocation] | user=1 | block=4 | served_bits=773 | n_kl=60 | required_rate=12.883333 | achieved_rate=12.895770
+[DL Monte Carlo Eval] | block=4 | status=complete | allocated_bits=773 | remaining_bits=2227
+[DL Monte Carlo Eval] | block=5 | active_users=2 | remaining_bits=2227 | mode=payload_completion
+[DL Monte Carlo Eval] | block=5 | skipped_users=[0]
+[DL Monte Carlo Allocation] | user=0 | block=5 | status=skipped
+[DL Monte Carlo Allocation] | user=1 | block=5 | served_bits=852 | n_kl=60 | required_rate=14.200000 | achieved_rate=14.200115
+[DL Monte Carlo Eval] | block=5 | status=complete | allocated_bits=852 | remaining_bits=1375
+[DL Monte Carlo Eval] | block=6 | active_users=2 | remaining_bits=1375 | mode=payload_completion
+[DL Monte Carlo Eval] | block=6 | skipped_users=[0]
+[DL Monte Carlo Allocation] | user=0 | block=6 | status=skipped
+[DL Monte Carlo Allocation] | user=1 | block=6 | served_bits=375 | n_kl=35 | required_rate=10.714286 | achieved_rate=10.839714
+[DL Monte Carlo Eval] | block=6 | status=complete | allocated_bits=375 | remaining_bits=1000
+[DL Monte Carlo Eval] | block=7 | active_users=1 | remaining_bits=1000 | mode=payload_completion
+[DL Monte Carlo Allocation] | user=0 | block=7 | served_bits=583 | n_kl=50 | required_rate=11.660000 | achieved_rate=11.668779
+[DL Monte Carlo Eval] | block=7 | status=complete | allocated_bits=583 | remaining_bits=417
+[DL Monte Carlo Eval] | block=8 | active_users=1 | remaining_bits=417 | mode=payload_completion
+[DL Monte Carlo Allocation] | user=0 | block=8 | served_bits=417 | n_kl=36 | required_rate=11.583333 | achieved_rate=11.726023
+[DL Monte Carlo Eval] | block=8 | status=complete | allocated_bits=417 | remaining_bits=0
+Traceback (most recent call last):
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Monte Carlo\main.py", line 634, in <module>
+    main()
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Monte Carlo\main.py", line 615, in main
+    _build_summary_lines(result, run_meta["cfg_path"], int(test_seed)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Monte Carlo\main.py", line 293, in _build_summary_lines
+    lines.extend(_build_final_test_summary_lines(result))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Downlink\Methods\Monte Carlo\main.py", line 218, in _build_final_test_summary_lines
+    if metrics.get("scenario_mode", "") == FIXED_BLOCK_TARGETS_MODE:
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'FIXED_BLOCK_TARGETS_MODE' is not defined

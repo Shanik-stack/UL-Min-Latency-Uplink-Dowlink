@@ -1,0 +1,22 @@
+Training experiment scenarios by seed
+Experiment scenario summary
+Mode: payload_completion
+Seed: 1
+Termination rule: until_payload_drained
+Skip infeasible blocks: True
+Skip adds full-T latency: True
+Track skipped blocks: True
+Per-user total target bits: [1000, 2000, 3000]
+Total target bits: 6000
+Payload bits per user: [1000, 2000, 3000]
+
+Experiment scenario summary
+Mode: payload_completion
+Seed: 2
+Termination rule: until_payload_drained
+Skip infeasible blocks: True
+Skip adds full-T latency: True
+Track skipped blocks: True
+Per-user total target bits: [1000, 2000, 3000]
+Total target bits: 6000
+Payload bits per user: [1000, 2000, 3000]

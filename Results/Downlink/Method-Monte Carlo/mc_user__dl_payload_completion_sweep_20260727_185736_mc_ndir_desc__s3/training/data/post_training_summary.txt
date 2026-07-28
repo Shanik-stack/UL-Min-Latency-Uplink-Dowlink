@@ -1,0 +1,62 @@
+Downlink post-training summary
+Run started at: 2026-07-27T19:03:25+03:00
+Training started at: 2026-07-27T19:03:27+03:00
+Training completed at: 2026-07-27T19:05:10+03:00
+Epochs requested: 120
+Epochs completed: 64
+Training solve status: kkt_converged
+Restored solution source: best_primal
+Downlink precoder-net scope: per_user_nets
+Base training dataset: channel_episodes_only
+Training channel episodes: 2
+Rollout anchor-bits mode: derived_online_from_current_episode_served_bits
+Rollout query weighting mode: uniform_per_query
+Rollout phase weights: {'full_block': 1.0, 'tail_feasible': 1.0, 'tail_frontier': 1.5}
+Final KKT primal residual: 1.311302e-06
+Final KKT complementarity residual: 1.311533e-08
+Final KKT stationarity residual: 8.434042e-04
+Last epoch rollout-weighted avg sum rate: 22.218522
+Best epoch rollout-weighted avg sum rate: 22.401677
+Last epoch mean per-user rollout rate: 16.219210
+Best epoch mean per-user rollout rate: 17.127111
+Last epoch mean per-user Lagrangian: -16.221319
+Best epoch mean per-user Lagrangian: -17.132042
+Last epoch feasible rollout queries: 8 / 32 (0.250000)
+Per-user last epoch avg Lagrangian over active rollout queries: [-10.851823742920534, -23.62349246098445, -14.18864153895308]
+Per-user best Lagrangian: [-13.62350521175387, -23.866069657461985, -15.544561905624425]
+Per-user last epoch avg rate over active rollout queries: [10.846505531684185, 23.62349246098445, 14.187630577478558]
+Global active-user rollout queries by n_kl over all epochs:
+{'45': 2, '46': 5, '47': 13, '48': 36, '49': 128, '50': 955, '51': 1, '52': 1, '53': 2, '54': 2, '55': 3, '56': 4, '57': 18, '58': 40, '59': 128, '60': 712, '71': 1, '72': 1, '73': 1, '74': 3, '75': 4, '76': 7, '77': 18, '78': 48, '79': 128, '80': 1115}
+Per-user active-user rollout queries by n_kl over all epochs:
+[{'45': 2, '46': 5, '47': 13, '48': 36, '49': 128, '50': 954}, {'50': 1, '51': 1, '52': 1, '53': 2, '54': 2, '55': 3, '56': 4, '57': 18, '58': 40, '59': 128, '60': 712}, {'71': 1, '72': 1, '73': 1, '74': 3, '75': 4, '76': 7, '77': 18, '78': 48, '79': 128, '80': 1115}]
+Global active-user frontier rollout queries by n_kl over all epochs:
+{'45': 2, '46': 3, '47': 8, '48': 23, '49': 92, '50': 8, '53': 1, '55': 1, '56': 1, '57': 14, '58': 22, '59': 88, '71': 1, '74': 2, '75': 1, '76': 3, '77': 11, '78': 30, '79': 80, '80': 8}
+Per-user active-user frontier rollout queries by n_kl over all epochs:
+[{'45': 2, '46': 3, '47': 8, '48': 23, '49': 92, '50': 7}, {'50': 1, '53': 1, '55': 1, '56': 1, '57': 14, '58': 22, '59': 88}, {'71': 1, '74': 2, '75': 1, '76': 3, '77': 11, '78': 30, '79': 80, '80': 8}]
+Last epoch active-user rollout queries by n_kl:
+{'49': 2, '50': 13, '58': 1, '59': 2, '60': 10, '79': 2, '80': 15}
+Last epoch active-user frontier rollout queries by n_kl:
+{'49': 2, '58': 1, '59': 1, '79': 2}
+
+Experiment cost
+Core wall time total (s): 102.738499
+Core wall time training (s): 102.738499
+Testing-phase wall time (s): 0.000000
+Forward+backward NN FLOPs: 0.000e+00
+Forward-only NN FLOPs: 0.000e+00
+Total NN FLOPs: 0.000e+00
+Total forward+backward NN evaluations: 0
+Forward-only NN evaluations: 0
+Optimizer steps: 115
+Workload counters:
+{'training_active_user_rollout_queries_per_user': [], 'batch_size': 32}
+Notes:
+- Forward+backward NN FLOPs count the active-user rollout-query training passes that optimize the downlink precoder nets.
+- Forward-only NN FLOPs are 0.0 here because the downlink training phase does not include a separate train-eval pass.
+
+Terminology
+- channel episode: one (seed, block=0) block realization stored in the base dataset
+- active-user channel episode: one active user inside one stored channel episode
+- rollout query: one visited joint (episode, n_targets) state generated online from the current precoder nets
+- last epoch rollout-weighted avg sum rate: average sum rate over the visited rollout queries in the last epoch, using the trainer's rollout weights
+- last epoch mean per-user rollout rate: first average each user's rate over that user's active rollout queries in the last epoch, then average over users

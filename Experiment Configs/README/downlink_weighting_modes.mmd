@@ -1,0 +1,31 @@
+flowchart TD
+    A["Choose downlink convergence objective"] --> B["unweighted_sum_rate"]
+    A --> C["inverse_cnr_weighted_sum_rate or another explicit weighted mode"]
+    A --> D["blended_inverse_cnr_weighted_sum_rate or another explicit blended mode"]
+
+    B --> B1["Objective: maximize sum_k R_k"]
+    B1 --> B2["All active users contribute equally"]
+
+    C --> C1["Choose convergence_priority_weight_strategy"]
+    C1 --> C2["inverse_cnr"]
+    C1 --> C3["remaining_bits"]
+    C1 --> C4["inverse_channel_gain"]
+    C1 --> C5["uniform_active_user_weight"]
+
+    C2 --> C21["w_k increases when effective CNR_k is small"]
+    C21 --> C22["Best when reducing asynchronality is the main goal"]
+
+    C3 --> C31["w_k increases with remaining payload or block-target backlog"]
+    C31 --> C32["Best when backlog reduction is the main goal"]
+
+    C4 --> C41["w_k increases when raw channel gain is small"]
+    C41 --> C42["Useful when prioritizing weak channels without current interference dependence"]
+
+    C5 --> C51["All weighted users get w_k = 1"]
+    C51 --> C52["Equivalent weighting behavior to equal priority, but still through the weighted path"]
+
+    C --> C6["Objective: maximize sum_k w_k R_k"]
+
+    D --> D1["Choose the same priority-weight strategy as weighted mode"]
+    D1 --> D2["Objective: maximize sum_k R_k + beta sum_k w_k R_k"]
+    D2 --> D3["Adds a weighted fairness push while still favoring total network rate"]

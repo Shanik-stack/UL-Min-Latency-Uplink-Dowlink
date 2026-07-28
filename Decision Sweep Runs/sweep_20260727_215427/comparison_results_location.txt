@@ -1,0 +1,10 @@
+Decision sweep result locations
+Generated at: 2026-07-27T22:33:40+03:00
+Control root: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Decision Sweep Runs\sweep_20260727_215427
+Detailed comparison root: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Decision Sweep Comparisons\sweep_20260727_215427
+Resolved max parallel: 3
+Parallel mode: fixed(3)
+Overall comparison CSV: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Decision Sweep Comparisons\sweep_20260727_215427\overall\comparison_summary.csv
+Overall comparison JSON: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Decision Sweep Comparisons\sweep_20260727_215427\overall\comparison_summary.json
+Overall comparison report: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Decision Sweep Comparisons\sweep_20260727_215427\overall\comparison_report.md
+Per-decision comparisons root: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Results\Decision Sweep Comparisons\sweep_20260727_215427\by_decision

@@ -488,7 +488,7 @@ def build_uplink_monte_carlo_training_cost(
 
 def build_uplink_monte_carlo_total_cost(
     train_artifact: Mapping[str, Any],
-    test_state_counts_per_user: Sequence[int],
+    evaluation_cost_counters: Mapping[str, Any] | Sequence[int],
     *,
     batch_size: int,
     core_wall_time_seconds_training: float,
@@ -500,16 +500,36 @@ def build_uplink_monte_carlo_total_cost(
         core_wall_time_seconds_training=core_wall_time_seconds_training,
     )
     per_user_forward_flops = [int(v) for v in training_cost.get("per_user_forward_flops", [])]
-    test_states_per_user = [int(v) for v in test_state_counts_per_user]
+    if isinstance(evaluation_cost_counters, Mapping):
+        test_states_per_user = [
+            int(v)
+            for v in evaluation_cost_counters.get("per_user_candidate_n_states", [])
+        ]
+        per_user_eval_calls = [
+            int(v)
+            for v in evaluation_cost_counters.get(
+                "per_user_forward_calls",
+                test_states_per_user,
+            )
+        ]
+        total_eval_calls = int(
+            evaluation_cost_counters.get("total_forward_calls", sum(per_user_eval_calls))
+        )
+    else:
+        test_states_per_user = [int(v) for v in evaluation_cost_counters]
+        per_user_eval_calls = list(test_states_per_user)
+        total_eval_calls = int(sum(per_user_eval_calls))
     testing_inference_flops = float(
         sum(
-            per_user_forward_flops[k] * test_states_per_user[k]
-            for k in range(min(len(per_user_forward_flops), len(test_states_per_user)))
+            per_user_forward_flops[k] * per_user_eval_calls[k]
+            for k in range(min(len(per_user_forward_flops), len(per_user_eval_calls)))
         )
     )
 
     combined_workload = dict(training_cost.get("workload_counters", {}))
     combined_workload["test_candidate_n_states_per_user"] = [int(v) for v in test_states_per_user]
+    combined_workload["test_forward_calls_per_user"] = [int(v) for v in per_user_eval_calls]
+    combined_workload["test_total_forward_calls"] = int(total_eval_calls)
 
     return {
         **training_cost,
@@ -521,10 +541,11 @@ def build_uplink_monte_carlo_total_cost(
             + training_cost.get("estimated_nn_inference_flops", 0.0)
             + testing_inference_flops
         ),
-        "inference_forward_calls": int(training_cost.get("inference_forward_calls", 0) + sum(test_states_per_user)),
+        "inference_forward_calls": int(training_cost.get("inference_forward_calls", 0) + total_eval_calls),
         "workload_counters": combined_workload,
         "notes": [
-            "Training FLOPs are estimated from rollout-query counts and precoder MLP shapes; plotting and file export are excluded from wall time.",
+            "Training FLOPs are estimated from rollout-query counts and precoder MLP shapes.",
+            "Testing-phase wall time measures only the held-out uplink precoder-net evaluation; plotting, file export, and baseline reconstruction are excluded.",
             "Inference forward calls include both the post-training train-eval pass and the held-out test pass.",
         ],
     }
@@ -624,6 +645,7 @@ def build_downlink_monte_carlo_total_cost(
         "workload_counters": combined_workload,
         "notes": [
             "Forward+backward NN FLOPs count the active-user rollout-query training passes that optimize the downlink precoder nets.",
+            "Testing-phase wall time measures only the held-out downlink precoder-net evaluation; plotting, file export, and baseline reconstruction are excluded.",
             "Forward-only NN FLOPs count the forward-only beam evaluations in the held-out downlink test pass.",
         ],
     }

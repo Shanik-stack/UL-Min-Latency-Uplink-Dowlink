@@ -1,0 +1,49 @@
+defaults:
+  python_executable: python
+  max_parallel: 3
+  continue_on_error: true
+  quiet: false
+  skip_test: false
+  seed: 3
+  test_seed: 3
+
+base_configs:
+  uplink:
+    - uplink_payload_completion.yaml
+  downlink:
+    - downlink_payload_completion.yaml
+
+decision_grids:
+  uplink:
+    convergence:
+      simulation.uplink_objective_mode:
+        - unweighted_sum_rate
+        - inverse_cnr_weighted_sum_rate
+      simulation.n_search_direction:
+        - descending
+        - ascending
+
+    monte_carlo:
+      simulation.uplink_objective_mode:
+        - unweighted_sum_rate
+        - inverse_cnr_weighted_sum_rate
+      simulation.n_search_direction:
+        - descending
+        - ascending
+
+  downlink:
+    convergence:
+      simulation.n_search_direction:
+        - descending
+        - ascending
+      simulation.convergence_block_objective_mode:
+        - unweighted_sum_rate
+        - inverse_cnr_weighted_sum_rate
+
+    monte_carlo:
+      simulation.n_search_direction:
+        - descending
+        - ascending
+      simulation.convergence_block_objective_mode:
+        - unweighted_sum_rate
+        - inverse_cnr_weighted_sum_rate

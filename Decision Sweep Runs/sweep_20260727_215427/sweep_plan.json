@@ -1,0 +1,528 @@
+{
+    "generated_at_local": "2026-07-27T21:54:27+03:00",
+    "manifest_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\decision_sweep_payload_direction_weighting.yaml",
+    "run_root": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427",
+    "defaults": {
+        "python_executable": "python",
+        "max_parallel": 3,
+        "continue_on_error": true,
+        "quiet": false,
+        "skip_test": false,
+        "seed": 3,
+        "test_seed": 3
+    },
+    "runs": [
+        {
+            "id": "uplink_convergence_uplink_payload_completion_000",
+            "display_name": "Uplink | Convergence per epoch",
+            "link": "uplink",
+            "method": "convergence",
+            "base_config_name": "uplink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\uplink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\convergence\\ul_payload_completion__sweep_20260727_215427__conv__obj-unwt__ndir-desc.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.uplink_objective_mode": "unweighted_sum_rate",
+                "simulation.n_search_direction": "descending"
+            },
+            "effective_decisions": {
+                "simulation.uplink_objective_mode": "unweighted_sum_rate",
+                "simulation.n_search_direction": "descending"
+            },
+            "decision_tag": "obj-unwt__ndir-desc",
+            "is_base_configuration": true,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Uplink\\Methods\\Convergence per epoch\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\convergence\\ul_payload_completion__sweep_20260727_215427__conv__obj-unwt__ndir-desc.yaml",
+                "--seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Method-Convergence per epoch\\conv_unwt_net__ul_payload_completion_sweep_20260727_215427_conv_obj_unwt_ndir_desc__s3\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\ul_payload_completion__sweep_20260727_215427__conv__obj-unwt__ndir-desc.log"
+        },
+        {
+            "id": "uplink_convergence_uplink_payload_completion_001",
+            "display_name": "Uplink | Convergence per epoch",
+            "link": "uplink",
+            "method": "convergence",
+            "base_config_name": "uplink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\uplink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\convergence\\ul_payload_completion__sweep_20260727_215427__conv__obj-unwt__ndir-asc.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.uplink_objective_mode": "unweighted_sum_rate",
+                "simulation.n_search_direction": "ascending"
+            },
+            "effective_decisions": {
+                "simulation.uplink_objective_mode": "unweighted_sum_rate",
+                "simulation.n_search_direction": "ascending"
+            },
+            "decision_tag": "obj-unwt__ndir-asc",
+            "is_base_configuration": false,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Uplink\\Methods\\Convergence per epoch\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\convergence\\ul_payload_completion__sweep_20260727_215427__conv__obj-unwt__ndir-asc.yaml",
+                "--seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Method-Convergence per epoch\\conv_unwt_net__ul_payload_completion_sweep_20260727_215427_conv_obj_unwt_ndir_asc__s3\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\ul_payload_completion__sweep_20260727_215427__conv__obj-unwt__ndir-asc.log"
+        },
+        {
+            "id": "uplink_convergence_uplink_payload_completion_002",
+            "display_name": "Uplink | Convergence per epoch",
+            "link": "uplink",
+            "method": "convergence",
+            "base_config_name": "uplink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\uplink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\convergence\\ul_payload_completion__sweep_20260727_215427__conv__obj-invcnr__ndir-desc.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.uplink_objective_mode": "inverse_cnr_weighted_sum_rate",
+                "simulation.n_search_direction": "descending"
+            },
+            "effective_decisions": {
+                "simulation.uplink_objective_mode": "inverse_cnr_weighted_sum_rate",
+                "simulation.n_search_direction": "descending"
+            },
+            "decision_tag": "obj-invcnr__ndir-desc",
+            "is_base_configuration": false,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Uplink\\Methods\\Convergence per epoch\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\convergence\\ul_payload_completion__sweep_20260727_215427__conv__obj-invcnr__ndir-desc.yaml",
+                "--seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Method-Convergence per epoch\\conv_invcnr_net__ul_payload_completion_sweep_20260727_215427_conv_obj_invcnr_ndir_desc__s3\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\ul_payload_completion__sweep_20260727_215427__conv__obj-invcnr__ndir-desc.log"
+        },
+        {
+            "id": "uplink_convergence_uplink_payload_completion_003",
+            "display_name": "Uplink | Convergence per epoch",
+            "link": "uplink",
+            "method": "convergence",
+            "base_config_name": "uplink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\uplink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\convergence\\ul_payload_completion__sweep_20260727_215427__conv__obj-invcnr__ndir-asc.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.uplink_objective_mode": "inverse_cnr_weighted_sum_rate",
+                "simulation.n_search_direction": "ascending"
+            },
+            "effective_decisions": {
+                "simulation.uplink_objective_mode": "inverse_cnr_weighted_sum_rate",
+                "simulation.n_search_direction": "ascending"
+            },
+            "decision_tag": "obj-invcnr__ndir-asc",
+            "is_base_configuration": false,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Uplink\\Methods\\Convergence per epoch\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\convergence\\ul_payload_completion__sweep_20260727_215427__conv__obj-invcnr__ndir-asc.yaml",
+                "--seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Method-Convergence per epoch\\conv_invcnr_net__ul_payload_completion_sweep_20260727_215427_conv_obj_invcnr_ndir_asc__s3\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\ul_payload_completion__sweep_20260727_215427__conv__obj-invcnr__ndir-asc.log"
+        },
+        {
+            "id": "uplink_monte_carlo_uplink_payload_completion_000",
+            "display_name": "Uplink | Monte Carlo",
+            "link": "uplink",
+            "method": "monte_carlo",
+            "base_config_name": "uplink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\uplink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\monte_carlo\\ul_payload_completion__sweep_20260727_215427__mc__obj-unwt__ndir-desc.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.uplink_objective_mode": "unweighted_sum_rate",
+                "simulation.n_search_direction": "descending"
+            },
+            "effective_decisions": {
+                "simulation.uplink_objective_mode": "unweighted_sum_rate",
+                "simulation.n_search_direction": "descending"
+            },
+            "decision_tag": "obj-unwt__ndir-desc",
+            "is_base_configuration": true,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Uplink\\Methods\\Monte Carlo\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\monte_carlo\\ul_payload_completion__sweep_20260727_215427__mc__obj-unwt__ndir-desc.yaml",
+                "--test_seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Method-Monte Carlo\\mc_unwt__ul_payload_completion_sweep_20260727_215427_mc_obj_unwt_ndir_desc__s3\\testing\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\ul_payload_completion__sweep_20260727_215427__mc__obj-unwt__ndir-desc.log"
+        },
+        {
+            "id": "uplink_monte_carlo_uplink_payload_completion_001",
+            "display_name": "Uplink | Monte Carlo",
+            "link": "uplink",
+            "method": "monte_carlo",
+            "base_config_name": "uplink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\uplink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\monte_carlo\\ul_payload_completion__sweep_20260727_215427__mc__obj-unwt__ndir-asc.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.uplink_objective_mode": "unweighted_sum_rate",
+                "simulation.n_search_direction": "ascending"
+            },
+            "effective_decisions": {
+                "simulation.uplink_objective_mode": "unweighted_sum_rate",
+                "simulation.n_search_direction": "ascending"
+            },
+            "decision_tag": "obj-unwt__ndir-asc",
+            "is_base_configuration": false,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Uplink\\Methods\\Monte Carlo\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\monte_carlo\\ul_payload_completion__sweep_20260727_215427__mc__obj-unwt__ndir-asc.yaml",
+                "--test_seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Method-Monte Carlo\\mc_unwt__ul_payload_completion_sweep_20260727_215427_mc_obj_unwt_ndir_asc__s3\\testing\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\ul_payload_completion__sweep_20260727_215427__mc__obj-unwt__ndir-asc.log"
+        },
+        {
+            "id": "uplink_monte_carlo_uplink_payload_completion_002",
+            "display_name": "Uplink | Monte Carlo",
+            "link": "uplink",
+            "method": "monte_carlo",
+            "base_config_name": "uplink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\uplink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\monte_carlo\\ul_payload_completion__sweep_20260727_215427__mc__obj-invcnr__ndir-desc.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.uplink_objective_mode": "inverse_cnr_weighted_sum_rate",
+                "simulation.n_search_direction": "descending"
+            },
+            "effective_decisions": {
+                "simulation.uplink_objective_mode": "inverse_cnr_weighted_sum_rate",
+                "simulation.n_search_direction": "descending"
+            },
+            "decision_tag": "obj-invcnr__ndir-desc",
+            "is_base_configuration": false,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Uplink\\Methods\\Monte Carlo\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\monte_carlo\\ul_payload_completion__sweep_20260727_215427__mc__obj-invcnr__ndir-desc.yaml",
+                "--test_seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Method-Monte Carlo\\mc_invcnr__ul_payload_completion_sweep_20260727_215427_mc_obj_invcnr_ndir_desc__s3\\testing\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\ul_payload_completion__sweep_20260727_215427__mc__obj-invcnr__ndir-desc.log"
+        },
+        {
+            "id": "uplink_monte_carlo_uplink_payload_completion_003",
+            "display_name": "Uplink | Monte Carlo",
+            "link": "uplink",
+            "method": "monte_carlo",
+            "base_config_name": "uplink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\uplink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\monte_carlo\\ul_payload_completion__sweep_20260727_215427__mc__obj-invcnr__ndir-asc.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.uplink_objective_mode": "inverse_cnr_weighted_sum_rate",
+                "simulation.n_search_direction": "ascending"
+            },
+            "effective_decisions": {
+                "simulation.uplink_objective_mode": "inverse_cnr_weighted_sum_rate",
+                "simulation.n_search_direction": "ascending"
+            },
+            "decision_tag": "obj-invcnr__ndir-asc",
+            "is_base_configuration": false,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Uplink\\Methods\\Monte Carlo\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\uplink\\monte_carlo\\ul_payload_completion__sweep_20260727_215427__mc__obj-invcnr__ndir-asc.yaml",
+                "--test_seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Uplink\\Method-Monte Carlo\\mc_invcnr__ul_payload_completion_sweep_20260727_215427_mc_obj_invcnr_ndir_asc__s3\\testing\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\ul_payload_completion__sweep_20260727_215427__mc__obj-invcnr__ndir-asc.log"
+        },
+        {
+            "id": "downlink_convergence_downlink_payload_completion_000",
+            "display_name": "Downlink | Convergence per epoch",
+            "link": "downlink",
+            "method": "convergence",
+            "base_config_name": "downlink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\downlink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\convergence\\dl_payload_completion__sweep_20260727_215427__conv__ndir-desc__obj-unwt.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.n_search_direction": "descending",
+                "simulation.convergence_block_objective_mode": "unweighted_sum_rate"
+            },
+            "effective_decisions": {
+                "simulation.n_search_direction": "descending",
+                "simulation.convergence_block_objective_mode": "unweighted_sum_rate"
+            },
+            "decision_tag": "ndir-desc__obj-unwt",
+            "is_base_configuration": true,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Convergence per epoch\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\convergence\\dl_payload_completion__sweep_20260727_215427__conv__ndir-desc__obj-unwt.yaml",
+                "--seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Downlink\\Method-Convergence per epoch\\conv_unwt_user_net__dl_payload_completion_sweep_20260727_215427_conv_ndir_desc_obj_unwt__s3\\testing\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\dl_payload_completion__sweep_20260727_215427__conv__ndir-desc__obj-unwt.log"
+        },
+        {
+            "id": "downlink_convergence_downlink_payload_completion_001",
+            "display_name": "Downlink | Convergence per epoch",
+            "link": "downlink",
+            "method": "convergence",
+            "base_config_name": "downlink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\downlink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\convergence\\dl_payload_completion__sweep_20260727_215427__conv__ndir-desc__obj-invcnr.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.n_search_direction": "descending",
+                "simulation.convergence_block_objective_mode": "inverse_cnr_weighted_sum_rate"
+            },
+            "effective_decisions": {
+                "simulation.n_search_direction": "descending",
+                "simulation.convergence_block_objective_mode": "inverse_cnr_weighted_sum_rate"
+            },
+            "decision_tag": "ndir-desc__obj-invcnr",
+            "is_base_configuration": false,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Convergence per epoch\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\convergence\\dl_payload_completion__sweep_20260727_215427__conv__ndir-desc__obj-invcnr.yaml",
+                "--seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Downlink\\Method-Convergence per epoch\\conv_invcnr_user_net__dl_payload_completion_sweep_20260727_215427_conv_ndir_desc_obj_invcnr__s3\\testing\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\dl_payload_completion__sweep_20260727_215427__conv__ndir-desc__obj-invcnr.log"
+        },
+        {
+            "id": "downlink_convergence_downlink_payload_completion_002",
+            "display_name": "Downlink | Convergence per epoch",
+            "link": "downlink",
+            "method": "convergence",
+            "base_config_name": "downlink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\downlink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\convergence\\dl_payload_completion__sweep_20260727_215427__conv__ndir-asc__obj-unwt.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.n_search_direction": "ascending",
+                "simulation.convergence_block_objective_mode": "unweighted_sum_rate"
+            },
+            "effective_decisions": {
+                "simulation.n_search_direction": "ascending",
+                "simulation.convergence_block_objective_mode": "unweighted_sum_rate"
+            },
+            "decision_tag": "ndir-asc__obj-unwt",
+            "is_base_configuration": false,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Convergence per epoch\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\convergence\\dl_payload_completion__sweep_20260727_215427__conv__ndir-asc__obj-unwt.yaml",
+                "--seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Downlink\\Method-Convergence per epoch\\conv_unwt_user_net__dl_payload_completion_sweep_20260727_215427_conv_ndir_asc_obj_unwt__s3\\testing\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\dl_payload_completion__sweep_20260727_215427__conv__ndir-asc__obj-unwt.log"
+        },
+        {
+            "id": "downlink_convergence_downlink_payload_completion_003",
+            "display_name": "Downlink | Convergence per epoch",
+            "link": "downlink",
+            "method": "convergence",
+            "base_config_name": "downlink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\downlink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\convergence\\dl_payload_completion__sweep_20260727_215427__conv__ndir-asc__obj-invcnr.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.n_search_direction": "ascending",
+                "simulation.convergence_block_objective_mode": "inverse_cnr_weighted_sum_rate"
+            },
+            "effective_decisions": {
+                "simulation.n_search_direction": "ascending",
+                "simulation.convergence_block_objective_mode": "inverse_cnr_weighted_sum_rate"
+            },
+            "decision_tag": "ndir-asc__obj-invcnr",
+            "is_base_configuration": false,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Convergence per epoch\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\convergence\\dl_payload_completion__sweep_20260727_215427__conv__ndir-asc__obj-invcnr.yaml",
+                "--seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Downlink\\Method-Convergence per epoch\\conv_invcnr_user_net__dl_payload_completion_sweep_20260727_215427_conv_ndir_asc_obj_invcnr__s3\\testing\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\dl_payload_completion__sweep_20260727_215427__conv__ndir-asc__obj-invcnr.log"
+        },
+        {
+            "id": "downlink_monte_carlo_downlink_payload_completion_000",
+            "display_name": "Downlink | Monte Carlo",
+            "link": "downlink",
+            "method": "monte_carlo",
+            "base_config_name": "downlink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\downlink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\monte_carlo\\dl_payload_completion__sweep_20260727_215427__mc__ndir-desc__obj-unwt.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.n_search_direction": "descending",
+                "simulation.convergence_block_objective_mode": "unweighted_sum_rate"
+            },
+            "effective_decisions": {
+                "simulation.n_search_direction": "descending",
+                "simulation.convergence_block_objective_mode": "unweighted_sum_rate"
+            },
+            "decision_tag": "ndir-desc__obj-unwt",
+            "is_base_configuration": true,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\monte_carlo\\dl_payload_completion__sweep_20260727_215427__mc__ndir-desc__obj-unwt.yaml",
+                "--test_seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Downlink\\Method-Monte Carlo\\mc_unwt_user__dl_payload_completion_sweep_20260727_215427_mc_ndir_desc_obj_unwt__s3\\testing\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\dl_payload_completion__sweep_20260727_215427__mc__ndir-desc__obj-unwt.log"
+        },
+        {
+            "id": "downlink_monte_carlo_downlink_payload_completion_001",
+            "display_name": "Downlink | Monte Carlo",
+            "link": "downlink",
+            "method": "monte_carlo",
+            "base_config_name": "downlink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\downlink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\monte_carlo\\dl_payload_completion__sweep_20260727_215427__mc__ndir-desc__obj-invcnr.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.n_search_direction": "descending",
+                "simulation.convergence_block_objective_mode": "inverse_cnr_weighted_sum_rate"
+            },
+            "effective_decisions": {
+                "simulation.n_search_direction": "descending",
+                "simulation.convergence_block_objective_mode": "inverse_cnr_weighted_sum_rate"
+            },
+            "decision_tag": "ndir-desc__obj-invcnr",
+            "is_base_configuration": false,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\monte_carlo\\dl_payload_completion__sweep_20260727_215427__mc__ndir-desc__obj-invcnr.yaml",
+                "--test_seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Downlink\\Method-Monte Carlo\\mc_invcnr_user__dl_payload_completion_sweep_20260727_215427_mc_ndir_desc_obj_invcnr__s3\\testing\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\dl_payload_completion__sweep_20260727_215427__mc__ndir-desc__obj-invcnr.log"
+        },
+        {
+            "id": "downlink_monte_carlo_downlink_payload_completion_002",
+            "display_name": "Downlink | Monte Carlo",
+            "link": "downlink",
+            "method": "monte_carlo",
+            "base_config_name": "downlink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\downlink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\monte_carlo\\dl_payload_completion__sweep_20260727_215427__mc__ndir-asc__obj-unwt.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.n_search_direction": "ascending",
+                "simulation.convergence_block_objective_mode": "unweighted_sum_rate"
+            },
+            "effective_decisions": {
+                "simulation.n_search_direction": "ascending",
+                "simulation.convergence_block_objective_mode": "unweighted_sum_rate"
+            },
+            "decision_tag": "ndir-asc__obj-unwt",
+            "is_base_configuration": false,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\monte_carlo\\dl_payload_completion__sweep_20260727_215427__mc__ndir-asc__obj-unwt.yaml",
+                "--test_seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Downlink\\Method-Monte Carlo\\mc_unwt_user__dl_payload_completion_sweep_20260727_215427_mc_ndir_asc_obj_unwt__s3\\testing\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\dl_payload_completion__sweep_20260727_215427__mc__ndir-asc__obj-unwt.log"
+        },
+        {
+            "id": "downlink_monte_carlo_downlink_payload_completion_003",
+            "display_name": "Downlink | Monte Carlo",
+            "link": "downlink",
+            "method": "monte_carlo",
+            "base_config_name": "downlink_payload_completion.yaml",
+            "base_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Experiment Configs\\downlink_payload_completion.yaml",
+            "generated_cfg_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\monte_carlo\\dl_payload_completion__sweep_20260727_215427__mc__ndir-asc__obj-invcnr.yaml",
+            "scenario_mode": "payload_completion",
+            "decision_values": {
+                "simulation.n_search_direction": "ascending",
+                "simulation.convergence_block_objective_mode": "inverse_cnr_weighted_sum_rate"
+            },
+            "effective_decisions": {
+                "simulation.n_search_direction": "ascending",
+                "simulation.convergence_block_objective_mode": "inverse_cnr_weighted_sum_rate"
+            },
+            "decision_tag": "ndir-asc__obj-invcnr",
+            "is_base_configuration": false,
+            "seed": 3,
+            "train_seed_text": "",
+            "command": [
+                "python",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Downlink\\Methods\\Monte Carlo\\main.py",
+                "--cfg_name",
+                "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\generated_configs\\downlink\\monte_carlo\\dl_payload_completion__sweep_20260727_215427__mc__ndir-asc__obj-invcnr.yaml",
+                "--test_seed",
+                "3"
+            ],
+            "result_json_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Results\\Downlink\\Method-Monte Carlo\\mc_invcnr_user__dl_payload_completion_sweep_20260727_215427_mc_ndir_asc_obj_invcnr__s3\\testing\\data\\result.json",
+            "log_path": "C:\\All Codes\\Taiwan_Internship\\UL_UPLINK_DOWNLINK_MONTE_CARLO\\Decision Sweep Runs\\sweep_20260727_215427\\logs\\dl_payload_completion__sweep_20260727_215427__mc__ndir-asc__obj-invcnr.log"
+        }
+    ]
+}

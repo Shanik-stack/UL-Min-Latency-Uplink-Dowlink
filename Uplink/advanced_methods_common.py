@@ -5,6 +5,7 @@ import numpy as np
 import torch
 
 from UplinkSystem import UplinkSystem
+from blocklength_search import build_n_search_config, run_n_frontier_search
 from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE, PAYLOAD_COMPLETION_MODE, build_experiment_scenario
 from uplink_rate_model import build_uplink_rate_covariance
 
@@ -247,22 +248,41 @@ def estimate_initial_random_precoder_schedule(
             best_n = int(T_ref)
             best_R = float(R_T)
             if allow_n_reduction and B_used > 0:
-                candidate_n = int(T_ref) - int(n_kl_step)
-                while candidate_n >= int(n_kl_min):
-                    R_candidate = _compute_R_fbl_np(
-                        H_kl,
-                        F_kl,
-                        sigma2,
-                        epsilon,
-                        candidate_n,
-                        noise_plus_interference_cov,
-                    )
-                    if (float(B_used) / float(max(candidate_n, 1))) <= R_candidate:
-                        best_n = int(candidate_n)
-                        best_R = float(R_candidate)
-                        candidate_n -= int(n_kl_step)
-                    else:
-                        break
+                search_cfg = build_n_search_config(
+                    n_min=int(n_kl_min),
+                    n_max=int(T_ref),
+                    fine_step=int(n_kl_step),
+                    direction=sim_cfg.get("n_search_direction", "descending"),
+                    strategy=sim_cfg.get("n_search_strategy", "fixed_step"),
+                    coarse_step=sim_cfg.get("n_search_coarse_step", int(n_kl_step)),
+                    exponential_factor=sim_cfg.get("n_search_exponential_factor", 2),
+                )
+                search_result = run_n_frontier_search(
+                    search_cfg,
+                    lambda candidate_n, _stage: {
+                        "feasible": (
+                            float(B_used) / float(max(int(candidate_n), 1))
+                        ) <= _compute_R_fbl_np(
+                            H_kl,
+                            F_kl,
+                            sigma2,
+                            epsilon,
+                            int(candidate_n),
+                            noise_plus_interference_cov,
+                        ),
+                        "R_candidate": _compute_R_fbl_np(
+                            H_kl,
+                            F_kl,
+                            sigma2,
+                            epsilon,
+                            int(candidate_n),
+                            noise_plus_interference_cov,
+                        ),
+                    },
+                )
+                for accepted in search_result["accepted"]:
+                    best_n = int(accepted["n_kl"])
+                    best_R = float(accepted["result"]["R_candidate"])
 
             initial_n_kl[k].append(int(best_n))
             initial_B_kl[k].append(int(B_used))
@@ -364,22 +384,41 @@ def _estimate_initial_random_precoder_schedule_fixed_block_targets(
             best_R = float(R_T)
 
             if allow_n_reduction and int(B_used) >= int(target_bits) and int(target_bits) > 0:
-                candidate_n = int(T_ref) - int(n_kl_step)
-                while candidate_n >= int(n_kl_min):
-                    R_candidate = _compute_R_fbl_np(
-                        H_kl,
-                        F_kl,
-                        sigma2,
-                        epsilon,
-                        candidate_n,
-                        noise_plus_interference_cov,
-                    )
-                    if (float(target_bits) / float(max(candidate_n, 1))) <= R_candidate:
-                        best_n = int(candidate_n)
-                        best_R = float(R_candidate)
-                        candidate_n -= int(n_kl_step)
-                    else:
-                        break
+                search_cfg = build_n_search_config(
+                    n_min=int(n_kl_min),
+                    n_max=int(T_ref),
+                    fine_step=int(n_kl_step),
+                    direction=sim_cfg.get("n_search_direction", "descending"),
+                    strategy=sim_cfg.get("n_search_strategy", "fixed_step"),
+                    coarse_step=sim_cfg.get("n_search_coarse_step", int(n_kl_step)),
+                    exponential_factor=sim_cfg.get("n_search_exponential_factor", 2),
+                )
+                search_result = run_n_frontier_search(
+                    search_cfg,
+                    lambda candidate_n, _stage: {
+                        "feasible": (
+                            float(target_bits) / float(max(int(candidate_n), 1))
+                        ) <= _compute_R_fbl_np(
+                            H_kl,
+                            F_kl,
+                            sigma2,
+                            epsilon,
+                            int(candidate_n),
+                            noise_plus_interference_cov,
+                        ),
+                        "R_candidate": _compute_R_fbl_np(
+                            H_kl,
+                            F_kl,
+                            sigma2,
+                            epsilon,
+                            int(candidate_n),
+                            noise_plus_interference_cov,
+                        ),
+                    },
+                )
+                for accepted in search_result["accepted"]:
+                    best_n = int(accepted["n_kl"])
+                    best_R = float(accepted["result"]["R_candidate"])
 
             initial_n_kl[k].append(int(best_n))
             initial_B_kl[k].append(int(B_used))

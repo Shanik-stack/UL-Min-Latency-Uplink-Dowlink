@@ -13,9 +13,11 @@ This is the existing downlink online baseline:
   - `candidate_and_infeasible_users`: update the reduced-`n_kl` user and any infeasible users
 - recompute SINR using the committed block beams
 - choose the convergence block objective from `simulation.convergence_block_objective_mode`
-  - supported canonical modes: `unweighted_sum_rate`, `remaining_bits_weighted_sum_rate`, `blended_network_rate`
-  - `remaining_bits_weighted_sum_rate` weights each active user's rate by its current remaining-bit backlog
-  - legacy aliases still load: `user_rate -> unweighted_sum_rate`, `weighted_sum_rate -> remaining_bits_weighted_sum_rate`
+  - supported public modes include `unweighted_sum_rate`, `asynchronality_weighted_sum_rate`, `inverse_cnr_weighted_sum_rate`, `remaining_bits_weighted_sum_rate`, `inverse_channel_gain_weighted_sum_rate`, and `blended_asynchronality_weighted_sum_rate`
+  - `unweighted_sum_rate` maximizes the plain active-user sum rate
+  - weighted modes maximize a concrete weighted active-user sum rate using the selected weighting rule
+  - recommended anti-asynchronality setting: `asynchronality_weighted_sum_rate`
+  - legacy aliases still load: `user_rate -> unweighted_sum_rate`, `equal_priority_sum_rate -> unweighted_sum_rate`, `priority_weighted_sum_rate -> concrete weighted mode selected by convergence_priority_weight_strategy`
 
 Entry point:
 

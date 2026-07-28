@@ -34,14 +34,15 @@ from experiment_scenarios import (
 )
 from experiment_utils import (
     compact_method_tag,
+    compact_objective_tag,
     current_local_timestamp,
-    compact_shared_n_target_mode_tag,
     compact_scope_tag,
     join_compact_tag_parts,
     make_method_result_tag,
     resolve_monte_carlo_train_and_test_seeds,
 )
 from experiment_runner import _compute_summary_metrics
+from optimizer import resolve_public_convergence_objective_name
 from policy_optimizer import (
     build_precoder_net_artifact,
     build_training_dataset,
@@ -57,6 +58,7 @@ from plotting import (
     plot_latency,
     plot_link_quality,
     plot_optimization_history,
+    plot_payload_rfbl_vs_n_with_epoch,
     plot_per_user_convergence,
     plot_per_user_interference_before_after,
     plot_per_user_interference_profiles,
@@ -64,8 +66,39 @@ from plotting import (
     plot_rate_violation_heatmap,
     plot_user_config,
 )
+from precoder_models import load_user_precoder_models
 from project_paths import build_downlink_result_dirs, mirror_experiment_root_to_result_aliases
 from utils import save_json, save_text
+
+
+def _build_test_search_overrides(args: argparse.Namespace) -> dict[str, object]:
+    overrides: dict[str, object] = {}
+    if args.test_n_search_strategy:
+        overrides["monte_carlo_test_n_search_strategy"] = str(args.test_n_search_strategy)
+    if args.test_n_search_direction:
+        overrides["monte_carlo_test_n_search_direction"] = str(args.test_n_search_direction)
+    if args.test_n_search_coarse_step is not None:
+        overrides["monte_carlo_test_n_search_coarse_step"] = int(args.test_n_search_coarse_step)
+    if args.test_n_search_exponential_factor is not None:
+        overrides["monte_carlo_test_n_search_exponential_factor"] = int(
+            args.test_n_search_exponential_factor
+        )
+    return overrides
+
+
+def _build_test_search_tag(test_search_overrides: dict[str, object]) -> str | None:
+    if not test_search_overrides:
+        return None
+    strategy = str(test_search_overrides.get("monte_carlo_test_n_search_strategy", "")).strip().lower()
+    direction = str(test_search_overrides.get("monte_carlo_test_n_search_direction", "")).strip().lower()
+    if strategy == "binary":
+        return "ntest_bin"
+    if strategy == "fixed_step":
+        if direction.startswith("asc"):
+            return "ntest_asc"
+        if direction.startswith("desc"):
+            return "ntest_desc"
+    return join_compact_tag_parts("ntest", strategy or None, direction or None)
 
 
 def _build_seeded_scenario_collection_lines(
@@ -110,10 +143,6 @@ def _build_post_training_summary_lines(post_training_summary: dict[str, object])
         f"Training solve status: {post_training_summary.get('training_solve_status', 'unknown')}",
         f"Restored solution source: {post_training_summary.get('restored_solution_source', 'unknown')}",
         f"Downlink precoder-net scope: {post_training_summary.get('downlink_precoder_net_scope', 'unknown')}",
-        (
-            "BS-shared fixed-target n-target mode: "
-            f"{post_training_summary.get('bs_shared_net_fixed_target_n_target_mode', 'not_applicable')}"
-        ),
         f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}",
         f"Training channel episodes: {int(post_training_summary.get('total_training_channel_episodes', 0))}",
         f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}",
@@ -285,17 +314,17 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
         f"Allocation mode: {result.get('allocation_mode', 'unknown')}",
         f"Weight strategy: {result.get('weight_strategy', 'n/a')}",
         f"Downlink precoder-net scope: {result.get('downlink_precoder_net_scope', 'unknown')}",
-        (
-            "BS-shared fixed-target n-target mode: "
-            f"{result.get('bs_shared_net_fixed_target_n_target_mode', 'not_applicable')}"
-        ),
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
         f"Training objective: {result.get('training_objective', 'unknown')}",
         f"Rollout query weighting mode: {result.get('rollout_query_weighting_mode', 'unknown')}",
+        f"Test n search strategy: {result.get('test_n_search_strategy', 'config_default')}",
+        f"Test n search direction: {result.get('test_n_search_direction', 'config_default')}",
         f"Initial schedule source: {result.get('initial_schedule_source', 'random_precoder_baseline')}",
         f"Training dataset total channel episodes: {int(dataset_summary.get('total_channel_episodes', 0)) if isinstance(dataset_summary, dict) else 0}",
         f"Training channel-episode counts per user: {result.get('training_channel_episode_counts_per_user', result.get('training_active_user_case_counts_per_user', result.get('training_dataset_sizes', [])))}",
     ]
+    if result.get("reused_training_artifact"):
+        lines.append(f"Reused training artifact: {result.get('reused_training_artifact')}")
     lines.extend([""])
     lines.extend(_build_final_test_summary_lines(result))
     training_history = result.get("precoder_net_training_history", {})
@@ -428,6 +457,135 @@ def _build_summary_lines(result: dict[str, object], cfg_path: str, test_seed: in
     return lines
 
 
+def _run_precoder_net_test(
+    train_artifact: dict[str, object],
+    cfg_name: str,
+    test_seed: int,
+    *,
+    output_dirs: dict[str, str],
+    train_seeds: list[int],
+    verbose: bool,
+    test_search_overrides: dict[str, object] | None = None,
+    reused_training_artifact: str | None = None,
+    training_scenario_summaries: list[dict[str, object]] | None = None,
+    training_wall_time_seconds: float,
+    run_started_at_local: str,
+    training_started_at_local: str,
+    training_completed_at_local: str,
+    precoder_net_batch_size: int,
+) -> dict[str, object]:
+    configure_determinism(int(test_seed))
+    system_params, sim_params, run_meta = load_config(cfg_name)
+    sim_params = dict(sim_params)
+    if test_search_overrides:
+        sim_params.update(test_search_overrides)
+
+    test_system = DownlinkSystem(system_params, seed=int(test_seed))
+    test_scenario_summary = build_experiment_scenario_summary(
+        build_experiment_scenario(system_params, sim_params, seed=int(test_seed))
+    )
+    user_models = load_user_precoder_models(
+        train_artifact["user_model_specs"],
+        train_artifact["user_model_states"],
+        device=torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
+    )
+    testing_started_at_local = current_local_timestamp()
+    core_evaluation_start = perf_counter()
+    result = evaluate_downlink_precoder_net(
+        test_system,
+        sim_params,
+        user_models,
+        verbose=verbose,
+        precoder_net_training_history=train_artifact.get("precoder_net_training_history", {}),
+        train_seeds=train_seeds,
+        training_dataset_sizes=train_artifact.get("training_dataset_sizes", []),
+    )
+    testing_wall_time_seconds = float(
+        result.get(
+            "core_evaluation_wall_time_seconds",
+            perf_counter() - core_evaluation_start,
+        )
+    )
+    testing_completed_at_local = current_local_timestamp()
+    post_training_summary = train_artifact.get("post_training_summary", {})
+    if not isinstance(post_training_summary, dict):
+        post_training_summary = {}
+    result["cfg_path"] = run_meta["cfg_path"]
+    result["seed"] = int(test_seed)
+    result["system_params"] = system_params
+    result["sim_params"] = sim_params
+    result["training_dataset_summary"] = train_artifact.get("training_dataset_summary", {})
+    result["post_training_summary"] = post_training_summary
+    result["rollout_query_weighting_mode"] = str(
+        post_training_summary.get(
+            "rollout_query_weighting_mode",
+            sim_params.get("monte_carlo_rollout_query_weighting_mode", "unknown"),
+        )
+    )
+    result["experiment_scenario_mode"] = sim_params.get("experiment_scenario_mode", "payload_completion")
+    result["experiment_scenario"] = test_scenario_summary
+    result["training_experiment_scenarios"] = (
+        training_scenario_summaries
+        if training_scenario_summaries is not None
+        else train_artifact.get("training_experiment_scenarios", [])
+    )
+    result["training_objective"] = train_artifact.get(
+        "training_objective",
+        result.get("training_objective", "lagrangian_sum_finite_blocklength_rate_with_online_full_block_anchor_bits"),
+    )
+    result["test_n_search_strategy"] = str(
+        sim_params.get("monte_carlo_test_n_search_strategy", sim_params.get("n_search_strategy", "unknown"))
+    )
+    result["test_n_search_direction"] = str(
+        sim_params.get("monte_carlo_test_n_search_direction", sim_params.get("n_search_direction", "unknown"))
+    )
+    if reused_training_artifact:
+        result["reused_training_artifact"] = str(reused_training_artifact)
+    result["experiment_cost"] = build_downlink_monte_carlo_total_cost(
+        train_artifact,
+        result.get("evaluation_cost_counters", {}),
+        batch_size=precoder_net_batch_size,
+        core_wall_time_seconds_training=training_wall_time_seconds,
+        core_wall_time_seconds_testing=testing_wall_time_seconds,
+    )
+    result["run_started_at_local"] = str(run_started_at_local)
+    result["run_completed_at_local"] = str(testing_completed_at_local)
+    result["training_started_at_local"] = str(training_started_at_local)
+    result["training_completed_at_local"] = str(training_completed_at_local)
+    result["testing_started_at_local"] = str(testing_started_at_local)
+    result["testing_completed_at_local"] = str(testing_completed_at_local)
+    result["core_evaluation_wall_time_seconds"] = float(testing_wall_time_seconds)
+    result["summary_metrics"] = _compute_summary_metrics(result)
+
+    plot_user_config(system_params, output_dirs["user_config"])
+    plot_latency(result, output_dirs["latency_asynchronality"])
+    plot_asynchronality_comparison(result, output_dirs["latency_asynchronality"])
+    plot_link_quality(result, output_dirs["link_quality"])
+    plot_blocks(result, output_dirs["schedule_details"])
+    plot_rate_violation_heatmap(result, output_dirs["optimization_history"])
+    plot_optimization_history(result, output_dirs["optimization_history"])
+    plot_per_user_schedule_details(result, output_dirs["schedule_details"])
+    plot_per_user_convergence(result, output_dirs["optimization_history"])
+    plot_blocklength_feasibility_curves(test_system, result, output_dirs["optimization_history"])
+    plot_payload_rfbl_vs_n_with_epoch(result, output_dirs["optimization_history"])
+    plot_interference_before_after_heatmaps(result, output_dirs["interference"])
+    plot_per_user_interference_before_after(result, output_dirs["interference"])
+    plot_interference_heatmaps(test_system, output_dirs["interference"])
+    plot_per_user_interference_profiles(test_system, output_dirs["interference"])
+
+    save_json(result, os.path.join(output_dirs["test_data"], "result.json"))
+    save_text(
+        _build_summary_lines(result, run_meta["cfg_path"], int(test_seed)),
+        os.path.join(output_dirs["test_data"], "summary.txt"),
+    )
+    save_json(test_scenario_summary, os.path.join(output_dirs["test_data"], "experiment_scenario.json"))
+    save_text(
+        build_experiment_scenario_summary_lines(test_scenario_summary),
+        os.path.join(output_dirs["test_data"], "experiment_scenario.txt"),
+    )
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Offline downlink Monte Carlo precoder-net train/test")
     parser.add_argument("--cfg_name", type=str, default="config_downlink_example.yaml", help="Path to a YAML config")
@@ -442,12 +600,18 @@ def main() -> None:
     parser.add_argument("--precoder_net_epochs", "--precoder_epochs", "--policy_epochs", dest="precoder_net_epochs", type=int, default=None)
     parser.add_argument("--precoder_net_batch_size", "--precoder_batch_size", "--policy_batch_size", dest="precoder_net_batch_size", type=int, default=32)
     parser.add_argument("--precoder_net_lr", "--precoder_lr", "--policy_lr", dest="precoder_net_lr", type=float, default=1e-3)
+    parser.add_argument("--reuse_train_artifact", type=str, default=None, help="Reuse a saved train_artifact.pt and rerun only the test phase")
+    parser.add_argument("--test_n_search_strategy", type=str, default=None, help="Override Monte Carlo test-only n-search strategy")
+    parser.add_argument("--test_n_search_direction", type=str, default=None, help="Override Monte Carlo test-only n-search direction")
+    parser.add_argument("--test_n_search_coarse_step", type=int, default=None, help="Override Monte Carlo test-only n-search coarse step")
+    parser.add_argument("--test_n_search_exponential_factor", type=int, default=None, help="Override Monte Carlo test-only n-search exponential factor")
     parser.add_argument("--quiet", action="store_true", help="Reduce console logging")
     args = parser.parse_args()
 
     verbose = not args.quiet
     system_params, sim_params, run_meta = load_config(args.cfg_name)
     run_started_at_local = current_local_timestamp()
+    test_search_overrides = _build_test_search_overrides(args)
     train_epochs = int(
         args.precoder_net_epochs
         if args.precoder_net_epochs is not None
@@ -461,6 +625,16 @@ def main() -> None:
         config_num_train_seeds=sim_params.get("monte_carlo_num_train_seeds"),
         config_test_seed=sim_params.get("monte_carlo_test_seed"),
     )
+    artifact: dict[str, object] | None = None
+    reused_training_artifact: str | None = None
+    if args.reuse_train_artifact:
+        reused_training_artifact = os.path.abspath(args.reuse_train_artifact)
+        artifact = torch.load(reused_training_artifact, map_location="cpu", weights_only=False)
+        if not isinstance(artifact, dict):
+            raise TypeError("Expected a dictionary train artifact when reusing Monte Carlo training.")
+        artifact_train_seeds = [int(v) for v in artifact.get("train_seeds", [])]
+        if artifact_train_seeds:
+            train_seeds = artifact_train_seeds
     configure_determinism(train_seeds[0] if train_seeds else 0)
     print(f"Resolved Monte Carlo train seeds: {train_seeds}")
     print(f"Resolved Monte Carlo test seed: {int(test_seed)}")
@@ -468,21 +642,17 @@ def main() -> None:
         build_experiment_scenario_summary(scenario)
         for scenario in build_experiment_scenarios_for_seeds(system_params, sim_params, train_seeds)
     ]
+    if isinstance(artifact, dict) and artifact.get("training_experiment_scenarios"):
+        training_scenario_summaries = list(artifact["training_experiment_scenarios"])
     scope_name = sim_params.get("downlink_precoder_net_scope", "per_user_nets")
+    objective_mode = resolve_public_convergence_objective_name(sim_params)
     scope_tag = compact_scope_tag(scope_name)
-    shared_n_target_mode_tag = None
-    if (
-        str(scope_name) == "bs_shared_net"
-        and str(sim_params.get("experiment_scenario_mode", "payload_completion")) == FIXED_BLOCK_TARGETS_MODE
-    ):
-        shared_n_target_mode_tag = compact_shared_n_target_mode_tag(
-            sim_params.get("bs_shared_net_fixed_target_n_target_mode", "shared_n_targets")
-        )
     result_tag = make_method_result_tag(
         join_compact_tag_parts(
             compact_method_tag("monte_carlo_precoder_net_train_test"),
+            compact_objective_tag(objective_mode),
             scope_tag,
-            shared_n_target_mode_tag,
+            _build_test_search_tag(test_search_overrides),
         ),
         run_meta["cfg_stem"],
         seed=int(test_seed),
@@ -490,148 +660,123 @@ def main() -> None:
     output_dirs = build_downlink_result_dirs("Monte Carlo", result_tag)
     output_root = output_dirs["experiment_root"]
 
-    training_started_at_local = current_local_timestamp()
-    training_start = perf_counter()
-    training_scenarios = build_training_dataset(
-        train_seeds,
-        system_params,
-        sim_params,
-        verbose=verbose,
-    )
-    user_models, precoder_net_training_history, training_dataset_sizes = train_blocklength_aware_precoder_net(
-        system_params,
-        sim_params,
-        training_scenarios,
-        epochs=train_epochs,
-        batch_size=args.precoder_net_batch_size,
-        lr=args.precoder_net_lr,
-        verbose=verbose,
-    )
-    training_wall_time_seconds = perf_counter() - training_start
-    training_completed_at_local = current_local_timestamp()
-    dataset_summary = precoder_net_training_history.get("dataset_summary", {})
-    post_training_summary = precoder_net_training_history.get("post_training_summary", {})
-    artifact = build_precoder_net_artifact(
-        system_params,
-        sim_params,
-        train_seeds,
-        user_models,
-        precoder_net_training_history,
-        training_dataset_sizes,
-    )
-    training_cost = build_downlink_monte_carlo_training_cost(
-        artifact,
-        batch_size=args.precoder_net_batch_size,
-        core_wall_time_seconds_training=training_wall_time_seconds,
-    )
-    post_training_summary["experiment_cost"] = training_cost
-    post_training_summary["run_started_at_local"] = str(run_started_at_local)
-    post_training_summary["training_started_at_local"] = str(training_started_at_local)
-    post_training_summary["training_completed_at_local"] = str(training_completed_at_local)
-
-    configure_determinism(int(test_seed))
-    testing_started_at_local = current_local_timestamp()
-    testing_start = perf_counter()
-    test_system = DownlinkSystem(system_params, seed=int(test_seed))
-    test_scenario_summary = build_experiment_scenario_summary(
-        build_experiment_scenario(system_params, sim_params, seed=int(test_seed))
-    )
-    result = evaluate_downlink_precoder_net(
-        test_system,
-        sim_params,
-        user_models,
-        verbose=verbose,
-        precoder_net_training_history=precoder_net_training_history,
-        train_seeds=train_seeds,
-        training_dataset_sizes=training_dataset_sizes,
-    )
-    testing_wall_time_seconds = perf_counter() - testing_start
-    testing_completed_at_local = current_local_timestamp()
-    result["cfg_path"] = run_meta["cfg_path"]
-    result["seed"] = int(test_seed)
-    result["system_params"] = system_params
-    result["sim_params"] = sim_params
-    result["training_dataset_summary"] = dataset_summary
-    result["post_training_summary"] = post_training_summary
-    result["rollout_query_weighting_mode"] = str(
-        post_training_summary.get(
-            "rollout_query_weighting_mode",
-            sim_params.get("monte_carlo_rollout_query_weighting_mode", "unknown"),
+    if artifact is None:
+        training_started_at_local = current_local_timestamp()
+        training_start = perf_counter()
+        training_scenarios = build_training_dataset(
+            train_seeds,
+            system_params,
+            sim_params,
+            verbose=verbose,
         )
-    )
-    result["experiment_scenario_mode"] = sim_params.get("experiment_scenario_mode", "payload_completion")
-    result["experiment_scenario"] = test_scenario_summary
-    result["training_experiment_scenarios"] = training_scenario_summaries
-    result["training_objective"] = precoder_net_training_history.get(
-        "training_objective",
-        "lagrangian_sum_finite_blocklength_rate_with_online_full_block_anchor_bits",
-    )
-    result["experiment_cost"] = build_downlink_monte_carlo_total_cost(
+        user_models, precoder_net_training_history, training_dataset_sizes = train_blocklength_aware_precoder_net(
+            system_params,
+            sim_params,
+            training_scenarios,
+            epochs=train_epochs,
+            batch_size=args.precoder_net_batch_size,
+            lr=args.precoder_net_lr,
+            verbose=verbose,
+        )
+        training_wall_time_seconds = perf_counter() - training_start
+        training_completed_at_local = current_local_timestamp()
+        dataset_summary = precoder_net_training_history.get("dataset_summary", {})
+        post_training_summary = precoder_net_training_history.get("post_training_summary", {})
+        artifact = build_precoder_net_artifact(
+            system_params,
+            sim_params,
+            train_seeds,
+            user_models,
+            precoder_net_training_history,
+            training_dataset_sizes,
+        )
+        training_cost = build_downlink_monte_carlo_training_cost(
+            artifact,
+            batch_size=args.precoder_net_batch_size,
+            core_wall_time_seconds_training=training_wall_time_seconds,
+        )
+        post_training_summary["experiment_cost"] = training_cost
+        post_training_summary["run_started_at_local"] = str(run_started_at_local)
+        post_training_summary["training_started_at_local"] = str(training_started_at_local)
+        post_training_summary["training_completed_at_local"] = str(training_completed_at_local)
+
+        artifact["training_dataset_summary"] = dataset_summary
+        artifact["post_training_summary"] = post_training_summary
+        artifact["experiment_scenario_mode"] = sim_params.get("experiment_scenario_mode", "payload_completion")
+        artifact["training_experiment_scenarios"] = training_scenario_summaries
+        artifact["experiment_cost"] = training_cost
+        torch.save(artifact, os.path.join(output_dirs["train_data"], "train_artifact.pt"))
+        save_json(dataset_summary, os.path.join(output_dirs["train_data"], "training_dataset_summary.json"))
+        save_text(
+            _build_dataset_summary_lines(dataset_summary),
+            os.path.join(output_dirs["train_data"], "training_dataset_summary.txt"),
+        )
+        save_json(post_training_summary, os.path.join(output_dirs["train_data"], "post_training_summary.json"))
+        save_text(
+            _build_post_training_summary_lines(post_training_summary),
+            os.path.join(output_dirs["train_data"], "post_training_summary.txt"),
+        )
+        save_json(
+            {"seed_scenarios": training_scenario_summaries},
+            os.path.join(output_dirs["train_data"], "experiment_scenarios.json"),
+        )
+        save_text(
+            _build_seeded_scenario_collection_lines(
+                training_scenario_summaries,
+                title="Training experiment scenarios by seed",
+            ),
+            os.path.join(output_dirs["train_data"], "experiment_scenarios.txt"),
+        )
+    else:
+        print(f"Reusing Monte Carlo training artifact: {reused_training_artifact}")
+        prior_cost = artifact.get("experiment_cost", {})
+        if not isinstance(prior_cost, dict):
+            prior_cost = {}
+        training_wall_time_seconds = float(prior_cost.get("core_wall_time_seconds_training", 0.0))
+        prior_training_summary = artifact.get("post_training_summary", {})
+        if not isinstance(prior_training_summary, dict):
+            prior_training_summary = {}
+        training_started_at_local = str(
+            prior_training_summary.get("training_started_at_local", "reused_training_artifact")
+        )
+        training_completed_at_local = str(
+            prior_training_summary.get("training_completed_at_local", "reused_training_artifact")
+        )
+        save_json(
+            {
+                "reused_training_artifact": reused_training_artifact,
+                "train_seeds": train_seeds,
+                "test_seed": int(test_seed),
+                "test_search_overrides": test_search_overrides,
+            },
+            os.path.join(output_dirs["train_data"], "reused_training_artifact.json"),
+        )
+        save_text(
+            [
+                "This Monte Carlo run reused an existing training artifact and reran only the test phase.",
+                f"Source artifact: {reused_training_artifact}",
+                f"Train seeds: {train_seeds}",
+                f"Test seed: {int(test_seed)}",
+                f"Test n-search overrides: {test_search_overrides}",
+            ],
+            os.path.join(output_dirs["train_data"], "reused_training_artifact.txt"),
+        )
+
+    _run_precoder_net_test(
         artifact,
-        result.get("evaluation_cost_counters", {}),
-        batch_size=args.precoder_net_batch_size,
-        core_wall_time_seconds_training=training_wall_time_seconds,
-        core_wall_time_seconds_testing=testing_wall_time_seconds,
-    )
-    result["run_started_at_local"] = str(run_started_at_local)
-    result["run_completed_at_local"] = str(testing_completed_at_local)
-    result["training_started_at_local"] = str(training_started_at_local)
-    result["training_completed_at_local"] = str(training_completed_at_local)
-    result["testing_started_at_local"] = str(testing_started_at_local)
-    result["testing_completed_at_local"] = str(testing_completed_at_local)
-    result["summary_metrics"] = _compute_summary_metrics(result)
-
-    plot_user_config(system_params, output_dirs["user_config"])
-    plot_latency(result, output_dirs["latency_asynchronality"])
-    plot_asynchronality_comparison(result, output_dirs["latency_asynchronality"])
-    plot_link_quality(result, output_dirs["link_quality"])
-    plot_blocks(result, output_dirs["schedule_details"])
-    plot_rate_violation_heatmap(result, output_dirs["optimization_history"])
-    plot_optimization_history(result, output_dirs["optimization_history"])
-    plot_per_user_schedule_details(result, output_dirs["schedule_details"])
-    plot_per_user_convergence(result, output_dirs["optimization_history"])
-    plot_blocklength_feasibility_curves(test_system, result, output_dirs["optimization_history"])
-    plot_interference_before_after_heatmaps(result, output_dirs["interference"])
-    plot_per_user_interference_before_after(result, output_dirs["interference"])
-    plot_interference_heatmaps(test_system, output_dirs["interference"])
-    plot_per_user_interference_profiles(test_system, output_dirs["interference"])
-
-    artifact["training_dataset_summary"] = dataset_summary
-    artifact["post_training_summary"] = post_training_summary
-    artifact["experiment_scenario_mode"] = sim_params.get("experiment_scenario_mode", "payload_completion")
-    artifact["training_experiment_scenarios"] = training_scenario_summaries
-    artifact["experiment_cost"] = training_cost
-    torch.save(artifact, os.path.join(output_dirs["train_data"], "train_artifact.pt"))
-    save_json(dataset_summary, os.path.join(output_dirs["train_data"], "training_dataset_summary.json"))
-    save_text(
-        _build_dataset_summary_lines(dataset_summary),
-        os.path.join(output_dirs["train_data"], "training_dataset_summary.txt"),
-    )
-    save_json(post_training_summary, os.path.join(output_dirs["train_data"], "post_training_summary.json"))
-    save_text(
-        _build_post_training_summary_lines(post_training_summary),
-        os.path.join(output_dirs["train_data"], "post_training_summary.txt"),
-    )
-    save_json(
-        {"seed_scenarios": training_scenario_summaries},
-        os.path.join(output_dirs["train_data"], "experiment_scenarios.json"),
-    )
-    save_text(
-        _build_seeded_scenario_collection_lines(
-            training_scenario_summaries,
-            title="Training experiment scenarios by seed",
-        ),
-        os.path.join(output_dirs["train_data"], "experiment_scenarios.txt"),
-    )
-    save_json(result, os.path.join(output_dirs["test_data"], "result.json"))
-    save_text(
-        _build_summary_lines(result, run_meta["cfg_path"], int(test_seed)),
-        os.path.join(output_dirs["test_data"], "summary.txt"),
-    )
-    save_json(test_scenario_summary, os.path.join(output_dirs["test_data"], "experiment_scenario.json"))
-    save_text(
-        build_experiment_scenario_summary_lines(test_scenario_summary),
-        os.path.join(output_dirs["test_data"], "experiment_scenario.txt"),
+        args.cfg_name,
+        int(test_seed),
+        output_dirs=output_dirs,
+        train_seeds=train_seeds,
+        verbose=verbose,
+        test_search_overrides=test_search_overrides,
+        reused_training_artifact=reused_training_artifact,
+        training_scenario_summaries=training_scenario_summaries,
+        training_wall_time_seconds=training_wall_time_seconds,
+        run_started_at_local=str(run_started_at_local),
+        training_started_at_local=str(training_started_at_local),
+        training_completed_at_local=str(training_completed_at_local),
+        precoder_net_batch_size=args.precoder_net_batch_size,
     )
     mirror_paths = mirror_experiment_root_to_result_aliases(
         link_name="Downlink",

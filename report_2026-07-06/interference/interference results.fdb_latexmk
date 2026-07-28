@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1783308640.72558 "interference results.tex" "interference results.pdf" "interference results" 1783308673.84258 0
+["pdflatex"] 1783326917.7152 "interference results.tex" "interference results.pdf" "interference results" 1783326941.27242 0
   "c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1759467763 2971 def0b6c1f0b107b3b936def894055589 ""
   "c:/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1759467763 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "c:/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1759469118 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -133,9 +133,9 @@
   "figures/interference/ul_payload_training_testing__interference_heatmaps.png" 1783285327 190253 3b0b71d6a5383ecc1c49c343fa65ae83 ""
   "figures/interference/ul_payload_training_testing__per_user_interference_before_after.png" 1783285322 648037 77bcd4787959d00fae3938d588104958 ""
   "figures/interference/ul_payload_training_testing__per_user_interference_profiles.png" 1783285331 501054 e9e68e1f3668d9e9d7b8ce5030d40c6a ""
-  "interference results.aux" 1783308673 4452 a7990f5b4416caec7b7d63635c1b7c40 "pdflatex"
-  "interference results.out" 1783308673 1017 64f43413659d186f66e51227def62726 "pdflatex"
-  "interference results.tex" 1783308596 14835 a8895aa1945307eb1aab801d2420c91e ""
+  "interference results.aux" 1783326940 2414 88cc8984852a7a4c63a27b8bc01473ef "pdflatex"
+  "interference results.out" 1783326940 643 7eee6caa91874af5ba9c3672349988df "pdflatex"
+  "interference results.tex" 1783326877 8324 4d0191963d96cfbcbfe3d4420d826bb5 ""
   (generated)
   "interference results.aux"
   "interference results.log"

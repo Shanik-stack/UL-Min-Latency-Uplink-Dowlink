@@ -333,6 +333,12 @@ def build_precoder_net_result(
         "precoder_net_training_history": train_artifact.get("precoder_net_training_history", {}),
         "precoder_parameterization": train_artifact.get("precoder_parameterization", "unknown"),
         "training_objective": train_artifact.get("training_objective", "unknown"),
+        "uplink_objective_mode": str(
+            train_artifact.get(
+                "uplink_objective_mode",
+                train_artifact.get("post_training_summary", {}).get("uplink_objective_mode", "unknown"),
+            )
+        ),
         "uplink_rate_model": str(uplink_rate_model or "unknown"),
         "user_model_specs": train_artifact.get("user_model_specs", []),
         "initial_latency": list(map(float, initial_latency)),
@@ -515,6 +521,7 @@ def build_convergence_result(
             "stationarity": float(sim_cfg.get("kkt_stationarity_tol", np.nan)) if sim_cfg is not None else np.nan,
         },
         "uplink_rate_model": str(sim_cfg.get("uplink_rate_model", "unknown")) if sim_cfg is not None else "unknown",
+        "uplink_objective_mode": str(sim_cfg.get("uplink_objective_mode", "unknown")) if sim_cfg is not None else "unknown",
         "skipped_blocks_per_user": [
             int(v)
             for v in convergence_data_dict.get(
@@ -652,6 +659,7 @@ def build_convergence_summary_lines(result: dict[str, Any]) -> list[str]:
         f"Run completed at: {result.get('run_completed_at_local', 'unknown')}",
         f"Scenario: {result.get('scenario_mode', 'unknown')}",
         f"Uplink rate model: {result.get('uplink_rate_model', 'unknown')}",
+        f"Uplink objective mode: {result.get('uplink_objective_mode', 'unknown')}",
         f"Convergence precoder update mode: {result.get('convergence_precoder_update_mode', 'unknown')}",
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
         f"Initial schedule source: {result.get('initial_schedule_source', 'unknown')}",
@@ -694,13 +702,18 @@ def build_summary_lines(result: dict[str, Any]) -> list[str]:
         f"Run completed at: {result.get('run_completed_at_local', 'unknown')}",
         f"Scenario: {result.get('experiment_scenario_mode', 'unknown')}",
         f"Uplink rate model: {result.get('uplink_rate_model', 'unknown')}",
+        f"Uplink objective mode: {result.get('uplink_objective_mode', 'unknown')}",
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
         f"Training objective: {result.get('training_objective', 'unknown')}",
         f"Rollout query weighting mode: {result.get('rollout_query_weighting_mode', 'unknown')}",
+        f"Test n search strategy: {result.get('test_n_search_strategy', 'config_default')}",
+        f"Test n search direction: {result.get('test_n_search_direction', 'config_default')}",
         f"Initial schedule source: {result.get('initial_schedule_source', 'unknown')}",
         f"Training dataset total channel episodes: {int(dataset_summary.get('total_channel_episodes', 0)) if isinstance(dataset_summary, dict) else 0}",
         f"Training channel-episode counts per user: {result.get('training_channel_episode_counts_per_user', result.get('training_sample_counts_per_user', result.get('training_dataset_sizes', [])))}",
     ]
+    if result.get("reused_training_artifact"):
+        lines.append(f"Reused training artifact: {result.get('reused_training_artifact')}")
     lines.extend([""])
     lines.extend(_build_uplink_final_test_section_lines(result))
     if isinstance(post_training_summary, dict) and len(post_training_summary) > 0:

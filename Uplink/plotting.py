@@ -43,6 +43,180 @@ def _get_result_save_dir(train: bool, save_dir=None):
     return result_dir
 
 
+def _extract_uplink_block_results(plot_data):
+    return (
+        plot_data.get("all_user_block_results")
+        or plot_data.get("all_user_block_results_train")
+        or plot_data.get("all_user_block_results_test")
+        or []
+    )
+
+
+def _extract_uplink_epoch_rate_panel_data(plot_data, user_idx):
+    training_history = plot_data.get("precoder_net_training_history", {})
+    if isinstance(training_history, dict):
+        per_user_rate = training_history.get("per_user_rate", [])
+        if user_idx < len(per_user_rate):
+            user_rates = [float(v) for v in list(per_user_rate[user_idx]) if np.isfinite(float(v))]
+            if len(user_rates) > 0:
+                return {
+                    "source_label": "Training R_fbl over epoch",
+                    "x_label": "Training epoch",
+                    "segments": [
+                        {
+                            "x": np.arange(1, len(user_rates) + 1, dtype=float),
+                            "y": np.asarray(user_rates, dtype=float),
+                            "label": "training",
+                            "color_index": 0,
+                        }
+                    ],
+                    "separators": [],
+                }
+
+    all_user_block_results = _extract_uplink_block_results(plot_data)
+    if user_idx >= len(all_user_block_results):
+        return None
+
+    segments = []
+    separators = []
+    cursor = 0.0
+    for block_idx, block_states in enumerate(all_user_block_results[user_idx] or []):
+        for solve_idx, state in enumerate(block_states or []):
+            kkt_history = list(state.get("kkt_history", []))
+            if len(kkt_history) == 0:
+                continue
+            x_vals = cursor + np.arange(1, len(kkt_history) + 1, dtype=float)
+            y_vals = np.asarray(
+                [
+                    float(
+                        row.get(
+                            "rate",
+                            state.get("achieved_R_fbl", state.get("R_fbl", np.nan)),
+                        )
+                    )
+                    for row in kkt_history
+                ],
+                dtype=float,
+            )
+            n_val = int(state.get("n_kl", state.get("n", 0)))
+            segments.append(
+                {
+                    "x": x_vals,
+                    "y": y_vals,
+                    "label": f"block {block_idx}, n={n_val}",
+                    "color_index": int(block_idx),
+                }
+            )
+            cursor = float(x_vals[-1]) + 1.5
+            separators.append(float(x_vals[-1]) + 0.5)
+
+    if len(segments) == 0:
+        return None
+
+    return {
+        "source_label": "Optimization R_fbl over epoch",
+        "x_label": "Epoch within solve",
+        "segments": segments,
+        "separators": separators[:-1],
+    }
+
+
+def _plot_uplink_rfbl_vs_n_axis(ax, user_blocks, user_idx):
+    plotted_any = False
+    for block_idx, states in enumerate(user_blocks or []):
+        if not states:
+            continue
+
+        n_vals, achieved_vals, required_vals = [], [], []
+        for item in states:
+            if "n_kl" not in item or "R_fbl" not in item:
+                continue
+            n_val = int(item["n_kl"])
+            n_vals.append(n_val)
+            achieved_vals.append(float(item.get("achieved_R_fbl", item["R_fbl"])))
+            if "required_R_fbl" in item:
+                required_vals.append(float(item["required_R_fbl"]))
+            elif "target_bits" in item:
+                required_vals.append(float(item["target_bits"]) / float(max(n_val, 1)))
+            else:
+                required_vals.append(float(item.get("Bits per sub-block length B/n_kl", np.nan)))
+
+        if len(n_vals) == 0:
+            continue
+
+        order = np.argsort(n_vals)
+        n_vals = np.asarray(n_vals, dtype=float)[order]
+        achieved_vals = np.asarray(achieved_vals, dtype=float)[order]
+        required_vals = np.asarray(required_vals, dtype=float)[order]
+        ax.plot(n_vals, achieved_vals, marker="o", label=f"block {block_idx} achieved")
+        if np.any(np.isfinite(required_vals)):
+            ax.plot(n_vals, required_vals, linestyle="--", alpha=0.65, label=f"block {block_idx} required")
+        plotted_any = True
+
+    ax.set_xlabel(r"$n_{k,\ell}$")
+    ax.set_ylabel(r"Rate (bits / symbol)")
+    ax.set_title(f"User {user_idx}: Achieved vs required rate")
+    ax.grid(True, alpha=0.3)
+    if plotted_any:
+        ax.legend(fontsize=8, ncol=2)
+    ax.invert_xaxis()
+
+
+def _plot_uplink_epoch_rate_axis(ax, plot_data, user_idx):
+    panel_data = _extract_uplink_epoch_rate_panel_data(plot_data, user_idx)
+    if panel_data is None:
+        ax.set_title(f"User {user_idx}: R_fbl over epoch")
+        ax.text(0.5, 0.5, "No epoch-rate history available", ha="center", va="center", transform=ax.transAxes)
+        ax.set_axis_off()
+        return
+
+    cmap = plt.get_cmap("tab20")
+    shown_labels = set()
+    for segment in panel_data["segments"]:
+        label = segment["label"] if segment["label"] not in shown_labels else None
+        if label is not None:
+            shown_labels.add(label)
+        ax.plot(
+            segment["x"],
+            segment["y"],
+            marker="o",
+            markersize=3,
+            linewidth=1.4,
+            alpha=0.9,
+            color=cmap(int(segment["color_index"]) % cmap.N),
+            label=label,
+        )
+    for separator_x in panel_data.get("separators", []):
+        ax.axvline(separator_x, color="black", linestyle=":", linewidth=0.8, alpha=0.3)
+
+    ax.set_title(f"User {user_idx}: {panel_data['source_label']}")
+    ax.set_xlabel(panel_data["x_label"])
+    ax.set_ylabel("Achieved R_fbl")
+    ax.grid(True, alpha=0.3)
+    if len(shown_labels) > 0 and len(shown_labels) <= 8:
+        ax.legend(fontsize=8, loc="best")
+
+
+def _plot_uplink_stacked_rfbl_vs_n_and_epoch(plot_data, save_dir):
+    all_user_block_results = _extract_uplink_block_results(plot_data)
+    K = len(all_user_block_results)
+    if K == 0:
+        return
+
+    fig, axes = plt.subplots(K, 2, figsize=(14, max(4 * K, 5)), squeeze=False)
+    for user_idx, user_blocks in enumerate(all_user_block_results):
+        _plot_uplink_rfbl_vs_n_axis(axes[user_idx, 0], user_blocks, user_idx)
+        _plot_uplink_epoch_rate_axis(axes[user_idx, 1], plot_data, user_idx)
+
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(save_dir, "all_users_Rfbl_vs_n_with_epoch.png"),
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close(fig)
+
+
 def initialize_plot_globals(cfg_name_in, result_dirs=None):
     global cfg_name, train_result_path, test_result_path, user_cfg_result_path
 
@@ -237,7 +411,9 @@ def plot_F_vs_n_for_all_subblocks(
     save_dir = os.path.join(base_dir, save_dir)
     os.makedirs(save_dir, exist_ok=True)
 
-    all_user_block_results = post_training_data_dict["all_user_block_results_train"]
+    all_user_block_results = _extract_uplink_block_results(post_training_data_dict)
+    if len(all_user_block_results) == 0:
+        return
 
     for user_idx, user_blocks in enumerate(all_user_block_results):
         if not user_blocks:
@@ -396,53 +572,18 @@ def plot_F_vs_n_for_all_subblocks(
         # ==================================================
         # FIG 4: R_fbl vs n
         # ==================================================
-        plt.figure(figsize=(8, 5))
-
-        for block_idx, S in enumerate(user_blocks):
-            if not S:
-                continue
-
-            n_vals, achieved_vals, required_vals = [], [], []
-
-            for item in S:
-                if "n_kl" not in item or "R_fbl" not in item:
-                    continue
-                n_val = int(item["n_kl"])
-                n_vals.append(n_val)
-                achieved_vals.append(float(item.get("achieved_R_fbl", item["R_fbl"])))
-                if "required_R_fbl" in item:
-                    required_vals.append(float(item["required_R_fbl"]))
-                elif "target_bits" in item:
-                    required_vals.append(float(item["target_bits"]) / float(max(n_val, 1)))
-                else:
-                    required_vals.append(float(item.get("Bits per sub-block length B/n_kl", np.nan)))
-
-            if len(n_vals) == 0:
-                continue
-
-            order = np.argsort(n_vals)
-            n_vals = np.array(n_vals)[order]
-            achieved_vals = np.array(achieved_vals)[order]
-            required_vals = np.array(required_vals)[order]
-
-            plt.plot(n_vals, achieved_vals, marker="o", label=f"block {block_idx} achieved")
-            if np.any(np.isfinite(required_vals)):
-                plt.plot(n_vals, required_vals, linestyle="--", alpha=0.65, label=f"block {block_idx} required")
-
-        plt.xlabel(r"$n_{k,\ell}$")
-        plt.ylabel(r"Rate (bits / symbol)")
-        plt.title(f"User {user_idx}: Achieved vs required rate")
-        plt.grid(True)
-        plt.legend()
-
-        plt.gca().invert_xaxis()
-
-        plt.savefig(
+        fig, axes = plt.subplots(1, 2, figsize=(13, 4.8), squeeze=False)
+        _plot_uplink_rfbl_vs_n_axis(axes[0, 0], user_blocks, user_idx)
+        _plot_uplink_epoch_rate_axis(axes[0, 1], post_training_data_dict, user_idx)
+        fig.tight_layout()
+        fig.savefig(
             os.path.join(save_dir, f"user{user_idx}_Rfbl_vs_n.png"),
             dpi=300,
             bbox_inches="tight"
         )
-        plt.close()
+        plt.close(fig)
+
+    _plot_uplink_stacked_rfbl_vs_n_and_epoch(post_training_data_dict, save_dir)
 
 def plot_optimization_result(
     all_user_results,
@@ -556,8 +697,6 @@ def plot_per_user_schedule_details(result, figs_dir):
     final_n = result.get("n_kl", result.get("final_n_kl", [[] for _ in range(K)]))
     final_b = result.get("B_kl", [[] for _ in range(K)])
     final_rates = result.get("final_R_fbl", result.get("R_fbl", [[] for _ in range(K)]))
-    scenario_mode = str(result.get("scenario_mode", result.get("experiment_scenario_mode", ""))).strip().lower()
-    scenario_block_targets = np.asarray(result.get("scenario_block_targets", []), dtype=int)
 
     fig, axes = plt.subplots(K, 2, figsize=(14, max(4 * K, 6)), squeeze=False)
     for k in range(K):
@@ -565,20 +704,7 @@ def plot_per_user_schedule_details(result, figs_dir):
         bits = np.asarray(final_b[k], dtype=float) if k < len(final_b) else np.asarray([], dtype=float)
         n_vals = np.asarray(final_n[k], dtype=float) if k < len(final_n) else np.asarray([], dtype=float)
         rates = np.asarray(final_rates[k], dtype=float) if k < len(final_rates) else np.asarray([], dtype=float)
-
-        if (
-            scenario_mode == "fixed_block_targets"
-            and scenario_block_targets.ndim == 2
-            and k < scenario_block_targets.shape[0]
-        ):
-            target_bits = np.asarray(scenario_block_targets[k], dtype=float)
-            target_bits = target_bits[: len(n_vals)]
-            required = target_bits / np.maximum(n_vals[: len(target_bits)], 1.0)
-            if len(required) < len(n_vals):
-                fallback = bits[len(required):] / np.maximum(n_vals[len(required):], 1.0)
-                required = np.concatenate([required, fallback])
-        else:
-            required = bits / np.maximum(n_vals, 1.0)
+        required = bits / np.maximum(n_vals, 1.0)
         margins = rates - required
 
         init_blocks = np.arange(len(initial_n[k])) if k < len(initial_n) else np.asarray([], dtype=int)

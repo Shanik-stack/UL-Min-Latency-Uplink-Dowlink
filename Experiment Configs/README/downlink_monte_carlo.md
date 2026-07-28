@@ -86,11 +86,6 @@ convergence baseline, not to offline Monte Carlo training.
     already provide explicit block targets.
   - In the current setup this is usually `1`.
 
-- `simulation.monte_carlo_training_n_kl_coarse_step`
-  - Coarse step used during rollout frontier probing for `n_kl`.
-  - Larger values reduce data-generation cost but give sparser frontier
-    coverage.
-
 - `simulation.monte_carlo_training_full_block_weight`
   - Total loss weight assigned to full-block sum-rate states inside one joint
     training episode.
@@ -137,7 +132,22 @@ convergence baseline, not to offline Monte Carlo training.
   - Minimum allowed candidate blocklength.
 
 - `simulation.n_kl_range.step`
-  - Downward search step for `n_kl`.
+  - Base blocklength increment used by Monte Carlo `n_kl` search.
+
+- `simulation.n_search_direction`
+  - Downlink Monte Carlo keeps a full-block joint anchor and currently expects
+    `descending` search in the joint rollout collector.
+  - The local payload evaluators still use the same direction field.
+
+- `simulation.n_search_strategy`
+  - Monte Carlo currently supports `fixed_step` only.
+  - This keeps the rollout dataset tied to the visited joint `n_kl` states.
+
+- `simulation.n_search_coarse_step`
+  - Present for consistency with convergence configs, but not used by the current Monte Carlo rollout.
+
+- `simulation.n_search_exponential_factor`
+  - Present for consistency with convergence configs, but not used by the current Monte Carlo rollout.
 
 - `simulation.max_total_blocks`
   - Maximum number of blocks the outer test episode may create.

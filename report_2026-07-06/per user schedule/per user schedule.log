@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.10.3)  6 JUL 2026 06:16
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.10.3)  6 JUL 2026 11:35
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -465,105 +465,57 @@ Package hyperref Info: Link coloring ON on input line 29.
 {c:/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/2025/
 texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}{c:/texlive/2025/texmf-dist
 /fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
-<figures/scheduling/dl_payload_training_only.png, id=55, 1011.78pt x 867.24pt>
+<figures/scheduling/dl_payload_training_only.png, id=48, 1011.78pt x 867.24pt>
 File: figures/scheduling/dl_payload_training_only.png Graphic file (type png)
 <use figures/scheduling/dl_payload_training_only.png>
 Package pdftex.def Info: figures/scheduling/dl_payload_training_only.png  used 
-on input line 101.
+on input line 98.
 (pdftex.def)             Requested size: 217.42038pt x 186.36034pt.
-<figures/scheduling/dl_payload_training_testing.png, id=57, 1011.78pt x 867.24p
+<figures/scheduling/dl_payload_training_testing.png, id=50, 1011.78pt x 867.24p
 t>
 File: figures/scheduling/dl_payload_training_testing.png Graphic file (type png
 )
 <use figures/scheduling/dl_payload_training_testing.png>
 Package pdftex.def Info: figures/scheduling/dl_payload_training_testing.png  us
-ed on input line 107.
+ed on input line 104.
 (pdftex.def)             Requested size: 217.42038pt x 186.36034pt.
 
 
 [2 <./figures/scheduling/dl_payload_training_only.png> <./figures/scheduling/dl
 _payload_training_testing.png>]
-<figures/scheduling/dl_continuous_training_only.png, id=67, 1011.78pt x 867.24p
-t>
-File: figures/scheduling/dl_continuous_training_only.png Graphic file (type png
-)
-<use figures/scheduling/dl_continuous_training_only.png>
-Package pdftex.def Info: figures/scheduling/dl_continuous_training_only.png  us
-ed on input line 151.
-(pdftex.def)             Requested size: 217.42038pt x 186.36034pt.
-<figures/scheduling/dl_continuous_training_testing.png, id=68, 1011.78pt x 867.
-24pt>
-File: figures/scheduling/dl_continuous_training_testing.png Graphic file (type 
-png)
-<use figures/scheduling/dl_continuous_training_testing.png>
-Package pdftex.def Info: figures/scheduling/dl_continuous_training_testing.png 
- used on input line 157.
-(pdftex.def)             Requested size: 217.42038pt x 186.36034pt.
-
-
-[3
-
- <./figures/scheduling/dl_continuous_training_only.png> <./figures/scheduling/d
-l_continuous_training_testing.png>]
-<figures/scheduling/ul_payload_training_only.png, id=79, 1011.78pt x 867.24pt>
+<figures/scheduling/ul_payload_training_only.png, id=61, 1011.78pt x 867.24pt>
 File: figures/scheduling/ul_payload_training_only.png Graphic file (type png)
 <use figures/scheduling/ul_payload_training_only.png>
 Package pdftex.def Info: figures/scheduling/ul_payload_training_only.png  used 
-on input line 205.
+on input line 151.
 (pdftex.def)             Requested size: 217.42038pt x 186.36034pt.
-<figures/scheduling/ul_payload_training_testing.png, id=80, 1011.78pt x 867.24p
+<figures/scheduling/ul_payload_training_testing.png, id=62, 1011.78pt x 867.24p
 t>
 File: figures/scheduling/ul_payload_training_testing.png Graphic file (type png
 )
 <use figures/scheduling/ul_payload_training_testing.png>
 Package pdftex.def Info: figures/scheduling/ul_payload_training_testing.png  us
-ed on input line 211.
+ed on input line 157.
 (pdftex.def)             Requested size: 217.42038pt x 186.36034pt.
 
 
-[4
-
- <./figures/scheduling/ul_payload_training_only.png> <./figures/scheduling/ul_p
-ayload_training_testing.png>]
-<figures/scheduling/ul_continuous_training_only.png, id=90, 1011.78pt x 867.24p
-t>
-File: figures/scheduling/ul_continuous_training_only.png Graphic file (type png
-)
-<use figures/scheduling/ul_continuous_training_only.png>
-Package pdftex.def Info: figures/scheduling/ul_continuous_training_only.png  us
-ed on input line 250.
-(pdftex.def)             Requested size: 217.42038pt x 186.36034pt.
-<figures/scheduling/ul_continuous_training_testing.png, id=91, 1011.78pt x 867.
-24pt>
-File: figures/scheduling/ul_continuous_training_testing.png Graphic file (type 
-png)
-<use figures/scheduling/ul_continuous_training_testing.png>
-Package pdftex.def Info: figures/scheduling/ul_continuous_training_testing.png 
- used on input line 256.
-(pdftex.def)             Requested size: 217.42038pt x 186.36034pt.
-
-
-[5
-
- <./figures/scheduling/ul_continuous_training_only.png> <./figures/scheduling/u
-l_continuous_training_testing.png>]
-
-[6] (./per user schedule.aux)
+[3 <./figures/scheduling/ul_payload_training_only.png> <./figures/scheduling/ul
+_payload_training_testing.png>] (./per user schedule.aux)
  ***********
 LaTeX2e <2025-06-01> patch level 1
 L3 programming layer <2025-09-02>
  ***********
 Package rerunfilecheck Info: File `"per user schedule".out' has not changed.
-(rerunfilecheck)             Checksum: 68D013245FEB91B9BF8B5E4B501D13ED;1577.
+(rerunfilecheck)             Checksum: 0F4B402B6F6F7C62AA546685860E3DEE;969.
  ) 
 Here is how much of TeX's memory you used:
- 12023 strings out of 469686
- 191250 string characters out of 5476674
- 605103 words of memory out of 5000000
- 40306 multiletter control sequences out of 15000+600000
+ 11972 strings out of 469686
+ 189099 string characters out of 5476674
+ 605646 words of memory out of 5000000
+ 40266 multiletter control sequences out of 15000+600000
  641383 words of font info for 70 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
- 75i,8n,79p,374b,568s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,8n,79p,371b,571s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/tex
 live/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/texlive/2025/
 texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb><c:/texlive/2025/texmf-dist
@@ -575,10 +527,10 @@ b><c:/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb><c:/texl
 ive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1728.pfb><c:/texlive/2025/t
 exmf-dist/fonts/type1/public/cm-super/sfti1000.pfb><c:/texlive/2025/texmf-dist/
 fonts/type1/public/cm-super/sfti1095.pfb>
-Output written on "per user schedule.pdf" (6 pages, 4031262 bytes).
+Output written on "per user schedule.pdf" (3 pages, 2106885 bytes).
 PDF statistics:
- 168 PDF objects out of 1000 (max. 8388607)
- 117 compressed objects within 2 object streams
- 27 named destinations out of 1000 (max. 500000)
- 105 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 131 PDF objects out of 1000 (max. 8388607)
+ 92 compressed objects within 1 object stream
+ 16 named destinations out of 1000 (max. 500000)
+ 69 words of extra memory for PDF output out of 10000 (max. 10000000)
 

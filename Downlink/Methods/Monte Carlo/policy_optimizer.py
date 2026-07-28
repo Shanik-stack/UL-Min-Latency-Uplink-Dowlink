@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import copy
 from itertools import combinations
-from typing import Any, Sequence
+from time import perf_counter
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 
+from blocklength_search import build_n_search_config, run_n_frontier_search
 from determinism import configure_determinism
 from downlink_system import DownlinkSystem
 from experiment_scenarios import (
@@ -25,7 +27,12 @@ from optimizer import (
     _evaluate_block_candidate,
     _expand_precoders_for_plan,
     estimate_initial_latency_from_random_precoders_for_scenario as shared_estimate_initial_latency_from_random_precoders_for_scenario,
+    objective_display_name,
+    objective_uses_user_weights,
     _power_to_db,
+    resolve_convergence_objective_mode,
+    resolve_convergence_priority_weight_strategy,
+    objective_weight_strategy_name,
     _zero_block_precoder,
 )
 from precoder_models import (
@@ -48,6 +55,54 @@ CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
 BS_SHARED_FIXED_TARGET_N_TARGET_MODES = {"shared_n_targets", "per_user_n_targets"}
 MONTE_CARLO_ROLLOUT_WEIGHTING_MODES = {"phase_balanced", "uniform_per_query"}
 _Q_INV_CACHE: dict[tuple[str, int | None, float], torch.Tensor] = {}
+
+
+def _build_monte_carlo_training_search_cfg(
+    sim_params: dict[str, Any],
+    *,
+    n_min: int,
+    n_max: int,
+) -> dict[str, int | str]:
+    return build_n_search_config(
+        n_min=int(n_min),
+        n_max=int(n_max),
+        fine_step=int(sim_params["n_kl_step"]),
+        direction=sim_params.get("n_search_direction", "descending"),
+        strategy=sim_params.get("n_search_strategy", "fixed_step"),
+        coarse_step=sim_params.get("n_search_coarse_step", int(sim_params["n_kl_step"])),
+        exponential_factor=sim_params.get("n_search_exponential_factor", 2),
+        allow_only_fixed_step=True,
+    )
+
+
+def _build_monte_carlo_test_search_cfg(
+    sim_params: dict[str, Any],
+    *,
+    n_min: int,
+    n_max: int,
+) -> dict[str, int | str]:
+    return build_n_search_config(
+        n_min=int(n_min),
+        n_max=int(n_max),
+        fine_step=int(sim_params["n_kl_step"]),
+        direction=sim_params.get(
+            "monte_carlo_test_n_search_direction",
+            sim_params.get("n_search_direction", "descending"),
+        ),
+        strategy=sim_params.get(
+            "monte_carlo_test_n_search_strategy",
+            sim_params.get("n_search_strategy", "fixed_step"),
+        ),
+        coarse_step=sim_params.get(
+            "monte_carlo_test_n_search_coarse_step",
+            sim_params.get("n_search_coarse_step", int(sim_params["n_kl_step"])),
+        ),
+        exponential_factor=sim_params.get(
+            "monte_carlo_test_n_search_exponential_factor",
+            sim_params.get("n_search_exponential_factor", 2),
+        ),
+        allow_only_fixed_step=False,
+    )
 
 
 def _to_complex_numpy(x) -> np.ndarray:
@@ -331,6 +386,7 @@ def _shared_precoder_snapshot_for_targets(
     block: int,
     n_targets: Sequence[int],
     active_mask: Sequence[int | float],
+    base_snapshot: list[list[np.ndarray]] | None = None,
     inference_counters: dict[str, Any] | None = None,
 ) -> list[list[np.ndarray]]:
     active_users = [int(k) for k, flag in enumerate(active_mask) if float(flag) > 0.5]
@@ -353,10 +409,23 @@ def _shared_precoder_snapshot_for_targets(
         system.dk,
         device=DEVICE,
     )
-    snapshot = system.clone_precoders()
+    snapshot = [list(user_blocks) for user_blocks in (base_snapshot if base_snapshot is not None else system.clone_precoders())]
     for k in active_users:
         snapshot[int(k)][int(block)] = np.asarray(beams[int(k)], dtype=np.complex128)
     system.project_block_precoders_to_power(snapshot, int(block), active_users=active_users)
+    return snapshot
+
+
+def _copy_snapshot_with_block_overrides(
+    base_snapshot: Sequence[Sequence[np.ndarray]],
+    block: int,
+    block_overrides: Mapping[int, np.ndarray] | None = None,
+) -> list[list[np.ndarray]]:
+    snapshot = [list(user_blocks) for user_blocks in base_snapshot]
+    if not isinstance(block_overrides, Mapping):
+        return snapshot
+    for user, precoder in block_overrides.items():
+        snapshot[int(user)][int(block)] = np.asarray(precoder, dtype=np.complex128)
     return snapshot
 
 
@@ -366,11 +435,12 @@ def _masked_precoder_snapshot(
     block: int,
     active_mask: Sequence[int | float],
 ) -> list[list[np.ndarray]]:
-    snapshot = _clone_precoders(working_F)
-    for k in range(system.K):
-        if int(block) < len(snapshot[k]) and float(active_mask[int(k)]) <= 0.5:
-            snapshot[k][int(block)] = _zero_precoder(system, k)
-    return snapshot
+    zero_overrides = {
+        int(k): _zero_precoder(system, int(k))
+        for k in range(system.K)
+        if int(block) < len(working_F[int(k)]) and float(active_mask[int(k)]) <= 0.5
+    }
+    return _copy_snapshot_with_block_overrides(working_F, int(block), zero_overrides)
 
 
 def _build_block_joint_scenario(
@@ -392,6 +462,7 @@ def _build_block_joint_scenario(
         ],
         "block_power_budget": float(system.block_power_budget),
         "P": [float(v) for v in system.P.tolist()],
+        "fs": [float(v) for v in system.fs.tolist()],
         "sigma2": [float(v) for v in system.sigma2.tolist()],
         "epsilon": [float(v) for v in system.epsilon.tolist()],
         "scenario_mode": str(scenario_mode),
@@ -676,36 +747,64 @@ def _best_joint_n_target_transition(
     *,
     n_min: int,
     n_step: int,
+    direction: str = "descending",
+    max_n_targets: Sequence[int] | None = None,
     eligible_users: Sequence[int] | None = None,
     inference_counters: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    direction = str(direction).strip().lower()
+    if direction not in {"descending", "ascending"}:
+        raise ValueError(f"Unsupported joint n-target transition direction '{direction}'")
+
+    if max_n_targets is None:
+        max_targets = [int(v) for v in scenario.get("max_n_targets", current_n_targets)]
+    else:
+        max_targets = [int(v) for v in max_n_targets]
+
     if eligible_users is None:
-        candidate_users = [
+        base_candidate_users = [
             int(k)
             for k, active in enumerate(scenario["active_mask"])
-            if int(active) > 0 and int(current_n_targets[int(k)]) - int(n_step) >= int(n_min)
+            if int(active) > 0
         ]
     else:
-        candidate_users = [
+        base_candidate_users = [
             int(k)
             for k in eligible_users
             if 0 <= int(k) < len(scenario["active_mask"])
             and int(scenario["active_mask"][int(k)]) > 0
-            and int(current_n_targets[int(k)]) - int(n_step) >= int(n_min)
         ]
+
+    if direction == "descending":
+        candidate_users = [
+            int(k)
+            for k in base_candidate_users
+            if int(current_n_targets[int(k)]) - int(n_step) >= int(n_min)
+        ]
+        subset_sizes = range(len(candidate_users), 0, -1)
+    else:
+        candidate_users = [
+            int(k)
+            for k in base_candidate_users
+            if int(current_n_targets[int(k)]) + int(n_step) <= int(max_targets[int(k)])
+        ]
+        subset_sizes = range(1, len(candidate_users) + 1)
     if len(candidate_users) == 0:
         return {"accepted": None, "rejected": None}
 
     best_rejected: dict[str, Any] | None = None
     best_rejected_key: tuple[float, float] | None = None
 
-    for subset_size in range(len(candidate_users), 0, -1):
+    for subset_size in subset_sizes:
         best_feasible: dict[str, Any] | None = None
         best_feasible_key: tuple[float, float] | None = None
         for subset in combinations(candidate_users, subset_size):
             candidate_n_targets = [int(v) for v in current_n_targets]
             for k in subset:
-                candidate_n_targets[int(k)] -= int(n_step)
+                if direction == "descending":
+                    candidate_n_targets[int(k)] -= int(n_step)
+                else:
+                    candidate_n_targets[int(k)] += int(n_step)
             metrics = _scenario_metrics_with_models(
                 system_params,
                 scenario,
@@ -725,7 +824,10 @@ def _best_joint_n_target_transition(
                 best_rejected = candidate
             if not bool(metrics["feasible"]):
                 continue
-            feasible_key = (float(metrics["sum_rate"]), float(metrics["min_rate_margin"]))
+            if direction == "descending":
+                feasible_key = (float(metrics["sum_rate"]), float(metrics["min_rate_margin"]))
+            else:
+                feasible_key = (-float(sum(candidate_n_targets)), float(metrics["sum_rate"]))
             if best_feasible_key is None or feasible_key > best_feasible_key:
                 best_feasible_key = feasible_key
                 best_feasible = candidate
@@ -740,6 +842,7 @@ def _build_rollout_query_from_downlink_state(
     n_targets: Sequence[int],
     metrics: dict[str, Any],
     rollout_anchor_bits: Sequence[int],
+    weight_source_bits: Sequence[int],
     *,
     rollout_phase: str,
     rollout_stage: str,
@@ -755,6 +858,8 @@ def _build_rollout_query_from_downlink_state(
         "rollout_feasible": bool(metrics["feasible"]),
         "rollout_min_rate_margin": float(metrics["min_rate_margin"]),
         "rollout_sum_rate": float(metrics["sum_rate"]),
+        "rollout_rate_values": [float(v) for v in metrics.get("rate_values", [])],
+        "weight_source_bits": [int(v) for v in weight_source_bits],
         "query_weight": 1.0,
     }
 
@@ -819,6 +924,90 @@ def _normalize_episode_query_weights(
     return normalized
 
 
+def _scenario_objective_weights(
+    scenario: dict[str, Any],
+    sim_params: dict[str, Any],
+    *,
+    objective_mode: str,
+) -> tuple[list[float], str]:
+    active_mask = [int(v) for v in scenario.get("active_mask", [])]
+    K = int(len(active_mask))
+    weights = [1.0 for _ in range(K)]
+    if not objective_uses_user_weights(objective_mode):
+        return weights, "none"
+
+    strategy = str(resolve_convergence_priority_weight_strategy(sim_params))
+    active_users = [int(k) for k, flag in enumerate(active_mask) if int(flag) > 0]
+    if len(active_users) <= 0:
+        return weights, strategy
+
+    if strategy == "uniform_active_user_weight":
+        return weights, strategy
+
+    if strategy == "inverse_cnr":
+        sigma2 = [float(v) for v in scenario.get("sigma2", [])]
+        inverse_cnr_scores: dict[int, float] = {}
+        for k in active_users:
+            H_kl = np.asarray(scenario["H_block"][int(k)], dtype=np.complex128)
+            nr = max(float(H_kl.shape[0]), 1.0)
+            channel_gain = float(np.linalg.norm(H_kl, ord="fro") ** 2) / nr
+            cnr_linear = channel_gain / max(float(sigma2[int(k)]), 1e-30)
+            inverse_cnr_scores[int(k)] = 1.0 / max(cnr_linear, 1e-30)
+        mean_inverse_cnr = float(np.mean(list(inverse_cnr_scores.values()))) if inverse_cnr_scores else 1.0
+        for k in active_users:
+            weights[int(k)] = float(inverse_cnr_scores[int(k)] / max(mean_inverse_cnr, 1e-30))
+        return weights, strategy
+
+    min_weight = float(sim_params.get("minimum_user_weight", 0.25))
+    exponent = float(sim_params.get("remaining_bits_weight_power", 1.0))
+    raw_scores: dict[int, float] = {}
+
+    if strategy == "asynchronality_gap":
+        weight_source_bits = [int(v) for v in scenario.get("weight_source_bits", [0 for _ in range(K)])]
+        committed_latency = [float(v) for v in scenario.get("committed_latency_before_block", [0.0 for _ in range(K)])]
+        fs = [float(v) for v in scenario.get("fs", [1.0 for _ in range(K)])]
+        n_targets = [int(v) for v in scenario.get("n_targets", [0 for _ in range(K)])]
+        rate_values = [float(v) for v in scenario.get("rollout_rate_values", [0.0 for _ in range(K)])]
+        projected_latencies: dict[int, float] = {}
+        for k in active_users:
+            n_k = max(int(n_targets[int(k)]), 1)
+            supported_bits = max(int(np.floor(max(rate_values[int(k)], 0.0) * float(n_k))), 1)
+            block_duration = float(n_k) / max(float(fs[int(k)]), 1e-30)
+            projected_latencies[int(k)] = float(committed_latency[int(k)]) + (
+                float(max(weight_source_bits[int(k)], 0)) / max(float(supported_bits), 1.0)
+            ) * block_duration
+        min_latency = min(projected_latencies.values()) if projected_latencies else 1.0
+        denom_latency = max(float(min_latency), 1e-30)
+        for k in active_users:
+            raw_scores[int(k)] = float(projected_latencies[int(k)] / denom_latency)
+    elif strategy == "remaining_bits":
+        anchor_bits = [int(v) for v in scenario.get("rollout_anchor_bits", [0 for _ in range(K)])]
+        max_bits = max([anchor_bits[int(k)] for k in active_users], default=1)
+        denom = max(float(max_bits), 1.0)
+        for k in active_users:
+            raw_scores[int(k)] = float(anchor_bits[int(k)]) / denom
+    elif strategy == "inverse_channel_gain":
+        for k in active_users:
+            H_kl = np.asarray(scenario["H_block"][int(k)], dtype=np.complex128)
+            raw_scores[int(k)] = 1.0 / max(
+                float(np.linalg.norm(H_kl, ord="fro") ** 2) / max(float(H_kl.shape[0]), 1.0),
+                1e-30,
+            )
+    else:
+        sigma2 = [float(v) for v in scenario.get("sigma2", [])]
+        for k in active_users:
+            H_kl = np.asarray(scenario["H_block"][int(k)], dtype=np.complex128)
+            cnr_linear = float(np.linalg.norm(H_kl, ord="fro") ** 2) / max(float(sigma2[int(k)]), 1e-30)
+            raw_scores[int(k)] = 1.0 / max(cnr_linear, 1e-30)
+
+    max_score = max(raw_scores.values()) if raw_scores else 1.0
+    denom_score = max(float(max_score), 1e-30)
+    for k in active_users:
+        normalized = (float(raw_scores[int(k)]) / denom_score) ** exponent
+        weights[int(k)] = float(min_weight + (1.0 - min_weight) * normalized)
+    return weights, strategy
+
+
 def _supported_bits_from_forward(forward: dict[str, Any]) -> list[int]:
     supported_bits = [0 for _ in range(len(forward["rates"]))]
     for k, rate_t in enumerate(forward["rates"]):
@@ -862,6 +1051,11 @@ def _build_training_block_scenario(
         int(block),
         active_mask,
     )
+    scenario["committed_latency_before_block"] = [
+        float(sum(int(v) for v in system.n_kl[int(k)][: max(min(int(block), len(system.n_kl[int(k)])), 0)]))
+        / max(float(system.fs[int(k)]), 1e-30)
+        for k in range(system.K)
+    ]
     return scenario
 
 
@@ -926,21 +1120,106 @@ def _collect_downlink_tail_rollout_queries(
             current_n_targets,
             committed_metrics,
             committed_bits,
+            committed_bits,
             rollout_phase="tail_feasible",
             rollout_stage="full_block_commit",
             frontier_query=False,
         )
     )
 
-    n_min = int(sim_params["n_kl_min"])
-    fine_step = max(1, int(sim_params["n_kl_step"]))
-    coarse_step = max(fine_step, int(sim_params.get("monte_carlo_training_n_kl_coarse_step", fine_step)))
-    phases = [("coarse", int(coarse_step))]
-    if int(fine_step) < int(coarse_step):
-        phases.append(("fine", int(fine_step)))
+    search_cfg = _build_monte_carlo_training_search_cfg(
+        sim_params,
+        n_min=int(sim_params["n_kl_min"]),
+        n_max=max(int(v) for v in current_n_targets if int(v) > 0) if any(int(v) > 0 for v in current_n_targets) else 1,
+    )
+    n_min = int(search_cfg["n_min"])
+    fixed_step = int(search_cfg["fine_step"])
 
-    visited_states = {tuple(int(v) for v in current_n_targets)}
-    for stage_name, step_size in phases:
+    if str(search_cfg["direction"]) == "ascending":
+        current_n_targets = [
+            (
+                int(n_min)
+                if float(service_mask[int(k)]) > 0.5 and int(k) in set(int(v) for v in reducible_users)
+                else int(current_n_targets[int(k)])
+            )
+            for k in range(system.K)
+        ]
+        current_metrics = _scenario_metrics_with_models(
+            system_params,
+            tail_scenario,
+            user_models,
+            current_n_targets,
+            anchor_bits=committed_bits,
+        )
+        tail_queries = [
+            _build_rollout_query_from_downlink_state(
+                tail_scenario,
+                current_n_targets,
+                current_metrics,
+                committed_bits,
+                committed_bits,
+                rollout_phase="tail_feasible" if bool(current_metrics["feasible"]) else "tail_frontier",
+                rollout_stage="fixed_step",
+                frontier_query=not bool(current_metrics["feasible"]),
+            )
+        ]
+        visited_states = {tuple(int(v) for v in current_n_targets)}
+        while not bool(current_metrics["feasible"]):
+            transition = _best_joint_n_target_transition(
+                system_params,
+                tail_scenario,
+                user_models,
+                current_n_targets,
+                committed_bits,
+                n_min=n_min,
+                n_step=int(fixed_step),
+                direction="ascending",
+                max_n_targets=tail_scenario.get("max_n_targets", current_n_targets),
+                eligible_users=[int(k) for k in reducible_users],
+            )
+            accepted = transition.get("accepted")
+            if accepted is not None:
+                current_n_targets = [int(v) for v in accepted["candidate_n_targets"]]
+                current_metrics = accepted["metrics"]
+                state_key = tuple(int(v) for v in current_n_targets)
+                if state_key not in visited_states:
+                    visited_states.add(state_key)
+                    tail_queries.append(
+                        _build_rollout_query_from_downlink_state(
+                            tail_scenario,
+                            current_n_targets,
+                            current_metrics,
+                            committed_bits,
+                            committed_bits,
+                            rollout_phase="tail_feasible",
+                            rollout_stage="fixed_step",
+                            frontier_query=False,
+                        )
+                    )
+                break
+            rejected = transition.get("rejected")
+            if rejected is None:
+                break
+            current_n_targets = [int(v) for v in rejected["candidate_n_targets"]]
+            current_metrics = rejected["metrics"]
+            state_key = tuple(int(v) for v in current_n_targets)
+            if state_key in visited_states:
+                break
+            visited_states.add(state_key)
+            tail_queries.append(
+                _build_rollout_query_from_downlink_state(
+                    tail_scenario,
+                    current_n_targets,
+                    current_metrics,
+                    committed_bits,
+                    committed_bits,
+                    rollout_phase="tail_frontier",
+                    rollout_stage="fixed_step",
+                    frontier_query=True,
+                )
+            )
+    else:
+        visited_states = {tuple(int(v) for v in current_n_targets)}
         while True:
             transition = _best_joint_n_target_transition(
                 system_params,
@@ -949,7 +1228,8 @@ def _collect_downlink_tail_rollout_queries(
                 current_n_targets,
                 committed_bits,
                 n_min=n_min,
-                n_step=int(step_size),
+                n_step=int(fixed_step),
+                direction="descending",
                 eligible_users=[int(k) for k in reducible_users],
             )
             accepted = transition.get("accepted")
@@ -965,8 +1245,9 @@ def _collect_downlink_tail_rollout_queries(
                                 rejected["candidate_n_targets"],
                                 rejected["metrics"],
                                 committed_bits,
+                                committed_bits,
                                 rollout_phase="tail_frontier",
-                                rollout_stage=str(stage_name),
+                                rollout_stage="fixed_step",
                                 frontier_query=True,
                             )
                         )
@@ -983,8 +1264,9 @@ def _collect_downlink_tail_rollout_queries(
                     current_n_targets,
                     accepted["metrics"],
                     committed_bits,
+                    committed_bits,
                     rollout_phase="tail_feasible",
-                    rollout_stage=str(stage_name),
+                    rollout_stage="fixed_step",
                     frontier_query=False,
                 )
             )
@@ -1049,6 +1331,7 @@ def _collect_downlink_episode_rollout_queries(
                     full_n_targets,
                     full_metrics,
                     [0 for _ in range(system.K)],
+                    target_bits,
                     rollout_phase="full_block",
                     rollout_stage="full_block",
                     frontier_query=False,
@@ -1089,6 +1372,7 @@ def _collect_downlink_episode_rollout_queries(
                         service_n_targets,
                         service_metrics,
                         [0 for _ in range(system.K)],
+                        target_bits,
                         rollout_phase="full_block",
                         rollout_stage="service_mask",
                         frontier_query=False,
@@ -1163,6 +1447,7 @@ def _collect_downlink_episode_rollout_queries(
                 full_n_targets,
                 full_metrics,
                 [0 for _ in range(system.K)],
+                remaining.tolist(),
                 rollout_phase="full_block",
                 rollout_stage="full_block",
                 frontier_query=False,
@@ -1204,6 +1489,7 @@ def _collect_downlink_episode_rollout_queries(
                     service_n_targets,
                     service_metrics,
                     [0 for _ in range(system.K)],
+                    remaining.tolist(),
                     rollout_phase="full_block",
                     rollout_stage="service_mask",
                     frontier_query=False,
@@ -1531,6 +1817,11 @@ def train_blocklength_aware_precoder_net(
     shared_fixed_target_n_target_mode = _resolve_bs_shared_fixed_target_n_target_mode(
         sim_params.get("bs_shared_net_fixed_target_n_target_mode", "shared_n_targets")
     )
+    objective_mode = resolve_convergence_objective_mode(sim_params)
+    objective_public_name = objective_display_name(
+        objective_mode,
+        resolve_convergence_priority_weight_strategy(sim_params),
+    )
     dataset_summary = summarize_training_dataset(training_episodes)
     rollout_phase_weights = _resolve_rollout_phase_weights(sim_params)
     rollout_query_weighting_mode = _resolve_rollout_query_weighting_mode(sim_params)
@@ -1557,12 +1848,20 @@ def train_blocklength_aware_precoder_net(
         "rollout_phase_weights": dict(rollout_phase_weights),
         "rollout_query_weighting_mode": str(rollout_query_weighting_mode),
         "downlink_precoder_net_scope": str(model_scope),
+        "objective_mode": str(objective_public_name),
+        "weight_strategy": objective_weight_strategy_name(
+            objective_mode,
+            resolve_convergence_priority_weight_strategy(sim_params),
+        ),
         "bs_shared_net_fixed_target_n_target_mode": (
             str(shared_fixed_target_n_target_mode)
             if str(model_scope) == "bs_shared_net"
             else "not_applicable"
         ),
-        "training_objective": "scenario_driven_episode_rollout_lagrangian_sum_finite_blocklength_rate",
+        "training_objective": (
+            "scenario_driven_episode_rollout_lagrangian_"
+            f"{objective_public_name}_sum_finite_blocklength_rate"
+        ),
     }
     dataset_sizes = [
         int(dataset_summary.get("channel_episodes_per_user", [0 for _ in range(K)])[k])
@@ -1721,6 +2020,11 @@ def train_blocklength_aware_precoder_net(
             for idx in batch_idx:
                 scenario = rollout_queries[int(idx)]
                 query_weight = float(scenario.get("query_weight", 1.0))
+                scenario_user_weights, _ = _scenario_objective_weights(
+                    scenario,
+                    sim_params,
+                    objective_mode=objective_mode,
+                )
                 forward = _scenario_forward_pass(
                     system_params,
                     scenario,
@@ -1740,7 +2044,7 @@ def train_blocklength_aware_precoder_net(
                     rate_violation = rate.new_tensor(required_rate) - rate
                     rate_violation_pos = _constraint_violation_activation(rate_violation, constraint_loss_form)
                     term = (
-                        -rate
+                        -(float(scenario_user_weights[int(k)]) * rate)
                         + float(lambda_rate[k]) * rate_violation_pos
                     )
                     if constraint_loss_form == "augmented_lagrangian":
@@ -1914,6 +2218,8 @@ def train_blocklength_aware_precoder_net(
         "training_solve_status": str(solve_status),
         "restored_solution_source": str(restored_solution_source),
         "downlink_precoder_net_scope": str(model_scope),
+        "objective_mode": str(training_history.get("objective_mode", objective_public_name)),
+        "weight_strategy": str(training_history.get("weight_strategy", "none")),
         "bs_shared_net_fixed_target_n_target_mode": (
             str(shared_fixed_target_n_target_mode)
             if str(model_scope) == "bs_shared_net"
@@ -2115,8 +2421,11 @@ def _allocate_fixed_target_for_user_block_snapshot(
         return 0, 0, 0.0, zero_beam
 
     F_fixed = np.asarray(frozen_F[k][l], dtype=np.complex128)
-    snapshot = _clone_precoders(frozen_F)
-    snapshot[k][l] = np.array(F_fixed, copy=True)
+    snapshot = _copy_snapshot_with_block_overrides(
+        frozen_F,
+        int(l),
+        {int(k): np.array(F_fixed, copy=True)},
+    )
     R_T = float(system.compute_block_rate(k, l, T_k, F_override=snapshot))
     B_max = max(_rate_to_max_bits(T_k, R_T), 0)
     B_used = int(min(int(target_bits), B_max))
@@ -2166,8 +2475,11 @@ def _allocate_bits_for_user_block_precoder_net(
         frozen_F,
         inference_counters=inference_counters,
     )
-    snapshot_T = _clone_precoders(frozen_F)
-    snapshot_T[k][l] = np.array(F_T, copy=True)
+    snapshot_T = _copy_snapshot_with_block_overrides(
+        frozen_F,
+        int(l),
+        {int(k): np.array(F_T, copy=True)},
+    )
     active_users = [int(user_id) for user_id, flag in enumerate(active_mask) if float(flag) > 0.5]
     system.project_block_precoders_to_power(snapshot_T, l, active_users=active_users)
     R_T = float(system.compute_block_rate(k, l, T_k, F_override=snapshot_T))
@@ -2185,29 +2497,41 @@ def _allocate_bits_for_user_block_precoder_net(
     chosen_F = np.array(snapshot_T[k][l], copy=True)
 
     if int(remaining_bits) <= B_max:
-        candidate = T_k - n_step
-        while candidate >= n_min:
+        search_cfg = _build_monte_carlo_test_search_cfg(
+            sim_params,
+            n_min=int(n_min),
+            n_max=int(T_k),
+        )
+
+        def _evaluate_payload_candidate(candidate_n: int, _stage_name: str) -> dict[str, Any]:
             F_candidate = _precoder_net_beam_for_n(
                 system,
                 model,
                 k,
                 l,
-                int(candidate),
+                int(candidate_n),
                 active_mask,
                 frozen_F,
                 inference_counters=inference_counters,
             )
-            candidate_snapshot = _clone_precoders(frozen_F)
-            candidate_snapshot[k][l] = np.array(F_candidate, copy=True)
+            candidate_snapshot = _copy_snapshot_with_block_overrides(
+                frozen_F,
+                int(l),
+                {int(k): np.array(F_candidate, copy=True)},
+            )
             system.project_block_precoders_to_power(candidate_snapshot, l, active_users=active_users)
-            R_candidate = float(system.compute_block_rate(k, l, int(candidate), F_override=candidate_snapshot))
-            if (float(B_used) / float(candidate)) <= R_candidate:
-                chosen_n = int(candidate)
-                chosen_R = float(R_candidate)
-                chosen_F = np.array(candidate_snapshot[k][l], copy=True)
-                candidate -= n_step
-            else:
-                break
+            R_candidate = float(system.compute_block_rate(k, l, int(candidate_n), F_override=candidate_snapshot))
+            return {
+                "feasible": (float(B_used) / float(max(int(candidate_n), 1))) <= float(R_candidate),
+                "R_candidate": float(R_candidate),
+                "F_candidate": np.array(candidate_snapshot[k][l], copy=True),
+            }
+
+        search_result = run_n_frontier_search(search_cfg, _evaluate_payload_candidate)
+        for accepted in search_result["accepted"]:
+            chosen_n = int(accepted["n_kl"])
+            chosen_R = float(accepted["result"]["R_candidate"])
+            chosen_F = np.array(accepted["result"]["F_candidate"], copy=True)
 
     return int(B_used), int(chosen_n), float(chosen_R), chosen_F
 
@@ -2245,8 +2569,11 @@ def _allocate_fixed_target_for_user_block_precoder_net(
         frozen_F,
         inference_counters=inference_counters,
     )
-    snapshot_T = _clone_precoders(frozen_F)
-    snapshot_T[k][l] = np.array(F_T, copy=True)
+    snapshot_T = _copy_snapshot_with_block_overrides(
+        frozen_F,
+        int(l),
+        {int(k): np.array(F_T, copy=True)},
+    )
     active_users = [int(user_id) for user_id, flag in enumerate(active_mask) if float(flag) > 0.5]
     system.project_block_precoders_to_power(snapshot_T, l, active_users=active_users)
     R_T = float(system.compute_block_rate(k, l, T_k, F_override=snapshot_T))
@@ -2259,29 +2586,41 @@ def _allocate_fixed_target_for_user_block_precoder_net(
     chosen_R = float(R_T)
     chosen_F = np.array(snapshot_T[k][l], copy=True)
     if int(B_used) >= int(target_bits) and int(target_bits) > 0:
-        candidate = T_k - n_step
-        while candidate >= n_min:
+        search_cfg = _build_monte_carlo_test_search_cfg(
+            sim_params,
+            n_min=int(n_min),
+            n_max=int(T_k),
+        )
+
+        def _evaluate_fixed_target_candidate(candidate_n: int, _stage_name: str) -> dict[str, Any]:
             F_candidate = _precoder_net_beam_for_n(
                 system,
                 model,
                 k,
                 l,
-                int(candidate),
+                int(candidate_n),
                 active_mask,
                 frozen_F,
                 inference_counters=inference_counters,
             )
-            candidate_snapshot = _clone_precoders(frozen_F)
-            candidate_snapshot[k][l] = np.array(F_candidate, copy=True)
+            candidate_snapshot = _copy_snapshot_with_block_overrides(
+                frozen_F,
+                int(l),
+                {int(k): np.array(F_candidate, copy=True)},
+            )
             system.project_block_precoders_to_power(candidate_snapshot, l, active_users=active_users)
-            R_candidate = float(system.compute_block_rate(k, l, int(candidate), F_override=candidate_snapshot))
-            if (float(target_bits) / float(max(int(candidate), 1))) <= R_candidate:
-                chosen_n = int(candidate)
-                chosen_R = float(R_candidate)
-                chosen_F = np.array(candidate_snapshot[k][l], copy=True)
-                candidate -= int(n_step)
-            else:
-                break
+            R_candidate = float(system.compute_block_rate(k, l, int(candidate_n), F_override=candidate_snapshot))
+            return {
+                "feasible": (float(target_bits) / float(max(int(candidate_n), 1))) <= float(R_candidate),
+                "R_candidate": float(R_candidate),
+                "F_candidate": np.array(candidate_snapshot[k][l], copy=True),
+            }
+
+        search_result = run_n_frontier_search(search_cfg, _evaluate_fixed_target_candidate)
+        for accepted in search_result["accepted"]:
+            chosen_n = int(accepted["n_kl"])
+            chosen_R = float(accepted["result"]["R_candidate"])
+            chosen_F = np.array(accepted["result"]["F_candidate"], copy=True)
     return int(B_used), int(chosen_n), float(chosen_R), chosen_F
 
 
@@ -2874,6 +3213,15 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
         allow_n_reduction=False,
     )
     model_scope = resolve_downlink_precoder_net_scope(sim_params.get("downlink_precoder_net_scope", "per_user_nets"))
+    objective_mode = resolve_convergence_objective_mode(sim_params)
+    objective_public_name = objective_display_name(
+        objective_mode,
+        resolve_convergence_priority_weight_strategy(sim_params),
+    )
+    weight_strategy_name = objective_weight_strategy_name(
+        objective_mode,
+        resolve_convergence_priority_weight_strategy(sim_params),
+    )
     shared_fixed_target_n_target_mode = _resolve_bs_shared_fixed_target_n_target_mode(
         sim_params.get("bs_shared_net_fixed_target_n_target_mode", "shared_n_targets")
     )
@@ -2902,6 +3250,7 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
         "per_user_forward_calls": [0 for _ in range(system.K)],
         "total_forward_calls": 0,
     }
+    core_evaluation_start = perf_counter()
 
     for block in range(num_blocks):
         target_bits_by_user = [int(block_targets[int(k), block]) for k in range(system.K)]
@@ -3092,7 +3441,7 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
                 "sum_rate": float(sum(user_rates)),
                 "unweighted_sum_rate": float(sum(user_rates)),
                 "blended_objective": float(sum(user_rates)),
-                "objective_mode": "unweighted_sum_rate",
+                "objective_mode": str(objective_public_name),
             }
         )
 
@@ -3185,9 +3534,9 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
 
     result = {
         "method_name": method_name,
-        "objective_mode": "unweighted_sum_rate",
+        "objective_mode": str(objective_public_name),
         "allocation_mode": "fixed_block_targets",
-        "weight_strategy": "none",
+        "weight_strategy": str(weight_strategy_name),
         "precoder_parameterization": _downlink_monte_carlo_precoder_parameterization(model_scope),
         "downlink_precoder_net_scope": str(model_scope),
         "bs_shared_net_fixed_target_n_target_mode": (
@@ -3251,6 +3600,7 @@ def _evaluate_downlink_precoder_net_fixed_block_targets(
         "training_active_user_case_counts_per_user": [int(v) for v in (training_dataset_sizes or [])],
         "skipped_blocks_per_user": [int(v) for v in skipped_blocks_per_user],
         "evaluation_cost_counters": evaluation_cost_counters,
+        "core_evaluation_wall_time_seconds": float(perf_counter() - core_evaluation_start),
         "scenario_mode": FIXED_BLOCK_TARGETS_MODE,
         "scenario_block_targets": block_targets.tolist(),
     }
@@ -3293,6 +3643,15 @@ def evaluate_downlink_precoder_net(
         scenario,
         allow_n_reduction=False,
     )
+    objective_mode = resolve_convergence_objective_mode(sim_params)
+    objective_public_name = objective_display_name(
+        objective_mode,
+        resolve_convergence_priority_weight_strategy(sim_params),
+    )
+    weight_strategy_name = objective_weight_strategy_name(
+        objective_mode,
+        resolve_convergence_priority_weight_strategy(sim_params),
+    )
     if verbose:
         print(
             format_latency_log_line(
@@ -3317,6 +3676,7 @@ def evaluate_downlink_precoder_net(
         "total_forward_calls": 0,
     }
     max_blocks = int(sim_params.get("max_total_blocks", 256))
+    core_evaluation_start = perf_counter()
     block = 0
     while np.any(remaining > 0):
         if block >= max_blocks:
@@ -3335,6 +3695,7 @@ def evaluate_downlink_precoder_net(
                 int(block),
                 _shared_n_targets_for_block(system, active_mask),
                 active_mask,
+                base_snapshot=working_F,
                 inference_counters=evaluation_cost_counters,
             )
             for k in active_users:
@@ -3519,7 +3880,7 @@ def evaluate_downlink_precoder_net(
                 "sum_rate": float(sum(user_rates)),
                 "unweighted_sum_rate": float(sum(user_rates)),
                 "blended_objective": float(sum(user_rates)),
-                "objective_mode": "unweighted_sum_rate",
+                "objective_mode": str(objective_public_name),
             }
         )
 
@@ -3609,9 +3970,9 @@ def evaluate_downlink_precoder_net(
 
     result = {
         "method_name": method_name,
-        "objective_mode": "unweighted_sum_rate",
+        "objective_mode": str(objective_public_name),
         "allocation_mode": "greedy",
-        "weight_strategy": "none",
+        "weight_strategy": str(weight_strategy_name),
         "precoder_parameterization": _downlink_monte_carlo_precoder_parameterization(model_scope),
         "downlink_precoder_net_scope": str(model_scope),
         "bs_shared_net_fixed_target_n_target_mode": (
@@ -3676,6 +4037,7 @@ def evaluate_downlink_precoder_net(
         "training_active_user_case_counts_per_user": [int(v) for v in (training_dataset_sizes or [])],
         "skipped_blocks_per_user": [0 for _ in range(system.K)],
         "evaluation_cost_counters": evaluation_cost_counters,
+        "core_evaluation_wall_time_seconds": float(perf_counter() - core_evaluation_start),
         "scenario_mode": PAYLOAD_COMPLETION_MODE,
     }
     return result

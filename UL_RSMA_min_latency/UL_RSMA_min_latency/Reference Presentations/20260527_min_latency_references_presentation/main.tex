@@ -1,0 +1,1867 @@
+\documentclass{beamer}
+%
+\mode<presentation>
+{
+  \usetheme{default}
+  \usecolortheme{default}
+  \usefonttheme{default}
+  \setbeamertemplate{navigation symbols}{}
+  \setbeamertemplate{caption}[numbered]
+}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+
+\title[Reference Presentation 2: Finite Blocklength MIMO Precoding]
+{Finite Blocklength MIMO Precoding\\
+With Mixed Power and QoS Constraints}
+
+\author{Shanik Hubert}
+
+\institute{
+Paper Explanation Presentation\\[0.2cm]
+\small Based on: Jingchen Wu et al., \textit{IEEE Communications Letters}, 2026
+}
+
+\date{}
+
+
+
+\begin{document}
+
+\begin{frame}{}
+    \titlepage
+\end{frame}
+
+\begin{frame}{Contents}
+  \tableofcontents
+\end{frame}
+
+\section{Overall Idea of the Paper}
+%------------------------------------------------
+\begin{frame}{Layer 0: Overall Idea of the Paper}
+\small
+
+\begin{block}{Core Problem}
+Design downlink MIMO precoders that maximize finite-blocklength weighted sum rate while satisfying mixed power constraints and QoS requirements.
+\end{block}
+
+\begin{itemize}
+    \item To reduce difficulty of precoder design problem, it is reformulated into an easier SINR allocation problem.\
+    
+    \[
+        \text{Hard precoder design}
+        \quad \Longrightarrow \quad
+        \text{SINR allocation problem}
+        \]
+\end{itemize}
+        
+\begin{itemize}
+    \item Instead of directly optimizing the precoding matrix \(V\), the paper optimizes target SINRs \(\gamma_k\).
+    \item A power feasibility function \(P(\gamma)\) checks whether the target SINRs can be achieved.
+    \item Two algorithms are proposed:
+    \begin{itemize}
+        \item BDGM: bi-direction gradient method.
+        \item IWF: iterative water-filling algorithm.
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+
+%------------------------------------------------
+\section{Layer 1: Main Research Gap}
+\begin{frame}{Layer 1: Main Research Gap}
+\small
+
+\begin{itemize}
+    \item Existing finite-blocklength precoding works usually focus on limited settings.
+
+    \item Many methods consider only a single sum power constraint:
+    \[
+        \sum_{k=1}^{K}\|v_k\|^2 \le P
+    \]
+
+    \item Practical MIMO systems may have different power limits:
+    \begin{itemize}
+        \item sum power constraint,
+        \item per-antenna power constraint,
+        \item per-group or per-AP power constraint.
+    \end{itemize}
+
+    \item Therefore, a general finite-blocklength precoding framework is needed for mixed power constraints and QoS guarantees.
+\end{itemize}
+
+\end{frame}
+
+\section{Layer 2: Downlink MIMO System Model}
+%------------------------------------------------
+%------------------------------------------------
+\begin{frame}{Layer 2: Downlink MIMO System Model}
+\small
+
+\begin{itemize}
+    \item The system has \(N\) transmit antennas serving \(K\) single-antenna users.
+
+    \item The transmitted signal is:
+    \[
+        \mathbf{x}
+        =
+        \sum_{k=1}^{K}
+        \mathbf{D}_k\mathbf{v}_k s_k
+    \]
+
+    \item Variables:
+    \begin{itemize}
+        \item \(\mathbf{x}\in\mathbb{C}^{N}\): transmitted signal vector from all antennas.
+        \item \(N\): number of transmit antennas.
+        \item \(K\): number of users.
+        \item \(k\): user index, where \(k=1,\ldots,K\).
+        \item \(s_k\): data symbol intended for user \(k\).
+        \item \(\mathbb{E}[s_k]=0\), \(\mathbb{E}[|s_k|^2]=1\): symbol has zero mean and unit power.
+        \item \(\mathbf{v}_k\in\mathbb{C}^{N}\): precoding vector for user \(k\).
+    \end{itemize}
+
+    \item Antenna-user association:
+    \[
+        \mathbf{D}
+        =
+        [\mathbf{d}_1,\ldots,\mathbf{d}_K]
+        \in \{0,1\}^{N\times K}
+    \]
+
+    \[
+        [\mathbf{D}]_{nk}
+        =
+        \begin{cases}
+        1, & \text{if antenna } n \text{ serves user } k,\\
+        0, & \text{otherwise}.
+        \end{cases}
+    \]
+
+    \item \(\mathbf{D}_k=\operatorname{diag}(\mathbf{d}_k)\in\{0,1\}^{N\times N}\) selects only the antennas assigned to user \(k\).
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+\begin{frame}{Layer 2: Received Signal Model}
+\small
+
+\[
+    y_k
+    =
+    \mathbf{h}_k^H\mathbf{D}_k\mathbf{v}_k s_k
+    +
+    \sum_{j\ne k}^{K}
+    \mathbf{h}_k^H\mathbf{D}_j\mathbf{v}_j s_j
+    +
+    n_k
+\]
+
+\begin{itemize}
+    \item \(y_k\): signal received by user \(k\).
+    \item \(\mathbf{h}_k\in\mathbb{C}^{N}\): channel vector from all \(N\) antennas to user \(k\).
+    \item \((\cdot)^H\): Hermitian transpose.
+    \item \(\mathbf{h}_k^H\mathbf{D}_k\mathbf{v}_k s_k\): desired signal for user \(k\).
+    \item \(\sum_{j\ne k}^{K}\mathbf{h}_k^H\mathbf{D}_j\mathbf{v}_j s_j\): interference from other users.
+    \item \(j\): index of another user, where \(j\ne k\).
+    \item \(n_k\): additive noise at user \(k\).
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 2: SINR of Each User}
+\scriptsize
+
+\[
+\rho_k(\mathbf{V})
+=
+\frac{
+\left|\mathbf{h}_k^H\mathbf{D}_k\mathbf{v}_k\right|^2
+}{
+\sum_{\substack{j=1\\j\ne k}}^{K}
+\left|\mathbf{h}_k^H\mathbf{D}_j\mathbf{v}_j\right|^2
++
+\sigma_k^2
+}
+\]
+
+\begin{itemize}
+    \item \(\rho_k(\mathbf{V})\): SINR of user \(k\).
+    \item \(\mathbf{V}=[\mathbf{v}_1,\ldots,\mathbf{v}_K]\in\mathbb{C}^{N\times K}\): complete precoding matrix.
+    \item Numerator:
+    \[
+        \left|\mathbf{h}_k^H\mathbf{D}_k\mathbf{v}_k\right|^2
+    \]
+    is the useful received signal power for user \(k\).
+
+    \item Denominator:
+    \[
+        \sum_{j\ne k}
+        \left|\mathbf{h}_k^H\mathbf{D}_j\mathbf{v}_j\right|^2
+        +
+        \sigma_k^2
+    \]
+    is interference power plus noise power.
+
+    \item \(\sigma_k^2\): noise power at user \(k\). The paper assumes \(\sigma_k^2=1\) for simplicity.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 3: Finite Blocklength Rate Model}
+\scriptsize
+
+\[
+R_k(\rho_k)
+=
+\log(1+\rho_k)
+-
+\frac{Q^{-1}(\epsilon_k)}{\sqrt{M}}
+\sqrt{B(\rho_k)}
+\]
+
+\[
+B(\rho_k)=1-(1+\rho_k)^{-2}
+\]
+
+\begin{itemize}
+    \item \(R_k(\rho_k)\): achievable finite-blocklength rate of user \(k\).
+    \item \(\rho_k\): SINR of user \(k\).
+    \item \(\log(1+\rho_k)\): classical infinite-blocklength Shannon rate term.
+    \item \(M\): blocklength, i.e., number of channel uses used to transmit a codeword.
+    \item \(\epsilon_k\): target block error rate of user \(k\).
+    \item \(Q^{-1}(\epsilon_k)\): inverse Gaussian \(Q\)-function; represents reliability penalty.
+    \item \(B(\rho_k)\): channel dispersion term.
+    \item The second term reduces the rate because short-packet transmission cannot achieve Shannon capacity.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 4: Mixed Power Constraints}
+\small
+
+\[
+    \sum_{k=1}^{K}
+    \mathbf{v}_k^H\mathbf{S}_i\mathbf{v}_k
+    \le P_i,
+    \quad \forall i=1,\ldots,L
+\]
+
+\begin{itemize}
+    \item \(i\): index of a power constraint.
+    \item \(L\): total number of power constraints.
+    \item \(\mathbf{v}_k\): precoder for user \(k\).
+    \item \(\mathbf{S}_i\in\mathbb{C}^{N\times N}\): positive semi-definite matrix selecting which antenna, group, or total power is constrained.
+    \item \(P_i\): power budget of constraint \(i\).
+    \item \(\mathbf{v}_k^H\mathbf{S}_i\mathbf{v}_k\): contribution of user \(k\)'s precoder to power constraint \(i\).
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+\begin{frame}{Layer 4: Types of Power Constraints}
+\small
+
+\begin{itemize}
+    \item The mixed power constraint framework can represent different practical power limits.
+
+    \item \textbf{Sum Power Constraint (SPC):}
+    \[
+        \mathbf{S}_i=\mathbf{I}_N
+    \]
+    This limits the total transmit power across all antennas.
+
+    \item \textbf{Per-Antenna Power Constraint (PAPC):}
+    \[
+        \mathbf{S}_i=\mathbf{e}_{m_i}\mathbf{e}_{m_i}^H
+    \]
+    This limits the transmit power of antenna \(m_i\).
+
+    \item \textbf{Per-Group Power Constraint (PGPC):}
+    \[
+        \mathbf{S}_i=\sum_{m\in\mathcal{G}_i}
+        \mathbf{e}_m\mathbf{e}_m^H
+    \]
+    This limits the total power of antenna group \(\mathcal{G}_i\).
+
+\item \(m\): antenna index, where \(m=1,\ldots,N\), \([\mathbf{v}_k]_{m_i}\): the precoder coefficient applied at antenna \(m_i\) for user \(k\).
+, \(m_i\): the specific antenna index selected by constraint \(i\), \(\mathbf{e}_{m_i}\): unit vector that selects antenna \(m_i\)..
+\(\mathcal{G}_i\): set of antenna indices belonging to group \(i\).
+
+
+
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 4: How \(\mathbf{S}_i\) Creates Different Power Constraints}
+\scriptsize
+
+\[
+    \sum_{k=1}^{K}\mathbf{v}_k^H\mathbf{S}_i\mathbf{v}_k \le P_i
+\]
+
+\begin{itemize}
+    \item \(\mathbf{S}_i\) acts like a power selection matrix.
+
+    \item If \(\mathbf{S}_i=\mathbf{I}_N\):
+    \[
+        \sum_{k=1}^{K}\mathbf{v}_k^H\mathbf{v}_k \le P_i
+    \]
+    This becomes a total sum power constraint.
+
+    \item If \(\mathbf{S}_i=\mathbf{e}_{m_i}\mathbf{e}_{m_i}^H\):
+    \[
+        \sum_{k=1}^{K}|[\mathbf{v}_k]_{m_i}|^2 \le P_i
+    \]
+    This limits only antenna \(m_i\).
+
+    \item If \(\mathbf{S}_i=\sum_{m\in\mathcal{G}_i}\mathbf{e}_m\mathbf{e}_m^H\):
+    \[
+        \sum_{k=1}^{K}\sum_{m\in\mathcal{G}_i}|[\mathbf{v}_k]_m|^2 \le P_i
+    \]
+    This limits the total power of antenna group \(\mathcal{G}_i\).
+
+    \item Thus, changing \(\mathbf{S}_i\) changes what part of the precoder power is measured.
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+%------------------------------------------------
+\begin{frame}{Layer 4: Normalized Mixed Power Constraint}
+\scriptsize
+
+\[
+    \mathbf{X}_i=\frac{\mathbf{S}_i}{P_i}
+\]
+
+\[
+    \sum_{k=1}^{K}\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k \le 1,
+    \quad \forall i=1,\ldots,L
+\]
+
+Since we want this power constraint for every constraint $i \in \{1,...,L\}$ 
+\[
+    \max_{1\le i\le L}
+    \left\{
+    \sum_{k=1}^{K}\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k
+    \right\}
+    \le 1
+\]
+
+\begin{itemize}
+    \item \(\mathbf{X}_i\): normalized power selection matrix for constraint \(i\).
+    \item \(\mathbf{S}_i\): original power selection matrix.
+    \item \(P_i\): power budget of constraint \(i\).
+    \item Normalization converts every power constraint into the same upper bound \(1\).
+    \item The maximum form means all power constraints must be satisfied simultaneously.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+%------------------------------------------------
+\begin{frame}{Layer 4: Why the Maximum Form is Used}
+\scriptsize
+
+\[
+    \sum_{k=1}^{K}\mathbf{v}_k^H\mathbf{S}_i\mathbf{v}_k \le P_i,
+    \quad \forall i=1,\ldots,L
+\]
+
+\[
+    \mathbf{X}_i=\frac{\mathbf{S}_i}{P_i}
+\]
+
+\[
+    \sum_{k=1}^{K}\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k \le 1,
+    \quad \forall i=1,\ldots,L
+\]
+
+\[
+    \max_{1\le i\le L}
+    \left\{
+    \sum_{k=1}^{K}\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k
+    \right\}
+    \le 1
+\]
+
+\begin{itemize}
+    \item The maximum form is used in Section II-B of the paper after defining the normalized matrix \(\mathbf{X}_i\).
+
+    \item It converts \(L\) separate constraints into one compact expression.
+
+    \item If the largest normalized power value is less than or equal to \(1\), then all individual power constraints are satisfied.
+
+    \item This is useful because the original optimization problem can now write the mixed power constraints as one single constraint.
+
+    \item \(\mathbf{S}_i\): original matrix selecting the antenna, antenna group, or total transmit power being constrained.
+    \item \(L\): total number of power constraints.
+
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 4: QoS Constraint}
+\scriptsize
+
+\[
+    R_k(\rho_k(\mathbf{V})) \ge \widehat{R}_k,
+    \quad \forall k=1,\ldots,K
+\]
+
+\[
+    \rho_k(\mathbf{V}) \ge \widehat{\rho}_k,
+    \quad \forall k=1,\ldots,K
+\]
+
+\[
+    R_k(\widehat{\rho}_k)=\widehat{R}_k
+\]
+
+\begin{itemize}
+    \item QoS means each user must receive at least a minimum required rate.
+    \item \(R_k(\rho_k(\mathbf{V}))\): finite-blocklength rate achieved by user \(k\).
+    \item \(\widehat{R}_k\): minimum required rate for user \(k\).
+    \item \(\rho_k(\mathbf{V})\): SINR achieved by user \(k\) using precoding matrix \(\mathbf{V}\).
+    \item \(\widehat{\rho}_k\): minimum SINR needed to achieve rate \(\widehat{R}_k\).
+    \item Since \(R_k(\rho_k)\) increases with \(\rho_k\), the rate constraint can be rewritten as an SINR constraint.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Problems with this QoS Transformation}
+\scriptsize
+
+\[
+    R_k(\rho_k)
+    =
+    \log(1+\rho_k)
+    -
+    \frac{Q^{-1}(\epsilon_k)}{\sqrt{M}}
+    \sqrt{B(\rho_k)}
+\]
+
+\[
+    B(\rho_k)=1-(1+\rho_k)^{-2}
+\]
+
+\begin{itemize}
+    \item The paper rewrites the QoS constraint:
+    \[
+        R_k(\rho_k(\mathbf{V}))\ge \widehat{R}_k
+    \]
+    as:
+    \[
+        \rho_k(\mathbf{V})\ge \widehat{\rho}_k
+    \]
+
+    \item This requires \(R_k(\rho_k)\) to be increasing with respect to \(\rho_k\).
+
+    \item However, the dispersion term also increases with SINR:
+    \[
+        \frac{dB(\rho_k)}{d\rho_k}
+        =
+        2(1+\rho_k)^{-3}>0
+    \]
+
+    \item Therefore, increasing SINR increases both:
+    \begin{itemize}
+        \item the useful term \(\log(1+\rho_k)\),
+        \item the penalty term \(\sqrt{B(\rho_k)}\).
+    \end{itemize}
+
+    \item The transformation is valid only when the useful rate increase dominates the penalty increase, ie: the shannon rate term increase dominates over  channel dispersion term.
+    on the valid increasing region of the FBL rate curve.
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+\begin{frame}{Layer 5: Original Optimization Problem}
+\scriptsize
+
+\[
+\max_{\mathbf{V}}
+\quad
+\sum_{k=1}^{K} w_k R_k(\rho_k(\mathbf{V}))
+\]
+
+\[
+\text{subject to}
+\quad
+\max_{1\le i\le L}
+\left\{
+\sum_{k=1}^{K}\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k
+\right\}
+\le 1
+\]
+
+\[
+\rho_k(\mathbf{V})\ge \widehat{\rho}_k,
+\quad \forall k=1,\ldots,K
+\]
+
+\begin{itemize}
+    \item \(\mathbf{V}=[\mathbf{v}_1,\ldots,\mathbf{v}_K]\): complete precoding matrix.
+    \item \(w_k\): priority weight of user \(k\).
+    \item \(R_k(\rho_k(\mathbf{V}))\): FBL rate of user \(k\).
+    \item \(\mathbf{X}_i\): normalized power constraint matrix.
+    \item \(\widehat{\rho}_k\): minimum required SINR for user \(k\).
+    \item The problem is difficult because \(\rho_k(\mathbf{V})\) is non-convex in \(\mathbf{V}\).
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+%------------------------------------------------
+\begin{frame}{Layer 6: Why Directly Solving the Problem is Hard}
+\scriptsize
+
+\[
+R_k(\rho_k)
+=
+\log(1+\rho_k)
+-
+\frac{Q^{-1}(\epsilon_k)}{\sqrt{M}}
+\sqrt{1-(1+\rho_k)^{-2}}
+\]
+
+\[
+\rho_k(\mathbf{V})
+=
+\frac{
+\left|\mathbf{h}_k^H\mathbf{D}_k\mathbf{v}_k\right|^2
+}{
+\sum_{j\ne k}
+\left|\mathbf{h}_k^H\mathbf{D}_j\mathbf{v}_j\right|^2
++
+\sigma_k^2
+}
+\]
+
+\begin{itemize}
+    \item The difficulty comes from two sources.
+
+    \item \textbf{First: SINR is non-convex in the precoders.}
+    \[
+        \rho_k(\mathbf{V})
+    \]
+    is a ratio of quadratic functions of the precoding vectors.
+
+    \item Improving one user's signal power can increase interference to other users.
+
+    \item \textbf{Second: the finite-blocklength rate is not the classical Shannon rate.}
+
+    \item In the infinite-blocklength case, the rate is:
+    \[
+        \log(1+\rho_k)
+    \]
+
+    \item In the finite-blocklength case, the rate contains the extra dispersion penalty:
+    \[
+        \frac{Q^{-1}(\epsilon_k)}{\sqrt{M}}
+        \sqrt{1-(1+\rho_k)^{-2}}
+    \]
+
+    \item Because of this penalty term, standard infinite-blocklength precoding tools such as closed-form WMMSE updates are not directly applicable.
+
+    \item Therefore, the paper avoids directly optimizing \(\mathbf{V}\) and later reformulates the problem using target SINR allocation.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 6: Main Reformulation Idea}
+\scriptsize
+
+\[
+    \gamma
+    =
+    [\gamma_1,\gamma_2,\ldots,\gamma_K]^T
+\]
+
+\begin{itemize}
+    \item Instead of directly optimizing the precoders \(\mathbf{V}\), the paper optimizes target SINR values.
+
+    \item \(\gamma_k\): target SINR assigned to user \(k\).
+
+    \item \(\gamma\in\mathbb{R}^{K}\): vector containing the target SINRs of all users.
+
+    \item The original problem asks:
+    \[
+        \text{What precoders } \mathbf{V} \text{ maximize the FBL weighted sum rate?}
+    \]
+
+    \item The reformulated problem asks:
+    \[
+        \text{What SINR targets } \gamma_k \text{ should users receive?}
+    \]
+
+    \item After choosing \(\gamma\), the paper checks whether there exists a precoding matrix \(\mathbf{V}\) that can achieve those SINR targets under the mixed power constraints.
+
+    \item This separates the problem into:
+    \[
+        \text{SINR allocation}
+        \quad+\quad
+        \text{precoder feasibility checking}.
+    \]
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+\begin{frame}{Layer 6: Main Reformulation Idea}
+\scriptsize
+
+\[
+    \gamma
+    =
+    [\gamma_1,\gamma_2,\ldots,\gamma_K]^T
+\]
+
+\begin{itemize}
+    \item Instead of directly optimizing the precoders \(\mathbf{V}\), the paper optimizes target SINR values.
+
+    \item \(\gamma_k\): target SINR assigned to user \(k\).
+
+    \item \(\gamma\in\mathbb{R}^{K}\): vector containing the target SINRs of all users.
+
+    \item The original problem asks:
+    \[
+        \text{What precoders } \mathbf{V} \text{ maximize the FBL weighted sum rate?}
+    \]
+
+    \item The reformulated problem asks:
+    \[
+        \text{What SINR targets } \gamma_k \text{ should users receive?}
+    \]
+
+    \item After choosing \(\gamma\), the paper checks whether there exists a precoding matrix \(\mathbf{V}\) that can achieve those SINR targets under the mixed power constraints.
+
+    \item This separates the problem into:
+    \[
+        \text{SINR allocation}
+        \quad+\quad
+        \text{precoder feasibility checking}.
+    \]
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Layer 6: Theorem 1 -- Equivalent SINR Allocation}
+\scriptsize
+
+\begin{block}{Theorem 1}
+The original precoder optimization problem over \(\mathbf{V}\) is equivalent to an optimization problem over target SINRs \(\boldsymbol{\gamma}\).
+\end{block}
+
+\[
+\max_{\mathbf{V}}
+\sum_{k=1}^{K}w_kR_k(\rho_k(\mathbf{V}))
+\quad
+\Longleftrightarrow
+\quad
+\max_{\boldsymbol{\gamma}}
+\sum_{k=1}^{K}w_kR_k(\gamma_k)
+\]
+
+\[
+\text{subject to}
+\quad
+P(\boldsymbol{\gamma})\le 1,
+\quad
+\boldsymbol{\gamma}\ge \widehat{\boldsymbol{\rho}}
+\]
+
+\begin{itemize}
+    \item \(\mathbf{V}\): original precoding matrix.
+    \item \(\rho_k(\mathbf{V})\): actual SINR achieved by user \(k\).
+    \item \(\boldsymbol{\gamma}\): target SINR vector chosen by the new problem.
+    \item \(P(\boldsymbol{\gamma})\): minimum normalized power needed to achieve \(\boldsymbol{\gamma}\).
+    \item \(P(\boldsymbol{\gamma})\le 1\): the target SINRs are feasible under the mixed power constraints.
+    \item Theorem 1 is the key step that changes the problem from designing precoders directly to allocating feasible SINR targets.
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+\begin{frame}{Layer 6: Definition of \(P(\boldsymbol{\gamma})\)}
+\scriptsize
+
+\[
+P(\boldsymbol{\gamma})
+=
+\min_{\mathbf{V}}
+\max_{1\le i\le L}
+\left\{
+\sum_{k=1}^{K}
+\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k
+\right\}
+\]
+
+\[
+\text{subject to}
+\quad
+\rho_k(\mathbf{V})\ge \gamma_k,
+\quad \forall k=1,\ldots,K
+\]
+
+\begin{itemize}
+    \item \(P(\boldsymbol{\gamma})\): minimum normalized power required to achieve the target SINR vector \(\boldsymbol{\gamma}\).
+    \item \(\boldsymbol{\gamma}=[\gamma_1,\ldots,\gamma_K]^T\): target SINR vector.
+    \item \(\gamma_k\): target SINR required for user \(k\).
+    \item \(\mathbf{V}=[\mathbf{v}_1,\ldots,\mathbf{v}_K]\): precoding matrix being optimized.
+    \item \(\mathbf{X}_i\): normalized matrix for power constraint \(i\).
+    \item If \(P(\boldsymbol{\gamma})\le 1\), the SINR target is feasible.
+    \item If \(P(\boldsymbol{\gamma})>1\), the SINR target requires more power than allowed.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 6: Why \(P(\boldsymbol{\gamma})\) is a Min--Max Problem}
+\scriptsize
+
+\[
+P(\boldsymbol{\gamma})
+=
+\min_{\mathbf{V}}
+\max_{1\le i\le L}
+\left\{
+\sum_{k=1}^{K}
+\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k
+\right\}
+\]
+
+\[
+\text{subject to}
+\quad
+\rho_k(\mathbf{V})\ge \gamma_k,
+\quad \forall k=1,\ldots,K
+\]
+
+\begin{itemize}
+    \item After choosing target SINRs
+    \[
+        \boldsymbol{\gamma}=[\gamma_1,\ldots,\gamma_K]^T,
+    \]
+    the paper must check whether some precoder \(\mathbf{V}\) can achieve them.
+
+    \item The constraint
+    \[
+        \rho_k(\mathbf{V})\ge \gamma_k
+    \]
+    means user \(k\)'s achieved SINR must be at least its target SINR.
+
+    \item The inner maximum appears because the system has \(L\) normalized mixed power constraints:
+    \[
+        \sum_{k=1}^{K}\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k \le 1,
+        \quad i=1,\ldots,L.
+    \]
+
+    \item Therefore,
+    \[
+        \max_{1\le i\le L}
+        \left\{
+        \sum_{k=1}^{K}\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k
+        \right\}
+    \]
+    measures the worst violated or most heavily used normalized power constraint.
+
+    \item The outer minimization over \(\mathbf{V}\) searches for the best precoder that achieves \(\boldsymbol{\gamma}\) using the least possible normalized power.
+
+    \item Hence, \(P(\boldsymbol{\gamma})\) means:
+    \[
+        \text{minimum worst-case normalized power needed to achieve }
+        \boldsymbol{\gamma}.
+    \]
+
+    \item If
+    \[
+        P(\boldsymbol{\gamma})\le 1,
+    \]
+    then all mixed power constraints can be satisfied.
+
+    \item If
+    \[
+        P(\boldsymbol{\gamma})>1,
+    \]
+    then the target SINRs require more power than the system allows.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 6: Why the Outer Minimization is Added}
+\scriptsize
+
+\[
+P(\boldsymbol{\gamma})
+=
+\min_{\mathbf{V}}
+\max_{1\le i\le L}
+\left\{
+\sum_{k=1}^{K}\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k
+\right\}
+\]
+
+\[
+\text{subject to}
+\quad
+\rho_k(\mathbf{V})\ge \gamma_k,
+\quad \forall k
+\]
+
+\begin{itemize}
+    \item After choosing a target SINR vector \(\boldsymbol{\gamma}\), many different precoders \(\mathbf{V}\) may achieve it.
+
+    \item The paper does not want to check only one arbitrary precoder.
+
+    \item Instead, it asks:
+    \[
+        \text{Among all precoders that achieve } \boldsymbol{\gamma},
+        \text{ which one uses the least worst-case normalized power?}
+    \]
+
+    \item This is why the outer minimization is added:
+    \[
+        \min_{\mathbf{V}}
+    \]
+
+    \item The inner maximum measures the worst power constraint for a chosen \(\mathbf{V}\).
+
+    \item The outer minimum finds the best possible \(\mathbf{V}\) that minimizes that worst constraint.
+
+    \item Therefore:
+    \[
+        P(\boldsymbol{\gamma})
+        =
+        \text{minimum worst-case normalized power needed to achieve }
+        \boldsymbol{\gamma}.
+    \]
+
+    \item If \(P(\boldsymbol{\gamma})\le 1\), then at least one feasible precoder exists.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 7: Why Solving \(P(\boldsymbol{\gamma})\) is Still Difficult}
+\scriptsize
+
+\[
+P(\boldsymbol{\gamma})
+=
+\min_{\mathbf{V}}
+\max_{1\le i\le L}
+\left\{
+\sum_{k=1}^{K}
+\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k
+\right\}
+\]
+
+\[
+\text{subject to}
+\quad
+\rho_k(\mathbf{V})\ge\gamma_k,
+\quad \forall k=1,\ldots,K
+\]
+
+\begin{itemize}
+    \item Even after the SINR-allocation reformulation, computing \(P(\boldsymbol{\gamma})\) is not trivial.
+
+    \item The objective contains a maximum over \(L\) mixed power constraints.
+
+    \item The constraints still contain the SINR expression:
+    \[
+        \rho_k(\mathbf{V})
+        =
+        \frac{
+        |\mathbf{h}_k^H\mathbf{D}_k\mathbf{v}_k|^2
+        }{
+        \sum_{j\ne k}
+        |\mathbf{h}_k^H\mathbf{D}_j\mathbf{v}_j|^2+\sigma_k^2
+        }.
+    \]
+
+    \item This SINR constraint couples all users because each \(\mathbf{v}_j\) can create interference for user \(k\).
+
+    \item Therefore, the paper next transforms this power feasibility problem into an equivalent dual-domain convex problem.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+%------------------------------------------------
+\begin{frame}{Layer 7: Converting \(P(\boldsymbol{\gamma})\) into a Dual Problem}
+\scriptsize
+
+\[
+P(\boldsymbol{\gamma})
+=
+\min_{\mathbf{V}}
+\max_{1\le i\le L}
+\left\{
+\sum_{k=1}^{K}
+\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k
+\right\}
+\]
+
+\[
+\text{subject to}
+\quad
+\rho_k(\mathbf{V})\ge\gamma_k,
+\quad \forall k=1,\ldots,K
+\]
+
+\begin{itemize}
+    \item The paper does not solve this constrained minimization directly.
+
+    \item Instead, it converts Problem (11) into an equivalent dual-domain problem.
+
+    \item New variables are introduced:
+    \[
+        \mathbf{q}=[q_1,\ldots,q_L]^T,
+        \qquad
+        \boldsymbol{\lambda}=[\lambda_1,\ldots,\lambda_K]^T
+    \]
+
+    \item \(q_i\): dual variable associated with power constraint \(i\).
+
+    \item \(\lambda_k\): dual variable associated with the SINR constraint
+    \[
+        \rho_k(\mathbf{V})\ge\gamma_k.
+    \]
+
+    \item The goal is to compute \(P(\boldsymbol{\gamma})\) efficiently while accounting for both mixed power constraints and SINR target constraints.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+%------------------------------------------------
+\begin{frame}{Layer 7: Lemma 1 -- Dual Form of \(P(\boldsymbol{\gamma})\)}
+\scriptsize
+
+\[
+\max_{\mathbf{q},\boldsymbol{\lambda}}
+\quad
+\sum_{k=1}^{K}\lambda_k
+\]
+
+\[
+\text{subject to}
+\quad
+\mathbf{A}_k(\mathbf{q},\boldsymbol{\lambda})\succeq 0,
+\quad \forall k=1,\ldots,K
+\]
+
+\[
+\sum_{i=1}^{L}q_i=1,
+\quad
+\mathbf{q}\ge 0,
+\quad
+\boldsymbol{\lambda}\ge 0
+\]
+
+\begin{itemize}
+    \item Lemma 1 states that the difficult power problem \(P(\boldsymbol{\gamma})\) has the same optimal value as this dual problem.
+    \item \(\mathbf{q}=[q_1,\ldots,q_L]^T\): dual variables for the \(L\) mixed power constraints.
+    \item \(q_i\): weight assigned to power constraint \(i\).
+    \item \(\boldsymbol{\lambda}=[\lambda_1,\ldots,\lambda_K]^T\): dual variables for the \(K\) SINR constraints.
+    \item \(\lambda_k\): dual variable associated with user \(k\)'s SINR target \(\gamma_k\).
+    \item \(\mathbf{A}_k(\mathbf{q},\boldsymbol{\lambda})\succeq0\): matrix feasibility condition for user \(k\).
+    \item \(\succeq0\): positive semidefinite matrix condition.
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+\begin{frame}{Layer 7: Meaning of \(\mathbf{A}_k(\mathbf{q},\boldsymbol{\lambda})\)}
+\scriptsize
+
+\[
+\mathbf{A}_k(\mathbf{q},\boldsymbol{\lambda})
+=
+\sum_{i=1}^{L}q_i\mathbf{X}_i
++
+\mathbf{D}_k
+\left(
+\sum_{j\ne k}\lambda_j\mathbf{h}_j\mathbf{h}_j^H
+-
+\frac{\lambda_k}{\gamma_k}
+\mathbf{h}_k\mathbf{h}_k^H
+\right)
+\mathbf{D}_k
+\]
+
+\[
+\mathbf{A}_k(\mathbf{q},\boldsymbol{\lambda})\succeq0,
+\quad \forall k
+\]
+
+\begin{itemize}
+    \item \(\mathbf{A}_k(\mathbf{q},\boldsymbol{\lambda})\): matrix condition for user \(k\) in the dual problem.
+    \item \(\sum_{i=1}^{L}q_i\mathbf{X}_i\): weighted combination of all normalized power constraints.
+    \item \(\lambda_j\mathbf{h}_j\mathbf{h}_j^H\): interference-related term from user \(j\).
+    \item \(\frac{\lambda_k}{\gamma_k}\mathbf{h}_k\mathbf{h}_k^H\): desired-signal term for user \(k\), scaled by its SINR target.
+    \item \(\mathbf{D}_k\): selects antennas that serve user \(k\).
+    \item \(\mathbf{A}_k\succeq0\) ensures the dual function remains bounded.
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+\begin{frame}{Layer 7: Where \(\mathbf{A}_k\) Comes From}
+\scriptsize
+
+\[
+p_i(\mathbf{V})
+=
+\sum_{k=1}^{K}
+\mathbf{v}_k^H\mathbf{X}_i\mathbf{v}_k
+\]
+
+\[
+\max_i p_i(\mathbf{V})
+\quad \Longrightarrow \quad
+p_i(\mathbf{V})\le \xi,\quad \forall i
+\]
+
+\[
+\mathcal{L}(\xi,\mathbf{V},\mathbf{q},\boldsymbol{\lambda})
+=
+\xi
++
+\sum_{i=1}^{L}q_i(p_i(\mathbf{V})-\xi)
+-
+\sum_{k=1}^{K}\lambda_k
+\left(
+\frac{1}{\gamma_k}
+|\mathbf{h}_k^H\mathbf{D}_k\mathbf{v}_k|^2
+-
+\sum_{j\ne k}
+|\mathbf{h}_k^H\mathbf{D}_j\mathbf{v}_j|^2
+-
+1
+\right)
+\]
+
+\begin{itemize}
+    \item \(\xi\): slack variable replacing the maximum power term.
+    \item \(p_i(\mathbf{V})\): normalized power used under constraint \(i\).
+    \item \(q_i\): dual variable for \(p_i(\mathbf{V})\le\xi\).
+    \item \(\lambda_k\): dual variable for user \(k\)'s SINR constraint.
+    \item After collecting all terms containing each \(\mathbf{v}_k\), the quadratic coefficient becomes \(\mathbf{A}_k(\mathbf{q},\boldsymbol{\lambda})\).
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+
+%------------------------------------------------
+\begin{frame}{Layer 7: From Lagrangian to the Dual Problem}
+\scriptsize
+
+\[
+\mathcal{L}
+=
+\sum_{k=1}^{K}\lambda_k
+-
+\xi\left(\sum_{i=1}^{L}q_i-1\right)
++
+\sum_{k=1}^{K}
+\mathbf{v}_k^H
+\mathbf{A}_k(\mathbf{q},\boldsymbol{\lambda})
+\mathbf{v}_k
+\]
+
+\[
+\sum_{i=1}^{L}q_i=1,
+\qquad
+\mathbf{A}_k(\mathbf{q},\boldsymbol{\lambda})\succeq0,
+\quad \forall k
+\]
+
+\[
+\Longrightarrow
+\quad
+\max_{\mathbf{q},\boldsymbol{\lambda}}
+\sum_{k=1}^{K}\lambda_k
+\]
+
+\[
+\text{subject to}
+\quad
+\mathbf{A}_k(\mathbf{q},\boldsymbol{\lambda})\succeq0,\ \forall k,
+\quad
+\sum_{i=1}^{L}q_i=1,
+\quad
+\mathbf{q}\ge0,
+\quad
+\boldsymbol{\lambda}\ge0
+\]
+
+\begin{itemize}
+    \item The dual problem keeps only values of \(\mathbf{q}\) and \(\boldsymbol{\lambda}\) that make the Lagrangian bounded.
+    \item \(\sum_i q_i=1\): removes the unbounded slack-variable term involving \(\xi\).
+    \item \(\mathbf{A}_k\succeq0\): prevents the quadratic precoder term from going to \(-\infty\).
+    \item After these conditions hold, minimizing over \(\xi\) and \(\mathbf{V}\) leaves the dual objective \(\sum_k\lambda_k\).
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 8: Solving the Dual Problem -- Updating \(\boldsymbol{\lambda}\)}
+\scriptsize
+
+\[
+\lambda_k
+\leftarrow
+\frac{\gamma_k}
+{\mathbf{h}_k^H\mathbf{D}_k\mathbf{C}_k^{-1}\mathbf{D}_k\mathbf{h}_k},
+\quad \forall k=1,\ldots,K
+\]
+
+\[
+\mathbf{C}_k
+=
+\mathbf{D}_k
+\left(
+\sum_{j\ne k}
+\lambda_j\mathbf{h}_j\mathbf{h}_j^H
+\right)
+\mathbf{D}_k
++
+\sum_{i=1}^{L}q_i\mathbf{X}_i
+\]
+
+\begin{itemize}
+    \item This update is used inside Algorithm 1 to solve the dual problem from Lemma 1.
+
+    \item \(\lambda_k\): dual variable associated with user \(k\)'s SINR target constraint.
+
+    \item \(\gamma_k\): target SINR assigned to user \(k\).
+
+    \item \(\mathbf{C}_k\): effective interference-plus-power matrix seen while updating user \(k\)'s dual variable.
+
+    \item \(\sum_{j\ne k}\lambda_j\mathbf{h}_j\mathbf{h}_j^H\): weighted interference contribution from all other users.
+
+    \item \(\sum_{i=1}^{L}q_i\mathbf{X}_i\): weighted mixed-power-constraint contribution.
+
+    \item The denominator measures how strongly user \(k\)'s channel can support its SINR target under the current interference and power weights.
+
+    \item The update increases \(\lambda_k\) when achieving \(\gamma_k\) is harder.
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+\begin{frame}{Layer 8: Reducing the Cost of Updating \(\boldsymbol{\lambda}\)}
+\scriptsize
+
+\[
+\lambda_k
+\leftarrow
+\frac{\gamma_k}
+{\mathbf{h}_k^H\mathbf{D}_k\mathbf{C}_k^{-1}\mathbf{D}_k\mathbf{h}_k}
+\]
+
+\[
+\mathbf{C}_k
+=
+\mathbf{D}_k
+\left(
+\sum_{j\ne k}\lambda_j\mathbf{h}_j\mathbf{h}_j^H
+\right)
+\mathbf{D}_k
++
+\sum_{i=1}^{L}q_i\mathbf{X}_i
+\]
+
+\begin{itemize}
+    \item Directly computing \(\mathbf{C}_k^{-1}\) for every user is expensive.
+
+    \item A full matrix inverse has complexity:
+    \[
+        \mathcal{O}(N^3)
+    \]
+
+    \item Since the update is needed for all \(K\) users, this can become computationally costly.
+
+    \item The paper avoids repeated full inversions by updating the inverse recursively using the matrix inversion lemma.
+
+    \item This reduces the complexity to approximately:
+    \[
+        \mathcal{O}(KN^2)
+    \]
+
+    \item \(N\): number of transmit antennas.
+    \item \(K\): number of users.
+    \item \(\mathbf{C}_k^{-1}\): inverse matrix needed to update \(\lambda_k\).
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+\begin{frame}{Layer 8: Matrix Inversion Lemma Update}
+\scriptsize
+
+\[
+\mathbf{C}_{k+1}
+=
+\mathbf{C}_k
+-
+\lambda_{k+1}\mathbf{D}_{k+1}\mathbf{h}_{k+1}\mathbf{h}_{k+1}^{H}\mathbf{D}_{k+1}
++
+\lambda_k\mathbf{D}_k\mathbf{h}_k\mathbf{h}_k^{H}\mathbf{D}_k
+\]
+
+\[
+\mathbf{C}_{k+1}^{-1}
+=
+\mathbf{C}_k^{-1}
+-
+\mathbf{C}_k^{-1}\mathbf{U}_k
+\mathbf{G}_k^{-1}
+\mathbf{W}_k
+\mathbf{C}_k^{-1}
+\]
+
+\begin{itemize}
+    \item The paper avoids recomputing \(\mathbf{C}_{k+1}^{-1}\) from scratch.
+
+    \item \(\mathbf{C}_k\): matrix used when updating \(\lambda_k\).
+
+    \item \(\mathbf{C}_{k+1}\): next matrix used when updating \(\lambda_{k+1}\).
+
+    \item Since \(\mathbf{C}_{k+1}\) differs from \(\mathbf{C}_k\) by low-rank terms, its inverse can be updated efficiently.
+
+    \item \(\mathbf{U}_k\), \(\mathbf{W}_k\), and \(\mathbf{G}_k\): auxiliary matrices used in the matrix inversion lemma.
+
+    \item This reduces repeated inverse computation and makes Algorithm 1 computationally efficient.
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+%------------------------------------------------
+\begin{frame}{Layer 8: Updating \(\mathbf{q}\) with Projected Subgradient Ascent}
+\scriptsize
+
+\[
+\widetilde{\mathbf{q}}^{(n)}
+=
+\mathbf{q}^{(n)}
++
+\eta^{(n)}
+\left(
+\mathbf{q}^{(n)}-\mathbf{q}^{(n-1)}
+\right)
+\]
+
+\[
+\mathbf{q}^{(n+1)}
+=
+P_{\mathcal{Q}}
+\left(
+\widetilde{\mathbf{q}}^{(n)}
++
+b^{(n)}
+\mathbf{g}(\widetilde{\mathbf{q}}^{(n)})
+\right)
+\]
+
+\[
+\mathcal{Q}
+=
+\left\{
+\mathbf{q}\mid
+\sum_{i=1}^{L}q_i=1,\;
+\mathbf{q}\ge0
+\right\}
+\]
+
+\[
+P_{\mathcal{Q}}(\mathbf{a})
+=
+\arg\min_{\mathbf{q}\in\mathcal{Q}}
+\|\mathbf{q}-\mathbf{a}\|_2^2
+\]
+
+\begin{itemize}
+    \item \(\mathbf{q}\): dual weight vector for the mixed power constraints.
+    \item \(q_i\): weight assigned to power constraint \(i\).
+    \item \(\widetilde{\mathbf{q}}^{(n)}\): momentum-based extrapolated value of \(\mathbf{q}\).
+    \item \(\eta^{(n)}\): momentum coefficient that uses the previous movement direction.
+    \item \(b^{(n)}\): subgradient step size.
+    \item \(\mathbf{g}(\widetilde{\mathbf{q}}^{(n)})\): subgradient showing which power constraints are heavily used.
+    \item \(\mathcal{Q}\): feasible set requiring \(q_i\ge0\) and \(\sum_i q_i=1\).
+    \item \(P_{\mathcal{Q}}(\cdot)\): moves the updated vector back to the closest valid \(\mathbf{q}\).
+    \item This is needed because the subgradient step may produce negative entries or make \(\sum_iq_i\ne1\).
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+
+%------------------------------------------------
+\begin{frame}{Layer 8: Subgradient Used to Update \(\mathbf{q}\)}
+\scriptsize
+
+\[
+g_i(\widetilde{\mathbf{q}}^{(n)})
+=
+\sum_{k=1}^{K}
+\left(\mathbf{v}_k^{(n)}\right)^H
+\mathbf{X}_i
+\mathbf{v}_k^{(n)}
+\]
+
+\[
+\mathbf{v}_k
+=
+\sqrt{\delta_k}
+\mathbf{C}_k^{-1}
+\mathbf{D}_k\mathbf{h}_k
+\]
+
+\begin{itemize}
+    \item \(g_i(\widetilde{\mathbf{q}}^{(n)})\): subgradient component for power constraint \(i\).
+
+    \item It measures how much normalized power is used under constraint \(i\).
+
+    \item \(\mathbf{v}_k^{(n)}\): precoder for user \(k\) at inner iteration \(n\).
+
+    \item \(\mathbf{X}_i\): normalized matrix for power constraint \(i\).
+
+    \item \(\delta_k\): power coefficient used to construct the precoder.
+
+    \item \(\mathbf{C}_k^{-1}\mathbf{D}_k\mathbf{h}_k\): beamforming direction for user \(k\).
+
+    \item The update increases \(q_i\) when constraint \(i\) is heavily used.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 8: Algorithm 1 -- Computing \(P(\boldsymbol{\gamma})\)}
+\scriptsize
+
+\begin{enumerate}
+    \item Initialize \(\mathbf{q}^{(0)}\).
+
+    \item Compute the extrapolated point:
+    \[
+        \widetilde{\mathbf{q}}^{(n)}
+        =
+        \mathbf{q}^{(n)}
+        +
+        \eta^{(n)}
+        \left(\mathbf{q}^{(n)}-\mathbf{q}^{(n-1)}\right)
+    \]
+
+    \item Update \(\boldsymbol{\lambda}\) using the fixed-point rule:
+    \[
+        \lambda_k
+        \leftarrow
+        \frac{\gamma_k}
+        {\mathbf{h}_k^H\mathbf{D}_k\mathbf{C}_k^{-1}\mathbf{D}_k\mathbf{h}_k}
+    \]
+
+    \item Construct the precoders:
+    \[
+        \mathbf{v}_k
+        =
+        \sqrt{\delta_k}
+        \mathbf{C}_k^{-1}
+        \mathbf{D}_k\mathbf{h}_k
+    \]
+
+    \item Update \(\mathbf{q}\) by projected subgradient ascent.
+\end{enumerate}
+
+\begin{itemize}
+    \item Output: the value \(P(\boldsymbol{\gamma})\), the dual variables \(\mathbf{q}^{\star}\), \(\boldsymbol{\lambda}^{\star}\), and the corresponding precoders \(\mathbf{v}_k^{\star}\).
+    \item This algorithm is used every time the outer algorithm needs to check whether a target SINR vector \(\boldsymbol{\gamma}\) is feasible.
+\end{itemize}
+
+\end{frame}
+
+
+%------------------------------------------------
+\begin{frame}{Layer 10: BDGM -- Main Idea}
+\scriptsize
+
+\[
+\mathbf{z}
+=
+\log(1+\boldsymbol{\gamma})
+\]
+
+\[
+z_k=\log(1+\gamma_k),
+\quad k=1,\ldots,K
+\]
+
+\begin{itemize}
+    \item After Theorem 1, the paper must solve the SINR-allocation problem:
+    \[
+        \max_{\boldsymbol{\gamma}}
+        \sum_{k=1}^{K}w_kR_k(\gamma_k)
+    \]
+    subject to:
+    \[
+        P(\boldsymbol{\gamma})\le1,
+        \quad
+        \boldsymbol{\gamma}\ge\widehat{\boldsymbol{\rho}}.
+    \]
+
+    \item BDGM stands for \textbf{Bi-Direction Gradient Method}.
+
+    \item Instead of updating \(\boldsymbol{\gamma}\) directly, BDGM updates:
+    \[
+        \mathbf{z}=\log(1+\boldsymbol{\gamma}).
+    \]
+
+    \item \(\mathbf{z}=[z_1,\ldots,z_K]^T\): rate-domain SINR variable.
+
+    \item If the current point is feasible, BDGM moves forward to increase the weighted sum rate.
+
+    \item If the current point is infeasible, BDGM moves backward to reduce the required power.
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+\begin{frame}{Layer 10: BDGM Forward Step}
+\scriptsize
+
+\[
+P_z(\mathbf{z}^{(t)})\le 1
+\]
+
+\[
+\mathbf{z}^{(t+1)}
+=
+\mathbf{z}^{(t)}
++
+\alpha^{(t)}
+\nabla f_z(\mathbf{z}^{(t)})
+\]
+
+\[
+[\nabla f_z(\mathbf{z})]_k
+=
+w_k
+\left(
+1
+-
+\frac{Q^{-1}(\epsilon_k)}{\sqrt{M}}
+\frac{e^{-2z_k}}{\sqrt{1-e^{-2z_k}}}
+\right)
+\]
+
+\begin{itemize}
+    \item This step is used when the current SINR target is feasible.
+    \item \(t\): outer iteration index.
+    \item \(\mathbf{z}^{(t)}\): current rate-domain SINR vector.
+    \item \(P_z(\mathbf{z})=P(e^{\mathbf{z}}-\mathbf{1})\): required normalized power in the \(z\)-domain.
+    \item \(f_z(\mathbf{z})=f(e^{\mathbf{z}}-\mathbf{1})\): weighted sum-rate objective in the \(z\)-domain.
+    \item \(\alpha^{(t)}\): forward step size.
+    \item \(\nabla f_z(\mathbf{z}^{(t)})\): direction that increases weighted sum rate.
+    \item Intuition: if the current point is feasible, BDGM increases the users' SINR targets to improve rate.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 10: BDGM Backward Step}
+\scriptsize
+
+\[
+P_z(\mathbf{z}^{(t)})>1
+\]
+
+\[
+\mathbf{z}^{(t+1)}
+=
+\max
+\left(
+\mathbf{z}^{(t)}
+-
+\beta^{(t)}
+\nabla P_z(\mathbf{z}^{(t)}),
+\log(1+\widehat{\boldsymbol{\rho}})
+\right)
+\]
+
+\[
+[\nabla P_z(\mathbf{z})]_k
+=
+e^{z_k}
+\frac{\partial P(\boldsymbol{\gamma})}{\partial \gamma_k}
+\Bigg|_{\boldsymbol{\gamma}=e^{\mathbf{z}}-\mathbf{1}}
+\]
+
+\begin{itemize}
+    \item This step is used when the current SINR target is infeasible.
+    \item \(P_z(\mathbf{z}^{(t)})>1\): current target SINRs require more normalized power than allowed.
+    \item \(\beta^{(t)}\): backward step size.
+    \item \(\nabla P_z(\mathbf{z}^{(t)})\): direction in which required power increases fastest.
+    \item Moving in the negative gradient direction reduces the required power.
+    \item \(\log(1+\widehat{\boldsymbol{\rho}})\): lower bound that prevents violating QoS.
+    \item The max operation ensures the updated SINR target stays above the QoS threshold.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 10: BDGM Overall Procedure}
+\scriptsize
+
+\[
+\mathbf{z}=\log(1+\boldsymbol{\gamma})
+\]
+
+\begin{enumerate}
+    \item Start with an initial SINR target vector:
+    \[
+        \boldsymbol{\gamma}^{(0)}
+    \]
+
+    \item Convert it to the rate-domain variable:
+    \[
+        \mathbf{z}^{(0)}=\log(1+\boldsymbol{\gamma}^{(0)})
+    \]
+
+    \item At iteration \(t\), compute:
+    \[
+        P_z(\mathbf{z}^{(t)})
+    \]
+
+    \item If:
+    \[
+        P_z(\mathbf{z}^{(t)})\le1,
+    \]
+    use the forward step to increase the objective.
+
+    \item If:
+    \[
+        P_z(\mathbf{z}^{(t)})>1,
+    \]
+    use the backward step to recover feasibility.
+\end{enumerate}
+
+\begin{itemize}
+    \item BDGM alternates between rate improvement and power-feasibility correction.
+    \item The output is a SINR target vector that satisfies QoS and mixed power constraints.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 10: BDGM Convergence}
+\scriptsize
+
+\[
+P_z(\mathbf{z})\le1
+\quad \text{means feasible}
+\]
+
+\[
+P_z(\mathbf{z})>1
+\quad \text{means infeasible}
+\]
+
+\[
+\nabla f_z(\mathbf{z}^{\star})
+=
+\mu \nabla P_z(\mathbf{z}^{\star}),
+\quad \mu\ge0
+\]
+
+\begin{itemize}
+    \item The paper proves that BDGM converges to a point satisfying the KKT conditions of the SINR-allocation problem.
+
+    \item \(\mathbf{z}^{\star}\): limiting point reached by BDGM.
+
+    \item \(\nabla f_z(\mathbf{z}^{\star})\): gradient of the weighted sum-rate objective.
+
+    \item \(\nabla P_z(\mathbf{z}^{\star})\): gradient of the required normalized power function.
+
+    \item \(\mu\): non-negative multiplier for the feasibility boundary \(P_z(\mathbf{z})\le1\).
+
+    \item At convergence, the forward rate-improvement direction and backward feasibility-correction direction balance each other.
+
+    \item This means BDGM stops at a stationary feasible SINR allocation.
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Layer 11: Local Linearization of \(P(\boldsymbol{\gamma})\le1\)}
+\scriptsize
+
+\[
+P(\boldsymbol{\gamma}^{(t)})
++
+\nabla P(\boldsymbol{\gamma}^{(t)})^T
+\left(
+\boldsymbol{\gamma}-\boldsymbol{\gamma}^{(t)}
+\right)
+\le 1
+\]
+
+\begin{itemize}
+    \item IWF approximates the difficult constraint \(P(\boldsymbol{\gamma})\le1\) around the current point \(\boldsymbol{\gamma}^{(t)}\).
+
+    \item \(\boldsymbol{\gamma}^{(t)}\): SINR target vector at iteration \(t\).
+
+    \item \(\boldsymbol{\gamma}\): candidate SINR target vector for the next update.
+
+    \item \(P(\boldsymbol{\gamma}^{(t)})\): required normalized power at the current SINR target.
+
+    \item \(\nabla P(\boldsymbol{\gamma}^{(t)})\): gradient of required power with respect to SINR targets.
+
+    \item The linearized constraint estimates how the required power changes when moving from \(\boldsymbol{\gamma}^{(t)}\) to \(\boldsymbol{\gamma}\).
+
+    \item This turns the difficult feasibility constraint into a simpler linear constraint for the next update.
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+\begin{frame}{Layer 11: IWF Water-Filling Optimality Condition}
+\scriptsize
+
+\[
+c_k^{(t)}
+=
+\left[\nabla P(\boldsymbol{\gamma}^{(t)})\right]_k
+\]
+
+\[
+w_k
+\frac{\partial R_k(\widehat{\gamma}_k^{(t+1)})}
+{\partial \gamma_k}
+=
+\nu c_k^{(t)},
+\quad \forall k
+\]
+\[
+g^{(t)}
+=
+1
+-
+P(\boldsymbol{\gamma}^{(t)})
++
+\nabla P(\boldsymbol{\gamma}^{(t)})^T
+\boldsymbol{\gamma}^{(t)}
+\]
+
+\[
+    \nabla P(\boldsymbol{\gamma}^{(t)})^T
+    \widehat{\boldsymbol{\gamma}}^{(t+1)}
+    =
+    g^{(t)}
+\]
+
+\begin{itemize}
+    \item \(g^{(t)}\): available linearized power budget at iteration \(t\).
+    \item \(c_k^{(t)}\): marginal power cost of increasing user \(k\)'s SINR target at iteration \(t\).
+    \item \(\nu\ge0\): dual variable, interpreted as the water level.
+    \item \(w_k\): priority weight of user \(k\).
+    \item \(\frac{\partial R_k}{\partial\gamma_k}\): marginal FBL rate gain from increasing \(\gamma_k\).
+    \item The condition balances marginal rate gain against marginal power cost.
+    \item \(\nu\) is found by bisection so that the linearized power constraint is satisfied.
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+%------------------------------------------------
+\begin{frame}{Layer 11: Why Gradients Balance at the IWF Optimum}
+\scriptsize
+
+\[
+\max_{\boldsymbol{\gamma}\ge\widehat{\boldsymbol{\rho}}}
+f(\boldsymbol{\gamma})
+\quad
+\text{subject to}
+\quad
+\sum_{k=1}^{K}c_k^{(t)}\gamma_k \le g^{(t)}
+\]
+
+\[
+c_k^{(t)}
+=
+[\nabla P(\boldsymbol{\gamma}^{(t)})]_k
+\]
+
+\[
+\mathcal{L}
+=
+f(\boldsymbol{\gamma})
+-
+\nu
+\left(
+\sum_{k=1}^{K}c_k^{(t)}\gamma_k-g^{(t)}
+\right)
+\]
+
+\[
+\frac{\partial \mathcal{L}}{\partial \gamma_k}=0
+\]
+
+\[
+w_k\frac{\partial R_k(\gamma_k)}{\partial \gamma_k}
+=
+\nu c_k^{(t)}
+\]
+
+\begin{itemize}
+    \item \(f(\boldsymbol{\gamma})=\sum_{k=1}^{K}w_kR_k(\gamma_k)\): weighted FBL sum-rate.
+    \item The equality comes from setting the derivative of the Lagrangian to zero.
+    \item It means marginal weighted rate gain equals marginal power cost multiplied by the common price \(\nu\).
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+%------------------------------------------------
+\begin{frame}{Layer 11: Smoothed IWF Update}
+\scriptsize
+
+\[
+\boldsymbol{\gamma}^{(t+1)}
+=
+\eta^{(t)}
+\widehat{\boldsymbol{\gamma}}^{(t+1)}
++
+\left(1-\eta^{(t)}\right)
+\boldsymbol{\gamma}^{(t)}
+\]
+
+\begin{itemize}
+    \item \(\widehat{\boldsymbol{\gamma}}^{(t+1)}\): candidate SINR vector obtained from the water-filling subproblem.
+
+    \item \(\boldsymbol{\gamma}^{(t)}\): current SINR target vector.
+
+    \item \(\boldsymbol{\gamma}^{(t+1)}\): actual next SINR target vector used by the algorithm.
+
+    \item \(\eta^{(t)}\in(0,1]\): smoothing parameter or step size.
+
+    \item If \(\eta^{(t)}=1\), the algorithm fully moves to the water-filling solution.
+
+    \item If \(\eta^{(t)}<1\), the algorithm moves only partially toward the candidate solution.
+
+    \item This smoothing improves stability and helps maintain feasibility.
+\end{itemize}
+
+\end{frame}
+%------------------------------------------------
+\begin{frame}{Layer 11: IWF Overall Algorithm}
+\scriptsize
+
+\begin{enumerate}
+    \item Initialize the SINR target vector:
+    \[
+        \boldsymbol{\gamma}^{(0)}
+    \]
+
+    \item At iteration \(t\), compute:
+    \[
+        P(\boldsymbol{\gamma}^{(t)})
+        \quad \text{and} \quad
+        \nabla P(\boldsymbol{\gamma}^{(t)})
+    \]
+
+    \item Locally linearize the power feasibility constraint:
+    \[
+        P(\boldsymbol{\gamma})\le1
+    \]
+
+    \item Solve the water-filling subproblem to obtain:
+    \[
+        \widehat{\boldsymbol{\gamma}}^{(t+1)}
+    \]
+
+    \item Apply the smoothed update:
+    \[
+        \boldsymbol{\gamma}^{(t+1)}
+        =
+        \eta^{(t)}
+        \widehat{\boldsymbol{\gamma}}^{(t+1)}
+        +
+        (1-\eta^{(t)})
+        \boldsymbol{\gamma}^{(t)}
+    \]
+\end{enumerate}
+
+\begin{itemize}
+    \item \(P(\boldsymbol{\gamma}^{(t)})\): required normalized power at the current SINR target.
+    \item \(\nabla P(\boldsymbol{\gamma}^{(t)})\): marginal power cost of increasing SINR targets.
+    \item \(\widehat{\boldsymbol{\gamma}}^{(t+1)}\): candidate water-filling SINR vector.
+    \item \(\eta^{(t)}\): smoothing parameter.
+\end{itemize}
+
+\end{frame}
+
+
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+
+%------------------------------------------------
+%------------------------------------------------
+
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+%------------------------------------------------
+\end{document}

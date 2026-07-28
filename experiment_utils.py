@@ -17,10 +17,22 @@ METHOD_TAG_ALIASES = {
 
 OBJECTIVE_TAG_ALIASES = {
     "user_rate": "user",
-    "unweighted_sum_rate": "sum",
-    "remaining_bits_weighted_sum_rate": "bitsw",
-    "weighted_sum_rate": "bitsw",
+    "unweighted_sum_rate": "unwt",
+    "equal_priority_sum_rate": "unwt",
+    "uniform_weighted_sum_rate": "uniwt",
+    "remaining_bits_weighted_sum_rate": "rembits",
+    "weighted_sum_rate": "rembits",
+    "priority_weighted_sum_rate": "weighted",
+    "inverse_cnr_weighted_sum_rate": "invcnr",
+    "asynchronality_weighted_sum_rate": "async",
+    "projected_latency_gap_weighted_sum_rate": "async",
+    "projected_completion_latency_gap_weighted_sum_rate": "async",
+    "inverse_channel_gain_weighted_sum_rate": "invgain",
     "blended_network_rate": "blend",
+    "blended_uniform_weighted_sum_rate": "blenduni",
+    "blended_inverse_cnr_weighted_sum_rate": "blendcnr",
+    "blended_remaining_bits_weighted_sum_rate": "blendbits",
+    "blended_inverse_channel_gain_weighted_sum_rate": "blendgain",
 }
 
 SCOPE_TAG_ALIASES = {

@@ -6,6 +6,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from scipy.stats import norm
 
+from blocklength_search import build_n_search_config, run_n_frontier_search
+from advanced_methods_common import ensure_blocks_up_to
+from config_loader import (
+    ASYNCHRONALITY_WEIGHTED_SUM_RATE_OBJECTIVE,
+    INVERSE_CNR_WEIGHTED_SUM_RATE_OBJECTIVE,
+    resolve_uplink_objective_mode,
+)
 from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE, build_experiment_scenario
 from precoder_models import (
     DEVICE,
@@ -63,6 +70,115 @@ def resolve_convergence_precoder_update_mode(raw_mode: str) -> str:
             f"Unknown convergence precoder update mode '{raw_mode}'. Expected one of: {known}"
         )
     return mode
+
+
+def _uplink_channel_cnr_linear(H_kl: np.ndarray, sigma2: float) -> float:
+    H = np.asarray(H_kl, dtype=np.complex128)
+    return float(np.linalg.norm(H, ord="fro") ** 2) / max(float(sigma2), 1e-30)
+
+
+def _uplink_committed_latency_before_block(
+    uplinksystem,
+    user: int,
+    next_block_index: int,
+) -> float:
+    k = int(user)
+    cutoff = max(min(int(next_block_index), len(uplinksystem.n_kl[k])), 0)
+    committed_symbols = float(sum(int(v) for v in uplinksystem.n_kl[k][:cutoff]))
+    return committed_symbols / max(float(uplinksystem.fs[k]), 1e-30)
+
+
+def _uplink_supported_bits_proxy(
+    uplinksystem,
+    sim_cfg: dict,
+    user: int,
+    next_block_index: int,
+) -> int:
+    k = int(user)
+    ensure_blocks_up_to(uplinksystem, int(next_block_index))
+    H_kl = np.asarray(uplinksystem.H[k][int(next_block_index)], dtype=np.complex128)
+    F_kl = np.asarray(uplinksystem.F[k][int(next_block_index)], dtype=np.complex128)
+    n_full = int(uplinksystem.T[k])
+    noise_cov = build_uplink_rate_covariance(
+        uplinksystem,
+        sim_cfg,
+        k,
+        int(next_block_index),
+    )
+    rate = _compute_R_fbl_np(
+        H_kl,
+        F_kl,
+        float(uplinksystem.sigma2[k]),
+        float(uplinksystem.epsilon[k]),
+        int(n_full),
+        noise_cov,
+    )
+    supported_bits = int(np.floor(max(float(rate), 0.0) * float(max(n_full, 1))))
+    return max(supported_bits, 1)
+
+
+def _resolve_uplink_objective_rate_weight(
+    uplinksystem,
+    sim_cfg: dict,
+    *,
+    user: int,
+    block: int,
+    remaining_bits_by_user: list[int] | np.ndarray | None = None,
+    block_index_by_user: list[int] | np.ndarray | None = None,
+) -> float:
+    objective_mode = resolve_uplink_objective_mode(sim_cfg.get("uplink_objective_mode", "unweighted_sum_rate"))
+    if objective_mode == ASYNCHRONALITY_WEIGHTED_SUM_RATE_OBJECTIVE:
+        if remaining_bits_by_user is None:
+            return 1.0
+        remaining_bits = np.asarray(remaining_bits_by_user, dtype=int)
+        active_users = [int(k) for k in range(int(uplinksystem.K)) if int(remaining_bits[int(k)]) > 0]
+        if len(active_users) <= 0 or int(user) not in active_users:
+            return 1.0
+        if block_index_by_user is None:
+            next_block_indices = np.full(int(uplinksystem.K), int(block), dtype=int)
+        else:
+            next_block_indices = np.asarray(block_index_by_user, dtype=int)
+        max_required_block = int(max(int(next_block_indices[int(k)]) for k in active_users))
+        ensure_blocks_up_to(uplinksystem, max_required_block)
+
+        min_weight = float(sim_cfg.get("minimum_user_weight", 0.25))
+        exponent = float(sim_cfg.get("remaining_bits_weight_power", 1.0))
+        projected_latencies: dict[int, float] = {}
+        for k in active_users:
+            next_block = int(next_block_indices[int(k)])
+            committed_latency = _uplink_committed_latency_before_block(uplinksystem, int(k), next_block)
+            supported_bits = _uplink_supported_bits_proxy(uplinksystem, sim_cfg, int(k), next_block)
+            block_duration = float(uplinksystem.T[int(k)]) / max(float(uplinksystem.fs[int(k)]), 1e-30)
+            projected_latencies[int(k)] = committed_latency + (
+                float(max(int(remaining_bits[int(k)]), 0)) / max(float(supported_bits), 1.0)
+            ) * block_duration
+
+        min_latency = min(projected_latencies.values()) if projected_latencies else 1.0
+        denom_latency = max(float(min_latency), 1e-30)
+        raw_scores = {
+            int(k): float(projected_latencies[int(k)] / denom_latency)
+            for k in active_users
+        }
+        max_score = max(raw_scores.values()) if raw_scores else 1.0
+        denom_score = max(float(max_score), 1e-30)
+        normalized = (float(raw_scores[int(user)]) / denom_score) ** exponent
+        return float(min_weight + (1.0 - min_weight) * normalized)
+
+    if objective_mode != INVERSE_CNR_WEIGHTED_SUM_RATE_OBJECTIVE:
+        return 1.0
+
+    ensure_blocks_up_to(uplinksystem, int(block))
+    inverse_cnr_weights: list[float] = []
+    for k in range(int(uplinksystem.K)):
+        cnr_linear = _uplink_channel_cnr_linear(
+            np.asarray(uplinksystem.H[int(k)][int(block)], dtype=np.complex64),
+            float(uplinksystem.sigma2[int(k)]),
+        )
+        inverse_cnr_weights.append(1.0 / max(cnr_linear, 1e-30))
+
+    mean_weight = float(np.mean(inverse_cnr_weights)) if inverse_cnr_weights else 1.0
+    normalized = inverse_cnr_weights[int(user)] / max(mean_weight, 1e-30)
+    return float(normalized)
 
 
 def _constraint_violation_activation(value: torch.Tensor, loss_form: str) -> torch.Tensor:
@@ -140,6 +256,7 @@ class LagrangianLoss(nn.Module):
         constraint_loss_form: str = "plain_lagrangian",
         augmented_lagrangian_rho_rate: float = 0.0,
         augmented_lagrangian_rho_power: float = 0.0,
+        rate_weight: float = 1.0,
     ):
         super().__init__()
         self.H_kl = H_kl
@@ -152,6 +269,7 @@ class LagrangianLoss(nn.Module):
         self.constraint_loss_form = resolve_constraint_loss_form(constraint_loss_form)
         self.augmented_lagrangian_rho_rate = float(augmented_lagrangian_rho_rate)
         self.augmented_lagrangian_rho_power = float(augmented_lagrangian_rho_power)
+        self.rate_weight = float(rate_weight)
 
     def set_blocklength(self, n_kl: int):
         self.n_kl = int(n_kl)
@@ -209,7 +327,7 @@ class LagrangianLoss(nn.Module):
         rate_constraint_term = _constraint_violation_activation(rate_violation, self.constraint_loss_form)
         power_constraint_term = _constraint_violation_activation(power_violation, self.constraint_loss_form)
 
-        loss = (-R
+        loss = (-(float(self.rate_weight) * R)
                 + float(lambda_rate) * rate_constraint_term
                 + float(lambda_power) * power_constraint_term)
         if self.constraint_loss_form == "augmented_lagrangian":
@@ -502,6 +620,8 @@ def optimize_subblocklength_precoder(
     precoder_param: torch.nn.Parameter | None = None,
     interference_F_snapshot=None,
     bit_budget_role: str = "payload_completion",
+    remaining_bits_by_user: list[int] | np.ndarray | None = None,
+    block_index_by_user: list[int] | np.ndarray | None = None,
 ):
     update_mode = resolve_convergence_precoder_update_mode(
         sim_cfg.get("convergence_precoder_update_mode", "precoder_net")
@@ -570,6 +690,14 @@ def optimize_subblocklength_precoder(
     )
     augmented_lagrangian_rho_rate = float(sim_cfg.get("augmented_lagrangian_rho_rate", 0.0))
     augmented_lagrangian_rho_power = float(sim_cfg.get("augmented_lagrangian_rho_power", 0.0))
+    objective_rate_weight = _resolve_uplink_objective_rate_weight(
+        uplinksystem,
+        sim_cfg,
+        user=int(user),
+        block=int(block),
+        remaining_bits_by_user=remaining_bits_by_user,
+        block_index_by_user=block_index_by_user,
+    )
 
     lambda_rate = float(lambda_rate_0)
     lambda_power = float(lambda_power_0)
@@ -581,6 +709,7 @@ def optimize_subblocklength_precoder(
         constraint_loss_form=constraint_loss_form,
         augmented_lagrangian_rho_rate=augmented_lagrangian_rho_rate,
         augmented_lagrangian_rho_power=augmented_lagrangian_rho_power,
+        rate_weight=objective_rate_weight,
     ).to(DEVICE)
 
     results = []
@@ -732,141 +861,139 @@ def optimize_subblocklength_precoder(
             user=int(user),
             block=int(block),
             served_bits=int(B_used),
-            n_start=int(n_kl_max - n_kl_step),
+            direction=str(sim_cfg.get("n_search_direction", "descending")),
+            strategy=str(sim_cfg.get("n_search_strategy", "fixed_step")),
             n_min=int(n_kl_min),
         )
     )
-    n_kl = n_kl_max - n_kl_step
-
-    while n_kl >= n_kl_min:
-        if bits_left_after_current_request != 0:
-            if is_fixed_target_block:
-                print(
-                    format_log_line(
-                        "[UL Convergence Reduction]",
-                        user=int(user),
-                        block=int(block),
-                        n_kl=int(n_kl),
-                        status="stop_partial_fixed_target",
-                    )
-                )
-            else:
-                print(
-                    format_log_line(
-                        "[UL Convergence Reduction]",
-                        user=int(user),
-                        block=int(block),
-                        n_kl=int(n_kl),
-                        status="stop_partial_payload",
-                    )
-                )
-            break
-        should_print_candidate = (
-            n_kl == n_kl_max - n_kl_step
-            or n_kl == n_kl_min
-            or ((n_kl_max - n_kl) % max(int(n_kl_step) * int(reduced_n_kl_log_interval), 1) == 0)
+    if bits_left_after_current_request != 0:
+        print(
+            format_log_line(
+                "[UL Convergence Reduction]",
+                user=int(user),
+                block=int(block),
+                status="stop_partial_fixed_target" if is_fixed_target_block else "stop_partial_payload",
+            )
         )
-        if should_print_candidate:
+    else:
+        search_cfg = build_n_search_config(
+            n_min=int(n_kl_min),
+            n_max=int(n_kl_max),
+            fine_step=int(n_kl_step),
+            direction=sim_cfg.get("n_search_direction", "descending"),
+            strategy=sim_cfg.get("n_search_strategy", "fixed_step"),
+            coarse_step=sim_cfg.get("n_search_coarse_step", int(n_kl_step)),
+            exponential_factor=sim_cfg.get("n_search_exponential_factor", 2),
+        )
+
+        def _evaluate_reduced_n(candidate_n: int, stage_name: str) -> dict:
+            nonlocal lambda_rate, lambda_power
             print(
                 format_log_line(
                     "[UL Convergence Solve]",
                     user=int(user),
                     block=int(block),
-                    stage="reduced_n",
-                    n_kl=int(n_kl),
+                    stage=f"reduced_n_{stage_name}",
+                    n_kl=int(candidate_n),
                     served_bits=int(B_used),
                 )
             )
-        if update_mode == "direct_precoder":
-            model_checkpoint = precoder_param.detach().cpu().clone()
-        else:
-            model_checkpoint = {
-                key: value.detach().cpu().clone()
-                for key, value in precoder_net.state_dict().items()
-            }
-        optimizer_checkpoint = copy.deepcopy(optimizer.state_dict())
-        lambda_rate_checkpoint = float(lambda_rate)
-        lambda_power_checkpoint = float(lambda_power)
+            if update_mode == "direct_precoder":
+                model_checkpoint = precoder_param.detach().cpu().clone()
+            else:
+                model_checkpoint = {
+                    key: value.detach().cpu().clone()
+                    for key, value in precoder_net.state_dict().items()
+                }
+            optimizer_checkpoint = copy.deepcopy(optimizer.state_dict())
+            lambda_rate_checkpoint = float(lambda_rate)
+            lambda_power_checkpoint = float(lambda_power)
 
-        loss_fn.set_blocklength(int(n_kl))
-        loss_fn.set_payload(float(B_used))
-        out = optimize_precoder_for_nl(
-            precoder_net=precoder_net,
-            loss_fn=loss_fn,
-            Nt=Nt,
-            dk=dk,
-            max_epochs=max_epochs,
-            lambda_rate=lambda_rate,
-            lambda_power=lambda_power,
-            lr_rate=lr_rate,
-            lr_power=lr_power,
-            optimizer=optimizer,
-            kkt_primal_tol=kkt_primal_tol,
-            kkt_complementarity_tol=kkt_complementarity_tol,
-            kkt_stationarity_tol=kkt_stationarity_tol,
-            print_every_epoch=int(sim_cfg.get("print_every_epoch", 1)),
-            verbose=bool(should_print_candidate),
-            log_context={"user": int(user), "block": int(block), "n_kl": int(n_kl)},
-            precoder_param=precoder_param,
-            update_mode=update_mode,
-        )
-        lambda_rate = out["lambda_rate"]
-        lambda_power = out["lambda_power"]
-
-        feasible = (out["rate_gap"] <= 0.0) and (out["power_gap"] <= 0.0)
-        if should_print_candidate:
+            loss_fn.set_blocklength(int(candidate_n))
+            loss_fn.set_payload(float(B_used))
+            out = optimize_precoder_for_nl(
+                precoder_net=precoder_net,
+                loss_fn=loss_fn,
+                Nt=Nt,
+                dk=dk,
+                max_epochs=max_epochs,
+                lambda_rate=lambda_rate,
+                lambda_power=lambda_power,
+                lr_rate=lr_rate,
+                lr_power=lr_power,
+                optimizer=optimizer,
+                kkt_primal_tol=kkt_primal_tol,
+                kkt_complementarity_tol=kkt_complementarity_tol,
+                kkt_stationarity_tol=kkt_stationarity_tol,
+                print_every_epoch=int(sim_cfg.get("print_every_epoch", 1)),
+                verbose=True,
+                log_context={"user": int(user), "block": int(block), "n_kl": int(candidate_n)},
+                precoder_param=precoder_param,
+                update_mode=update_mode,
+            )
+            lambda_rate = out["lambda_rate"]
+            lambda_power = out["lambda_power"]
+            feasible = (out["rate_gap"] <= 0.0) and (out["power_gap"] <= 0.0)
             print(
                 format_log_line(
                     "[UL Convergence Candidate]",
                     user=int(user),
                     block=int(block),
-                    n_kl=int(n_kl),
+                    n_kl=int(candidate_n),
+                    search_stage=str(stage_name),
                     achieved_rate=float(out["R_fbl"]),
                     rate_gap=float(out["rate_gap"]),
                     power_gap=float(out["power_gap"]),
                     status="accepted" if feasible else "rejected",
                 )
             )
-        if not feasible:
-            if update_mode == "direct_precoder":
-                with torch.no_grad():
-                    precoder_param.copy_(model_checkpoint.to(device=DEVICE, dtype=precoder_param.dtype))
-            else:
-                precoder_net.load_state_dict(model_checkpoint)
-            optimizer.load_state_dict(optimizer_checkpoint)
-            lambda_rate = float(lambda_rate_checkpoint)
-            lambda_power = float(lambda_power_checkpoint)
+            if not feasible:
+                if update_mode == "direct_precoder":
+                    with torch.no_grad():
+                        precoder_param.copy_(model_checkpoint.to(device=DEVICE, dtype=precoder_param.dtype))
+                else:
+                    precoder_net.load_state_dict(model_checkpoint)
+                optimizer.load_state_dict(optimizer_checkpoint)
+                lambda_rate = float(lambda_rate_checkpoint)
+                lambda_power = float(lambda_power_checkpoint)
+            return {
+                "feasible": bool(feasible),
+                "solver_output": out,
+            }
+
+        reduction_search = run_n_frontier_search(search_cfg, _evaluate_reduced_n)
+        for accepted in reduction_search["accepted"]:
+            n_candidate = int(accepted["n_kl"])
+            out = accepted["result"]["solver_output"]
+            results.append({
+                "n_kl": int(n_candidate),
+                "n": int(n_candidate),
+                "B_l": int(B_used),
+                "Bits per sub-block length B/n_kl": float(B_used) / float(n_candidate),
+                "required_R_fbl": float(B_used) / float(max(int(n_candidate), 1)),
+                "achieved_R_fbl": float(out["R_fbl"]),
+                "F": out["F"],
+                "R_fbl": float(out["R_fbl"]),
+                "F_power": float(out["F_power"]),
+                "lambda_rate": float(out["lambda_rate"]),
+                "lambda_power": float(out["lambda_power"]),
+                "loss_curve": out["loss_curve"],
+                "kkt_history": copy.deepcopy(out.get("kkt_history", [])),
+                "solve_status": out.get("solve_status", "unknown"),
+                "final_primal_residual": float(out.get("final_primal_residual", 0.0)),
+                "final_complementarity_residual": float(out.get("final_complementarity_residual", 0.0)),
+            })
+        frontier_rejected = reduction_search.get("frontier_rejected")
+        if frontier_rejected is not None:
             print(
                 format_log_line(
                     "[UL Convergence Reduction]",
                     user=int(user),
                     block=int(block),
-                    n_kl=int(n_kl),
+                    n_kl=int(frontier_rejected["n_kl"]),
                     status="stop_infeasible",
                 )
             )
-            break
-
-        results.append({
-            "n_kl": int(n_kl),
-            "n": int(n_kl),
-            "B_l": int(B_used),
-            "Bits per sub-block length B/n_kl": float(B_used) / float(n_kl),
-            "required_R_fbl": float(B_used) / float(max(int(n_kl), 1)),
-            "achieved_R_fbl": float(out["R_fbl"]),
-            "F": out["F"],
-            "R_fbl": float(out["R_fbl"]),
-            "F_power": float(out["F_power"]),
-            "lambda_rate": float(lambda_rate),
-            "lambda_power": float(lambda_power),
-            "loss_curve": out["loss_curve"],
-            "kkt_history": copy.deepcopy(out.get("kkt_history", [])),
-            "solve_status": out.get("solve_status", "unknown"),
-            "final_primal_residual": float(out.get("final_primal_residual", 0.0)),
-            "final_complementarity_residual": float(out.get("final_complementarity_residual", 0.0)),
-        })
-
-        n_kl -= n_kl_step
 
     if len(results) > 0:
         best_result = results[-1]
@@ -936,6 +1063,8 @@ def dynamic_subblocklength_precoder_training(
     lambda_rate_0 = float(sim_cfg["initial_lambda_rate_constraint"])
     lambda_power_0 = float(sim_cfg["initial_lambda_power_constraint"])
     user_precoder_models: list[nn.Module] = []
+    remaining_bits_by_user = [int(v) for v in uplinksystem.B]
+    block_index_by_user = [0 for _ in range(K)]
 
     for k in range(K):
         print(
@@ -983,6 +1112,7 @@ def dynamic_subblocklength_precoder_training(
             # ensure block exists
             if ell >= len(uplinksystem.H[k]):
                 uplinksystem.add_block(k)
+            block_index_by_user[k] = int(ell)
 
             print(
                 format_log_line(
@@ -1016,6 +1146,8 @@ def dynamic_subblocklength_precoder_training(
                 optimizer=user_optimizer,
                 precoder_param=precoder_param,
                 interference_F_snapshot=interference_F_snapshot,
+                remaining_bits_by_user=remaining_bits_by_user,
+                block_index_by_user=block_index_by_user,
             )
 
             if len(S) == 0 or B_used <= 0:
@@ -1052,6 +1184,7 @@ def dynamic_subblocklength_precoder_training(
             B_kl_star[k].append(int(B_kl))
 
             B_rem -= B_kl
+            remaining_bits_by_user[k] = int(B_rem)
             print(
                 format_log_line(
                     "[UL Convergence Allocation]",
@@ -1068,6 +1201,7 @@ def dynamic_subblocklength_precoder_training(
             if B_rem > 0:
                 ell += 1
                 L_out[k] = ell + 1
+                block_index_by_user[k] = int(ell)
 
         # write back to system bookkeeping (optional)
         uplinksystem.L[k] = int(L_out[k])
@@ -1137,6 +1271,7 @@ def dynamic_fixed_target_precoder_training(
     lambda_rate_0 = float(sim_cfg["initial_lambda_rate_constraint"])
     lambda_power_0 = float(sim_cfg["initial_lambda_power_constraint"])
     user_precoder_models: list[nn.Module] = []
+    block_index_by_user = [0 for _ in range(K)]
 
     for k in range(K):
         print(
@@ -1175,6 +1310,7 @@ def dynamic_fixed_target_precoder_training(
         for ell in range(num_blocks):
             while len(uplinksystem.H[k]) <= ell:
                 uplinksystem.add_block(k)
+            block_index_by_user = [int(ell) for _ in range(K)]
 
             target_bits = int(block_targets[k, ell])
             print(
@@ -1206,6 +1342,8 @@ def dynamic_fixed_target_precoder_training(
                 precoder_param=precoder_param,
                 interference_F_snapshot=interference_F_snapshot,
                 bit_budget_role="fixed_block_targets",
+                remaining_bits_by_user=block_targets[:, ell].astype(int).tolist(),
+                block_index_by_user=block_index_by_user,
             )
 
             target_bits_star[k].append(int(target_bits))
@@ -1542,40 +1680,70 @@ def dynamic_subblocklength_precoder_testing(
             # ==========================================================
             best_n = int(T)
             best_R = float(R_T)
-
-            n_kl = T - n_kl_step
-            while n_kl >= n_kl_min:
-                if int(B_used) < int(B_rem):
-                    print(f"Not reducing n_kl since this block only served a partial payload (n_kl = {n_kl})")
-                    break
-                R = _compute_R_fbl_np(
-                    H_kl, F_fix, sigma2, epsilon, n_kl=n_kl,
-                    noise_plus_interference_cov=noise_plus_interference_cov
+            if int(B_used) < int(B_rem):
+                print("Not reducing n_kl since this block only served a partial payload.")
+            else:
+                search_cfg = build_n_search_config(
+                    n_min=int(n_kl_min),
+                    n_max=int(T),
+                    fine_step=int(n_kl_step),
+                    direction=sim_cfg.get("n_search_direction", "descending"),
+                    strategy=sim_cfg.get("n_search_strategy", "fixed_step"),
+                    coarse_step=sim_cfg.get("n_search_coarse_step", int(n_kl_step)),
+                    exponential_factor=sim_cfg.get("n_search_exponential_factor", 2),
                 )
-                rate_violation = (B_used / float(n_kl)) - R
-
-                print(f"Test n_kl={n_kl}: R_fbl={R}, rate_violation={rate_violation}")
-
-                if rate_violation <= 0.0:
-                    best_n = int(n_kl)
-                    best_R = float(R)
-
+                reduction_search = run_n_frontier_search(
+                    search_cfg,
+                    lambda candidate_n, stage_name: {
+                        "feasible": (
+                            float(B_used) / float(max(int(candidate_n), 1))
+                        ) <= _compute_R_fbl_np(
+                            H_kl,
+                            F_fix,
+                            sigma2,
+                            epsilon,
+                            n_kl=int(candidate_n),
+                            noise_plus_interference_cov=noise_plus_interference_cov,
+                        ),
+                        "R_candidate": _compute_R_fbl_np(
+                            H_kl,
+                            F_fix,
+                            sigma2,
+                            epsilon,
+                            n_kl=int(candidate_n),
+                            noise_plus_interference_cov=noise_plus_interference_cov,
+                        ),
+                        "search_stage": str(stage_name),
+                    },
+                )
+                for accepted in reduction_search["accepted"]:
+                    best_n = int(accepted["n_kl"])
+                    best_R = float(accepted["result"]["R_candidate"])
+                    print(
+                        f"Test n_kl={best_n}: R_fbl={best_R}, "
+                        f"search_stage={accepted['result']['search_stage']}, rate_violation=0.0"
+                    )
                     S_block.append({
-                        "n_kl": int(n_kl),
-                        "n": int(n_kl),
+                        "n_kl": int(best_n),
+                        "n": int(best_n),
                         "B_l": int(B_used),
-                        "Bits per sub-block length B/n_kl": float(B_used) / float(n_kl),
+                        "Bits per sub-block length B/n_kl": float(B_used) / float(best_n),
                         "F": F_fix_t,
-                        "R_fbl": float(R),
+                        "R_fbl": float(best_R),
                         "F_power": float(np.linalg.norm(F_fix, "fro") ** 2),
                         "lambda_rate": 0.0,
                         "lambda_power": 0.0,
                         "loss_curve": [],
                     })
-
-                    n_kl -= n_kl_step
-                else:
-                    break
+                rejected = reduction_search.get("frontier_rejected")
+                if rejected is not None:
+                    rejected_n = int(rejected["n_kl"])
+                    rejected_R = float(rejected["result"]["R_candidate"])
+                    rejected_gap = (float(B_used) / float(max(rejected_n, 1))) - rejected_R
+                    print(
+                        f"Test n_kl={rejected_n}: R_fbl={rejected_R}, "
+                        f"search_stage={rejected['result']['search_stage']}, rate_violation={rejected_gap}"
+                    )
 
             print(f">>> Chosen block {ell}: n_kl={best_n}, B_used={B_used}, R_fbl={best_R}")
 

@@ -25,7 +25,13 @@ from advanced_methods_common import (
     estimate_initial_random_precoder_schedule,
     estimate_initial_random_precoder_schedule_for_scenario as shared_estimate_initial_random_precoder_schedule_for_scenario,
 )
-from config_loader import get_config
+from config_loader import (
+    ASYNCHRONALITY_WEIGHTED_SUM_RATE_OBJECTIVE,
+    INVERSE_CNR_WEIGHTED_SUM_RATE_OBJECTIVE,
+    UNWEIGHTED_SUM_RATE_OBJECTIVE,
+    get_config,
+    resolve_uplink_objective_mode,
+)
 from experiment_scenarios import (
     FIXED_BLOCK_TARGETS_MODE,
     PAYLOAD_COMPLETION_MODE,
@@ -39,12 +45,56 @@ from precoder_models import (
     infer_precoder_numpy_with_blocklength_and_sigma,
     infer_precoder_torch_with_blocklength_and_sigma,
 )
+from blocklength_search import build_fixed_step_n_candidates, build_n_search_config, run_n_frontier_search
 from terminal_logging import format_log_line, format_progress_log_line
-from uplink_rate_model import build_uplink_rate_covariance
+from uplink_rate_model import build_uplink_rate_covariance, uses_uplink_interference
+from Optimizer_per_block import _uplink_supported_bits_proxy
 
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
 MONTE_CARLO_ROLLOUT_WEIGHTING_MODES = {"phase_balanced", "uniform_per_query"}
 _Q_INV_CACHE: dict[tuple[str, int | None, float], torch.Tensor] = {}
+
+
+def _build_monte_carlo_training_search_cfg(
+    sim_cfg: dict[str, Any],
+    *,
+    n_min: int,
+    n_max: int,
+) -> dict[str, int | str]:
+    return build_n_search_config(
+        n_min=int(n_min),
+        n_max=int(n_max),
+        fine_step=int(sim_cfg["n_kl_step"]),
+        direction=sim_cfg.get("n_search_direction", "descending"),
+        strategy=sim_cfg.get("n_search_strategy", "fixed_step"),
+        coarse_step=sim_cfg.get("n_search_coarse_step", int(sim_cfg["n_kl_step"])),
+        exponential_factor=sim_cfg.get("n_search_exponential_factor", 2),
+        allow_only_fixed_step=True,
+    )
+
+
+def _build_monte_carlo_test_search_cfg(
+    sim_cfg: dict[str, Any],
+    *,
+    n_min: int,
+    n_max: int,
+) -> dict[str, int | str]:
+    return build_n_search_config(
+        n_min=int(n_min),
+        n_max=int(n_max),
+        fine_step=int(sim_cfg["n_kl_step"]),
+        direction=sim_cfg.get("monte_carlo_test_n_search_direction", sim_cfg.get("n_search_direction", "descending")),
+        strategy=sim_cfg.get("monte_carlo_test_n_search_strategy", sim_cfg.get("n_search_strategy", "fixed_step")),
+        coarse_step=sim_cfg.get(
+            "monte_carlo_test_n_search_coarse_step",
+            sim_cfg.get("n_search_coarse_step", int(sim_cfg["n_kl_step"])),
+        ),
+        exponential_factor=sim_cfg.get(
+            "monte_carlo_test_n_search_exponential_factor",
+            sim_cfg.get("n_search_exponential_factor", 2),
+        ),
+        allow_only_fixed_step=False,
+    )
 
 
 def _to_complex_numpy(x) -> np.ndarray:
@@ -442,6 +492,76 @@ def _resolve_uplink_rollout_phase_weights(sim_cfg: dict[str, Any]) -> dict[str, 
     }
 
 
+def _uplink_block_objective_weights(
+    system: UplinkSystem,
+    sim_cfg: dict[str, Any],
+    *,
+    block: int,
+    active_mask: Sequence[int | float],
+    remaining_bits_by_user: Sequence[int] | None = None,
+    block_index_by_user: Sequence[int] | None = None,
+) -> list[float]:
+    objective_mode = resolve_uplink_objective_mode(
+        sim_cfg.get("uplink_objective_mode", UNWEIGHTED_SUM_RATE_OBJECTIVE)
+    )
+    weights = [1.0 for _ in range(int(system.K))]
+    if objective_mode == ASYNCHRONALITY_WEIGHTED_SUM_RATE_OBJECTIVE:
+        if remaining_bits_by_user is None:
+            return weights
+        remaining_bits = np.asarray(remaining_bits_by_user, dtype=int)
+        if block_index_by_user is None:
+            next_block_indices = np.full(int(system.K), int(block), dtype=int)
+        else:
+            next_block_indices = np.asarray(block_index_by_user, dtype=int)
+        active_users = [int(k) for k, flag in enumerate(active_mask) if float(flag) > 0.5 and int(remaining_bits[int(k)]) > 0]
+        if len(active_users) <= 0:
+            return weights
+        ensure_blocks_up_to(system, int(np.max(next_block_indices[active_users])))
+        min_weight = float(sim_cfg.get("minimum_user_weight", 0.25))
+        exponent = float(sim_cfg.get("remaining_bits_weight_power", 1.0))
+        projected_latencies: dict[int, float] = {}
+        for k in active_users:
+            next_block = int(next_block_indices[int(k)])
+            cutoff = max(min(int(next_block), len(system.n_kl[int(k)])), 0)
+            committed_symbols = float(sum(int(v) for v in system.n_kl[int(k)][:cutoff]))
+            committed_latency = committed_symbols / max(float(system.fs[int(k)]), 1e-30)
+            supported_bits = _uplink_supported_bits_proxy(system, sim_cfg, int(k), next_block)
+            block_duration = float(system.T[int(k)]) / max(float(system.fs[int(k)]), 1e-30)
+            projected_latencies[int(k)] = committed_latency + (
+                float(max(int(remaining_bits[int(k)]), 0)) / max(float(supported_bits), 1.0)
+            ) * block_duration
+        min_latency = min(projected_latencies.values()) if projected_latencies else 1.0
+        denom_latency = max(float(min_latency), 1e-30)
+        raw_scores = {
+            int(k): float(projected_latencies[int(k)] / denom_latency)
+            for k in active_users
+        }
+        max_score = max(raw_scores.values()) if raw_scores else 1.0
+        denom_score = max(float(max_score), 1e-30)
+        for k in active_users:
+            normalized = (float(raw_scores[int(k)]) / denom_score) ** exponent
+            weights[int(k)] = float(min_weight + (1.0 - min_weight) * normalized)
+        return weights
+
+    if objective_mode != INVERSE_CNR_WEIGHTED_SUM_RATE_OBJECTIVE:
+        return weights
+
+    active_users = [int(k) for k, flag in enumerate(active_mask) if float(flag) > 0.5]
+    if len(active_users) <= 0:
+        return weights
+
+    inverse_cnr_values: dict[int, float] = {}
+    for k in active_users:
+        H_kl = np.asarray(system.H[int(k)][int(block)], dtype=np.complex128)
+        cnr_linear = float(np.linalg.norm(H_kl, ord="fro") ** 2) / max(float(system.sigma2[int(k)]), 1e-30)
+        inverse_cnr_values[int(k)] = 1.0 / max(cnr_linear, 1e-30)
+
+    mean_inverse_cnr = float(np.mean(list(inverse_cnr_values.values())))
+    for k in active_users:
+        weights[int(k)] = float(inverse_cnr_values[int(k)] / max(mean_inverse_cnr, 1e-30))
+    return weights
+
+
 def _resolve_uplink_rollout_query_weighting_mode(sim_cfg: dict[str, Any]) -> str:
     aliases = {
         "phase_balanced": "phase_balanced",
@@ -505,6 +625,50 @@ def _replace_snapshot_block(
     return replaced
 
 
+def _count_uplink_forward_call(
+    evaluation_cost_counters: dict[str, Any] | None,
+    user: int,
+) -> None:
+    if evaluation_cost_counters is None:
+        return
+    evaluation_cost_counters["total_forward_calls"] = int(
+        evaluation_cost_counters.get("total_forward_calls", 0)
+    ) + 1
+    per_user = evaluation_cost_counters.get("per_user_forward_calls")
+    if isinstance(per_user, list) and 0 <= int(user) < len(per_user):
+        per_user[int(user)] = int(per_user[int(user)]) + 1
+
+
+def _ensure_precoder_net_snapshot_block(
+    uplinksystem: UplinkSystem,
+    user_models: Sequence[torch.nn.Module],
+    snapshot_cache: list[list[np.ndarray]],
+    block_idx: int,
+    *,
+    evaluation_cost_counters: dict[str, Any] | None = None,
+) -> list[list[np.ndarray]]:
+    ensure_blocks_up_to(uplinksystem, int(block_idx))
+    for k in range(int(uplinksystem.K)):
+        while len(snapshot_cache[int(k)]) <= int(block_idx):
+            l = len(snapshot_cache[int(k)])
+            H_kl = np.asarray(uplinksystem.H[int(k)][int(l)], dtype=np.complex64)
+            _count_uplink_forward_call(evaluation_cost_counters, int(k))
+            snapshot_cache[int(k)].append(
+                infer_precoder_numpy_with_blocklength_and_sigma(
+                    user_models[int(k)],
+                    H_kl,
+                    n_kl=int(uplinksystem.T[int(k)]),
+                    sigma2=float(uplinksystem.sigma2[int(k)]),
+                    epsilon=float(uplinksystem.epsilon[int(k)]),
+                    Nt=int(uplinksystem.NT[int(k)]),
+                    dk=int(uplinksystem.dk[int(k)]),
+                    P=float(uplinksystem.P[int(k)]),
+                    device=DEVICE,
+                )
+            )
+    return snapshot_cache
+
+
 def _build_uplink_rollout_query(
     *,
     seed: int,
@@ -524,6 +688,7 @@ def _build_uplink_rollout_query(
     rollout_phase: str,
     rollout_stage: str,
     frontier_query: bool,
+    objective_weight: float,
 ) -> dict[str, Any]:
     required_rate = (
         float(required_bits) / float(max(int(n_kl), 1))
@@ -557,6 +722,7 @@ def _build_uplink_rollout_query(
         "rollout_phase": str(rollout_phase),
         "rollout_stage": str(rollout_stage),
         "query_weight": 1.0,
+        "objective_weight": float(objective_weight),
     }
 
 
@@ -584,6 +750,14 @@ def _collect_uplink_payload_rollout_queries_for_episode(
             )
         ensure_blocks_up_to(system, int(block))
         active_mask = [1 if int(remaining[int(k)]) > 0 else 0 for k in range(K)]
+        objective_weights = _uplink_block_objective_weights(
+            system,
+            sim_cfg,
+            block=int(block),
+            active_mask=active_mask,
+            remaining_bits_by_user=remaining.tolist(),
+            block_index_by_user=[int(block) for _ in range(K)],
+        )
         snapshot_full = _build_precoder_net_snapshot_for_active_mask(system, user_models, int(block), active_mask)
 
         for k in range(K):
@@ -642,6 +816,7 @@ def _collect_uplink_payload_rollout_queries_for_episode(
                     rollout_phase="full_block",
                     rollout_stage="full_block",
                     frontier_query=False,
+                    objective_weight=float(objective_weights[int(k)]),
                 )
             )
 
@@ -672,18 +847,21 @@ def _collect_uplink_payload_rollout_queries_for_episode(
                     rollout_phase="tail_feasible",
                     rollout_stage="full_block_commit",
                     frontier_query=False,
+                    objective_weight=float(objective_weights[int(k)]),
                 )
             )
 
-            n_min = int(sim_cfg["n_kl_min"])
-            fine_step = max(1, int(sim_cfg["n_kl_step"]))
-            coarse_step = max(fine_step, int(sim_cfg.get("monte_carlo_training_n_kl_coarse_step", fine_step)))
-            last_feasible_n = int(T_ref)
-            first_infeasible_query: dict[str, Any] | None = None
-
-            candidate = int(T_ref) - int(coarse_step)
-            while candidate >= int(n_min):
-                metrics = _evaluate_uplink_rollout_query_numpy(user_models[int(k)], base_episode, int(candidate))
+            search_cfg = _build_monte_carlo_training_search_cfg(
+                sim_cfg,
+                n_min=int(sim_cfg["n_kl_min"]),
+                n_max=int(T_ref),
+            )
+            def _evaluate_payload_rollout_candidate(candidate: int, stage_name: str) -> dict[str, Any]:
+                metrics = _evaluate_uplink_rollout_query_numpy(
+                    user_models[int(k)],
+                    base_episode,
+                    int(candidate),
+                )
                 query = _build_uplink_rollout_query(
                     seed=seed,
                     user=int(k),
@@ -700,59 +878,26 @@ def _collect_uplink_payload_rollout_queries_for_episode(
                     metrics=metrics,
                     scenario_mode=PAYLOAD_COMPLETION_MODE,
                     rollout_phase="tail_feasible",
-                    rollout_stage="coarse",
+                    rollout_stage=str(stage_name),
                     frontier_query=False,
+                    objective_weight=float(objective_weights[int(k)]),
                 )
-                if bool(query["feasible"]):
-                    queries_by_user[int(k)].append(query)
-                    last_feasible_n = int(candidate)
-                    candidate -= int(coarse_step)
-                    continue
-                query["rollout_phase"] = "tail_frontier"
-                query["frontier_query"] = True
-                first_infeasible_query = query
-                break
+                return {
+                    "query": query,
+                    "feasible": bool(query["feasible"]),
+                }
 
-            if (
-                first_infeasible_query is not None
-                and int(fine_step) < int(coarse_step)
-                and int(last_feasible_n) - int(fine_step) > int(first_infeasible_query["n_kl"])
-            ):
-                candidate = int(last_feasible_n) - int(fine_step)
-                first_infeasible_n = int(first_infeasible_query["n_kl"])
-                while candidate > int(first_infeasible_n):
-                    metrics = _evaluate_uplink_rollout_query_numpy(user_models[int(k)], base_episode, int(candidate))
-                    query = _build_uplink_rollout_query(
-                        seed=seed,
-                        user=int(k),
-                        block=int(block),
-                        H=H_kl,
-                        T_ref=T_ref,
-                        P=P,
-                        dk=dk,
-                        sigma2=sigma2,
-                        epsilon=epsilon,
-                        noise_cov=cov_T,
-                        n_kl=int(candidate),
-                        required_bits=int(committed_bits),
-                        metrics=metrics,
-                        scenario_mode=PAYLOAD_COMPLETION_MODE,
-                        rollout_phase="tail_feasible",
-                        rollout_stage="fine",
-                        frontier_query=False,
-                    )
-                    if bool(query["feasible"]):
-                        queries_by_user[int(k)].append(query)
-                        last_feasible_n = int(candidate)
-                        candidate -= int(fine_step)
-                        continue
+            search_result = run_n_frontier_search(search_cfg, _evaluate_payload_rollout_candidate)
+            for visited in search_result["visited"]:
+                query = dict(visited["result"]["query"])
+                query["feasible"] = bool(query["feasible"])
+                if bool(visited["feasible"]):
+                    query["rollout_phase"] = "tail_feasible"
+                    query["frontier_query"] = False
+                else:
                     query["rollout_phase"] = "tail_frontier"
                     query["frontier_query"] = True
-                    first_infeasible_query = query
-                    break
-
-            if first_infeasible_query is not None:
-                queries_by_user[int(k)].append(first_infeasible_query)
+                queries_by_user[int(k)].append(query)
             remaining[int(k)] = max(int(remaining[int(k)]) - int(committed_bits), 0)
         block += 1
 
@@ -785,6 +930,14 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
     for block in range(num_blocks):
         ensure_blocks_up_to(system, int(block))
         active_mask = [1 if int(block_targets[int(k), int(block)]) > 0 else 0 for k in range(K)]
+        objective_weights = _uplink_block_objective_weights(
+            system,
+            sim_cfg,
+            block=int(block),
+            active_mask=active_mask,
+            remaining_bits_by_user=block_targets[:, int(block)].astype(int).tolist(),
+            block_index_by_user=[int(block) for _ in range(K)],
+        )
         snapshot_full = _build_precoder_net_snapshot_for_active_mask(system, user_models, int(block), active_mask)
         for k in range(K):
             target_bits = int(block_targets[int(k), int(block)])
@@ -843,6 +996,7 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
                     rollout_phase="full_block",
                     rollout_stage="full_block",
                     frontier_query=False,
+                    objective_weight=float(objective_weights[int(k)]),
                 )
             )
 
@@ -869,6 +1023,7 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
                     rollout_phase="tail_feasible",
                     rollout_stage="full_block_commit",
                     frontier_query=False,
+                    objective_weight=float(objective_weights[int(k)]),
                 )
             )
 
@@ -899,6 +1054,7 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
                     rollout_phase="tail_feasible",
                     rollout_stage="coarse",
                     frontier_query=False,
+                    objective_weight=float(objective_weights[int(k)]),
                 )
                 if bool(query["feasible"]):
                     queries_by_user[int(k)].append(query)
@@ -937,6 +1093,7 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
                         rollout_phase="tail_feasible",
                         rollout_stage="fine",
                         frontier_query=False,
+                        objective_weight=float(objective_weights[int(k)]),
                     )
                     if bool(query["feasible"]):
                         queries_by_user[int(k)].append(query)
@@ -1109,6 +1266,9 @@ def _build_post_training_summary(
         "rollout_query_weighting_mode": str(
             training_history.get("rollout_query_weighting_mode", "phase_balanced")
         ),
+        "uplink_objective_mode": str(
+            training_history.get("uplink_objective_mode", UNWEIGHTED_SUM_RATE_OBJECTIVE)
+        ),
         "rollout_phase_weights": dict(training_history.get("rollout_phase_weights", {})),
         "cumulative_rollout_queries_by_n_kl": training_history.get("cumulative_rollout_queries_by_n_kl", {}),
         "cumulative_frontier_rollout_queries_by_n_kl": training_history.get(
@@ -1214,6 +1374,9 @@ def train_blocklength_aware_precoder_net(
 ) -> dict:
     system_params, sim_cfg = get_config(cfg_name)
     K = int(system_params["K"])
+    objective_mode = resolve_uplink_objective_mode(
+        sim_cfg.get("uplink_objective_mode", UNWEIGHTED_SUM_RATE_OBJECTIVE)
+    )
     max_epochs = max(
         1,
         int(epochs if epochs is not None else sim_cfg.get("monte_carlo_training_max_epochs", sim_cfg.get("max_epochs", 20))),
@@ -1247,8 +1410,12 @@ def train_blocklength_aware_precoder_net(
         "rollout_query_summaries_per_user": [[] for _ in range(K)],
         "rollout_phase_weights": dict(rollout_phase_weights),
         "rollout_query_weighting_mode": str(rollout_query_weighting_mode),
+        "uplink_objective_mode": str(objective_mode),
         "configured_max_epochs": int(max_epochs),
-        "training_objective": "scenario_driven_episode_rollout_lagrangian_user_finite_blocklength_rate",
+        "training_objective": (
+            "scenario_driven_episode_rollout_lagrangian_"
+            f"{objective_mode}_user_finite_blocklength_rate"
+        ),
     }
     user_models = [
         build_user_precoder_net_with_blocklength_and_sigma(
@@ -1420,12 +1587,13 @@ def train_blocklength_aware_precoder_net(
                     )
                     power = (torch.linalg.norm(pred_t, ord="fro") ** 2).real
                     required_rate = float(query.get("required_rate", 0.0))
+                    objective_weight = float(query.get("objective_weight", 1.0))
                     rate_violation = rate.new_tensor(required_rate) - rate
                     power_violation = power - float(query["P"])
                     rate_violation_pos = _constraint_violation_activation(rate_violation, constraint_loss_form)
                     power_violation_pos = _constraint_violation_activation(power_violation, constraint_loss_form)
                     term = (
-                        -rate
+                        -(objective_weight * rate)
                         + float(lambda_rate[int(k)]) * rate_violation_pos
                         + float(lambda_power[int(k)]) * power_violation_pos
                     )
@@ -1641,6 +1809,7 @@ def train_blocklength_aware_precoder_net(
             "user_model_states": export_user_model_states(user_models),
             "precoder_parameterization": "shared_user_channel_n_sigma_epsilon_to_precoder_mlp",
             "training_objective": training_history["training_objective"],
+            "uplink_objective_mode": str(training_history.get("uplink_objective_mode", objective_mode)),
             "initial_skipped_blocks_per_user": [
                 int(v) for v in train_eval_initial_baseline.get("skipped_blocks_per_user", [0 for _ in range(K)])
             ],
@@ -1922,9 +2091,15 @@ def evaluate_blocklength_precoder_net(
     all_user_block_results = [[] for _ in range(K)]
     B_used_star = [[] for _ in range(K)]
     B_kl_star = [[] for _ in range(K)]
+    evaluation_cost_counters = {
+        "per_user_forward_calls": [0 for _ in range(K)],
+        "total_forward_calls": 0,
+    }
 
     n_kl_min = int(sim_cfg["n_kl_min"])
     n_kl_step = int(sim_cfg["n_kl_step"])
+    use_interference = uses_uplink_interference(sim_cfg)
+    snapshot_cache: list[list[np.ndarray]] | None = ([[] for _ in range(K)] if use_interference else None)
 
     for k in range(K):
         print(
@@ -1946,7 +2121,15 @@ def evaluate_blocklength_precoder_net(
             sigma2 = float(uplinksystem.sigma2[k])
             epsilon = float(uplinksystem.epsilon[k])
 
-            snapshot_full = _build_precoder_net_snapshot(uplinksystem, user_models, ell)
+            snapshot_full = None
+            if snapshot_cache is not None:
+                snapshot_full = _ensure_precoder_net_snapshot_block(
+                    uplinksystem,
+                    user_models,
+                    snapshot_cache,
+                    int(ell),
+                    evaluation_cost_counters=evaluation_cost_counters,
+                )
 
             print(
                 format_log_line(
@@ -1959,6 +2142,7 @@ def evaluate_blocklength_precoder_net(
 
             S_block = []
 
+            _count_uplink_forward_call(evaluation_cost_counters, int(k))
             F_T = infer_precoder_numpy_with_blocklength_and_sigma(
                 user_models[k],
                 H_kl,
@@ -1970,7 +2154,11 @@ def evaluate_blocklength_precoder_net(
                 P=P,
                 device=DEVICE,
             )
-            snapshot_candidate = _replace_snapshot_block(snapshot_full, int(k), int(ell), F_T)
+            snapshot_candidate = (
+                _replace_snapshot_block(snapshot_full, int(k), int(ell), F_T)
+                if snapshot_full is not None
+                else None
+            )
             cov_T = build_uplink_rate_covariance(
                 uplinksystem,
                 sim_cfg,
@@ -2025,75 +2213,86 @@ def evaluate_blocklength_precoder_net(
             best_n = int(T_ref)
             best_R = float(S_block[-1]["R_fbl"])
             best_F = S_block[-1]["F"]
-
-            n_kl = int(T_ref) - int(n_kl_step)
-            while n_kl >= int(n_kl_min):
-                if int(B_used) < int(B_rem):
-                    print(
-                        format_log_line(
-                            "[UL Monte Carlo Eval]",
-                            user=int(k),
-                            block=int(ell),
-                            n_kl=int(n_kl),
-                            status="stop_partial_payload",
-                        )
-                    )
-                    break
-                F_n = infer_precoder_numpy_with_blocklength_and_sigma(
-                    user_models[k],
-                    H_kl,
-                    n_kl=n_kl,
-                    sigma2=sigma2,
-                    epsilon=epsilon,
-                    Nt=int(uplinksystem.NT[k]),
-                    dk=int(uplinksystem.dk[k]),
-                    P=P,
-                    device=DEVICE,
-                )
-                snapshot_candidate = _replace_snapshot_block(snapshot_full, int(k), int(ell), F_n)
-                cov_n = build_uplink_rate_covariance(
-                    uplinksystem,
-                    sim_cfg,
-                    k,
-                    ell,
-                    F_override=snapshot_candidate,
-                )
-                R_n = _compute_r_fbl_np(H_kl, F_n, sigma2, epsilon, n_kl, cov_n)
-                rate_violation = (B_used / float(n_kl)) - R_n
-
+            if int(B_used) < int(B_rem):
                 print(
                     format_log_line(
                         "[UL Monte Carlo Eval]",
                         user=int(k),
                         block=int(ell),
-                        n_kl=int(n_kl),
-                        achieved_rate=float(R_n),
-                        rate_violation=float(rate_violation),
+                        status="stop_partial_payload",
                     )
                 )
-
-                if rate_violation > 0.0:
-                    break
-
-                best_n = int(n_kl)
-                best_R = float(R_n)
-                best_F = torch.tensor(F_n, dtype=torch.complex64)
-                S_block.append(
-                    {
-                        "n_kl": int(n_kl),
-                        "n": int(n_kl),
-                        "B_l": int(B_used),
-                        "Bits per sub-block length B/n_kl": float(B_used) / float(n_kl),
-                        "F": torch.tensor(F_n, dtype=torch.complex64),
-                        "R_fbl": float(R_n),
-                        "F_power": float(np.linalg.norm(F_n, "fro") ** 2),
-                        "lambda_rate": 0.0,
-                        "lambda_power": 0.0,
-                        "loss_curve": [],
-                        "method": method_name,
-                    }
+            else:
+                search_cfg = _build_monte_carlo_test_search_cfg(
+                    sim_cfg,
+                    n_min=int(n_kl_min),
+                    n_max=int(T_ref),
                 )
-                n_kl -= int(n_kl_step)
+
+                def _evaluate_payload_eval_candidate(candidate_n: int, stage_name: str) -> dict[str, Any]:
+                    _count_uplink_forward_call(evaluation_cost_counters, int(k))
+                    F_n = infer_precoder_numpy_with_blocklength_and_sigma(
+                        user_models[k],
+                        H_kl,
+                        n_kl=int(candidate_n),
+                        sigma2=sigma2,
+                        epsilon=epsilon,
+                        Nt=int(uplinksystem.NT[k]),
+                        dk=int(uplinksystem.dk[k]),
+                        P=P,
+                        device=DEVICE,
+                    )
+                    snapshot_candidate = (
+                        _replace_snapshot_block(snapshot_full, int(k), int(ell), F_n)
+                        if snapshot_full is not None
+                        else None
+                    )
+                    cov_n = build_uplink_rate_covariance(
+                        uplinksystem,
+                        sim_cfg,
+                        k,
+                        ell,
+                        F_override=snapshot_candidate,
+                    )
+                    R_n = _compute_r_fbl_np(H_kl, F_n, sigma2, epsilon, int(candidate_n), cov_n)
+                    rate_violation = (float(B_used) / float(max(int(candidate_n), 1))) - float(R_n)
+                    print(
+                        format_log_line(
+                            "[UL Monte Carlo Eval]",
+                            user=int(k),
+                            block=int(ell),
+                            n_kl=int(candidate_n),
+                            search_stage=str(stage_name),
+                            achieved_rate=float(R_n),
+                            rate_violation=float(rate_violation),
+                        )
+                    )
+                    return {
+                        "feasible": bool(rate_violation <= 0.0),
+                        "R_fbl": float(R_n),
+                        "F": np.array(F_n, copy=True),
+                    }
+
+                reduction_search = run_n_frontier_search(search_cfg, _evaluate_payload_eval_candidate)
+                for accepted in reduction_search["accepted"]:
+                    best_n = int(accepted["n_kl"])
+                    best_R = float(accepted["result"]["R_fbl"])
+                    best_F = torch.tensor(accepted["result"]["F"], dtype=torch.complex64)
+                    S_block.append(
+                        {
+                            "n_kl": int(best_n),
+                            "n": int(best_n),
+                            "B_l": int(B_used),
+                            "Bits per sub-block length B/n_kl": float(B_used) / float(best_n),
+                            "F": torch.tensor(accepted["result"]["F"], dtype=torch.complex64),
+                            "R_fbl": float(best_R),
+                            "F_power": float(np.linalg.norm(accepted["result"]["F"], "fro") ** 2),
+                            "lambda_rate": 0.0,
+                            "lambda_power": 0.0,
+                            "loss_curve": [],
+                            "method": method_name,
+                        }
+                    )
 
             all_user_block_results[k].append(S_block)
             n_star[k].append(best_n)
@@ -2133,6 +2332,7 @@ def evaluate_blocklength_precoder_net(
         "norm_stats": [(0.0 + 0.0j, 1.0) for _ in range(K)],
         "method_name": method_name,
         "skipped_blocks_per_user": [0 for _ in range(K)],
+        "evaluation_cost_counters": evaluation_cost_counters,
         "scenario_mode": PAYLOAD_COMPLETION_MODE,
     }
 

@@ -1,0 +1,656 @@
+% define some matrix and vector variable
+
+% need this to get \widecheck to work
+\DeclareFontFamily{U}{mathx}{\hyphenchar\font45}
+\DeclareFontShape{U}{mathx}{m}{n}{
+      <5> <6> <7> <8> <9> <10>
+      <10.95> <12> <14.4> <17.28> <20.74> <24.88>
+      mathx10
+      }{}
+\DeclareSymbolFont{mathx}{U}{mathx}{m}{n}
+\DeclareFontSubstitution{U}{mathx}{m}{n}
+\DeclareMathAccent{\widecheck}{0}{mathx}{"71}
+
+% need this to get \widebar without including mathabx package because it causes problem for triangleq
+\DeclareFontFamily{U}{mathx}{\hyphenchar\font45}
+\DeclareFontShape{U}{mathx}{m}{n}{<-> mathx10}{}
+\DeclareSymbolFont{mathx}{U}{mathx}{m}{n}
+\DeclareMathAccent{\widebar}{0}{mathx}{"73}
+
+\newfont{\Bd}{msbm10 at 12 truept}
+\newfont{\Sc}{eusm10 at 12 truept}
+
+\def\proof{\noindent{\bf Proof. }}
+\def\eproof{\hfill$\diamondsuit$}
+\def\bo{{\bf\omega}}
+\def\real{\mathbb{R}}
+\def\complex{\mathbb{C}}
+\def\integer{\mathbb{Z}}
+\def\diag{\mathop{\rm diag}\nolimits}
+\def\adj{\mathop{\rm Adj}\nolimits}
+\def\rank{\mathop{\rm Rank}\nolimits}
+\def\mod{\mathop{\rm mod}\nolimits}
+\def\trace{\mathop{\rm trace}\nolimits}
+
+\DeclareMathOperator*{\mtr}{tr}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+
+\def\0{{\bf 0}}
+\def\1{{\bf 1}}
+\def\a{{\bf a}}
+\def\b{{\bf b}}
+\def\c{{\bf c}}
+\def\d{{\bf d}}
+\def\e{{\bf e}}
+\def\f{{\bf f}}
+\def\g{{\bf g}}
+\def\h{{\bf h}}
+%\def\i{{\bf i}}
+\def\j{{\bf j}}
+\def\k{{\bf k}}
+\def\l{{\bf l}}
+\def\m{{\bf m}}
+\def\n{{\bf n}}
+\def\o{{\bf o}}
+\def\p{{\bf p}}
+\def\q{{\bf q}}
+\def\r{{\bf r}}
+\def\s{{\bf s}}
+\def\t{{\bf t}}
+\def\u{{\bf u}}
+\def\v{{\bf v}}
+\def\w{{\bf w}}
+\def\x{{\bf x}}
+\def\y{{\bf y}}
+\def\z{{\bf z}}
+\def\A{{\bf A}}
+\def\B{{\bf B}}
+\def\C{{\bf C}}
+\def\D{{\bf D}}
+\def\E{{\bf E}}
+\def\F{{\bf F}}
+\def\G{{\bf G}}
+\def\H{{\bf H}}
+\def\I{{\bf I}}
+\def\J{{\bf J}}
+\def\K{{\bf K}}
+\def\L{{\bf L}}
+\def\M{{\bf M}}
+\def\N{{\bf N}}
+\def\0{{\bf 0}}
+\def\P{{\bf P}}
+\def\Q{{\bf Q}}
+\def\R{{\bf R}}
+\def\S{{\bf S}}
+\def\T{{\bf T}}
+\def\U{{\bf U}}
+\def\V{{\bf V}}
+\def\W{{\bf W}}
+\def\X{{\bf X}}
+\def\Y{{\bf Y}}
+\def\Z{{\bf Z}}
+
+% Symbols Short Cut defined by Victor (28/10/2004)
+
+\def\ta{{\widetilde{a}}}
+\def\tb{{\widetilde{b}}}
+\def\tc{{\widetilde{c}}}
+\def\td{{\widetilde{d}}}
+\def\te{{\widetilde{e}}}
+\def\tf{{\widetilde{f}}}
+\def\tg{{\widetilde{g}}}
+%\def\th{{\widetilde{h}}}
+\def\ti{{\widetilde{i}}}
+\def\tj{{\widetilde{j}}}
+\def\tk{{\widetilde{k}}}
+\def\tl{{\widetilde{l}}}
+\def\tm{{\widetilde{m}}}
+\def\tn{{\widetilde{n}}}
+%\def\to{{\widetilde{o}}}
+\def\tp{{\widetilde{p}}}
+\def\tq{{\widetilde{q}}}
+\def\tr{{\widetilde{r}}}
+\def\ts{{\widetilde{s}}}
+%\def\tt{{\widetilde{t}}}
+\def\tu{{\widetilde{u}}}
+\def\tv{{\widetilde{v}}}
+\def\tw{{\widetilde{w}}}
+\def\tx{{\widetilde{x}}}
+\def\ty{{\widetilde{y}}}
+\def\tz{{\widetilde{z}}}
+\def\tA{{\widetilde{A}}}
+\def\tB{{\widetilde{B}}}
+\def\tC{{\widetilde{C}}}
+\def\tD{{\widetilde{D}}}
+\def\tE{{\widetilde{E}}}
+\def\tF{{\widetilde{F}}}
+\def\tG{{\widetilde{G}}}
+\def\tH{{\widetilde{H}}}
+\def\tI{{\widetilde{I}}}
+\def\tJ{{\widetilde{J}}}
+\def\tK{{\widetilde{K}}}
+\def\tL{{\widetilde{L}}}
+\def\tM{{\widetilde{M}}}
+\def\tN{{\widetilde{N}}}
+\def\tO{{\widetilde{O}}}
+\def\tP{{\widetilde{P}}}
+\def\tQ{{\widetilde{Q}}}
+\def\tR{{\widetilde{R}}}
+\def\tS{{\widetilde{S}}}
+\def\tT{{\widetilde{T}}}
+\def\tU{{\widetilde{U}}}
+\def\tV{{\widetilde{V}}}
+\def\tW{{\widetilde{W}}}
+\def\tX{{\widetilde{X}}}
+\def\tY{{\widetilde{Y}}}
+\def\tZ{{\widetilde{Z}}}
+
+
+\def\tbA{{\widetilde{\A}}}
+\def\tbB{{\widetilde{\B}}}
+\def\tbC{{\widetilde{\C}}}
+\def\tbD{{\widetilde{\D}}}
+\def\tbE{{\widetilde{\E}}}
+\def\tbF{{\widetilde{\F}}}
+\def\tbG{{\widetilde{\G}}}
+\def\tbH{{\widetilde{\H}}}
+\def\tbI{{\widetilde{\I}}}
+\def\tbJ{{\widetilde{\J}}}
+\def\tbK{{\widetilde{\K}}}
+\def\tbL{{\widetilde{\L}}}
+\def\tbM{{\widetilde{\M}}}
+\def\tbN{{\widetilde{\N}}}
+\def\tbO{{\widetilde{\O}}}
+\def\tbP{{\widetilde{\P}}}
+\def\tbQ{{\widetilde{\Q}}}
+\def\tbR{{\widetilde{\R}}}
+\def\tbS{{\widetilde{\S}}}
+\def\tbT{{\widetilde{\T}}}
+\def\tbU{{\widetilde{\U}}}
+\def\tbV{{\widetilde{\V}}}
+\def\tbW{{\widetilde{\W}}}
+\def\tbX{{\widetilde{\X}}}
+\def\tbY{{\widetilde{\Y}}}
+\def\tbZ{{\widetilde{\Z}}}
+\def\tba{{\widetilde{\a}}}
+\def\tbb{{\widetilde{\b}}}
+\def\tbc{{\widetilde{\c}}}
+\def\tbd{{\widetilde{\d}}}
+\def\tbe{{\widetilde{\e}}}
+\def\tbf{{\widetilde{\f}}}
+\def\tbg{{\widetilde{\g}}}
+\def\tbh{{\widetilde{\h}}}
+\def\tbi{{\widetilde{\i}}}
+\def\tbj{{\widetilde{\j}}}
+\def\tbk{{\widetilde{\k}}}
+\def\tbl{{\widetilde{\l}}}
+\def\tbm{{\widetilde{\m}}}
+\def\tbn{{\widetilde{\n}}}
+\def\tbo{{\widetilde{\o}}}
+\def\tbp{{\widetilde{\p}}}
+\def\tbq{{\widetilde{\q}}}
+\def\tbr{{\widetilde{\r}}}
+\def\tbs{{\widetilde{\s}}}
+\def\tbt{{\widetilde{\t}}}
+\def\tbu{{\widetilde{\u}}}
+\def\tbv{{\widetilde{\v}}}
+\def\tbw{{\widetilde{\w}}}
+\def\tbx{{\widetilde{\x}}}
+\def\tby{{\widetilde{\y}}}
+\def\tbz{{\widetilde{\z}}}
+
+
+
+\def\ha{{\widehat{a}}}
+\def\hb{{\widehat{b}}}
+\def\hc{{\widehat{c}}}
+\def\hd{{\widehat{d}}}
+\def\he{{\widehat{e}}}
+\def\hf{{\widehat{f}}}
+\def\hg{{\widehat{g}}}
+\def\hh{{\widehat{h}}}
+\def\hi{{\widehat{i}}}
+\def\hj{{\widehat{j}}}
+\def\hk{{\widehat{k}}}
+\def\hl{{\widehat{l}}}
+\def\hm{{\widehat{m}}}
+\def\hn{{\widehat{n}}}
+\def\ho{{\widehat{o}}}
+\def\hp{{\widehat{p}}}
+\def\hq{{\widehat{q}}}
+\def\hr{{\widehat{r}}}
+\def\hs{{\widehat{s}}}
+%\def\ht{{\widehat{t}}}
+\def\hu{{\widehat{u}}}
+\def\hv{{\widehat{v}}}
+\def\hw{{\widehat{w}}}
+\def\hx{{\widehat{x}}}
+\def\hy{{\widehat{y}}}
+\def\hz{{\widehat{z}}}
+\def\hA{{\widehat{A}}}
+\def\hB{{\widehat{B}}}
+\def\hC{{\widehat{C}}}
+\def\hD{{\widehat{D}}}
+\def\hE{{\widehat{E}}}
+\def\hF{{\widehat{F}}}
+\def\hG{{\widehat{G}}}
+\def\hH{{\widehat{H}}}
+\def\hI{{\widehat{I}}}
+\def\hJ{{\widehat{J}}}
+\def\hK{{\widehat{K}}}
+\def\hL{{\widehat{L}}}
+\def\hM{{\widehat{M}}}
+\def\hN{{\widehat{N}}}
+\def\hO{{\widehat{O}}}
+\def\hP{{\widehat{P}}}
+\def\hQ{{\widehat{Q}}}
+\def\hR{{\widehat{R}}}
+\def\hS{{\widehat{S}}}
+\def\hT{{\widehat{T}}}
+\def\hU{{\widehat{U}}}
+\def\hV{{\widehat{V}}}
+\def\hW{{\widehat{W}}}
+\def\hX{{\widehat{X}}}
+\def\hY{{\widehat{Y}}}
+\def\hZ{{\widehat{Z}}}
+
+\def\htheta{{\widehat{\theta}}}
+
+\def\hba{{\widehat{\a}}}
+\def\hbb{{\widehat{\b}}}
+\def\hbc{{\widehat{\c}}}
+\def\hbd{{\widehat{\d}}}
+\def\hbe{{\widehat{\e}}}
+\def\hbf{{\widehat{\f}}}
+\def\hbg{{\widehat{\g}}}
+\def\hbh{{\widehat{\h}}}
+\def\hbi{{\widehat{\i}}}
+\def\hbj{{\widehat{\j}}}
+\def\hbk{{\widehat{\k}}}
+\def\hbl{{\widehat{\l}}}
+\def\hbm{{\widehat{\m}}}
+\def\hbn{{\widehat{\n}}}
+\def\hbo{{\widehat{\o}}}
+\def\hbp{{\widehat{\p}}}
+\def\hbq{{\widehat{\q}}}
+\def\hbr{{\widehat{\r}}}
+\def\hbs{{\widehat{\s}}}
+\def\hbt{{\widehat{\t}}}
+\def\hbu{{\widehat{\u}}}
+\def\hbv{{\widehat{\v}}}
+\def\hbw{{\widehat{\w}}}
+\def\hbx{{\widehat{\x}}}
+\def\hby{{\widehat{\y}}}
+\def\hbz{{\widehat{\z}}}
+\def\hbA{{\widehat{\A}}}
+\def\hbB{{\widehat{\B}}}
+\def\hbC{{\widehat{\C}}}
+\def\hbD{{\widehat{\D}}}
+\def\hbE{{\widehat{\E}}}
+\def\hbF{{\widehat{\F}}}
+\def\hbG{{\widehat{\G}}}
+\def\hbH{{\widehat{\H}}}
+\def\hbI{{\widehat{\I}}}
+\def\hbJ{{\widehat{\J}}}
+\def\hbK{{\widehat{\K}}}
+\def\hbL{{\widehat{\L}}}
+\def\hbM{{\widehat{\M}}}
+\def\hbN{{\widehat{\N}}}
+\def\hbO{{\widehat{\O}}}
+\def\hbP{{\widehat{\P}}}
+\def\hbQ{{\widehat{\Q}}}
+\def\hbR{{\widehat{\R}}}
+\def\hbS{{\widehat{\S}}}
+\def\hbT{{\widehat{\T}}}
+\def\hbU{{\widehat{\U}}}
+\def\hbV{{\widehat{\V}}}
+\def\hbW{{\widehat{\W}}}
+\def\hbX{{\widehat{\X}}}
+\def\hbY{{\widehat{\Y}}}
+\def\hbZ{{\widehat{\Z}}}
+
+\def\ca{{\cal a}}
+\def\cb{{\cal b}}
+%\def\cc{{\cal c}}
+\def\cd{{\cal d}}
+\def\ce{{\cal e}}
+\def\cf{{\cal f}}
+\def\cg{{\cal g}}
+\def\ch{{\cal h}}
+\def\ci{{\cal i}}
+\def\cj{{\cal j}}
+\def\ck{{\cal k}}
+\def\cl{{\cal l}}
+\def\cm{{\cal m}}
+\def\cn{{\cal n}}
+\def\co{{\cal o}}
+\def\cp{{\cal p}}
+\def\cq{{\cal q}}
+%\def\cr{{\cal r}}
+\def\cs{{\cal s}}
+\def\ct{{\cal t}}
+\def\cu{{\cal u}}
+\def\cv{{\cal v}}
+\def\cw{{\cal w}}
+\def\cx{{\cal x}}
+\def\cy{{\cal y}}
+\def\cz{{\cal z}}
+\def\cA{{\cal A}}
+\def\cB{{\cal B}}
+\def\cC{{\cal C}}
+\def\cD{{\cal D}}
+\def\cE{{\cal E}}
+\def\cF{{\cal F}}
+\def\cG{{\cal G}}
+\def\cH{{\cal H}}
+\def\cI{{\cal I}}
+\def\cJ{{\cal J}}
+\def\cK{{\cal K}}
+\def\cL{{\cal L}}
+\def\cM{{\cal M}}
+\def\cN{{\cal N}}
+\def\cO{{\cal O}}
+\def\cP{{\cal P}}
+\def\cQ{{\cal Q}}
+\def\cR{{\cal R}}
+\def\cS{{\cal S}}
+\def\cT{{\cal T}}
+\def\cU{{\cal U}}
+\def\cV{{\cal V}}
+\def\cW{{\cal W}}
+\def\cX{{\cal X}}
+\def\cY{{\cal Y}}
+\def\cZ{{\cal Z}}
+
+\def\tca{{\widetilde{\cal a}}}
+\def\tcb{{\widetilde{\cal b}}}
+\def\tcc{{\widetilde{\cal c}}}
+\def\tcd{{\widetilde{\cal d}}}
+\def\tce{{\widetilde{\cal e}}}
+\def\tcf{{\widetilde{\cal f}}}
+\def\tcg{{\widetilde{\cal g}}}
+\def\tch{{\widetilde{\cal h}}}
+\def\tci{{\widetilde{\cal i}}}
+\def\tcj{{\widetilde{\cal j}}}
+\def\tck{{\widetilde{\cal k}}}
+\def\tcl{{\widetilde{\cal l}}}
+\def\tcm{{\widetilde{\cal m}}}
+\def\tcn{{\widetilde{\cal n}}}
+\def\tco{{\widetilde{\cal o}}}
+\def\tcp{{\widetilde{\cal p}}}
+\def\tcq{{\widetilde{\cal q}}}
+\def\tcr{{\widetilde{\cal r}}}
+\def\tcs{{\widetilde{\cal s}}}
+\def\tct{{\widetilde{\cal t}}}
+\def\tcu{{\widetilde{\cal u}}}
+\def\tcv{{\widetilde{\cal v}}}
+\def\tcw{{\widetilde{\cal w}}}
+\def\tcx{{\widetilde{\cal x}}}
+\def\tcy{{\widetilde{\cal y}}}
+\def\tcz{{\widetilde{\cal z}}}
+\def\tcA{{\widetilde{\cal A}}}
+\def\tcB{{\widetilde{\cal B}}}
+\def\tcC{{\widetilde{\cal C}}}
+\def\tcD{{\widetilde{\cal D}}}
+\def\tcE{{\widetilde{\cal E}}}
+\def\tcF{{\widetilde{\cal F}}}
+\def\tcG{{\widetilde{\cal G}}}
+\def\tcH{{\widetilde{\cal H}}}
+\def\tcI{{\widetilde{\cal I}}}
+\def\tcJ{{\widetilde{\cal J}}}
+\def\tcK{{\widetilde{\cal K}}}
+\def\tcL{{\widetilde{\cal L}}}
+\def\tcM{{\widetilde{\cal M}}}
+\def\tcN{{\widetilde{\cal N}}}
+\def\tcO{{\widetilde{\cal O}}}
+\def\tcP{{\widetilde{\cal P}}}
+\def\tcQ{{\widetilde{\cal Q}}}
+\def\tcR{{\widetilde{\cal R}}}
+\def\tcS{{\widetilde{\cal S}}}
+\def\tcT{{\widetilde{\cal T}}}
+\def\tcU{{\widetilde{\cal U}}}
+\def\tcV{{\widetilde{\cal V}}}
+\def\tcW{{\widetilde{\cal W}}}
+\def\tcX{{\widetilde{\cal X}}}
+\def\tcY{{\widetilde{\cal Y}}}
+\def\tcZ{{\widetilde{\cal Z}}}
+
+\def\hca{{\widehat{\cal a}}}
+\def\hcb{{\widehat{\cal b}}}
+\def\hcc{{\widehat{\cal c}}}
+\def\hcd{{\widehat{\cal d}}}
+\def\hce{{\widehat{\cal e}}}
+\def\hcf{{\widehat{\cal f}}}
+\def\hcg{{\widehat{\cal g}}}
+\def\hch{{\widehat{\cal h}}}
+\def\hci{{\widehat{\cal i}}}
+\def\hcj{{\widehat{\cal j}}}
+\def\hck{{\widehat{\cal k}}}
+\def\hcl{{\widehat{\cal l}}}
+\def\hcm{{\widehat{\cal m}}}
+\def\hcn{{\widehat{\cal n}}}
+\def\hco{{\widehat{\cal o}}}
+\def\hcp{{\widehat{\cal p}}}
+\def\hcq{{\widehat{\cal q}}}
+\def\hcr{{\widehat{\cal r}}}
+\def\hcs{{\widehat{\cal s}}}
+\def\hct{{\widehat{\cal t}}}
+\def\hcu{{\widehat{\cal u}}}
+\def\hcv{{\widehat{\cal v}}}
+\def\hcw{{\widehat{\cal w}}}
+\def\hcx{{\widehat{\cal x}}}
+\def\hcy{{\widehat{\cal y}}}
+\def\hcz{{\widehat{\cal z}}}
+\def\hcA{{\widehat{\cal A}}}
+\def\hcB{{\widehat{\cal B}}}
+\def\hcC{{\widehat{\cal C}}}
+\def\hcD{{\widehat{\cal D}}}
+\def\hcE{{\widehat{\cal E}}}
+\def\hcF{{\widehat{\cal F}}}
+\def\hcG{{\widehat{\cal G}}}
+\def\hcH{{\widehat{\cal H}}}
+\def\hcI{{\widehat{\cal I}}}
+\def\hcJ{{\widehat{\cal J}}}
+\def\hcK{{\widehat{\cal K}}}
+\def\hcL{{\widehat{\cal L}}}
+\def\hcM{{\widehat{\cal M}}}
+\def\hcN{{\widehat{\cal N}}}
+\def\hcO{{\widehat{\cal O}}}
+\def\hcP{{\widehat{\cal P}}}
+\def\hcQ{{\widehat{\cal Q}}}
+\def\hcR{{\widehat{\cal R}}}
+\def\hcS{{\widehat{\cal S}}}
+\def\hcT{{\widehat{\cal T}}}
+\def\hcU{{\widehat{\cal U}}}
+\def\hcV{{\widehat{\cal V}}}
+\def\hcW{{\widehat{\cal W}}}
+\def\hcX{{\widehat{\cal X}}}
+\def\hcY{{\widehat{\cal Y}}}
+\def\hcZ{{\widehat{\cal Z}}}
+
+\def\balpha{ {\boldsymbol \alpha} }
+\def\bbeta{ {\boldsymbol \beta} }
+\def\bGamma{ {\boldsymbol \Gamma} }
+\def\bgamma{ {\boldsymbol \gamma} }
+\def\bDelta{ {\boldsymbol \Delta} }
+\def\bdelta{ {\boldsymbol \delta} }
+\def\bepsilon{ {\boldsymbol \epsilon} }
+\def\bvarepsilon{ {\boldsymbol \varepsilon} }
+\def\bzeta{ {\boldsymbol \zeta} }
+\def\boeta{ {\boldsymbol \eta} }
+\def\bTheta{ {\boldsymbol \Theta} }
+\def\btheta{ {\boldsymbol \theta} }
+\def\bvartheta{ {\boldsymbol \vartheta} }
+\def\biota{ {\boldsymbol \iota} }
+\def\bkappa{ {\boldsymbol \kappa} }
+\def\bLambda{ {\boldsymbol{\Lambda} }}
+\def\blambda{ {\boldsymbol{\lambda} }}
+\def\bmu{ {\boldsymbol \mu} }
+\def\bnu{ {\boldsymbol \nu} }
+\def\bXi{ {\boldsymbol \Xi} }
+\def\bxi{ {\boldsymbol \xi} }
+\def\bPi{ {\boldsymbol \Pi} }
+\def\bpi{ {\boldsymbol \pi} }
+\def\bvarpi{ {\boldsymbol \varpi} }
+\def\brho{ {\boldsymbol \rho} }
+\def\bvarrho{ {\boldsymbol \varrho} }
+\def\bSigma{ {\boldsymbol{\Sigma} }}
+\def\bsigma{ {\boldsymbol{\sigma} }}
+\def\bvarsigma{ {\boldsymbol{\varsigma} }}
+\def\btau{ {\boldsymbol{\tau} }}
+\def\bUpsilon{ {\boldsymbol{\Upsilon} }}
+\def\bupsilon{ {\boldsymbol{\upsilon} }}
+\def\bPhi{ {\boldsymbol \Phi} }
+\def\bphi{ {\boldsymbol \phi} }
+\def\bvarphi{ {\boldsymbol \varphi} }
+\def\bchi{ {\boldsymbol \chi} }
+\def\bPsi{ {\boldsymbol \Psi} }
+\def\bpsi{ {\boldsymbol \psi} }
+\def\bOmega{ {\boldsymbol{\Omega} }}
+\def\bomega{ {\boldsymbol{\omega} }}
+\def\bell{ {\boldsymbol{\ell} }}
+
+
+\def\hbalpha{ \widehat{\boldsymbol \alpha} }
+\def\hbbeta{ \widehat{\boldsymbol \beta} }
+\def\hbGamma{ \widehat{\boldsymbol \Gamma} }
+\def\hbgamma{ \widehat{\boldsymbol \gamma} }
+\def\hbDelta{ \widehat{\boldsymbol \Delta} }
+\def\hbdelta{ \widehat{\boldsymbol \delta} }
+\def\hbepsilon{ \widehat{\boldsymbol \epsilon} }
+\def\hbvarepsilon{ \widehat{\boldsymbol \varepsilon} }
+\def\hbzeta{ \widehat{\boldsymbol \zeta} }
+\def\hboeta{ \widehat{\boldsymbol \eta} }
+\def\hbTheta{ \widehat{\boldsymbol \Theta} }
+\def\hbtheta{ \widehat{\boldsymbol \theta} }
+\def\hbvartheta{ \widehat{\boldsymbol \vartheta} }
+\def\hbiota{ \widehat{\boldsymbol \iota} }
+\def\hbkappa{ \widehat{\boldsymbol \kappa} }
+\def\hbLambda{ \widehat{\boldsymbol{\Lambda} }}
+\def\hblambda{ \widehat{\boldsymbol{\lambda} }}
+\def\hbmu{ \widehat{\boldsymbol \mu} }
+\def\hbnu{ \widehat{\boldsymbol \nu} }
+\def\hbXi{ \widehat{\boldsymbol \Xi} }
+\def\hbxi{ \widehat{\boldsymbol \xi} }
+\def\hbPi{ \widehat{\boldsymbol \Pi} }
+\def\hbpi{ \widehat{\boldsymbol \pi} }
+\def\hbvarpi{ \widehat{\boldsymbol \varpi} }
+\def\hbrho{ \widehat{\boldsymbol \rho} }
+\def\hbvarrho{ \widehat{\boldsymbol \varrho} }
+\def\hbSigma{ \widehat{\boldsymbol{\Sigma} }}
+\def\hbsigma{ \widehat{\boldsymbol{\sigma} }}
+\def\hbvarsigma{ \widehat{\boldsymbol{\varsigma} }}
+\def\hbtau{ \widehat{\boldsymbol{\tau} }}
+\def\hbUpsilon{ \widehat{\boldsymbol{\Upsilon} }}
+\def\hbupsilon{ \widehat{\boldsymbol{\upsilon} }}
+\def\hbPhi{ \widehat{\boldsymbol \Phi} }
+\def\hbphi{ \widehat{\boldsymbol \phi} }
+\def\hbvarphi{ \widehat{\boldsymbol \varphi} }
+\def\hbchi{ \widehat{\boldsymbol \chi} }
+\def\hbPsi{ \widehat{\boldsymbol \Psi} }
+\def\hbpsi{ \widehat{\boldsymbol \psi} }
+\def\hbOmega{ \widehat{\boldsymbol{\Omega} }}
+\def\hbomega{ \widehat{\boldsymbol{\omega} }}
+
+
+\def\bcH{{ \boldsymbol{\cal H} }}
+\def\bcG{{ \boldsymbol{\cal G} }}
+
+
+\def\te{{ \widetilde{e} }}
+\def\th{{ \widetilde{h} }}
+\def\tn{{ \widetilde{n} }}
+
+\def\tbC{{ \widetilde{\C}  }}
+\def\tbH{{ \widetilde{\H}  }}
+\def\tbh{{ \widetilde{\h}  }}
+\def\tbn{{ \widetilde{\n} }}
+
+\def\tbcG{{\widetilde{\boldsymbol{\cal{G}}}}}
+
+\def\tbalpha{ \widetilde{\boldsymbol \alpha} }
+\def\tbbeta{ \widetilde{\boldsymbol \beta} }
+\def\tbGamma{ \widetilde{\boldsymbol \Gamma} }
+\def\tbgamma{ \widetilde{\boldsymbol \gamma} }
+\def\tbDelta{ \widetilde{\boldsymbol \Delta} }
+\def\tbdelta{ \widetilde{\boldsymbol \delta} }
+\def\tbepsilon{ \widetilde{\boldsymbol \epsilon} }
+\def\tbvarepsilon{ \widetilde{\boldsymbol \varepsilon} }
+\def\tbzeta{ \widetilde{\boldsymbol \zeta} }
+\def\tboeta{ \widetilde{\boldsymbol \eta} }
+\def\tbTheta{ \widetilde{\boldsymbol \Theta} }
+\def\tbtheta{ \widetilde{\boldsymbol \theta} }
+\def\tbvartheta{ \widetilde{\boldsymbol \vartheta} }
+\def\tbiota{ \widetilde{\boldsymbol \iota} }
+\def\tbkappa{ \widetilde{\boldsymbol \kappa} }
+\def\tbLambda{ \widetilde{\boldsymbol{\Lambda} }}
+\def\tblambda{ \widetilde{\boldsymbol{\lambda} }}
+\def\tbmu{ \widetilde{\boldsymbol \mu} }
+\def\tbnu{ \widetilde{\boldsymbol \nu} }
+\def\tbXi{ \widetilde{\boldsymbol \Xi} }
+\def\tbxi{ \widetilde{\boldsymbol \xi} }
+\def\tbPi{ \widetilde{\boldsymbol \Pi} }
+\def\tbpi{ \widetilde{\boldsymbol \pi} }
+\def\tbvarpi{ \widetilde{\boldsymbol \varpi} }
+\def\tbrho{ \widetilde{\boldsymbol \rho} }
+\def\tbvarrho{ \widetilde{\boldsymbol \varrho} }
+\def\tbSigma{ \widetilde{\boldsymbol{\Sigma} }}
+\def\tbsigma{ \widetilde{\boldsymbol{\sigma} }}
+\def\tbvarsigma{ \widetilde{\boldsymbol{\varsigma} }}
+\def\tbtau{ \widetilde{\boldsymbol{\tau} }}
+\def\tbUpsilon{ \widetilde{\boldsymbol{\Upsilon} }}
+\def\tbupsilon{ \widetilde{\boldsymbol{\upsilon} }}
+\def\tbPhi{ \widetilde{\boldsymbol \Phi} }
+\def\tbphi{ \widetilde{\boldsymbol \phi} }
+\def\tbvarphi{ \widetilde{\boldsymbol \varphi} }
+\def\tbchi{ \widetilde{\boldsymbol \chi} }
+\def\tbPsi{ \widetilde{\boldsymbol \Psi} }
+\def\tbpsi{ \widetilde{\boldsymbol \psi} }
+\def\tbOmega{ \widetilde{\boldsymbol{\Omega} }}
+\def\tbomega{ \widetilde{\boldsymbol{\omega} }}
+\def\tbell{ \widetilde{\boldsymbol{\ell} }}
+
+\def\mbC{{ \mathbb{C}}}
+\def\mbE{{ \mathbb{E}}}
+\def\mbS{{ \mathbb{S}}}
+\def\mbZ{{ \mathbb{Z}}}
+
+\def\mcA{{ \mathcal{A} }}
+\def\mcB{{ \mathcal{B} }}
+\def\mcC{{ \mathcal{C} }}
+\def\mcD{{ \mathcal{D} }}
+\def\mcE{{ \mathcal{E} }}
+\def\mcF{{ \mathcal{F} }}
+\def\mcG{{ \mathcal{G} }}
+\def\mcH{{ \mathcal{H} }}
+\def\mcI{{ \mathcal{I} }}
+\def\mcJ{{ \mathcal{J} }}
+\def\mcK{{ \mathcal{K} }}
+\def\mcL{{ \mathcal{L} }}
+\def\mcM{{ \mathcal{M} }}
+\def\mcN{{ \mathcal{N} }}
+\def\mcO{{ \mathcal{O} }}
+\def\mcP{{ \mathcal{P} }}
+\def\mcQ{{ \mathcal{Q} }}
+\def\mcR{{ \mathcal{R} }}
+\def\mcS{{ \mathcal{S} }}
+\def\mcT{{ \mathcal{T} }}
+\def\mcU{{ \mathcal{U} }}
+\def\mcV{{ \mathcal{V} }}
+\def\mcW{{ \mathcal{W} }}
+\def\mcX{{ \mathcal{X} }}
+\def\mcY{{ \mathcal{Y} }}
+\def\mcZ{{ \mathcal{Z} }}
+
+
+\def\tbcG{{\widetilde{\boldsymbol{\cal{G}}}}}
+
+\def\cbh{{ \widecheck{\h} }}
+
+\def\hth{{ \widehat{\widetilde{h}} }}
+
+\def\htbh{{ \widehat{\widetilde{\h}}  }}
+
