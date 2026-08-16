@@ -27,9 +27,12 @@ from advanced_methods_common import (
 )
 from config_loader import (
     ASYNCHRONALITY_WEIGHTED_SUM_RATE_OBJECTIVE,
+    END_TO_END_LATENCY_BEAM_REWARD_MODE,
     INVERSE_CNR_WEIGHTED_SUM_RATE_OBJECTIVE,
+    RATE_BEAM_REWARD_MODE,
     UNWEIGHTED_SUM_RATE_OBJECTIVE,
     get_config,
+    resolve_uplink_beam_reward_mode,
     resolve_uplink_objective_mode,
 )
 from experiment_scenarios import (
@@ -52,6 +55,20 @@ from Optimizer_per_block import _uplink_supported_bits_proxy
 
 CONSTRAINT_LOSS_FORMS = {"plain_lagrangian", "augmented_lagrangian"}
 MONTE_CARLO_ROLLOUT_WEIGHTING_MODES = {"phase_balanced", "uniform_per_query"}
+ROLLOUT_QUERY_LAGRANGIAN_TRAINING_STYLE = "rollout_query_lagrangian"
+EXACT_ROLLOUT_LATENCY_ALIGNED_TRAINING_STYLE = "exact_rollout_latency_aligned"
+UPLINK_MONTE_CARLO_TRAINING_STYLE_ALIASES = {
+    "legacy": ROLLOUT_QUERY_LAGRANGIAN_TRAINING_STYLE,
+    "existing": ROLLOUT_QUERY_LAGRANGIAN_TRAINING_STYLE,
+    "rollout_queries": ROLLOUT_QUERY_LAGRANGIAN_TRAINING_STYLE,
+    "rollout_query_lagrangian": ROLLOUT_QUERY_LAGRANGIAN_TRAINING_STYLE,
+    "lagrangian_rollout_queries": ROLLOUT_QUERY_LAGRANGIAN_TRAINING_STYLE,
+    "latency": EXACT_ROLLOUT_LATENCY_ALIGNED_TRAINING_STYLE,
+    "latency_aligned": EXACT_ROLLOUT_LATENCY_ALIGNED_TRAINING_STYLE,
+    "episode_latency": EXACT_ROLLOUT_LATENCY_ALIGNED_TRAINING_STYLE,
+    "chosen_rollout_latency": EXACT_ROLLOUT_LATENCY_ALIGNED_TRAINING_STYLE,
+    "exact_rollout_latency_aligned": EXACT_ROLLOUT_LATENCY_ALIGNED_TRAINING_STYLE,
+}
 _Q_INV_CACHE: dict[tuple[str, int | None, float], torch.Tensor] = {}
 
 
@@ -187,10 +204,67 @@ def _resolve_constraint_loss_form(sim_cfg: dict[str, Any]) -> str:
     return mode
 
 
+def _resolve_uplink_monte_carlo_training_style(sim_cfg: dict[str, Any]) -> str:
+    raw_mode = str(
+        sim_cfg.get("monte_carlo_training_style", ROLLOUT_QUERY_LAGRANGIAN_TRAINING_STYLE)
+    ).strip().lower()
+    resolved = UPLINK_MONTE_CARLO_TRAINING_STYLE_ALIASES.get(raw_mode)
+    if resolved is None:
+        known = ", ".join(
+            sorted(
+                {
+                    ROLLOUT_QUERY_LAGRANGIAN_TRAINING_STYLE,
+                    EXACT_ROLLOUT_LATENCY_ALIGNED_TRAINING_STYLE,
+                }
+            )
+        )
+        raise ValueError(
+            f"Unknown uplink Monte Carlo training style '{raw_mode}'. Expected one of: {known}"
+        )
+    return str(resolved)
+
+
+def _uplink_training_beam_reward_torch(
+    rate: torch.Tensor,
+    *,
+    n_kl: int,
+    requested_bits: int,
+    beam_reward_mode: str,
+    committed_symbols_before_block: float = 0.0,
+    fs: float = 1.0,
+) -> torch.Tensor:
+    resolved_mode = resolve_uplink_beam_reward_mode(beam_reward_mode)
+    if resolved_mode == RATE_BEAM_REWARD_MODE:
+        return rate
+    supported_bits = rate.clamp_min(0.0) * float(max(int(n_kl), 1))
+    requested_bits_t = rate.new_tensor(max(int(requested_bits), 0))
+    if resolved_mode != END_TO_END_LATENCY_BEAM_REWARD_MODE:
+        return torch.minimum(requested_bits_t, supported_bits)
+    served_bits = torch.minimum(requested_bits_t, supported_bits)
+    remaining_after = torch.clamp(requested_bits_t - served_bits, min=0.0)
+    safe_rate = rate.clamp_min(1e-9)
+    safe_fs = max(float(fs), 1e-30)
+    projected_latency_seconds = (
+        rate.new_tensor(max(float(committed_symbols_before_block), 0.0) / safe_fs)
+        + rate.new_tensor(float(max(int(n_kl), 1)) / safe_fs)
+        + (remaining_after / safe_rate) / safe_fs
+    )
+    return -1000.0 * projected_latency_seconds
+
+
 def _constraint_violation_activation(value: torch.Tensor, loss_form: str) -> torch.Tensor:
-    if loss_form == "plain_lagrangian":
-        return F.leaky_relu(value)
     return torch.relu(value)
+
+
+def _uplink_soft_served_bits_torch(
+    rate: torch.Tensor,
+    *,
+    n_kl: int,
+    remaining_bits_before_block: int,
+) -> torch.Tensor:
+    supported_bits = rate.clamp_min(0.0) * float(max(int(n_kl), 1))
+    remaining_bits_t = rate.new_tensor(max(int(remaining_bits_before_block), 0))
+    return torch.minimum(remaining_bits_t, supported_bits)
 
 
 def _zero_uplink_precoder(uplinksystem: UplinkSystem, user: int) -> np.ndarray:
@@ -683,6 +757,9 @@ def _build_uplink_rollout_query(
     noise_cov: np.ndarray | None,
     n_kl: int,
     required_bits: int,
+    remaining_bits_before_block: int,
+    committed_symbols_before_block: float,
+    fs: float,
     metrics: dict[str, Any],
     scenario_mode: str,
     rollout_phase: str,
@@ -712,6 +789,9 @@ def _build_uplink_rollout_query(
         "scenario_mode": str(scenario_mode),
         "n_kl": int(n_kl),
         "rollout_anchor_bits": int(required_bits),
+        "remaining_bits_before_block": int(remaining_bits_before_block),
+        "committed_symbols_before_block": float(committed_symbols_before_block),
+        "fs": float(fs),
         "required_rate": float(required_rate),
         "rate": float(metrics["rate"]),
         "power": float(metrics["power"]),
@@ -741,6 +821,8 @@ def _collect_uplink_payload_rollout_queries_for_episode(
     remaining = np.asarray(scenario["payload_bits_per_user"], dtype=int).copy()
     max_blocks = int(sim_cfg.get("max_total_blocks", 256))
     queries_by_user: list[list[dict[str, Any]]] = [[] for _ in range(K)]
+    elapsed_symbols = np.zeros(K, dtype=float)
+    elapsed_symbols = np.zeros(K, dtype=float)
     block = 0
 
     while np.any(remaining > 0):
@@ -763,11 +845,14 @@ def _collect_uplink_payload_rollout_queries_for_episode(
         for k in range(K):
             if int(active_mask[int(k)]) <= 0:
                 continue
+            remaining_before_block = int(remaining[int(k)])
+            committed_symbols_before_block = float(elapsed_symbols[int(k)])
             H_kl = np.asarray(system.H[int(k)][int(block)], dtype=np.complex64)
             T_ref = int(system.T[int(k)])
             P = float(system.P[int(k)])
             sigma2 = float(system.sigma2[int(k)])
             epsilon = float(system.epsilon[int(k)])
+            fs = float(system.fs[int(k)])
             dk = int(system.dk[int(k)])
             F_T = infer_precoder_numpy_with_blocklength_and_sigma(
                 user_models[int(k)],
@@ -811,6 +896,9 @@ def _collect_uplink_payload_rollout_queries_for_episode(
                     noise_cov=cov_T,
                     n_kl=T_ref,
                     required_bits=0,
+                    remaining_bits_before_block=remaining_before_block,
+                    committed_symbols_before_block=committed_symbols_before_block,
+                    fs=fs,
                     metrics=full_metrics,
                     scenario_mode=PAYLOAD_COMPLETION_MODE,
                     rollout_phase="full_block",
@@ -821,11 +909,13 @@ def _collect_uplink_payload_rollout_queries_for_episode(
             )
 
             supported_bits = max(int(np.floor(float(full_metrics["rate"]) * float(max(T_ref, 1)))), 0)
-            committed_bits = min(int(remaining[int(k)]), int(supported_bits))
+            committed_bits = min(int(remaining_before_block), int(supported_bits))
             if int(committed_bits) <= 0:
+                elapsed_symbols[int(k)] += float(T_ref)
                 continue
-            if int(committed_bits) < int(remaining[int(k)]):
+            if int(committed_bits) < int(remaining_before_block):
                 remaining[int(k)] = max(int(remaining[int(k)]) - int(committed_bits), 0)
+                elapsed_symbols[int(k)] += float(T_ref)
                 continue
 
             queries_by_user[int(k)].append(
@@ -842,6 +932,9 @@ def _collect_uplink_payload_rollout_queries_for_episode(
                     noise_cov=cov_T,
                     n_kl=T_ref,
                     required_bits=int(committed_bits),
+                    remaining_bits_before_block=remaining_before_block,
+                    committed_symbols_before_block=committed_symbols_before_block,
+                    fs=fs,
                     metrics=full_metrics,
                     scenario_mode=PAYLOAD_COMPLETION_MODE,
                     rollout_phase="tail_feasible",
@@ -875,6 +968,9 @@ def _collect_uplink_payload_rollout_queries_for_episode(
                     noise_cov=cov_T,
                     n_kl=int(candidate),
                     required_bits=int(committed_bits),
+                    remaining_bits_before_block=remaining_before_block,
+                    committed_symbols_before_block=committed_symbols_before_block,
+                    fs=fs,
                     metrics=metrics,
                     scenario_mode=PAYLOAD_COMPLETION_MODE,
                     rollout_phase="tail_feasible",
@@ -898,6 +994,7 @@ def _collect_uplink_payload_rollout_queries_for_episode(
                     query["rollout_phase"] = "tail_frontier"
                     query["frontier_query"] = True
                 queries_by_user[int(k)].append(query)
+            elapsed_symbols[int(k)] += float(search_result.get("best_n", T_ref))
             remaining[int(k)] = max(int(remaining[int(k)]) - int(committed_bits), 0)
         block += 1
 
@@ -943,11 +1040,13 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
             target_bits = int(block_targets[int(k), int(block)])
             if target_bits <= 0:
                 continue
+            committed_symbols_before_block = float(elapsed_symbols[int(k)])
             H_kl = np.asarray(system.H[int(k)][int(block)], dtype=np.complex64)
             T_ref = int(system.T[int(k)])
             P = float(system.P[int(k)])
             sigma2 = float(system.sigma2[int(k)])
             epsilon = float(system.epsilon[int(k)])
+            fs = float(system.fs[int(k)])
             dk = int(system.dk[int(k)])
             F_T = infer_precoder_numpy_with_blocklength_and_sigma(
                 user_models[int(k)],
@@ -991,6 +1090,9 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
                     noise_cov=cov_T,
                     n_kl=T_ref,
                     required_bits=0,
+                    remaining_bits_before_block=int(target_bits),
+                    committed_symbols_before_block=committed_symbols_before_block,
+                    fs=fs,
                     metrics=full_metrics,
                     scenario_mode=FIXED_BLOCK_TARGETS_MODE,
                     rollout_phase="full_block",
@@ -1002,6 +1104,7 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
 
             supported_bits = max(int(np.floor(float(full_metrics["rate"]) * float(max(T_ref, 1)))), 0)
             if int(supported_bits) < int(target_bits):
+                elapsed_symbols[int(k)] += float(T_ref)
                 continue
 
             queries_by_user[int(k)].append(
@@ -1018,6 +1121,9 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
                     noise_cov=cov_T,
                     n_kl=T_ref,
                     required_bits=int(target_bits),
+                    remaining_bits_before_block=int(target_bits),
+                    committed_symbols_before_block=committed_symbols_before_block,
+                    fs=fs,
                     metrics=full_metrics,
                     scenario_mode=FIXED_BLOCK_TARGETS_MODE,
                     rollout_phase="tail_feasible",
@@ -1049,6 +1155,9 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
                     noise_cov=cov_T,
                     n_kl=int(candidate),
                     required_bits=int(target_bits),
+                    remaining_bits_before_block=int(target_bits),
+                    committed_symbols_before_block=committed_symbols_before_block,
+                    fs=fs,
                     metrics=metrics,
                     scenario_mode=FIXED_BLOCK_TARGETS_MODE,
                     rollout_phase="tail_feasible",
@@ -1088,6 +1197,9 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
                         noise_cov=cov_T,
                         n_kl=int(candidate),
                         required_bits=int(target_bits),
+                        remaining_bits_before_block=int(target_bits),
+                        committed_symbols_before_block=committed_symbols_before_block,
+                        fs=fs,
                         metrics=metrics,
                         scenario_mode=FIXED_BLOCK_TARGETS_MODE,
                         rollout_phase="tail_feasible",
@@ -1107,6 +1219,7 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
 
             if first_infeasible_query is not None:
                 queries_by_user[int(k)].append(first_infeasible_query)
+            elapsed_symbols[int(k)] += float(last_feasible_n)
 
     return [
         _normalize_uplink_episode_query_weights(
@@ -1118,17 +1231,197 @@ def _collect_uplink_fixed_target_rollout_queries_for_episode(
     ]
 
 
+def _annotate_uplink_latency_aligned_queries(
+    queries_by_user: Sequence[Sequence[dict[str, Any]]],
+) -> list[list[dict[str, Any]]]:
+    annotated: list[list[dict[str, Any]]] = []
+    for user_queries in queries_by_user:
+        future_latency_ms = 0.0
+        updated_user_queries: list[dict[str, Any]] = []
+        for query in reversed([dict(q) for q in user_queries]):
+            safe_fs = max(float(query.get("fs", 1.0)), 1e-30)
+            future_latency_ms += 1000.0 * float(max(int(query.get("n_kl", 0)), 0)) / safe_fs
+            remaining_before = int(query.get("remaining_bits_before_block", 0))
+            query["committed_bits_target"] = int(query.get("rollout_anchor_bits", 0))
+            query["latency_weight_ms_per_bit"] = (
+                float(future_latency_ms) / float(max(remaining_before, 1))
+                if remaining_before > 0
+                else 0.0
+            )
+            query["rollout_phase"] = "chosen_rollout_state"
+            query["rollout_stage"] = str(query.get("rollout_stage", "chosen_rollout_state"))
+            query["frontier_query"] = False
+            updated_user_queries.append(query)
+        annotated.append(list(reversed(updated_user_queries)))
+    return annotated
+
+
+def _collect_uplink_payload_latency_aligned_queries_for_episode(
+    system_params: dict[str, Any],
+    sim_cfg: dict[str, Any],
+    training_episode: dict[str, Any],
+    user_models: Sequence[torch.nn.Module],
+) -> list[list[dict[str, Any]]]:
+    seed = int(training_episode["seed"])
+    scenario = dict(training_episode["scenario"])
+    K = int(system_params["K"])
+    system = UplinkSystem(system_params, seed=int(seed))
+    weighting_mode = _resolve_uplink_rollout_query_weighting_mode(sim_cfg)
+    remaining = np.asarray(scenario["payload_bits_per_user"], dtype=int).copy()
+    max_blocks = int(sim_cfg.get("max_total_blocks", 256))
+    queries_by_user: list[list[dict[str, Any]]] = [[] for _ in range(K)]
+    elapsed_symbols = np.zeros(K, dtype=float)
+    block = 0
+
+    while np.any(remaining > 0):
+        if block >= max_blocks:
+            raise RuntimeError(
+                f"Uplink Monte Carlo latency-aligned training rollout hit max_total_blocks={max_blocks} for seed={seed} with remaining bits {remaining.tolist()}."
+            )
+        ensure_blocks_up_to(system, int(block))
+        active_mask = [1 if int(remaining[int(k)]) > 0 else 0 for k in range(K)]
+        snapshot_full = _build_precoder_net_snapshot_for_active_mask(system, user_models, int(block), active_mask)
+
+        for k in range(K):
+            if int(active_mask[int(k)]) <= 0:
+                continue
+            remaining_before_block = int(remaining[int(k)])
+            committed_symbols_before_block = float(elapsed_symbols[int(k)])
+            H_kl = np.asarray(system.H[int(k)][int(block)], dtype=np.complex64)
+            T_ref = int(system.T[int(k)])
+            P = float(system.P[int(k)])
+            sigma2 = float(system.sigma2[int(k)])
+            epsilon = float(system.epsilon[int(k)])
+            fs = float(system.fs[int(k)])
+            dk = int(system.dk[int(k)])
+            F_T = infer_precoder_numpy_with_blocklength_and_sigma(
+                user_models[int(k)],
+                H_kl,
+                n_kl=T_ref,
+                sigma2=sigma2,
+                epsilon=epsilon,
+                Nt=int(system.NT[int(k)]),
+                dk=dk,
+                P=P,
+                device=DEVICE,
+            )
+            snapshot_candidate = _replace_snapshot_block(snapshot_full, int(k), int(block), F_T)
+            cov_T = build_uplink_rate_covariance(
+                system,
+                sim_cfg,
+                int(k),
+                int(block),
+                F_override=snapshot_candidate,
+            )
+            base_episode = {
+                "H": H_kl,
+                "sigma2": sigma2,
+                "epsilon": epsilon,
+                "P": P,
+                "dk": dk,
+                "noise_plus_interference_cov": cov_T,
+            }
+            full_metrics = _evaluate_uplink_rollout_query_numpy(user_models[int(k)], base_episode, T_ref)
+            supported_bits = max(int(np.floor(float(full_metrics["rate"]) * float(max(T_ref, 1)))), 0)
+            committed_bits = min(int(remaining_before_block), int(supported_bits))
+            chosen_n = int(T_ref)
+            chosen_metrics = dict(full_metrics)
+
+            if int(committed_bits) >= int(remaining_before_block) and int(remaining_before_block) > 0:
+                search_cfg = _build_monte_carlo_test_search_cfg(
+                    sim_cfg,
+                    n_min=int(sim_cfg["n_kl_min"]),
+                    n_max=int(T_ref),
+                )
+
+                def _evaluate_latency_candidate(candidate: int, stage_name: str) -> dict[str, Any]:
+                    metrics = _evaluate_uplink_rollout_query_numpy(
+                        user_models[int(k)],
+                        base_episode,
+                        int(candidate),
+                    )
+                    return {
+                        "feasible": bool(
+                            float(metrics["rate"])
+                            >= (float(remaining_before_block) / float(max(int(candidate), 1)))
+                        ),
+                        "metrics": metrics,
+                        "stage": str(stage_name),
+                    }
+
+                search_result = run_n_frontier_search(search_cfg, _evaluate_latency_candidate)
+                chosen_n = int(search_result.get("best_n", T_ref))
+                if int(chosen_n) != int(T_ref):
+                    chosen_event = None
+                    for visited in search_result.get("visited", []):
+                        if int(visited.get("n_kl", -1)) == int(chosen_n):
+                            chosen_event = visited
+                            break
+                    if chosen_event is not None:
+                        chosen_metrics = dict(chosen_event["result"]["metrics"])
+
+            chosen_query = _build_uplink_rollout_query(
+                seed=seed,
+                user=int(k),
+                block=int(block),
+                H=H_kl,
+                T_ref=T_ref,
+                P=P,
+                dk=dk,
+                sigma2=sigma2,
+                epsilon=epsilon,
+                noise_cov=cov_T,
+                n_kl=int(chosen_n),
+                required_bits=int(committed_bits),
+                remaining_bits_before_block=remaining_before_block,
+                committed_symbols_before_block=committed_symbols_before_block,
+                fs=fs,
+                metrics=chosen_metrics,
+                scenario_mode=PAYLOAD_COMPLETION_MODE,
+                rollout_phase="chosen_rollout_state",
+                rollout_stage="chosen_rollout_state",
+                frontier_query=False,
+                objective_weight=1.0,
+            )
+            queries_by_user[int(k)].append(chosen_query)
+            remaining[int(k)] = max(int(remaining[int(k)]) - int(committed_bits), 0)
+            elapsed_symbols[int(k)] += float(chosen_n)
+        block += 1
+
+    return [
+        _normalize_uplink_episode_query_weights(
+            user_queries,
+            {},
+            weighting_mode=weighting_mode,
+        )
+        for user_queries in _annotate_uplink_latency_aligned_queries(queries_by_user)
+    ]
+
+
 def _generate_rollout_queries_for_training_episodes(
     system_params: dict[str, Any],
     sim_cfg: dict[str, Any],
     training_episodes: Sequence[dict[str, Any]],
     user_models: Sequence[torch.nn.Module],
+    *,
+    training_style: str,
 ) -> list[list[dict[str, Any]]]:
     K = int(system_params["K"])
     queries_by_user: list[list[dict[str, Any]]] = [[] for _ in range(K)]
     for training_episode in training_episodes:
         scenario_mode = str(training_episode.get("scenario_mode", PAYLOAD_COMPLETION_MODE))
-        if scenario_mode == FIXED_BLOCK_TARGETS_MODE:
+        if str(training_style) == EXACT_ROLLOUT_LATENCY_ALIGNED_TRAINING_STYLE:
+            if scenario_mode != PAYLOAD_COMPLETION_MODE:
+                raise ValueError(
+                    "The exact_rollout_latency_aligned Monte Carlo training style currently supports payload_completion only."
+                )
+            episode_queries = _collect_uplink_payload_latency_aligned_queries_for_episode(
+                system_params,
+                sim_cfg,
+                training_episode,
+                user_models,
+            )
+        elif scenario_mode == FIXED_BLOCK_TARGETS_MODE:
             episode_queries = _collect_uplink_fixed_target_rollout_queries_for_episode(
                 system_params,
                 sim_cfg,
@@ -1266,8 +1559,14 @@ def _build_post_training_summary(
         "rollout_query_weighting_mode": str(
             training_history.get("rollout_query_weighting_mode", "phase_balanced")
         ),
+        "monte_carlo_training_style": str(
+            training_history.get("monte_carlo_training_style", ROLLOUT_QUERY_LAGRANGIAN_TRAINING_STYLE)
+        ),
         "uplink_objective_mode": str(
             training_history.get("uplink_objective_mode", UNWEIGHTED_SUM_RATE_OBJECTIVE)
+        ),
+        "beam_reward_mode": str(
+            training_history.get("beam_reward_mode", RATE_BEAM_REWARD_MODE)
         ),
         "rollout_phase_weights": dict(training_history.get("rollout_phase_weights", {})),
         "cumulative_rollout_queries_by_n_kl": training_history.get("cumulative_rollout_queries_by_n_kl", {}),
@@ -1393,6 +1692,10 @@ def train_blocklength_aware_precoder_net(
     dataset_summary = summarize_training_dataset(training_episodes)
     rollout_phase_weights = _resolve_uplink_rollout_phase_weights(sim_cfg)
     rollout_query_weighting_mode = _resolve_uplink_rollout_query_weighting_mode(sim_cfg)
+    training_style = _resolve_uplink_monte_carlo_training_style(sim_cfg)
+    beam_reward_mode = resolve_uplink_beam_reward_mode(
+        sim_cfg.get("beam_reward_mode", RATE_BEAM_REWARD_MODE)
+    )
     training_history = {
         "per_user_lagrangian": [[] for _ in range(K)],
         "per_user_rate": [[] for _ in range(K)],
@@ -1410,11 +1713,17 @@ def train_blocklength_aware_precoder_net(
         "rollout_query_summaries_per_user": [[] for _ in range(K)],
         "rollout_phase_weights": dict(rollout_phase_weights),
         "rollout_query_weighting_mode": str(rollout_query_weighting_mode),
+        "monte_carlo_training_style": str(training_style),
         "uplink_objective_mode": str(objective_mode),
+        "beam_reward_mode": str(beam_reward_mode),
         "configured_max_epochs": int(max_epochs),
         "training_objective": (
-            "scenario_driven_episode_rollout_lagrangian_"
-            f"{objective_mode}_user_finite_blocklength_rate"
+            "chosen_rollout_latency_aligned_served_bits_payload"
+            if str(training_style) == EXACT_ROLLOUT_LATENCY_ALIGNED_TRAINING_STYLE
+            else (
+                "scenario_driven_episode_rollout_lagrangian_"
+                f"{objective_mode}_user_{beam_reward_mode}"
+            )
         ),
     }
     user_models = [
@@ -1477,6 +1786,7 @@ def train_blocklength_aware_precoder_net(
             sim_cfg,
             training_episodes,
             user_models,
+            training_style=training_style,
         )
         last_epoch_queries_by_user = [
             [dict(query) for query in user_queries]
@@ -1592,8 +1902,35 @@ def train_blocklength_aware_precoder_net(
                     power_violation = power - float(query["P"])
                     rate_violation_pos = _constraint_violation_activation(rate_violation, constraint_loss_form)
                     power_violation_pos = _constraint_violation_activation(power_violation, constraint_loss_form)
+                    if str(training_style) == EXACT_ROLLOUT_LATENCY_ALIGNED_TRAINING_STYLE:
+                        reward = (
+                            rate.new_tensor(float(query.get("latency_weight_ms_per_bit", 0.0)))
+                            * _uplink_soft_served_bits_torch(
+                                rate,
+                                n_kl=int(query["n_kl"]),
+                                remaining_bits_before_block=int(
+                                    query.get("remaining_bits_before_block", 0)
+                                ),
+                            )
+                        )
+                    else:
+                        reward = _uplink_training_beam_reward_torch(
+                            rate,
+                            n_kl=int(query["n_kl"]),
+                            requested_bits=int(
+                                query.get(
+                                    "remaining_bits_before_block",
+                                    query.get("rollout_anchor_bits", 0),
+                                )
+                            ),
+                            beam_reward_mode=beam_reward_mode,
+                            committed_symbols_before_block=float(
+                                query.get("committed_symbols_before_block", 0.0)
+                            ),
+                            fs=float(query.get("fs", 1.0)),
+                        )
                     term = (
-                        -(objective_weight * rate)
+                        -(objective_weight * reward)
                         + float(lambda_rate[int(k)]) * rate_violation_pos
                         + float(lambda_power[int(k)]) * power_violation_pos
                     )
@@ -1809,7 +2146,14 @@ def train_blocklength_aware_precoder_net(
             "user_model_states": export_user_model_states(user_models),
             "precoder_parameterization": "shared_user_channel_n_sigma_epsilon_to_precoder_mlp",
             "training_objective": training_history["training_objective"],
+            "monte_carlo_training_style": str(
+                training_history.get(
+                    "monte_carlo_training_style",
+                    ROLLOUT_QUERY_LAGRANGIAN_TRAINING_STYLE,
+                )
+            ),
             "uplink_objective_mode": str(training_history.get("uplink_objective_mode", objective_mode)),
+            "beam_reward_mode": str(training_history.get("beam_reward_mode", beam_reward_mode)),
             "initial_skipped_blocks_per_user": [
                 int(v) for v in train_eval_initial_baseline.get("skipped_blocks_per_user", [0 for _ in range(K)])
             ],

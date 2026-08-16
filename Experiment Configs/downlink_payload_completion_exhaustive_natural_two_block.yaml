@@ -1,0 +1,77 @@
+test:
+  K: 2
+  Nb: 3
+  Nr:
+    - 2
+    - 2
+  T:
+    - 4
+    - 4
+  B:
+    - 2
+    - 2
+  P:
+    - 30
+    - 30
+  snr_db:
+    - 40
+    - 40
+  fs:
+    - 15000.0
+    - 15000.0
+  epsilon:
+    - 1.0e-10
+    - 1.0e-10
+  initial_bits_per_symbol:
+    - 1
+    - 1
+
+simulation:
+  convergence_precoder_update_mode: direct_precoder
+  downlink_precoder_net_scope: per_user_nets
+
+  max_epochs: 10
+  print_every_epoch: 10
+  user_update_steps: 1
+  user_update_lr: 0.01
+
+  initial_lambda_rate_constraint: 0.1
+  initial_lambda_power_constraint: 0.01
+  constraint_loss_form: plain_lagrangian
+  lr_rate_constraint: 0.01
+  lr_power_constraint: 0.01
+  augmented_lagrangian_rho_rate: 1.0
+  augmented_lagrangian_rho_power: 1.0
+  kkt_primal_tol: 1.0e-5
+  kkt_complementarity_tol: 1.0e-5
+  kkt_stationarity_tol: 1e-3
+
+  convergence_block_objective_mode: unweighted_sum_rate
+  beam_reward_mode: rate
+  convergence_priority_weight_strategy: uniform
+  remaining_bits_weight_power: 1.0
+  minimum_user_weight: 0.25
+  network_rate_weight: 0.15
+  latency_penalty_weight: 0.5
+
+  max_total_blocks: 4
+
+  experiment_scenario:
+    mode: payload_completion
+    payload_bits_source: system_B
+    skip_infeasible_blocks: true
+    skip_block_adds_full_T_latency: true
+    track_skipped_blocks: true
+
+  n_kl_range:
+    min: 1
+    step: 1
+  n_search_direction: descending
+  n_search_strategy: fixed_step
+  n_search_coarse_step: 1
+  n_search_exponential_factor: 2
+
+  exhaustive_compare:
+    max_blocks: 4
+    suppress_inner_logs: true
+    catalog_detail_mode: full

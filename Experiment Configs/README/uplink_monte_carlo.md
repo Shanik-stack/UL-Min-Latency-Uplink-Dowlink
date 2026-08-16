@@ -55,6 +55,20 @@ The uplink Monte Carlo method already uses one precoder net per user.
     - `simulation.kkt_complementarity_tol`
     - `simulation.kkt_stationarity_tol`
 
+- `simulation.monte_carlo_training_style`
+  - Chooses which Monte Carlo training objective is benchmarked on top of the
+    same channel-episode dataset.
+  - `rollout_query_lagrangian`
+    - Existing behavior.
+    - Uses all visited rollout queries and applies the standard per-query
+      Lagrangian objective.
+  - `exact_rollout_latency_aligned`
+    - Uses only the exact rollout states that are actually chosen during the
+      current payload-completion rollout.
+    - Reweights those chosen states by latency impact, so this is the cleaner
+      benchmark when you want training to follow the committed rollout path
+      instead of the full visited query frontier.
+
 - `simulation.monte_carlo_training_fallback_target_bits`
   - Fallback target bits used when building payload-completion training cases
     that do not already come with explicit block targets.

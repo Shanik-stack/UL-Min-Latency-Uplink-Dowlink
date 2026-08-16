@@ -1,0 +1,67 @@
+Downlink payload planner diagnostics
+
+Terms
+Active users: users with payload remaining at the start of that block.
+Mask: the subset of active users jointly optimized for service in that block.
+Immediate latency: current-block latency contribution after any successful tail n_kl reduction.
+Value-to-go: continuation surrogate built from remaining bits divided by each user's historical solo-preview service level.
+Opportunity penalty: penalty for skipping or underusing a user whose current solo block looks unusually good for that user.
+
+Block 0
+Planner mode: mask_latency_mpc
+Warm start: rzf
+Active users: [0, 1, 2]
+Remaining bits before block: {0: 1000, 1: 2000, 2: 3000}
+Chosen mask: 111 -> [0, 1, 2]
+Chosen served bits by user: {0: 496, 1: 817, 2: 931}
+Chosen n_kl by user: {0: 50, 1: 60, 2: 80}
+Chosen achieved rate by user: {0: 9.924615336052453, 1: 13.633082408344091, 2: 11.64783147893332}
+Chosen full-block bits by user before tail reduction: {0: 496, 1: 817, 2: 931}
+Chosen users finishable at n=T: []
+Solo preview bits by user: {0: 1000, 1: 1409, 2: 1633}
+Candidate ranking:
+rank=1 | mask=111 | users=[0, 1, 2] | served_bits=2244 | sum_rate=35.205529 | immediate_latency=0.012667 | value_to_go=0.011796 | opportunity_penalty=0.011307 | score=0.028420 | solve_status=max_precoder_epochs | stage_a_status=max_precoder_epochs | stage_a_bits={0: 496, 1: 817, 2: 931} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 496, 1: 817, 2: 931} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=2 | mask=101 | users=[0, 2] | served_bits=2041 | sum_rate=31.298044 | immediate_latency=0.012667 | value_to_go=0.012091 | opportunity_penalty=0.011898 | score=0.028922 | solve_status=max_precoder_epochs | stage_a_status=max_precoder_epochs | stage_a_bits={0: 769, 2: 1272} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 769, 1: 0, 2: 1272} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=3 | mask=011 | users=[1, 2] | served_bits=2163 | sum_rate=31.200283 | immediate_latency=0.012667 | value_to_go=0.012170 | opportunity_penalty=0.012055 | score=0.029056 | solve_status=max_precoder_epochs | stage_a_status=max_precoder_epochs | stage_a_bits={1: 996, 2: 1167} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 0, 1: 996, 2: 1167} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=4 | mask=110 | users=[0, 1] | served_bits=1797 | sum_rate=32.403974 | immediate_latency=0.012667 | value_to_go=0.013344 | opportunity_penalty=0.014404 | score=0.031052 | solve_status=max_precoder_epochs | stage_a_status=max_precoder_epochs | stage_a_bits={0: 735, 1: 1062} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 735, 1: 1062, 2: 0} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=5 | mask=001 | users=[2] | served_bits=1633 | sum_rate=20.419685 | immediate_latency=0.012667 | value_to_go=0.013476 | opportunity_penalty=0.014667 | score=0.031276 | solve_status=max_precoder_epochs | stage_a_status=max_precoder_epochs | stage_a_bits={2: 1633} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 0, 1: 0, 2: 1633} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=6 | mask=010 | users=[1] | served_bits=1409 | sum_rate=23.496545 | immediate_latency=0.012667 | value_to_go=0.014809 | opportunity_penalty=0.017333 | score=0.033542 | solve_status=max_precoder_epochs | stage_a_status=max_precoder_epochs | stage_a_bits={1: 1409} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 0, 1: 1409, 2: 0} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=7 | mask=100 | users=[0] | served_bits=1000 | sum_rate=21.494717 | immediate_latency=0.012467 | value_to_go=0.015476 | opportunity_penalty=0.018667 | score=0.034476 | solve_status=delta_tol_converged | stage_a_status=delta_tol_converged | stage_a_bits={0: 1000} | finishable_at_full_block=[0] | tail_refine=True | served_bits_by_user={0: 1000, 1: 0, 2: 0} | n_kl_by_user={0: 47, 1: 60, 2: 80}
+
+Block 1
+Planner mode: mask_latency_mpc
+Warm start: rzf
+Active users: [0, 1, 2]
+Remaining bits before block: {0: 504, 1: 1183, 2: 2069}
+Chosen mask: 111 -> [0, 1, 2]
+Chosen served bits by user: {0: 504, 1: 775, 2: 937}
+Chosen n_kl by user: {0: 50, 1: 60, 2: 80}
+Chosen achieved rate by user: {0: 10.097272699013882, 1: 12.925093250309285, 2: 11.724338073260252}
+Chosen full-block bits by user before tail reduction: {0: 504, 1: 775, 2: 937}
+Chosen users finishable at n=T: [0]
+Solo preview bits by user: {0: 504, 1: 1183, 2: 1652}
+Candidate ranking:
+rank=1 | mask=111 | users=[0, 1, 2] | served_bits=2216 | sum_rate=34.746704 | immediate_latency=0.012667 | value_to_go=0.004855 | opportunity_penalty=0.005996 | score=0.019621 | solve_status=max_precoder_epochs | stage_a_status=max_precoder_epochs | stage_a_bits={0: 504, 1: 775, 2: 937} | finishable_at_full_block=[0] | tail_refine=True | served_bits_by_user={0: 504, 1: 775, 2: 937} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=2 | mask=011 | users=[1, 2] | served_bits=2244 | sum_rate=32.301381 | immediate_latency=0.012667 | value_to_go=0.004902 | opportunity_penalty=0.006642 | score=0.019893 | solve_status=max_precoder_epochs | stage_a_status=max_precoder_epochs | stage_a_bits={1: 1018, 2: 1226} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 0, 1: 1018, 2: 1226} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=3 | mask=101 | users=[0, 2] | served_bits=1864 | sum_rate=27.080123 | immediate_latency=0.012667 | value_to_go=0.005674 | opportunity_penalty=0.005886 | score=0.020401 | solve_status=max_precoder_epochs | stage_a_status=max_precoder_epochs | stage_a_bits={0: 501, 2: 1363} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 501, 1: 0, 2: 1363} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=4 | mask=001 | users=[2] | served_bits=1652 | sum_rate=20.650018 | immediate_latency=0.012667 | value_to_go=0.006400 | opportunity_penalty=0.007333 | score=0.021634 | solve_status=max_precoder_epochs | stage_a_status=max_precoder_epochs | stage_a_bits={2: 1652} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 0, 1: 0, 2: 1652} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=5 | mask=110 | users=[0, 1] | served_bits=1686 | sum_rate=29.839825 | immediate_latency=0.012667 | value_to_go=0.006760 | opportunity_penalty=0.010670 | score=0.023161 | solve_status=max_precoder_epochs | stage_a_status=max_precoder_epochs | stage_a_bits={0: 504, 1: 1182} | finishable_at_full_block=[0] | tail_refine=True | served_bits_by_user={0: 504, 1: 1182, 2: 0} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=6 | mask=010 | users=[1] | served_bits=1183 | sum_rate=23.211140 | immediate_latency=0.012067 | value_to_go=0.008437 | opportunity_penalty=0.014000 | score=0.025404 | solve_status=delta_tol_converged | stage_a_status=delta_tol_converged | stage_a_bits={1: 1183} | finishable_at_full_block=[1] | tail_refine=True | served_bits_by_user={0: 0, 1: 1183, 2: 0} | n_kl_by_user={0: 50, 1: 51, 2: 80}
+rank=7 | mask=100 | users=[0] | served_bits=504 | sum_rate=21.152019 | immediate_latency=0.010933 | value_to_go=0.010116 | opportunity_penalty=0.014667 | score=0.026182 | solve_status=delta_tol_converged | stage_a_status=delta_tol_converged | stage_a_bits={0: 504} | finishable_at_full_block=[0] | tail_refine=True | served_bits_by_user={0: 504, 1: 0, 2: 0} | n_kl_by_user={0: 24, 1: 60, 2: 80}
+
+Block 2
+Planner mode: mask_latency_mpc
+Warm start: rzf
+Active users: [1, 2]
+Remaining bits before block: {1: 408, 2: 1132}
+Chosen mask: 011 -> [1, 2]
+Chosen served bits by user: {1: 408, 2: 1132}
+Chosen n_kl by user: {1: 27, 2: 75}
+Chosen achieved rate by user: {1: 15.220758908657215, 2: 15.105448250770106}
+Chosen full-block bits by user before tail reduction: {1: 408, 2: 1132}
+Chosen users finishable at n=T: [1, 2]
+Solo preview bits by user: {1: 408, 2: 1132}
+Candidate ranking:
+rank=1 | mask=011 | users=[1, 2] | served_bits=1540 | sum_rate=30.326207 | immediate_latency=0.006800 | value_to_go=0.000000 | opportunity_penalty=0.000000 | score=0.006800 | solve_status=delta_tol_converged | stage_a_status=delta_tol_converged | stage_a_bits={1: 408, 2: 1132} | finishable_at_full_block=[1, 2] | tail_refine=True | served_bits_by_user={1: 408, 2: 1132} | n_kl_by_user={1: 27, 2: 75}
+rank=2 | mask=001 | users=[2] | served_bits=1132 | sum_rate=20.307758 | immediate_latency=0.007733 | value_to_go=0.001259 | opportunity_penalty=0.004000 | score=0.010393 | solve_status=delta_tol_converged | stage_a_status=delta_tol_converged | stage_a_bits={2: 1132} | finishable_at_full_block=[2] | tail_refine=True | served_bits_by_user={1: 0, 2: 1132} | n_kl_by_user={1: 60, 2: 56}
+rank=3 | mask=010 | users=[1] | served_bits=408 | sum_rate=20.438870 | immediate_latency=0.006667 | value_to_go=0.003676 | opportunity_penalty=0.005333 | score=0.012209 | solve_status=delta_tol_converged | stage_a_status=delta_tol_converged | stage_a_bits={1: 408} | finishable_at_full_block=[1] | tail_refine=True | served_bits_by_user={1: 408, 2: 0} | n_kl_by_user={1: 20, 2: 80}

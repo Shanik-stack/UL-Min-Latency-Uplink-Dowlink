@@ -1,0 +1,19 @@
+Downlink dispersion diagnostics
+
+Terms
+Capacity C: realized-block conditional capacity used by the simulator.
+Dispersion V: realized-block conditional dispersion term used by the simulator.
+Finite-blocklength penalty: C - R_fbl for the accepted served block.
+Penalty/C ratio: fraction of realized capacity removed by the finite-blocklength penalty.
+
+Accepted served blocks: 3
+Average capacity C: 19.452727
+Average dispersion V: 8.308822
+Average finite-blocklength penalty: 7.068141
+Average penalty/C ratio: 0.362294
+Maximum penalty/C ratio: 0.410104
+
+Per accepted block
+user=0 | block=2 | served_bits=80 | n_kl=7 | C=20.331914 | V=8.314526 | penalty=8.338207 | penalty_over_C=0.410104 | achieved_R_fbl=11.993708 | required_rate=11.428571 | margin=0.565136
+user=1 | block=1 | served_bits=120 | n_kl=10 | C=20.644340 | V=8.315153 | penalty=6.976507 | penalty_over_C=0.337938 | achieved_R_fbl=13.667833 | required_rate=12.000000 | margin=1.667833
+user=2 | block=0 | served_bits=160 | n_kl=14 | C=17.381927 | V=8.296786 | penalty=5.889709 | penalty_over_C=0.338841 | achieved_R_fbl=11.492218 | required_rate=11.428571 | margin=0.063647

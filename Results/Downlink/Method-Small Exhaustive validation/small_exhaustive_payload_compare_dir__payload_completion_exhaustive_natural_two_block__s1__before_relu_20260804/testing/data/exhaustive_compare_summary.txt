@@ -1,0 +1,50 @@
+Downlink small exhaustive payload-completion validation
+Run started (local): 2026-08-03T22:24:46+03:00
+Run completed (local): 2026-08-03T22:26:20+03:00
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\downlink_payload_completion_exhaustive_natural_two_block.yaml
+Seed: 1
+Payload bits per user: [2, 2]
+T per user: [4, 4]
+fs per user (channel uses/s): [15000.0, 15000.0]
+Max compared blocks: 4
+Suppressed detailed inner logs: True
+Catalog detail mode: full
+
+Assumptions
+  - Direct joint block precoder optimization only.
+  - Unweighted sum-rate beam optimization inside the block solver.
+  - Exact same frozen channel episode is used for both strategies.
+  - A user with remaining payload and zero service in a block still pays n=T, matching the current payload-completion implementation.
+
+Current online rule
+  - Completed all payloads: True
+  - Per-user final latency (s): [0.000333333, 0.000333333]
+  - Total latency sum (s): 0.000666667
+  - Final asynchronality sum (s): 0.000000000
+  - Per-user served bits: [2, 2]
+  - Per-user remaining bits: [0, 0]
+
+Exhaustive search
+  - Completed all payloads: True
+  - Per-user final latency (s): [0.000333333, 6.6667e-05]
+  - Total latency sum (s): 0.000400000
+  - Final asynchronality sum (s): 0.000266667
+  - Per-user served bits: [2, 2]
+  - Per-user remaining bits: [0, 0]
+  - Joint block action catalog size: 378
+  - Global schedule count: 6197
+
+Comparison
+  - Exhaustive latency gain over current online rule: 0.000266667 s
+  - Exhaustive latency gain percentage: 40.0000%
+  - Exhaustive asynchronality gain over current online rule: -0.000266667 s
+
+Best exhaustive allocation combination
+  - Global schedule id: 3655
+  - Completed all users: True
+  - Total latency sum (s): 0.000400000
+  - Asynchronality sum (s): 0.000266667
+  - Total remaining bits: 0
+  - Per-user served bits: [2, 2]
+  - Per-user latency (s): [0.000333333, 6.6667e-05]
+  - Action signature: b0[u0:skip@n4, u1:B2@n1] | b1[u0:B2@n1, u1:done]

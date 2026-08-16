@@ -13,6 +13,9 @@ Notes:
 - no expert-label collection or MSE imitation is used
 - `B_rem` stays in the scheduler; the training loss uses `min_bits_required / n_kl`, not a proportional `B_target`
 - training uses `simulation.monte_carlo_training_max_epochs` as its epoch budget
+- `simulation.monte_carlo_training_style` selects the training-style variant
+  - `rollout_query_lagrangian`: existing Monte Carlo behavior with the standard per-query Lagrangian rollout loss
+  - `exact_rollout_latency_aligned`: trains only on the exact chosen rollout states and weights them by latency impact
 - training can stop early with the same KKT tolerances used by convergence:
   `simulation.kkt_primal_tol`, `simulation.kkt_complementarity_tol`, and
   `simulation.kkt_stationarity_tol`

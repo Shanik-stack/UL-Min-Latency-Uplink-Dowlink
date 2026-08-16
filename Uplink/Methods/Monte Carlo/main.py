@@ -17,7 +17,7 @@ for path in (METHOD_DIR, LINK_ROOT, PROJECT_ROOT):
         sys.path.insert(0, path_str)
 
 from UplinkSystem import UplinkSystem
-from config_loader import _resolve_config_path, get_config, resolve_uplink_objective_mode
+from config_loader import _resolve_config_path, get_config, load_config, resolve_uplink_objective_mode
 from experiment_cost import (
     build_uplink_monte_carlo_total_cost,
     build_uplink_monte_carlo_training_cost,
@@ -32,6 +32,7 @@ from experiment_scenarios import (
 from experiment_utils import (
     compact_method_tag,
     compact_objective_tag,
+    compact_training_style_tag,
     current_local_timestamp,
     join_compact_tag_parts,
     make_method_result_tag,
@@ -40,6 +41,7 @@ from experiment_utils import (
     save_text,
 )
 from experiment_report import (
+    build_dispersion_diagnostic_lines,
     build_post_training_summary_lines,
     build_precoder_net_result,
     build_summary_lines,
@@ -313,6 +315,9 @@ def _run_precoder_net_test(
         plot_interference_heatmaps(test_uplinksystem, result_dirs["interference"])
         plot_per_user_interference_profiles(test_uplinksystem, result_dirs["interference"])
     save_text(build_summary_lines(result), os.path.join(result_dirs["test_data"], "summary.txt"))
+    dispersion_lines = build_dispersion_diagnostic_lines(result)
+    if dispersion_lines:
+        save_text(dispersion_lines, os.path.join(result_dirs["test_data"], "dispersion_diagnostics.txt"))
     save_json(test_scenario_summary, os.path.join(result_dirs["test_data"], "experiment_scenario.json"))
     save_text(
         build_experiment_scenario_summary_lines(test_scenario_summary),
@@ -343,7 +348,7 @@ def main():
     parser.add_argument("--skip_test", action="store_true")
     args = parser.parse_args()
 
-    system_params, sim_cfg = get_config(args.cfg_name)
+    system_params, sim_cfg, run_meta = load_config(args.cfg_name)
     run_started_at_local = current_local_timestamp()
     test_search_overrides = _build_test_search_overrides(args)
     train_epochs = int(
@@ -381,14 +386,21 @@ def main():
     objective_mode = resolve_uplink_objective_mode(
         sim_cfg.get("uplink_objective_mode", "unweighted_sum_rate")
     )
+    training_style_name = str(
+        train_artifact.get("monte_carlo_training_style", sim_cfg.get("monte_carlo_training_style", "rollout_query_lagrangian"))
+        if isinstance(train_artifact, dict)
+        else sim_cfg.get("monte_carlo_training_style", "rollout_query_lagrangian")
+    )
     result_tag = make_method_result_tag(
         join_compact_tag_parts(
             compact_method_tag("monte_carlo_precoder_net_train_test"),
             compact_objective_tag(objective_mode),
+            compact_training_style_tag(training_style_name),
             _build_test_search_tag(test_search_overrides),
         ),
-        args.cfg_name,
+        run_meta["cfg_stem"],
         seed=int(test_seed),
+        cfg_hash=run_meta.get("cfg_hash"),
     )
     result_dirs = build_uplink_result_dirs("Monte Carlo", result_tag)
     initialize_plot_globals(result_tag, result_dirs)
@@ -406,6 +418,7 @@ def main():
         training_wall_time_seconds = perf_counter() - training_start
         training_completed_at_local = current_local_timestamp()
         train_artifact["cfg_path"] = _resolve_config_path(args.cfg_name)
+        train_artifact["cfg_hash"] = run_meta.get("cfg_hash")
         train_artifact["method_name"] = "monte_carlo_precoder_net_train_test"
         train_artifact["test_seed"] = int(test_seed)
         train_artifact["experiment_scenario_mode"] = sim_cfg.get("experiment_scenario_mode", "payload_completion")
@@ -510,12 +523,16 @@ def main():
             core_wall_time_seconds_testing=testing_wall_time_seconds,
         )
         test_result["experiment_cost"] = total_cost
+        test_result["cfg_hash"] = run_meta.get("cfg_hash")
         test_result["run_started_at_local"] = str(run_started_at_local)
         test_result["run_completed_at_local"] = str(testing_completed_at_local)
         test_result["training_started_at_local"] = str(training_started_at_local)
         test_result["training_completed_at_local"] = str(training_completed_at_local)
         save_json(test_result, os.path.join(result_dirs["test_data"], "result.json"))
         save_text(build_summary_lines(test_result), os.path.join(result_dirs["test_data"], "summary.txt"))
+        dispersion_lines = build_dispersion_diagnostic_lines(test_result)
+        if dispersion_lines:
+            save_text(dispersion_lines, os.path.join(result_dirs["test_data"], "dispersion_diagnostics.txt"))
     mirror_paths = mirror_experiment_root_to_result_aliases(
         link_name="Uplink",
         scenario_mode=str(sim_cfg.get("experiment_scenario_mode", "payload_completion")),

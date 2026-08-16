@@ -14,12 +14,14 @@ from typing import Any
 
 import yaml
 from experiment_utils import (
+    build_config_content_hash,
     build_train_seeds_from_num_train_seeds,
     compact_cfg_stem,
     compact_method_tag,
     compact_objective_tag,
     compact_scope_tag,
     compact_shared_n_target_mode_tag,
+    compact_training_style_tag,
     compact_update_mode_tag,
     current_local_timestamp,
     join_compact_tag_parts,
@@ -90,6 +92,7 @@ DECISION_PATH_TAG_PREFIX = {
     "simulation.n_search_direction": "ndir",
     "simulation.downlink_precoder_net_scope": "scope",
     "simulation.n_kl_reduction_update_scope": "repair",
+    "simulation.monte_carlo_training_style": "trn",
 }
 
 DECISION_VALUE_ALIASES: dict[str, dict[str, str]] = {
@@ -146,6 +149,10 @@ DECISION_VALUE_ALIASES: dict[str, dict[str, str]] = {
         "infeasible_users_only": "infeasible_users_only",
         "candidate_and_infeasible_users": "candidate_and_infeasible_users",
     },
+    "simulation.monte_carlo_training_style": {
+        "rollout_query_lagrangian": "rollout_query_lagrangian",
+        "exact_rollout_latency_aligned": "exact_rollout_latency_aligned",
+    },
 }
 
 DECISION_VALUE_TAGS: dict[str, dict[str, str]] = {
@@ -191,6 +198,10 @@ DECISION_VALUE_TAGS: dict[str, dict[str, str]] = {
         "infeasible_users_only": "infeas",
         "candidate_and_infeasible_users": "candinf",
     },
+    "simulation.monte_carlo_training_style": {
+        "rollout_query_lagrangian": "rqlag",
+        "exact_rollout_latency_aligned": "lat",
+    },
 }
 
 DECISION_DISPLAY_NAMES = {
@@ -202,6 +213,7 @@ DECISION_DISPLAY_NAMES = {
     "simulation.n_search_direction": "n_kl search direction",
     "simulation.downlink_precoder_net_scope": "Downlink precoder scope",
     "simulation.n_kl_reduction_update_scope": "Reduced n_kl re-optimization scope",
+    "simulation.monte_carlo_training_style": "Monte Carlo training style",
 }
 
 CSV_FIELD_ORDER = [
@@ -713,6 +725,7 @@ def _expected_result_json_path(
     defaults: dict[str, Any],
 ) -> Path:
     cfg_name = str(generated_cfg_path)
+    cfg_hash = build_config_content_hash(generated_cfg)
     scenario_mode = _scenario_mode_from_cfg(generated_cfg)
     sim_cfg = generated_cfg.get("simulation", {})
 
@@ -729,6 +742,7 @@ def _expected_result_json_path(
             ),
             cfg_name,
             seed=int(defaults.get("seed", 3)),
+            cfg_hash=cfg_hash,
         )
         return Path(build_uplink_convergence_result_dirs("Convergence per epoch", result_tag)["data"]) / "result.json"
 
@@ -737,13 +751,16 @@ def _expected_result_json_path(
         objective_mode = _resolve_uplink_objective_mode(
             sim_cfg.get("uplink_objective_mode", "unweighted_sum_rate")
         )
+        training_style = str(sim_cfg.get("monte_carlo_training_style", "rollout_query_lagrangian"))
         result_tag = make_method_result_tag(
             join_compact_tag_parts(
                 compact_method_tag("monte_carlo_precoder_net_train_test"),
                 compact_objective_tag(objective_mode),
+                compact_training_style_tag(training_style),
             ),
             cfg_name,
             seed=int(test_seed),
+            cfg_hash=cfg_hash,
         )
         return Path(build_uplink_result_dirs("Monte Carlo", result_tag)["test_data"]) / "result.json"
 
@@ -763,6 +780,7 @@ def _expected_result_json_path(
             join_compact_tag_parts(*method_parts),
             cfg_name,
             seed=int(defaults.get("seed", 3)),
+            cfg_hash=cfg_hash,
         )
         return Path(build_downlink_result_dirs("Convergence per epoch", result_tag)["test_data"]) / "result.json"
 
@@ -773,14 +791,17 @@ def _expected_result_json_path(
             sim_cfg.get("convergence_block_objective_mode"),
             weight_strategy=sim_cfg.get("convergence_priority_weight_strategy"),
         )
+        training_style = str(sim_cfg.get("monte_carlo_training_style", "rollout_query_lagrangian"))
         result_tag = make_method_result_tag(
             join_compact_tag_parts(
                 compact_method_tag("monte_carlo_precoder_net_train_test"),
                 compact_objective_tag(objective_mode),
                 compact_scope_tag(scope_name),
+                compact_training_style_tag(training_style),
             ),
             cfg_name,
             seed=int(test_seed),
+            cfg_hash=cfg_hash,
         )
         return Path(build_downlink_result_dirs("Monte Carlo", result_tag)["test_data"]) / "result.json"
 

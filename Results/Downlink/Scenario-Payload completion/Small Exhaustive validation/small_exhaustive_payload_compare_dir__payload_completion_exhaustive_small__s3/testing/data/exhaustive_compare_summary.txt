@@ -1,0 +1,44 @@
+Downlink small exhaustive payload-completion validation
+Run started (local): 2026-08-03T13:56:33+03:00
+Run completed (local): 2026-08-03T13:59:15+03:00
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\downlink_payload_completion_exhaustive_small.yaml
+Seed: 3
+Payload bits per user: [2, 2]
+T per user: [4, 5]
+Max compared blocks: 3
+Suppressed detailed inner logs: True
+
+Assumptions
+  - Direct joint block precoder optimization only.
+  - Unweighted sum-rate beam optimization inside the block solver.
+  - Exact same frozen channel episode is used for both strategies.
+  - A user with remaining payload and zero service in a block still pays n=T, matching the current payload-completion implementation.
+
+Current online rule
+  - Completed all payloads: True
+  - Per-user served bits: [2, 2]
+  - Per-user remaining bits: [0, 0]
+  - Per-user latency: [2, 3]
+  - Global latency sum: 5
+
+Exhaustive search
+  - Completed all payloads: True
+  - Per-user served bits: [2, 2]
+  - Per-user remaining bits: [0, 0]
+  - Per-user latency: [2, 3]
+  - Global latency sum: 5
+  - Joint block action catalog size: 337
+  - Global schedule count: 3666
+
+Comparison
+  - Exhaustive latency gain over current online rule: 0 channel uses
+  - Exhaustive latency gain percentage: 0.0000%
+
+Best exhaustive allocation combination
+  - Global schedule id: 3502
+  - Completed all users: True
+  - Total latency sum: 5
+  - Total remaining bits: 0
+  - Per-user served bits: [2, 2]
+  - Per-user latency: [2, 3]
+  - Action signature: b0[u0:B2@n2, u1:B2@n3]

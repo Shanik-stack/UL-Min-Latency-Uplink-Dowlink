@@ -1,0 +1,88 @@
+Downlink payload planner diagnostics
+
+Terms
+Active users: users with payload remaining at the start of that block.
+Mask: the subset of active users jointly optimized for service in that block.
+Immediate latency: current-block latency contribution after any successful tail n_kl reduction.
+Value-to-go: continuation surrogate built from remaining bits divided by each user's historical solo-preview service level.
+Opportunity penalty: penalty for skipping or underusing a user whose current solo block looks unusually good for that user.
+
+Block 0
+Planner mode: latency_direct_block
+Warm start: rzf
+Active users: [0, 1, 2]
+Remaining bits before block: {0: 1000, 1: 2000, 2: 3000}
+Chosen mask: 011 -> [1, 2]
+Chosen served bits by user: {0: 0, 1: 1002, 2: 1039}
+Chosen n_kl by user: {0: 50, 1: 58, 2: 75}
+Chosen achieved rate by user: {0: 0.0, 1: 17.328275617861333, 2: 13.929781632244342}
+Chosen full-block bits by user before tail reduction: {1: 1002, 2: 1039}
+Chosen users finishable at n=T: []
+Solo preview bits by user: {0: 1000, 1: 1369, 2: 1599}
+Candidate ranking:
+rank=1 | mask=011 | users=[1, 2] | served_bits=2041 | sum_rate=29.703365 | immediate_latency=0.012667 | value_to_go=0.012790 | opportunity_penalty=0.012547 | score=0.029848 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={1: 1002, 2: 1039} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 0, 1: 1002, 2: 1039} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=2 | mask=101 | users=[0, 2] | served_bits=1909 | sum_rate=29.778494 | immediate_latency=0.012667 | value_to_go=0.012818 | opportunity_penalty=0.012602 | score=0.029895 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={0: 786, 2: 1123} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 786, 1: 0, 2: 1123} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=3 | mask=111 | users=[0, 1, 2] | served_bits=1985 | sum_rate=31.689776 | immediate_latency=0.012667 | value_to_go=0.012860 | opportunity_penalty=0.012687 | score=0.029967 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={0: 516, 1: 717, 2: 752} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 516, 1: 717, 2: 752} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=4 | mask=001 | users=[2] | served_bits=1599 | sum_rate=19.989257 | immediate_latency=0.012667 | value_to_go=0.013850 | opportunity_penalty=0.014667 | score=0.031650 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={2: 1599} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 0, 1: 0, 2: 1599} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=5 | mask=110 | users=[0, 1] | served_bits=1646 | sum_rate=29.740059 | immediate_latency=0.012667 | value_to_go=0.014090 | opportunity_penalty=0.015148 | score=0.032059 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={0: 689, 1: 957} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 689, 1: 957, 2: 0} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=6 | mask=010 | users=[1] | served_bits=1369 | sum_rate=22.817881 | immediate_latency=0.012667 | value_to_go=0.015183 | opportunity_penalty=0.017333 | score=0.033917 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={1: 1369} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 0, 1: 1369, 2: 0} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=7 | mask=100 | users=[0] | served_bits=1000 | sum_rate=20.273305 | immediate_latency=0.012667 | value_to_go=0.015850 | opportunity_penalty=0.018667 | score=0.035050 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={0: 1000} | finishable_at_full_block=[0] | tail_refine=False | served_bits_by_user={0: 1000, 1: 0, 2: 0} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+
+Block 1
+Planner mode: latency_direct_block
+Warm start: rzf
+Active users: [0, 1, 2]
+Remaining bits before block: {0: 1000, 1: 998, 2: 1961}
+Chosen mask: 101 -> [0, 2]
+Chosen served bits by user: {0: 793, 1: 0, 2: 1121}
+Chosen n_kl by user: {0: 49, 1: 60, 2: 75}
+Chosen achieved rate by user: {0: 16.235537291971596, 1: 0.0, 2: 14.947366915381982}
+Chosen full-block bits by user before tail reduction: {0: 793, 2: 1121}
+Chosen users finishable at n=T: []
+Solo preview bits by user: {0: 1000, 1: 998, 2: 1607}
+Candidate ranking:
+rank=1 | mask=101 | users=[0, 2] | served_bits=1914 | sum_rate=29.883435 | immediate_latency=0.012667 | value_to_go=0.006408 | opportunity_penalty=0.008606 | score=0.022086 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={0: 793, 2: 1121} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 793, 1: 0, 2: 1121} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=2 | mask=111 | users=[0, 1, 2] | served_bits=2074 | sum_rate=33.260272 | immediate_latency=0.012667 | value_to_go=0.006180 | opportunity_penalty=0.009499 | score=0.022171 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={0: 563, 1: 741, 2: 770} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 563, 1: 741, 2: 770} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=3 | mask=011 | users=[1, 2] | served_bits=2085 | sum_rate=30.852531 | immediate_latency=0.012533 | value_to_go=0.006248 | opportunity_penalty=0.010118 | score=0.022323 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={1: 998, 2: 1087} | finishable_at_full_block=[1] | tail_refine=False | served_bits_by_user={0: 0, 1: 998, 2: 1087} | n_kl_by_user={0: 50, 1: 58, 2: 80}
+rank=4 | mask=001 | users=[2] | served_bits=1607 | sum_rate=20.099442 | immediate_latency=0.012667 | value_to_go=0.007430 | opportunity_penalty=0.010667 | score=0.023830 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={2: 1607} | finishable_at_full_block=[] | tail_refine=False | served_bits_by_user={0: 0, 1: 0, 2: 1607} | n_kl_by_user={0: 50, 1: 60, 2: 80}
+rank=5 | mask=110 | users=[0, 1] | served_bits=1762 | sum_rate=32.502097 | immediate_latency=0.012600 | value_to_go=0.007327 | opportunity_penalty=0.012240 | score=0.024211 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={0: 764, 1: 998} | finishable_at_full_block=[1] | tail_refine=False | served_bits_by_user={0: 764, 1: 998, 2: 0} | n_kl_by_user={0: 50, 1: 59, 2: 80}
+rank=6 | mask=100 | users=[0] | served_bits=1000 | sum_rate=21.683195 | immediate_latency=0.012467 | value_to_go=0.009457 | opportunity_penalty=0.014667 | score=0.027057 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={0: 1000} | finishable_at_full_block=[0] | tail_refine=False | served_bits_by_user={0: 1000, 1: 0, 2: 0} | n_kl_by_user={0: 47, 1: 60, 2: 80}
+rank=7 | mask=010 | users=[1] | served_bits=998 | sum_rate=22.462878 | immediate_latency=0.011667 | value_to_go=0.009874 | opportunity_penalty=0.017333 | score=0.027607 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={1: 998} | finishable_at_full_block=[1] | tail_refine=False | served_bits_by_user={0: 0, 1: 998, 2: 0} | n_kl_by_user={0: 50, 1: 45, 2: 80}
+
+Block 2
+Planner mode: latency_direct_block
+Warm start: rzf
+Active users: [0, 1, 2]
+Remaining bits before block: {0: 207, 1: 998, 2: 840}
+Chosen mask: 111 -> [0, 1, 2]
+Chosen served bits by user: {0: 207, 1: 709, 2: 732}
+Chosen n_kl by user: {0: 23, 1: 54, 2: 73}
+Chosen achieved rate by user: {0: 9.655610747787435, 1: 13.13027264646183, 2: 10.028927157917636}
+Chosen full-block bits by user before tail reduction: {0: 207, 1: 709, 2: 732}
+Chosen users finishable at n=T: [0]
+Solo preview bits by user: {0: 207, 1: 998, 2: 840}
+Candidate ranking:
+rank=1 | mask=111 | users=[0, 1, 2] | served_bits=1648 | sum_rate=30.374003 | immediate_latency=0.010867 | value_to_go=0.001336 | opportunity_penalty=0.001844 | score=0.012848 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={0: 207, 1: 709, 2: 732} | finishable_at_full_block=[0] | tail_refine=False | served_bits_by_user={0: 207, 1: 709, 2: 732} | n_kl_by_user={0: 23, 1: 60, 2: 80}
+rank=2 | mask=011 | users=[1, 2] | served_bits=1823 | sum_rate=29.213409 | immediate_latency=0.011733 | value_to_go=0.000741 | opportunity_penalty=0.003393 | score=0.013662 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={1: 983, 2: 840} | finishable_at_full_block=[2] | tail_refine=False | served_bits_by_user={0: 0, 1: 983, 2: 840} | n_kl_by_user={0: 50, 1: 60, 2: 66}
+rank=3 | mask=101 | users=[0, 2] | served_bits=1047 | sum_rate=26.621603 | immediate_latency=0.009333 | value_to_go=0.003373 | opportunity_penalty=0.004000 | score=0.014106 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={0: 207, 2: 840} | finishable_at_full_block=[0, 2] | tail_refine=False | served_bits_by_user={0: 207, 1: 0, 2: 840} | n_kl_by_user={0: 16, 1: 60, 2: 64}
+rank=4 | mask=110 | users=[0, 1] | served_bits=1205 | sum_rate=29.680423 | immediate_latency=0.010400 | value_to_go=0.002795 | opportunity_penalty=0.005333 | score=0.015061 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={0: 207, 1: 998} | finishable_at_full_block=[0, 1] | tail_refine=False | served_bits_by_user={0: 207, 1: 998, 2: 0} | n_kl_by_user={0: 16, 1: 60, 2: 80}
+rank=5 | mask=001 | users=[2] | served_bits=840 | sum_rate=19.665007 | immediate_latency=0.010200 | value_to_go=0.004063 | opportunity_penalty=0.007333 | score=0.016830 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={2: 840} | finishable_at_full_block=[2] | tail_refine=False | served_bits_by_user={0: 0, 1: 0, 2: 840} | n_kl_by_user={0: 50, 1: 60, 2: 43}
+rank=6 | mask=010 | users=[1] | served_bits=998 | sum_rate=20.761992 | immediate_latency=0.011933 | value_to_go=0.003485 | opportunity_penalty=0.008667 | score=0.018451 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={1: 998} | finishable_at_full_block=[1] | tail_refine=False | served_bits_by_user={0: 0, 1: 998, 2: 0} | n_kl_by_user={0: 50, 1: 49, 2: 80}
+rank=7 | mask=100 | users=[0] | served_bits=207 | sum_rate=19.395875 | immediate_latency=0.010067 | value_to_go=0.006168 | opportunity_penalty=0.009333 | score=0.019501 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={0: 207} | finishable_at_full_block=[0] | tail_refine=False | served_bits_by_user={0: 207, 1: 0, 2: 0} | n_kl_by_user={0: 11, 1: 60, 2: 80}
+
+Block 3
+Planner mode: latency_direct_block
+Warm start: rzf
+Active users: [1, 2]
+Remaining bits before block: {1: 289, 2: 108}
+Chosen mask: 011 -> [1, 2]
+Chosen served bits by user: {1: 289, 2: 108}
+Chosen n_kl by user: {1: 18, 2: 10}
+Chosen achieved rate by user: {1: 16.573923709669735, 2: 10.908302923207678}
+Chosen full-block bits by user before tail reduction: {1: 289, 2: 108}
+Chosen users finishable at n=T: [1, 2]
+Solo preview bits by user: {1: 289, 2: 108}
+Candidate ranking:
+rank=1 | mask=011 | users=[1, 2] | served_bits=397 | sum_rate=27.482227 | immediate_latency=0.001867 | value_to_go=0.000000 | opportunity_penalty=0.000000 | score=0.001867 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={1: 289, 2: 108} | finishable_at_full_block=[1, 2] | tail_refine=False | served_bits_by_user={1: 289, 2: 108} | n_kl_by_user={1: 18, 2: 10}
+rank=2 | mask=001 | users=[2] | served_bits=108 | sum_rate=15.439339 | immediate_latency=0.004467 | value_to_go=0.001031 | opportunity_penalty=0.004000 | score=0.006897 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={2: 108} | finishable_at_full_block=[2] | tail_refine=False | served_bits_by_user={1: 0, 2: 108} | n_kl_by_user={1: 60, 2: 7}
+rank=3 | mask=010 | users=[1] | served_bits=289 | sum_rate=20.400018 | immediate_latency=0.006333 | value_to_go=0.000427 | opportunity_penalty=0.005333 | score=0.008627 | solve_status=latency_direct_round_stable | stage_a_status=kkt_converged | stage_a_bits={1: 289} | finishable_at_full_block=[1] | tail_refine=False | served_bits_by_user={1: 289, 2: 0} | n_kl_by_user={1: 15, 2: 80}

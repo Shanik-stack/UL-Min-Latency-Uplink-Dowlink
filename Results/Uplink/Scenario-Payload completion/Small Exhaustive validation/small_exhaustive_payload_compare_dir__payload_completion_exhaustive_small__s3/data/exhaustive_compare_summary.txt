@@ -1,0 +1,51 @@
+Uplink exhaustive payload-completion validation
+Run started (local): 2026-08-03T13:55:20+03:00
+Run completed (local): 2026-08-03T13:55:54+03:00
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\uplink_payload_completion_exhaustive_small.yaml
+Seed: 3
+Payload bits per user: [6, 7]
+T per user: [5, 6]
+Max compared blocks per user: 2
+Allow exhaustive skip actions: True
+Suppressed detailed inner logs: True
+Frozen-episode channel normalization: False
+
+Assumptions
+  - Uplink SNR mode only.
+  - Direct-precoder inner solve only.
+  - Unweighted rate reward inside the beam optimizer.
+  - Exact same frozen channel episode is used for both strategies.
+
+Current online rule
+  - Completed all payloads: True
+  - Per-user served bits: [6, 7]
+  - Per-user remaining bits: [0, 0]
+  - Per-user latency: [2, 2]
+  - Global latency sum: 4
+
+Exhaustive search
+  - Completed all payloads: True
+  - Per-user served bits: [6, 7]
+  - Per-user remaining bits: [0, 0]
+  - Per-user latency: [2, 2]
+  - Global latency sum: 4
+  - Unique exact (B,n) solves: 144
+  - Exact pair catalog size: 144
+  - Per-user schedule counts: [274, 595]
+  - Global schedule count: 163030
+
+Comparison
+  - Exhaustive latency gain over current online rule: 0 channel uses
+  - Exhaustive latency gain percentage: 0.0000%
+
+Best exhaustive allocation combination
+  - Global schedule id: 1
+  - Completed all users: True
+  - Total latency sum: 4
+  - Total remaining bits: 0
+  - Per-user schedule ids: [23, 36]
+  - Per-user action signatures: ['b0:serve(B=6,n=2)', 'b0:serve(B=7,n=2)']
+
+Interpretation
+  - If exhaustive wins, then the current max-feasible-at-n=T then tail-reduce rule is not globally optimal on this frozen episode.
+  - If both match, this episode does not provide a counterexample against the current rule.

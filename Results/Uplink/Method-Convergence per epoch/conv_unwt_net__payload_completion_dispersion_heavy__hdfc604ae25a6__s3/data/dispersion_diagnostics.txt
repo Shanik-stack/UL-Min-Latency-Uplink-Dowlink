@@ -1,0 +1,21 @@
+Uplink dispersion diagnostics
+
+Terms
+Capacity C: realized-block conditional capacity used by the simulator.
+Dispersion V: realized-block conditional dispersion term used by the simulator.
+Finite-blocklength penalty: C - R_fbl for the accepted served block.
+Penalty/C ratio: fraction of realized capacity removed by the finite-blocklength penalty.
+
+Accepted served blocks: 5
+Average capacity C: 13.572785
+Average dispersion V: 8.209778
+Average finite-blocklength penalty: 7.283997
+Average penalty/C ratio: 0.537433
+Maximum penalty/C ratio: 0.708532
+
+Per accepted block
+user=0 | block=0 | served_bits=80 | n_kl=12 | C=13.103266 | V=8.182548 | penalty=6.317665 | penalty_over_C=0.482144 | achieved_R_fbl=6.785601 | required_rate=6.666667 | margin=0.118934
+user=1 | block=0 | served_bits=100 | n_kl=14 | C=13.033379 | V=8.216764 | penalty=5.861230 | penalty_over_C=0.449709 | achieved_R_fbl=7.172149 | required_rate=7.142857 | margin=0.029292
+user=1 | block=1 | served_bits=20 | n_kl=6 | C=12.595300 | V=8.163602 | penalty=8.924173 | penalty_over_C=0.708532 | achieved_R_fbl=3.671127 | required_rate=3.333333 | margin=0.337794
+user=2 | block=0 | served_bits=141 | n_kl=16 | C=14.317751 | V=8.234825 | penalty=5.488707 | penalty_over_C=0.383350 | achieved_R_fbl=8.829044 | required_rate=8.812500 | margin=0.016544
+user=2 | block=1 | served_bits=19 | n_kl=5 | C=14.814227 | V=8.251152 | penalty=9.828210 | penalty_over_C=0.663431 | achieved_R_fbl=4.986016 | required_rate=3.800000 | margin=1.186016

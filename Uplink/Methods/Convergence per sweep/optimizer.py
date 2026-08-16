@@ -8,7 +8,6 @@ from experiment_scenarios import FIXED_BLOCK_TARGETS_MODE
 def dynamic_subblocklength_precoder_training_baseline(
     uplinksystem,
     sim_cfg: dict,
-    channel_norm: bool = True,
     interference_F_snapshot=None,
     commit_live_precoders: bool = True,
 ):
@@ -28,7 +27,6 @@ def dynamic_subblocklength_precoder_training_baseline(
         convergence_data = dynamic_fixed_target_precoder_training(
             uplinksystem=uplinksystem,
             sim_cfg=local_sim_cfg,
-            channel_norm=channel_norm,
             interference_F_snapshot=interference_F_snapshot,
             commit_live_precoders=commit_live_precoders,
         )
@@ -36,7 +34,6 @@ def dynamic_subblocklength_precoder_training_baseline(
         convergence_data = dynamic_subblocklength_precoder_training(
             uplinksystem=uplinksystem,
             sim_cfg=local_sim_cfg,
-            channel_norm=channel_norm,
             interference_F_snapshot=interference_F_snapshot,
             commit_live_precoders=commit_live_precoders,
         )

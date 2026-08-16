@@ -1,0 +1,4 @@
+Best downlink exhaustive schedule
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\downlink_payload_completion_exhaustive_small.yaml
+Seed: 3
+Best schedule: {'global_schedule_id': 3502, 'completed': True, 'terminal_reason': 'completed', 'total_latency_sum': 5, 'total_remaining_bits': 0, 'per_user_served_bits': [2, 2], 'per_user_remaining_bits': [0, 0], 'per_user_latency': [2, 3], 'action_signature': 'b0[u0:B2@n2, u1:B2@n3]', 'actions': [{'block': 0, 'served_bits_by_user': [2, 2], 'n_by_user': [2, 3], 'required_rates_by_user': [1.0, 0.6666666666666666], 'achieved_rates_by_user': [1.4369449266571648, 0.7047658754619759], 'per_user_latency_costs': [2, 3], 'transmit_users': [0, 1], 'active_users_before_block': [0, 1], 'block_power': 29.999940000029998, 'block_power_budget': 30.0, 'solve_status': 'max_epochs_feasible_best', 'feasible': True}]}

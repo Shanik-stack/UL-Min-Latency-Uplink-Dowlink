@@ -5,6 +5,7 @@ import os
 import yaml
 
 from blocklength_search import normalize_n_search_direction, normalize_n_search_strategy
+from experiment_utils import build_config_content_hash
 from experiment_scenarios import normalize_experiment_scenario_config
 from uplink_rate_model import normalize_uplink_rate_model
 from utils import initialize_system_params
@@ -12,6 +13,11 @@ from utils import initialize_system_params
 UNWEIGHTED_SUM_RATE_OBJECTIVE = "unweighted_sum_rate"
 INVERSE_CNR_WEIGHTED_SUM_RATE_OBJECTIVE = "inverse_cnr_weighted_sum_rate"
 ASYNCHRONALITY_WEIGHTED_SUM_RATE_OBJECTIVE = "asynchronality_weighted_sum_rate"
+RATE_BEAM_REWARD_MODE = "rate"
+USEFUL_BITS_BEAM_REWARD_MODE = "useful_bits"
+END_TO_END_LATENCY_BEAM_REWARD_MODE = "end_to_end_latency"
+FULL_LAGRANGIAN_CONVERGENCE_CONSTRAINT_MODE = "full_lagrangian"
+OBJECTIVE_ONLY_CONVERGENCE_CONSTRAINT_MODE = "objective_only"
 UPLINK_OBJECTIVE_MODE_ALIASES = {
     "user_rate": UNWEIGHTED_SUM_RATE_OBJECTIVE,
     "sum_rate": UNWEIGHTED_SUM_RATE_OBJECTIVE,
@@ -26,6 +32,31 @@ UPLINK_OBJECTIVE_MODE_ALIASES = {
     "asynchronality_weighted_sum_rate": ASYNCHRONALITY_WEIGHTED_SUM_RATE_OBJECTIVE,
     ASYNCHRONALITY_WEIGHTED_SUM_RATE_OBJECTIVE: ASYNCHRONALITY_WEIGHTED_SUM_RATE_OBJECTIVE,
 }
+UPLINK_BEAM_REWARD_MODE_ALIASES = {
+    "rate": RATE_BEAM_REWARD_MODE,
+    "sum_rate": RATE_BEAM_REWARD_MODE,
+    "raw_rate": RATE_BEAM_REWARD_MODE,
+    RATE_BEAM_REWARD_MODE: RATE_BEAM_REWARD_MODE,
+    "useful_bits": USEFUL_BITS_BEAM_REWARD_MODE,
+    "useful_served_bits": USEFUL_BITS_BEAM_REWARD_MODE,
+    "served_bits": USEFUL_BITS_BEAM_REWARD_MODE,
+    "backlog_capped_bits": USEFUL_BITS_BEAM_REWARD_MODE,
+    USEFUL_BITS_BEAM_REWARD_MODE: USEFUL_BITS_BEAM_REWARD_MODE,
+    "end_to_end_latency": END_TO_END_LATENCY_BEAM_REWARD_MODE,
+    "latency": END_TO_END_LATENCY_BEAM_REWARD_MODE,
+    "projected_completion_latency": END_TO_END_LATENCY_BEAM_REWARD_MODE,
+    "projected_latency": END_TO_END_LATENCY_BEAM_REWARD_MODE,
+    END_TO_END_LATENCY_BEAM_REWARD_MODE: END_TO_END_LATENCY_BEAM_REWARD_MODE,
+}
+UPLINK_CONVERGENCE_CONSTRAINT_MODE_ALIASES = {
+    "full": FULL_LAGRANGIAN_CONVERGENCE_CONSTRAINT_MODE,
+    "lagrangian": FULL_LAGRANGIAN_CONVERGENCE_CONSTRAINT_MODE,
+    "full_lagrangian": FULL_LAGRANGIAN_CONVERGENCE_CONSTRAINT_MODE,
+    FULL_LAGRANGIAN_CONVERGENCE_CONSTRAINT_MODE: FULL_LAGRANGIAN_CONVERGENCE_CONSTRAINT_MODE,
+    "objective": OBJECTIVE_ONLY_CONVERGENCE_CONSTRAINT_MODE,
+    "objective_only": OBJECTIVE_ONLY_CONVERGENCE_CONSTRAINT_MODE,
+    OBJECTIVE_ONLY_CONVERGENCE_CONSTRAINT_MODE: OBJECTIVE_ONLY_CONVERGENCE_CONSTRAINT_MODE,
+}
 
 
 def resolve_uplink_objective_mode(value) -> str:
@@ -34,6 +65,24 @@ def resolve_uplink_objective_mode(value) -> str:
         known = ", ".join(sorted(set(UPLINK_OBJECTIVE_MODE_ALIASES.values())))
         raise ValueError(f"Unknown uplink objective mode '{raw_mode}'. Expected one of: {known}")
     return str(UPLINK_OBJECTIVE_MODE_ALIASES[raw_mode])
+
+
+def resolve_uplink_beam_reward_mode(value) -> str:
+    raw_mode = str(value or RATE_BEAM_REWARD_MODE).strip().lower()
+    if raw_mode not in UPLINK_BEAM_REWARD_MODE_ALIASES:
+        known = ", ".join(sorted(set(UPLINK_BEAM_REWARD_MODE_ALIASES.values())))
+        raise ValueError(f"Unknown uplink beam reward mode '{raw_mode}'. Expected one of: {known}")
+    return str(UPLINK_BEAM_REWARD_MODE_ALIASES[raw_mode])
+
+
+def resolve_uplink_convergence_constraint_mode(value) -> str:
+    raw_mode = str(value or FULL_LAGRANGIAN_CONVERGENCE_CONSTRAINT_MODE).strip().lower()
+    if raw_mode not in UPLINK_CONVERGENCE_CONSTRAINT_MODE_ALIASES:
+        known = ", ".join(sorted(set(UPLINK_CONVERGENCE_CONSTRAINT_MODE_ALIASES.values())))
+        raise ValueError(
+            f"Unknown uplink convergence constraint mode '{raw_mode}'. Expected one of: {known}"
+        )
+    return str(UPLINK_CONVERGENCE_CONSTRAINT_MODE_ALIASES[raw_mode])
 
 
 def _first_present(mapping: dict, *names: str, default=None):
@@ -154,6 +203,12 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
     uplink_objective_mode = resolve_uplink_objective_mode(
         sim_cfg.get("uplink_objective_mode", UNWEIGHTED_SUM_RATE_OBJECTIVE)
     )
+    uplink_beam_reward_mode = resolve_uplink_beam_reward_mode(
+        sim_cfg.get("beam_reward_mode", RATE_BEAM_REWARD_MODE)
+    )
+    convergence_constraint_mode = resolve_uplink_convergence_constraint_mode(
+        sim_cfg.get("convergence_constraint_mode", FULL_LAGRANGIAN_CONVERGENCE_CONSTRAINT_MODE)
+    )
     simulation_test_params = {
         "initial_lambda_rate_constraint": sim_cfg["initial_lambda_rate_constraint"],
         "initial_lambda_power_constraint": sim_cfg["initial_lambda_power_constraint"],
@@ -167,6 +222,7 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
         "convergence_precoder_update_mode": str(
             sim_cfg.get("convergence_precoder_update_mode", "precoder_net")
         ).strip().lower(),
+        "convergence_constraint_mode": convergence_constraint_mode,
         "constraint_loss_form": str(sim_cfg.get("constraint_loss_form", "plain_lagrangian")).strip().lower(),
         "augmented_lagrangian_rho_rate": float(sim_cfg.get("augmented_lagrangian_rho_rate", 0.0)),
         "augmented_lagrangian_rho_power": float(sim_cfg.get("augmented_lagrangian_rho_power", 0.0)),
@@ -282,20 +338,25 @@ def get_config(cfg_name: str) -> tuple[dict, dict]:
         ),
         "uplink_rate_model": uplink_rate_model,
         "uplink_objective_mode": uplink_objective_mode,
+        "beam_reward_mode": uplink_beam_reward_mode,
         "experiment_scenario": scenario_cfg,
         "experiment_scenario_mode": str(scenario_cfg["mode"]),
     }
     system_test_params["uplink_rate_model"] = uplink_rate_model
     system_test_params["uplink_objective_mode"] = uplink_objective_mode
+    system_test_params["beam_reward_mode"] = uplink_beam_reward_mode
     return system_test_params, simulation_test_params
 
 
 def load_config(cfg_name: str) -> tuple[dict, dict, dict]:
-    system_test_params, simulation_test_params = get_config(cfg_name)
     cfg_path = _resolve_config_path(cfg_name)
+    with open(cfg_path, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    system_test_params, simulation_test_params = get_config(cfg_name)
     run_meta = {
         "cfg_path": cfg_path,
         "cfg_stem": os.path.splitext(os.path.basename(cfg_path))[0],
+        "cfg_hash": build_config_content_hash(cfg),
     }
     return system_test_params, simulation_test_params, run_meta
 

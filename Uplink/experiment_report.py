@@ -63,6 +63,98 @@ def _compute_reference_latency_metrics(
     }
 
 
+def _compute_dispersion_diagnostics(result: dict[str, Any]) -> dict[str, Any]:
+    c_values = result.get("C", [])
+    v_values = result.get("V", [])
+    r_values = result.get("R_fbl", [])
+    n_values = result.get("n_kl", [])
+    b_values = result.get("B_kl", [])
+
+    num_users = max(
+        len(c_values) if isinstance(c_values, list) else 0,
+        len(v_values) if isinstance(v_values, list) else 0,
+        len(r_values) if isinstance(r_values, list) else 0,
+        len(n_values) if isinstance(n_values, list) else 0,
+        len(b_values) if isinstance(b_values, list) else 0,
+    )
+
+    accepted_records: list[dict[str, Any]] = []
+    capacity_values: list[float] = []
+    dispersion_values: list[float] = []
+    penalty_values: list[float] = []
+    ratio_values: list[float] = []
+
+    def _value_at(source: Any, user: int, block: int, default: float = np.nan) -> float:
+        if not isinstance(source, list) or user >= len(source):
+            return float(default)
+        row = source[user]
+        if not isinstance(row, list) or block >= len(row):
+            return float(default)
+        try:
+            return float(row[block])
+        except (TypeError, ValueError):
+            return float(default)
+
+    for user in range(num_users):
+        max_blocks = max(
+            len(c_values[user]) if isinstance(c_values, list) and user < len(c_values) and isinstance(c_values[user], list) else 0,
+            len(v_values[user]) if isinstance(v_values, list) and user < len(v_values) and isinstance(v_values[user], list) else 0,
+            len(r_values[user]) if isinstance(r_values, list) and user < len(r_values) and isinstance(r_values[user], list) else 0,
+            len(n_values[user]) if isinstance(n_values, list) and user < len(n_values) and isinstance(n_values[user], list) else 0,
+            len(b_values[user]) if isinstance(b_values, list) and user < len(b_values) and isinstance(b_values[user], list) else 0,
+        )
+        for block in range(max_blocks):
+            served_bits = int(round(_value_at(b_values, user, block, default=0.0)))
+            if served_bits <= 0:
+                continue
+            n_kl = int(round(_value_at(n_values, user, block, default=0.0)))
+            capacity = _value_at(c_values, user, block)
+            dispersion = _value_at(v_values, user, block)
+            achieved_rate = _value_at(r_values, user, block)
+            penalty = max(capacity - achieved_rate, 0.0) if np.isfinite(capacity) and np.isfinite(achieved_rate) else np.nan
+            ratio = (
+                float(penalty / capacity)
+                if np.isfinite(penalty) and np.isfinite(capacity) and abs(capacity) > 1e-12
+                else np.nan
+            )
+            required_rate = float(served_bits / max(n_kl, 1))
+            rate_margin = float(achieved_rate - required_rate) if np.isfinite(achieved_rate) else np.nan
+            accepted_records.append(
+                {
+                    "user": int(user),
+                    "block": int(block),
+                    "served_bits": int(served_bits),
+                    "n_kl": int(n_kl),
+                    "capacity": float(capacity),
+                    "dispersion": float(dispersion),
+                    "fbl_penalty": float(penalty) if np.isfinite(penalty) else np.nan,
+                    "penalty_over_capacity": float(ratio) if np.isfinite(ratio) else np.nan,
+                    "achieved_rate": float(achieved_rate),
+                    "required_rate": float(required_rate),
+                    "rate_margin": float(rate_margin) if np.isfinite(rate_margin) else np.nan,
+                }
+            )
+            if np.isfinite(capacity):
+                capacity_values.append(float(capacity))
+            if np.isfinite(dispersion):
+                dispersion_values.append(float(dispersion))
+            if np.isfinite(penalty):
+                penalty_values.append(float(penalty))
+            if np.isfinite(ratio):
+                ratio_values.append(float(ratio))
+
+    return {
+        "accepted_block_count": int(len(accepted_records)),
+        "accepted_block_records": accepted_records,
+        "avg_capacity": float(np.mean(capacity_values)) if capacity_values else 0.0,
+        "avg_dispersion": float(np.mean(dispersion_values)) if dispersion_values else 0.0,
+        "avg_fbl_penalty": float(np.mean(penalty_values)) if penalty_values else 0.0,
+        "max_fbl_penalty": float(np.max(penalty_values)) if penalty_values else 0.0,
+        "avg_penalty_over_capacity": float(np.mean(ratio_values)) if ratio_values else 0.0,
+        "max_penalty_over_capacity": float(np.max(ratio_values)) if ratio_values else 0.0,
+    }
+
+
 def _flatten_uplink_epoch_history(all_user_block_results: Sequence[Sequence[Sequence[dict[str, Any]]]]) -> tuple[list[dict[str, Any]], dict[str, int]]:
     rows: list[dict[str, Any]] = []
     status_counts: dict[str, int] = {}
@@ -222,6 +314,7 @@ def compute_summary_metrics(result: dict[str, Any]) -> dict[str, Any]:
             ref_latency,
             final_latency,
         )
+    dispersion_diagnostics = _compute_dispersion_diagnostics(result)
 
     return {
         "initial_total_latency": initial_total_latency,
@@ -254,6 +347,7 @@ def compute_summary_metrics(result: dict[str, Any]) -> dict[str, Any]:
         "skipped_blocks_per_user": skipped_blocks_per_user,
         "per_user_summary": per_user_summary,
         "baseline_comparison_metrics": baseline_comparison_metrics,
+        "dispersion_diagnostics": dispersion_diagnostics,
     }
 
 
@@ -333,10 +427,25 @@ def build_precoder_net_result(
         "precoder_net_training_history": train_artifact.get("precoder_net_training_history", {}),
         "precoder_parameterization": train_artifact.get("precoder_parameterization", "unknown"),
         "training_objective": train_artifact.get("training_objective", "unknown"),
+        "monte_carlo_training_style": str(
+            train_artifact.get(
+                "monte_carlo_training_style",
+                train_artifact.get("post_training_summary", {}).get(
+                    "monte_carlo_training_style",
+                    "rollout_query_lagrangian",
+                ),
+            )
+        ),
         "uplink_objective_mode": str(
             train_artifact.get(
                 "uplink_objective_mode",
                 train_artifact.get("post_training_summary", {}).get("uplink_objective_mode", "unknown"),
+            )
+        ),
+        "beam_reward_mode": str(
+            train_artifact.get(
+                "beam_reward_mode",
+                train_artifact.get("post_training_summary", {}).get("beam_reward_mode", "unknown"),
             )
         ),
         "uplink_rate_model": str(uplink_rate_model or "unknown"),
@@ -351,6 +460,8 @@ def build_precoder_net_result(
         "initial_R_fbl": [np.asarray(v).tolist() for v in initial_R_fbl],
         "final_R_fbl": achieved_final_r_fbl,
         "committed_final_R_fbl": [np.asarray(v).tolist() for v in test_uplinksystem.R_fbl],
+        "C": [list(map(float, values)) for values in test_uplinksystem.C],
+        "V": [list(map(float, values)) for values in test_uplinksystem.V],
         "initial_snr_db": list(map(float, initial_snr_db)),
         "final_snr_db": list(map(float, final_snr_db)),
         "initial_sinr_db": list(map(float, initial_sinr_db)),
@@ -470,6 +581,10 @@ def build_convergence_result(
         "cfg_path": cfg_path,
         "seed": int(seed),
         "convergence_precoder_update_mode": convergence_data_dict.get("convergence_precoder_update_mode", "precoder_net"),
+        "convergence_constraint_mode": convergence_data_dict.get(
+            "convergence_constraint_mode",
+            str(sim_cfg.get("convergence_constraint_mode", "full_lagrangian")) if sim_cfg is not None else "full_lagrangian",
+        ),
         "precoder_parameterization": convergence_data_dict.get("precoder_parameterization", "unknown"),
         "initial_latency": list(map(float, initial_latency)),
         "final_latency": list(map(float, uplinksystem.latency)),
@@ -481,6 +596,8 @@ def build_convergence_result(
         "initial_R_fbl": [np.asarray(v).tolist() for v in initial_R_fbl],
         "final_R_fbl": achieved_final_r_fbl,
         "committed_final_R_fbl": [np.asarray(v).tolist() for v in uplinksystem.R_fbl],
+        "C": [list(map(float, values)) for values in uplinksystem.C],
+        "V": [list(map(float, values)) for values in uplinksystem.V],
         "initial_snr_db": list(map(float, initial_snr_db)),
         "final_snr_db": list(map(float, final_snr_db)),
         "initial_sinr_db": list(map(float, initial_sinr_db)),
@@ -522,6 +639,7 @@ def build_convergence_result(
         },
         "uplink_rate_model": str(sim_cfg.get("uplink_rate_model", "unknown")) if sim_cfg is not None else "unknown",
         "uplink_objective_mode": str(sim_cfg.get("uplink_objective_mode", "unknown")) if sim_cfg is not None else "unknown",
+        "beam_reward_mode": str(sim_cfg.get("beam_reward_mode", "unknown")) if sim_cfg is not None else "unknown",
         "skipped_blocks_per_user": [
             int(v)
             for v in convergence_data_dict.get(
@@ -568,6 +686,7 @@ def _build_uplink_final_test_section_lines(result: dict[str, Any]) -> list[str]:
     metrics = result["summary_metrics"]
     random_baseline_metrics = _get_baseline_comparison_metric(metrics, "random_precoder_baseline")
     naive_full_t_metrics = _get_baseline_comparison_metric(metrics, "naive_full_T_baseline")
+    dispersion_diagnostics = metrics.get("dispersion_diagnostics", {})
     lines = [
         "Final test results",
         f"Initial total latency (random baseline): {metrics['initial_total_latency']:.6f}",
@@ -585,6 +704,22 @@ def _build_uplink_final_test_section_lines(result: dict[str, Any]) -> list[str]:
         f"Final avg SNR (dB): {metrics['final_avg_snr_db']:.4f}",
         f"Initial avg SINR (dB): {metrics['initial_avg_sinr_db']:.4f}",
         f"Final avg SINR (dB): {metrics['final_avg_sinr_db']:.4f}",
+        (
+            "Final served-block avg capacity C: "
+            f"{float(dispersion_diagnostics.get('avg_capacity', 0.0)):.6f}"
+        ),
+        (
+            "Final served-block avg dispersion V: "
+            f"{float(dispersion_diagnostics.get('avg_dispersion', 0.0)):.6f}"
+        ),
+        (
+            "Final served-block avg finite-blocklength penalty: "
+            f"{float(dispersion_diagnostics.get('avg_fbl_penalty', 0.0)):.6f}"
+        ),
+        (
+            "Final served-block avg penalty/C ratio: "
+            f"{float(dispersion_diagnostics.get('avg_penalty_over_capacity', 0.0)):.6f}"
+        ),
         f"Total served bits: {_sum_per_user_summary_field(metrics, 'served_bits')}",
         f"Total skipped blocks: {_sum_per_user_summary_field(metrics, 'skipped_blocks')}",
     ]
@@ -646,6 +781,53 @@ def _build_uplink_per_user_test_lines(result: dict[str, Any]) -> list[str]:
     return lines
 
 
+def build_dispersion_diagnostic_lines(result: dict[str, Any]) -> list[str]:
+    metrics = result.get("summary_metrics", {})
+    diagnostics = metrics.get("dispersion_diagnostics", {}) if isinstance(metrics, dict) else {}
+    if not isinstance(diagnostics, dict) or int(diagnostics.get("accepted_block_count", 0)) <= 0:
+        return []
+
+    lines = [
+        "Uplink dispersion diagnostics",
+        "",
+        "Terms",
+        "Capacity C: realized-block conditional capacity used by the simulator.",
+        "Dispersion V: realized-block conditional dispersion term used by the simulator.",
+        "Finite-blocklength penalty: C - R_fbl for the accepted served block.",
+        "Penalty/C ratio: fraction of realized capacity removed by the finite-blocklength penalty.",
+        "",
+        f"Accepted served blocks: {int(diagnostics.get('accepted_block_count', 0))}",
+        f"Average capacity C: {float(diagnostics.get('avg_capacity', 0.0)):.6f}",
+        f"Average dispersion V: {float(diagnostics.get('avg_dispersion', 0.0)):.6f}",
+        f"Average finite-blocklength penalty: {float(diagnostics.get('avg_fbl_penalty', 0.0)):.6f}",
+        f"Average penalty/C ratio: {float(diagnostics.get('avg_penalty_over_capacity', 0.0)):.6f}",
+        f"Maximum penalty/C ratio: {float(diagnostics.get('max_penalty_over_capacity', 0.0)):.6f}",
+        "",
+        "Per accepted block",
+    ]
+    for row in diagnostics.get("accepted_block_records", []):
+        if not isinstance(row, dict):
+            continue
+        lines.append(
+            " | ".join(
+                [
+                    f"user={int(row.get('user', -1))}",
+                    f"block={int(row.get('block', -1))}",
+                    f"served_bits={int(row.get('served_bits', 0))}",
+                    f"n_kl={int(row.get('n_kl', 0))}",
+                    f"C={float(row.get('capacity', np.nan)):.6f}",
+                    f"V={float(row.get('dispersion', np.nan)):.6f}",
+                    f"penalty={float(row.get('fbl_penalty', np.nan)):.6f}",
+                    f"penalty_over_C={float(row.get('penalty_over_capacity', np.nan)):.6f}",
+                    f"achieved_R_fbl={float(row.get('achieved_rate', np.nan)):.6f}",
+                    f"required_rate={float(row.get('required_rate', np.nan)):.6f}",
+                    f"margin={float(row.get('rate_margin', np.nan)):.6f}",
+                ]
+            )
+        )
+    return lines
+
+
 def build_convergence_summary_lines(result: dict[str, Any]) -> list[str]:
     metrics = result["summary_metrics"]
     lines = [
@@ -660,7 +842,9 @@ def build_convergence_summary_lines(result: dict[str, Any]) -> list[str]:
         f"Scenario: {result.get('scenario_mode', 'unknown')}",
         f"Uplink rate model: {result.get('uplink_rate_model', 'unknown')}",
         f"Uplink objective mode: {result.get('uplink_objective_mode', 'unknown')}",
+        f"Beam reward mode: {result.get('beam_reward_mode', 'unknown')}",
         f"Convergence precoder update mode: {result.get('convergence_precoder_update_mode', 'unknown')}",
+        f"Convergence constraint mode: {result.get('convergence_constraint_mode', 'unknown')}",
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
         f"Initial schedule source: {result.get('initial_schedule_source', 'unknown')}",
     ]
@@ -703,8 +887,10 @@ def build_summary_lines(result: dict[str, Any]) -> list[str]:
         f"Scenario: {result.get('experiment_scenario_mode', 'unknown')}",
         f"Uplink rate model: {result.get('uplink_rate_model', 'unknown')}",
         f"Uplink objective mode: {result.get('uplink_objective_mode', 'unknown')}",
+        f"Beam reward mode: {result.get('beam_reward_mode', 'unknown')}",
         f"Precoder parameterization: {result.get('precoder_parameterization', 'unknown')}",
         f"Training objective: {result.get('training_objective', 'unknown')}",
+        f"Monte Carlo training style: {result.get('monte_carlo_training_style', 'unknown')}",
         f"Rollout query weighting mode: {result.get('rollout_query_weighting_mode', 'unknown')}",
         f"Test n search strategy: {result.get('test_n_search_strategy', 'config_default')}",
         f"Test n search direction: {result.get('test_n_search_direction', 'config_default')}",
@@ -727,6 +913,7 @@ def build_summary_lines(result: dict[str, Any]) -> list[str]:
                 f"Per-user training solve status: {post_training_summary.get('per_user_training_solve_status', [])}",
                 f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}",
                 f"Training channel episodes: {int(post_training_summary.get('total_training_channel_episodes', 0))}",
+                f"Monte Carlo training style: {post_training_summary.get('monte_carlo_training_style', result.get('monte_carlo_training_style', 'unknown'))}",
                 f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}",
                 f"Rollout query weighting mode: {post_training_summary.get('rollout_query_weighting_mode', 'unknown')}",
                 f"Rollout phase weights: {post_training_summary.get('rollout_phase_weights', {})}",
@@ -838,6 +1025,7 @@ def build_post_training_summary_lines(post_training_summary: dict[str, Any]) -> 
         f"Epochs requested: {int(post_training_summary.get('epochs_requested', 0))}",
         f"Configured max epochs: {int(post_training_summary.get('configured_max_epochs', post_training_summary.get('epochs_requested', 0)))}",
         f"Base training dataset: {post_training_summary.get('base_dataset_kind', 'unknown')}",
+        f"Monte Carlo training style: {post_training_summary.get('monte_carlo_training_style', 'unknown')}",
         f"Rollout anchor-bits mode: {post_training_summary.get('rollout_anchor_bits_mode', 'unknown')}",
         f"Rollout query weighting mode: {post_training_summary.get('rollout_query_weighting_mode', 'unknown')}",
         f"Rollout phase weights: {post_training_summary.get('rollout_phase_weights', {})}",

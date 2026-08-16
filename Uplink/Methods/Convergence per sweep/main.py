@@ -19,9 +19,13 @@ from advanced_methods_common import (
     apply_training_solution,
     estimate_initial_random_precoder_schedule_for_scenario,
 )
-from config_loader import _resolve_config_path, get_config, resolve_uplink_objective_mode
+from config_loader import _resolve_config_path, get_config, load_config, resolve_uplink_objective_mode
 from experiment_cost import build_uplink_convergence_cost
-from experiment_report import build_convergence_result, build_convergence_summary_lines
+from experiment_report import (
+    build_convergence_result,
+    build_convergence_summary_lines,
+    build_dispersion_diagnostic_lines,
+)
 from experiment_utils import (
     compact_method_tag,
     compact_objective_tag,
@@ -121,7 +125,6 @@ def run_convergence_experiment(
     convergence_data = dynamic_subblocklength_precoder_training_baseline(
         uplinksystem=convergence_system,
         sim_cfg=sim_cfg,
-        channel_norm=True,
     )
 
     apply_training_solution(report_system, convergence_data["n_star"], convergence_data["F_star"])
@@ -175,7 +178,7 @@ def main() -> None:
     args = parser.parse_args()
 
     run_seed = _resolve_run_seed(args)
-    _, sim_cfg = get_config(args.cfg_name)
+    _, sim_cfg, run_meta = load_config(args.cfg_name)
     update_mode = str(sim_cfg.get("convergence_precoder_update_mode", "precoder_net")).strip().lower()
     objective_mode = resolve_uplink_objective_mode(
         sim_cfg.get("uplink_objective_mode", "unweighted_sum_rate")
@@ -186,8 +189,9 @@ def main() -> None:
             compact_objective_tag(objective_mode),
             compact_update_mode_tag(update_mode),
         ),
-        args.cfg_name,
+        run_meta["cfg_stem"],
         seed=run_seed,
+        cfg_hash=run_meta.get("cfg_hash"),
     )
     result_dirs = build_uplink_convergence_result_dirs(METHOD_LABEL, result_tag)
     initialize_plot_globals(result_tag, result_dirs)
@@ -198,6 +202,7 @@ def main() -> None:
         do_plots=True,
     )
     result = experiment["result"]
+    result["cfg_hash"] = run_meta.get("cfg_hash")
     report_system = experiment["report_system"]
     convergence_data = experiment["convergence_data"]
     initial_baseline = experiment["initial_baseline"]
@@ -277,7 +282,12 @@ def main() -> None:
     plot_per_user_interference_before_after(result, result_dirs["interference"])
     plot_interference_heatmaps(report_system, result_dirs["interference"])
     plot_per_user_interference_profiles(report_system, result_dirs["interference"])
-    save_text(build_convergence_summary_lines(result), os.path.join(result_dirs["data"], "summary.txt"))
+    summary_lines = build_convergence_summary_lines(result)
+    summary_lines.insert(5, f"Config content hash: {result.get('cfg_hash', 'unknown')}")
+    save_text(summary_lines, os.path.join(result_dirs["data"], "summary.txt"))
+    dispersion_lines = build_dispersion_diagnostic_lines(result)
+    if dispersion_lines:
+        save_text(dispersion_lines, os.path.join(result_dirs["data"], "dispersion_diagnostics.txt"))
     mirror_paths = mirror_experiment_root_to_result_aliases(
         link_name="Uplink",
         scenario_mode=str(sim_cfg.get("experiment_scenario_mode", "payload_completion")),

@@ -319,6 +319,12 @@ These parameters define the channel dimensions, payload, and timing.
 
 ### Downlink objective shaping
 
+- `beam_reward_mode`
+  - Controls what the inner precoder solve treats as the primal reward before constraint penalties.
+  - `rate`: legacy behavior. The optimizer directly maximizes finite-blocklength rate.
+  - `useful_bits`: latency-aligned behavior. The optimizer maximizes `min(q_k, n_k R_k)` for each active user, so extra rate above the remaining requested bits is not rewarded.
+  - This does not replace `convergence_block_objective_mode` or `uplink_objective_mode`; it works alongside them. The objective mode still decides how users are weighted, while `beam_reward_mode` decides whether the per-user reward is raw rate or backlog-capped useful bits.
+
 - `convergence_block_objective_mode`
   - Objective used by the downlink convergence baseline.
   - `user_rate`: legacy alias for `unweighted_sum_rate`.

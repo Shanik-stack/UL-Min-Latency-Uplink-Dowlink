@@ -1,0 +1,28 @@
+Downlink online vs exhaustive strategy comparison
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\downlink_payload_completion_exhaustive_natural_two_block.yaml
+Seed: 1
+
+Online strategy
+  - Per-user final latency (s): [0.000333333, 0.000333333]
+  - Total latency sum (s): 0.000666667
+  - Final asynchronality sum (s): 0.000000000
+  - Per-user served bits: [2, 2]
+  - Per-user remaining bits: [0, 0]
+  - User 0 block plan:
+      block 0: action=skip, bits=0, n_kl=4, latency_s=0.000266667, remaining_bits=2
+      block 1: action=serve, bits=2, n_kl=1, latency_s=0.000066667, remaining_bits=0
+  - User 1 block plan:
+      block 0: action=skip, bits=0, n_kl=4, latency_s=0.000266667, remaining_bits=2
+      block 1: action=serve, bits=2, n_kl=1, latency_s=0.000066667, remaining_bits=0
+
+Exhaustive strategy
+  - Per-user final latency (s): [0.000333333, 6.6667e-05]
+  - Total latency sum (s): 0.000400000
+  - Final asynchronality sum (s): 0.000266667
+  - Per-user served bits: [2, 2]
+  - Per-user remaining bits: [0, 0]
+  - User 0 block plan:
+      block 0: action=skip, bits=0, n_kl=4, latency_s=0.000266667, remaining_bits=2
+      block 1: action=serve, bits=2, n_kl=1, latency_s=0.000066667, remaining_bits=0
+  - User 1 block plan:
+      block 0: action=serve, bits=2, n_kl=1, latency_s=0.000066667, remaining_bits=0

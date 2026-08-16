@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from datetime import datetime
@@ -48,6 +49,11 @@ SHARED_N_TARGET_MODE_TAG_ALIASES = {
 UPDATE_MODE_TAG_ALIASES = {
     "precoder_net": "net",
     "direct_precoder": "dir",
+}
+
+MONTE_CARLO_TRAINING_STYLE_TAG_ALIASES = {
+    "rollout_query_lagrangian": "rqlag",
+    "exact_rollout_latency_aligned": "lat",
 }
 
 
@@ -152,6 +158,11 @@ def compact_update_mode_tag(update_mode: str) -> str:
     return UPDATE_MODE_TAG_ALIASES.get(normalized, normalized)
 
 
+def compact_training_style_tag(training_style: str) -> str:
+    normalized = _normalize_tag_token(training_style)
+    return MONTE_CARLO_TRAINING_STYLE_TAG_ALIASES.get(normalized, normalized)
+
+
 def join_compact_tag_parts(*parts: str | None) -> str:
     compact_parts = [_normalize_tag_token(part) for part in parts if str(part or "").strip()]
     return "_".join(part for part in compact_parts if part)
@@ -166,12 +177,31 @@ def compact_cfg_stem(cfg_name: str) -> str:
     return normalized or "cfg"
 
 
-def make_method_result_tag(method_name: str, cfg_name: str, *, seed: int | None = None) -> str:
+def build_config_content_hash(config_obj: Any, *, length: int = 12) -> str:
+    canonical = json.dumps(
+        make_serializable(config_obj),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return str(digest[: max(4, int(length))]).lower()
+
+
+def make_method_result_tag(
+    method_name: str,
+    cfg_name: str,
+    *,
+    seed: int | None = None,
+    cfg_hash: str | None = None,
+) -> str:
     cfg_stem = compact_cfg_stem(cfg_name)
     safe_method = _normalize_tag_token(method_name)
-    if seed is None:
-        return f"{safe_method}__{cfg_stem}"
-    return f"{safe_method}__{cfg_stem}__s{int(seed)}"
+    parts = [safe_method, cfg_stem]
+    if str(cfg_hash or "").strip():
+        parts.append(f"h{_normalize_tag_token(str(cfg_hash))}")
+    if seed is not None:
+        parts.append(f"s{int(seed)}")
+    return "__".join(parts)
 
 
 def make_serializable(obj: Any) -> Any:

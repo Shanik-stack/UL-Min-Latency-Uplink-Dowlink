@@ -1,0 +1,59 @@
+Downlink benchmark summary
+
+Setup
+Method: Benchmark ZF
+Benchmark beamformer: Zero Forcing
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\downlink_payload_completion.yaml
+Config content hash: 653c4a737a9c
+Seed: 3
+Run started at: 2026-08-06T02:50:09+03:00
+Run completed at: 2026-08-06T02:50:11+03:00
+Scenario: payload_completion
+Beam reward mode: rate
+Allocation mode: payload_completion
+Initial schedule source: random_precoder_baseline
+Precoder construction: closed-form linear beamformer with the existing payload-completion and n-search logic
+Exact ZF feasible in every built block: True
+Closed-form beamformer builds: 5
+
+Final test results
+Initial total latency (random baseline): 0.305000
+Final total latency: 0.042467
+Latency reduction vs random precoder baseline (%): 86.0765
+Initial avg latency (random baseline): 0.101667
+Final avg latency: 0.014156
+Initial asynchronality sum (random baseline): 0.131600
+Final asynchronality sum: 0.028400
+Asynchronality reduction (%): 78.4195
+Initial avg SNR (dB): 8.0000
+Final avg SNR (dB): 10.1049
+Initial avg served-block SINR (dB): -2.8373
+Final avg served-block SINR (dB): 9.2438
+Initial avg all-block SINR (dB): -2.8373
+Final avg all-block SINR (dB): 9.2438
+Total served bits: 6000
+Total skipped blocks: 0
+Initial total latency (naive full-T baseline): 0.308667
+Latency reduction vs naive full-T baseline (%): 86.2419
+
+Per-user final test details
+User 0 | init_lat=0.069867 | final_lat=0.007867 | lat_red_vs_random=88.7405% | init_served_block_sinr=-3.0034 dB | final_served_block_sinr=7.7619 dB | init_all_block_sinr=-3.0034 dB | final_all_block_sinr=7.7619 dB | served_blocks=3 | blocks=3 | total_n=118 | served_bits=1000 | skipped_blocks=0 | lat_red_vs_fullT=88.7619%
+User 1 | init_lat=0.099467 | final_lat=0.012533 | lat_red_vs_random=87.3995% | init_served_block_sinr=-2.7737 dB | final_served_block_sinr=10.8091 dB | init_all_block_sinr=-2.7737 dB | final_all_block_sinr=10.8091 dB | served_blocks=4 | blocks=4 | total_n=188 | served_bits=2000 | skipped_blocks=0 | lat_red_vs_fullT=87.4667%
+User 2 | init_lat=0.135667 | final_lat=0.022067 | lat_red_vs_random=83.7346% | init_served_block_sinr=-2.7644 dB | final_served_block_sinr=8.8807 dB | init_all_block_sinr=-2.7644 dB | final_all_block_sinr=8.8807 dB | served_blocks=5 | blocks=5 | total_n=331 | served_bits=3000 | skipped_blocks=0 | lat_red_vs_fullT=84.0865%
+
+Experiment cost
+Core wall time total (s): 1.215610
+Core wall time training (s): 0.000000
+Testing-phase wall time (s): 1.215610
+Forward+backward NN FLOPs: 0.000e+00
+Forward-only NN FLOPs: 0.000e+00
+Total NN FLOPs: 0.000e+00
+Total forward+backward NN evaluations: 0
+Forward-only beam evaluations: 5
+Actual optimizer updates: 0
+Extra gradient evaluations used to check the current constrained joint state: 0
+Workload counters:
+{'closed_form_beamformer_build_calls': 5}
+Notes:
+- This benchmark uses a closed-form analytical beamformer, so NN FLOP counters are reported as 0.0.
+- Core wall time is reported under testing because there is no separate training phase.

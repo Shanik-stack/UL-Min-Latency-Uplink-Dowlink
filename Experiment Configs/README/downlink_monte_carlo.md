@@ -81,6 +81,20 @@ convergence baseline, not to offline Monte Carlo training.
     - `simulation.kkt_complementarity_tol`
     - `simulation.kkt_stationarity_tol`
 
+- `simulation.monte_carlo_training_style`
+  - Chooses which Monte Carlo training objective is benchmarked on top of the
+    same channel-episode dataset.
+  - `rollout_query_lagrangian`
+    - Existing behavior.
+    - Uses the visited rollout queries and trains with the standard joint
+      Lagrangian objective.
+  - `exact_rollout_latency_aligned`
+    - Uses only the exact chosen rollout states from the current
+      payload-completion rollout.
+    - Reweights those states by latency impact, so this is the cleaner
+      benchmark when you want training to follow the committed rollout path
+      instead of the full visited frontier.
+
 - `simulation.monte_carlo_training_fallback_target_bits`
   - Fallback target bits used when payload-completion training cases do not
     already provide explicit block targets.

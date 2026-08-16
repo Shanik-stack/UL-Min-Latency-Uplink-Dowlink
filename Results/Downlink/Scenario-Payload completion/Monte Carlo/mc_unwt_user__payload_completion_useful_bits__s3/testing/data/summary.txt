@@ -1,0 +1,96 @@
+Downlink optimizer summary
+
+Setup
+Method: monte_carlo_precoder_net_train_test
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\downlink_payload_completion_useful_bits.yaml
+Test seed: 3
+Train seeds: [0, 1, 2]
+Run started at: 2026-07-29T03:22:27+03:00
+Run completed at: 2026-07-29T03:48:50+03:00
+Scenario: payload_completion
+Objective mode: unweighted_sum_rate
+Beam reward mode: useful_bits
+Allocation mode: greedy
+Weight strategy: none
+Downlink precoder-net scope: per_user_nets
+Precoder parameterization: per_user_block_context_to_precoder_mlp
+Training objective: scenario_driven_episode_rollout_lagrangian_unweighted_sum_rate_useful_bits
+Rollout query weighting mode: uniform_per_query
+Test n search strategy: fixed_step
+Test n search direction: descending
+Initial schedule source: random_precoder_baseline
+Training dataset total channel episodes: 3
+Training channel-episode counts per user: [3, 3, 3]
+
+Final test results
+Initial total latency (random baseline): 0.305000
+Final total latency: 0.775733
+Latency reduction vs random precoder baseline (%): -154.3388
+Initial avg latency (random baseline): 0.101667
+Final avg latency: 0.258578
+Initial asynchronality sum (random baseline): 0.131600
+Final asynchronality sum: 0.261067
+Asynchronality reduction (%): -98.3789
+Initial avg SNR (dB): 8.0000
+Final avg SNR (dB): 5.5464
+Initial avg block SINR (dB): -2.8373
+Final avg block SINR (dB): 1.8109
+Total served bits: 6000
+Total skipped blocks: 150
+Initial total latency (naive full-T baseline): 0.308667
+Latency reduction vs naive full-T baseline (%): -151.3175
+
+Training results
+Epochs requested: 120
+Epochs completed: 120
+Training solve status: max_epochs_best_primal
+Base training dataset: channel_episodes_only
+Rollout anchor-bits mode: derived_online_from_current_episode_served_bits
+Rollout query weighting mode: uniform_per_query
+Rollout phase weights: {'full_block': 1.0, 'tail_feasible': 1.0, 'tail_frontier': 1.5}
+Last epoch rollout-weighted avg sum rate: 9.334349
+Best epoch rollout-weighted avg sum rate: 16.587964
+Last epoch mean per-user rollout rate: 3.890655
+Best epoch mean per-user rollout rate: 5.701113
+Last epoch mean per-user Lagrangian: -65.606684
+Best epoch mean per-user Lagrangian: -168.490126
+Per-user last epoch avg rate over active rollout queries: [3.2740920195976893, 4.541341017168689, 3.856531515314772]
+Per-user last epoch avg Lagrangian over active rollout queries: [-31.079585532814235, -115.26046592078322, -50.48000066705926]
+Last epoch feasible rollout queries: 53 / 92 (0.576087)
+
+Per-user final test details
+User 0 | init_lat=0.069867 | final_lat=0.283067 | lat_red_vs_random=-305.1527% | init_block_sinr=-3.0034 dB | final_block_sinr=0.6984 dB | blocks=89 | total_n=4246 | served_bits=1000 | skipped_blocks=72 | lat_red_vs_fullT=-304.3810%
+User 1 | init_lat=0.099467 | final_lat=0.311600 | lat_red_vs_random=-213.2708% | init_block_sinr=-2.7737 dB | final_block_sinr=3.9628 dB | blocks=88 | total_n=4674 | served_bits=2000 | skipped_blocks=67 | lat_red_vs_fullT=-211.6000%
+User 2 | init_lat=0.135667 | final_lat=0.181067 | lat_red_vs_random=-33.4644% | init_block_sinr=-2.7644 dB | final_block_sinr=0.9047 dB | blocks=40 | total_n=2716 | served_bits=3000 | skipped_blocks=11 | lat_red_vs_fullT=-30.5769%
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.029600 | final_diff=0.028533
+Users 0-2 | initial_diff=0.065800 | final_diff=0.102000
+Users 1-2 | initial_diff=0.036200 | final_diff=0.130533
+
+Additional training details
+Global active-user rollout queries by n_kl over all epochs: {'12': 2, '13': 1, '14': 1, '15': 2, '16': 2, '17': 6, '18': 4, '19': 5, '20': 5, '21': 5, '22': 10, '23': 27, '24': 25, '25': 14, '26': 34, '27': 30, '28': 31, '29': 28, '30': 37, '31': 48, '32': 55, '33': 62, '34': 58, '35': 98, '36': 95, '37': 89, '38': 92, '39': 99, '40': 140, '41': 142, '42': 158, '43': 172, '44': 209, '45': 224, '46': 278, '47': 288, '48': 352, '49': 477, '50': 6882, '51': 85, '52': 106, '53': 113, '54': 121, '55': 134, '56': 192, '57': 247, '58': 311, '59': 419, '60': 7470, '61': 39, '62': 32, '63': 53, '64': 55, '65': 47, '66': 65, '67': 68, '68': 78, '69': 88, '70': 104, '71': 103, '72': 139, '73': 143, '74': 155, '75': 167, '76': 192, '77': 252, '78': 261, '79': 407, '80': 7762}
+Per-user active-user rollout queries by n_kl over all epochs: [{'15': 1, '16': 1, '17': 4, '18': 2, '19': 3, '20': 3, '21': 3, '22': 8, '23': 25, '24': 23, '25': 12, '26': 32, '27': 26, '28': 25, '29': 23, '30': 25, '31': 35, '32': 42, '33': 49, '34': 46, '35': 76, '36': 71, '37': 64, '38': 68, '39': 74, '40': 108, '41': 102, '42': 123, '43': 127, '44': 167, '45': 180, '46': 233, '47': 212, '48': 289, '49': 394, '50': 6804}, {'12': 2, '13': 1, '14': 1, '15': 1, '16': 1, '17': 2, '18': 2, '19': 2, '20': 2, '21': 2, '22': 2, '23': 2, '24': 2, '25': 2, '26': 2, '27': 4, '28': 6, '29': 5, '30': 12, '31': 13, '32': 13, '33': 13, '34': 12, '35': 22, '36': 24, '37': 25, '38': 24, '39': 25, '40': 31, '41': 39, '42': 34, '43': 36, '44': 39, '45': 40, '46': 42, '47': 71, '48': 57, '49': 74, '50': 70, '51': 77, '52': 93, '53': 101, '54': 96, '55': 115, '56': 170, '57': 218, '58': 279, '59': 386, '60': 7436}, {'40': 1, '41': 1, '42': 1, '43': 9, '44': 3, '45': 4, '46': 3, '47': 5, '48': 6, '49': 9, '50': 8, '51': 8, '52': 13, '53': 12, '54': 25, '55': 19, '56': 22, '57': 29, '58': 32, '59': 33, '60': 34, '61': 39, '62': 32, '63': 53, '64': 55, '65': 47, '66': 65, '67': 68, '68': 78, '69': 88, '70': 104, '71': 103, '72': 139, '73': 143, '74': 155, '75': 167, '76': 192, '77': 252, '78': 261, '79': 407, '80': 7762}]
+Per-user active-user frontier rollout queries by n_kl over all epochs: [{'15': 1, '17': 1, '19': 1, '22': 3, '23': 2, '24': 3, '26': 4, '27': 2, '28': 2, '30': 3, '31': 3, '32': 3, '33': 3, '34': 4, '35': 2, '36': 9, '37': 7, '38': 6, '39': 6, '40': 13, '41': 9, '42': 13, '43': 9, '44': 11, '45': 20, '46': 29, '47': 27, '48': 49, '49': 104, '50': 215}, {'12': 1, '17': 1, '27': 1, '28': 1, '29': 1, '30': 3, '31': 3, '32': 1, '35': 2, '36': 5, '37': 2, '39': 3, '40': 2, '41': 2, '42': 4, '43': 1, '44': 3, '45': 3, '46': 2, '47': 4, '48': 7, '49': 5, '50': 6, '51': 6, '52': 8, '53': 8, '54': 7, '55': 19, '56': 31, '57': 36, '58': 69, '59': 107, '60': 186}, {'40': 1, '43': 1, '44': 1, '47': 2, '48': 1, '49': 1, '50': 1, '52': 2, '53': 2, '54': 5, '55': 1, '56': 1, '57': 3, '58': 4, '60': 2, '61': 3, '63': 7, '64': 4, '66': 5, '67': 6, '68': 11, '69': 10, '70': 9, '71': 5, '72': 8, '73': 15, '74': 19, '75': 20, '76': 18, '77': 28, '78': 46, '79': 105, '80': 212}]
+
+Experiment cost
+Core wall time total (s): 1577.236424
+Core wall time training (s): 1318.844899
+Testing-phase wall time (s): 258.391525
+Forward+backward NN FLOPs: 0.000e+00
+Forward-only NN FLOPs: 7.863e+10
+Total NN FLOPs: 7.863e+10
+Total forward+backward NN evaluations: 0
+Forward-only NN evaluations: 35070
+Optimizer steps: 416
+Workload counters:
+{'training_active_user_rollout_queries_per_user': [], 'batch_size': 32, 'test_forward_calls_per_user': [12690, 19022, 3358], 'test_total_forward_calls': 35070}
+Notes:
+- Forward+backward NN FLOPs count the active-user rollout-query training passes that optimize the downlink precoder nets.
+- Testing-phase wall time measures only the held-out downlink precoder-net evaluation; plotting, file export, and baseline reconstruction are excluded.
+- Forward-only NN FLOPs count the forward-only beam evaluations in the held-out downlink test pass.
+
+Terminology
+- channel episode: one (seed, block=0) block realization stored in the base dataset
+- active-user channel episode: one active user inside one stored channel episode
+- rollout query: one visited joint (episode, n_targets) state generated online from the current precoder nets

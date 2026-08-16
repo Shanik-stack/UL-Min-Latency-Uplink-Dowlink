@@ -1,0 +1,25 @@
+Downlink payload planner diagnostics
+
+Terms
+Active users: users with payload remaining at the start of that block.
+Mask: the subset of active users jointly optimized for service in that block.
+Immediate latency: current-block latency contribution after any successful tail n_kl reduction.
+Value-to-go: continuation surrogate built from remaining bits divided by each user's historical solo-preview service level.
+Opportunity penalty: penalty for skipping or underusing a user whose current solo block looks unusually good for that user.
+
+Block 0
+Planner mode: latency_direct_block
+Warm start: rzf
+Active users: [0, 1]
+Remaining bits before block: {0: 6, 1: 7}
+Chosen mask: 11 -> [0, 1]
+Chosen served bits by user: {0: 6, 1: 7}
+Chosen n_kl by user: {0: 2, 1: 2}
+Chosen achieved rate by user: {0: 7.161854617945949, 1: 5.975503677459759}
+Chosen full-block bits by user before tail reduction: {0: 6, 1: 7}
+Chosen users finishable at n=T: [0, 1]
+Solo preview bits by user: {0: 6, 1: 7}
+Candidate ranking:
+rank=1 | mask=11 | users=[0, 1] | served_bits=13 | sum_rate=13.137358 | immediate_latency=0.000267 | value_to_go=0.000000 | opportunity_penalty=0.000000 | score=0.000267 | solve_status=latency_direct_round_stable | stage_a_status=max_epochs_feasible_best | stage_a_bits={0: 6, 1: 7} | finishable_at_full_block=[0, 1] | tail_refine=False | served_bits_by_user={0: 6, 1: 7} | n_kl_by_user={0: 2, 1: 2}
+rank=2 | mask=01 | users=[1] | served_bits=7 | sum_rate=9.251388 | immediate_latency=0.000400 | value_to_go=0.000267 | opportunity_penalty=0.000533 | score=0.000773 | solve_status=latency_direct_round_stable | stage_a_status=max_epochs_feasible_best | stage_a_bits={1: 7} | finishable_at_full_block=[1] | tail_refine=False | served_bits_by_user={0: 0, 1: 7} | n_kl_by_user={0: 4, 1: 2}
+rank=3 | mask=10 | users=[0] | served_bits=6 | sum_rate=6.413432 | immediate_latency=0.000400 | value_to_go=0.000333 | opportunity_penalty=0.000667 | score=0.000867 | solve_status=latency_direct_round_stable | stage_a_status=max_epochs_feasible_best | stage_a_bits={0: 6} | finishable_at_full_block=[0] | tail_refine=False | served_bits_by_user={0: 6, 1: 0} | n_kl_by_user={0: 1, 1: 5}

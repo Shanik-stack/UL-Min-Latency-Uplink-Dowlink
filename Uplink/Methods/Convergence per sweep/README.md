@@ -22,6 +22,13 @@ The main user-facing stop budget is `simulation.max_epochs`. The solve accepts
 as soon as one epoch satisfies the KKT tolerances; otherwise it stops at the
 best feasible or best-primal state found within that budget.
 
+The inner solve now also accepts `simulation.convergence_constraint_mode`:
+
+- `full_lagrangian` keeps the rate and power constraint terms active, updates
+  the dual variables, and stops using the saved KKT residual checks.
+- `objective_only` removes those constraint terms from the solve itself,
+  disables dual updates, and stops when the objective becomes stationary.
+
 Results are written under the method root:
 
 `Results\\Uplink\\Method-Convergence per epoch\\<experiment_name>`

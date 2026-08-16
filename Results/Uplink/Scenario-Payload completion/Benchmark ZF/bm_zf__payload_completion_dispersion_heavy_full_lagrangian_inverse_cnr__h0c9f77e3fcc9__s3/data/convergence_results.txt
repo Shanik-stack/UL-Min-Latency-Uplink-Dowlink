@@ -1,0 +1,51 @@
+
+|| ---------------- USER 0 ---------------- ||
+R-fsbl_kl:    Initial [4.42677128 3.57190586] ->      Final [6.059883440634167, 2.5704250213987603]
+n_kl:   Initial [12, 8] ->   Final [12, 5]
+N_k:     Initial 20 ->  Final 17
+B^tx_kl:    Initial [53, 27]->   Final  [72, 8] 
+Bits per Symbol:    Initial avg 4.0, per block [4.416666666666667, 3.375]->   Final [6.  1.6] 
+SNR_dB: Initial 3.0905 -> Final 1.3894
+SINR_dB: Initial -4.9281 -> Final -5.6240
+
+|| ---------------- USER 1 ---------------- ||
+R-fsbl_kl:    Initial [4.67797199 4.24034616] ->      Final [6.914443157458411, 3.7298698735031337]
+n_kl:   Initial [14, 13] ->   Final [14, 7]
+N_k:     Initial 27 ->  Final 21
+B^tx_kl:    Initial [65, 55]->   Final  [96, 24] 
+Bits per Symbol:    Initial avg 4.444444444444445, per block [4.642857142857143, 4.230769230769231]->   Final [6.85714286 3.42857143] 
+SNR_dB: Initial 3.9221 -> Final 3.8132
+SINR_dB: Initial -4.9016 -> Final -3.3565
+
+|| ---------------- USER 2 ---------------- ||
+R-fsbl_kl:    Initial [6.85049902 5.54924646] ->      Final [8.152565068882875, 5.263110877743127]
+n_kl:   Initial [16, 10] ->   Final [16, 6]
+N_k:     Initial 26 ->  Final 22
+B^tx_kl:    Initial [109, 51]->   Final  [130, 30] 
+Bits per Symbol:    Initial avg 6.153846153846154, per block [6.8125, 5.1]->   Final [8.125 5.   ] 
+SNR_dB: Initial 6.7196 -> Final 4.8229
+SINR_dB: Initial -1.5324 -> Final -2.9000
+
+Initial Latency per user:
+[0.0013333333333333333, 0.0018, 0.0017333333333333333]
+
+Final Latency per user:
+[0.0011333333333333334, 0.0014, 0.0014666666666666667]
+Latency reduction per user (%): [15.         22.22222222 15.38461538]%
+ Total Latency Reduction(total_initial_latency/total_final_latency) (%): 17.80821917808219%
+
+Initial Asynchronality:
+User 0 - User 1: 0.00046666666666666666
+User 0 - User 2: 0.00039999999999999996
+User 1 - User 2: 6.66666666666667e-05
+
+Initial Sum of Asynchronality: 0.0009333333333333333
+
+Final Asynchronality:
+User 0 - User 1: 0.00026666666666666657
+User 0 - User 2: 0.00033333333333333327
+User 1 - User 2: 6.66666666666667e-05
+
+Final Sum of Asynchronality: 0.0006666666666666665
+
+Asynchronality Reduction (%): 28.571428571428587%

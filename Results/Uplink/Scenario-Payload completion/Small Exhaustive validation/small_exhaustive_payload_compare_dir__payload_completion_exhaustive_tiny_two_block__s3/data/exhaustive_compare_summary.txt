@@ -1,0 +1,58 @@
+Uplink exhaustive payload-completion validation
+Run started (local): 2026-08-03T21:38:22+03:00
+Run completed (local): 2026-08-03T21:38:25+03:00
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\uplink_payload_completion_exhaustive_tiny_two_block.yaml
+Seed: 3
+Payload bits per user: [2, 2]
+T per user: [2, 2]
+fs per user (channel uses/s): [15000.0, 15000.0]
+Max compared blocks per user: 2
+Allow exhaustive skip actions: True
+Suppressed detailed inner logs: True
+Frozen-episode channel normalization: False
+Catalog detail mode: full
+
+Assumptions
+  - Uplink SNR mode only.
+  - Direct-precoder inner solve only.
+  - Unweighted rate reward inside the beam optimizer.
+  - Exact same frozen channel episode is used for both strategies.
+
+Current online rule
+  - Completed all payloads: False
+  - Per-user final latency (s): [0.000133333, 0.0]
+  - Total latency sum (s): 0.000133333
+  - Final asynchronality sum (s): 0.000133333
+  - Per-user served bits: [2, 0]
+  - Per-user remaining bits: [0, 2]
+
+Exhaustive search
+  - Completed all payloads: False
+  - Per-user final latency (s): [0.000133333, 0.0]
+  - Total latency sum (s): 0.000133333
+  - Final asynchronality sum (s): 0.000133333
+  - Per-user served bits: [2, 0]
+  - Per-user remaining bits: [0, 2]
+  - Unique exact (B,n) solves: 16
+  - Exact pair catalog size: 16
+  - Per-user schedule counts: [6, 1]
+  - Global schedule count: 6
+
+Comparison
+  - Exhaustive latency gain over current online rule: 0.000000000 s
+  - Exhaustive latency gain percentage: 0.0000%
+  - Exhaustive asynchronality gain over current online rule: 0.000000000 s
+
+Best exhaustive allocation combination
+  - Global schedule id: 1
+  - Completed all users: False
+  - Total latency sum (s): 0.000400000
+  - Asynchronality sum (s): 0.000133333
+  - Total remaining bits: 2
+  - Per-user schedule ids: [4, 1]
+  - Per-user latency (s): [0.000133333, 0.000266667]
+  - Per-user action signatures: ['b0:serve(B=2,n=2)', 'b0:skip(n=2) | b1:skip(n=2)']
+
+Interpretation
+  - If exhaustive wins, then the current max-feasible-at-n=T then tail-reduce rule is not globally optimal on this frozen episode.
+  - If both match, this episode does not provide a counterexample against the current rule.

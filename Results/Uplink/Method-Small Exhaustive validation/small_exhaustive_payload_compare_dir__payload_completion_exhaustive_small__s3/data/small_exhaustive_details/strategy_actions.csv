@@ -1,0 +1,5 @@
+strategy,user,block,action_type,requested_bits,served_bits,n_kl,latency_channel_uses,latency_seconds,cumulative_latency_channel_uses,cumulative_latency_seconds,remaining_bits_after_action,achieved_rate,solve_status
+online,0,0,serve,8,8,3,3,0.0002,3,0.0002,0,5.838095664978027,max_epochs_feasible_best
+online,1,0,serve,9,9,3,3,0.0002,3,0.0002,0,5.748388290405273,max_epochs_feasible_best
+exhaustive,0,0,serve,8,8,3,3,0.0002,3,0.0002,0,5.838095664978027,max_epochs_feasible_best
+exhaustive,1,0,serve,9,9,3,3,0.0002,3,0.0002,0,5.748388290405273,max_epochs_feasible_best

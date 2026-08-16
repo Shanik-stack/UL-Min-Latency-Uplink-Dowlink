@@ -1,0 +1,4 @@
+Best uplink exhaustive schedule
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\uplink_payload_completion_exhaustive_small.yaml
+Seed: 3
+Best schedule: {'global_schedule_id': 1, 'all_completed': True, 'total_latency_sum': 4, 'total_remaining_bits': 0, 'per_user_schedule_ids': [23, 36], 'per_user_latency': [2, 2], 'per_user_remaining_bits': [0, 0], 'per_user_action_signatures': ['b0:serve(B=6,n=2)', 'b0:serve(B=7,n=2)']}

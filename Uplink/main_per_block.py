@@ -80,7 +80,6 @@ def test_simulate(
         uplinksystem=test_uplinksystem,
         post_training_data_dict=post_training_data_dict,
         sim_cfg=sim_cfg,
-        channel_norm=True,
     )
 
     save_test_results_to_txt(

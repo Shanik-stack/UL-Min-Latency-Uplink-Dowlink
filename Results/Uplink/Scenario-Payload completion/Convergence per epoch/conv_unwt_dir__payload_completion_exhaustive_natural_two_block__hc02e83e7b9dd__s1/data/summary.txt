@@ -1,0 +1,58 @@
+Uplink optimizer summary
+
+Setup
+Method: convergence_per_epoch_baseline
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\uplink_payload_completion_exhaustive_natural_two_block.yaml
+Config content hash: c02e83e7b9dd
+Seed: 1
+Run started at: 2026-08-06T02:42:03+03:00
+Run completed at: 2026-08-06T02:42:22+03:00
+Scenario: payload_completion
+Uplink rate model: snr
+Uplink objective mode: unweighted_sum_rate
+Beam reward mode: rate
+Convergence precoder update mode: direct_precoder
+Precoder parameterization: direct_complex_precoder_per_user_block_online_convergence
+Initial schedule source: random_precoder_baseline
+
+Final test results
+Initial total latency (random baseline): 0.000533
+Final total latency: 0.000533
+Latency reduction vs random precoder baseline (%): 0.0000
+Initial avg latency (random baseline): 0.000267
+Final avg latency: 0.000267
+Initial asynchronality sum (random baseline): 0.000000
+Final asynchronality sum: 0.000000
+Asynchronality reduction (%): 0.0000
+Initial avg SNR (dB): 30.6758
+Final avg SNR (dB): 30.6758
+Initial avg SINR (dB): -0.0305
+Final avg SINR (dB): -0.0305
+Total served bits: 4
+Total skipped blocks: 0
+Initial total latency (naive full-T baseline): 0.000533
+Latency reduction vs naive full-T baseline (%): 0.0000
+
+Per-user final test details
+User 0 | init_lat=0.000267 | final_lat=0.000267 | lat_red_vs_random=0.0000% | init_snr=33.7024 dB | final_snr=33.7024 dB | init_sinr=-9.1378 dB | final_sinr=-9.1378 dB | blocks=2 | total_n=4 | served_bits=2 | skipped_blocks=0 | lat_red_vs_fullT=0.0000%
+User 1 | init_lat=0.000267 | final_lat=0.000267 | lat_red_vs_random=0.0000% | init_snr=27.6492 dB | final_snr=27.6492 dB | init_sinr=9.0768 dB | final_sinr=9.0768 dB | blocks=2 | total_n=4 | served_bits=2 | skipped_blocks=0 | lat_red_vs_fullT=0.0000%
+
+Per-pair asynchronality
+Users 0-1 | initial_diff=0.000000 | final_diff=0.000000
+
+Experiment cost
+Core wall time total (s): 18.873532
+Core wall time training (s): 18.873532
+Testing-phase wall time (s): 0.000000
+Forward+backward NN FLOPs: 0.000e+00
+Forward-only NN FLOPs: 0.000e+00
+Total NN FLOPs: 0.000e+00
+Total forward+backward NN evaluations: 26
+Forward-only beam evaluations: 4
+Actual optimizer updates: 22
+Extra gradient evaluations used to check the current constrained joint state: 4
+Workload counters:
+{'solver_calls': 4, 'solver_calls_per_user': [2, 2], 'solver_epochs_per_user': [15, 11], 'optimizer_updates_per_user': [13, 9], 'visited_candidate_n_states_per_user': [2, 2]}
+Notes:
+- This convergence run used direct complex-precoder optimization, so NN FLOP counters are reported as 0.0.
+- Testing-phase wall time is 0.0 for convergence because there is no separate train/test split.

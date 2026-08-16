@@ -66,6 +66,7 @@ simulation:
   monte_carlo_test_seed: 3
   monte_carlo_num_train_seeds: 3
   monte_carlo_training_max_epochs: 120
+  monte_carlo_training_style: rollout_query_lagrangian
   monte_carlo_training_fallback_target_bits: 1
   monte_carlo_training_full_block_weight: 1.0
   monte_carlo_training_tail_feasible_weight: 1.0
@@ -76,6 +77,7 @@ simulation:
   # Downlink block objective and user-priority weighting
   # convergence_block_objective_mode: inverse_cnr_weighted_sum_rate
   convergence_block_objective_mode: unweighted_sum_rate
+  beam_reward_mode: rate
   convergence_priority_weight_strategy: inverse_cnr
   remaining_bits_weight_power: 1.0
   minimum_user_weight: 0.25

@@ -42,6 +42,9 @@ decision_grids:
       simulation.uplink_objective_mode:
         - unweighted_sum_rate
         - inverse_cnr_weighted_sum_rate
+      simulation.monte_carlo_training_style:
+        - rollout_query_lagrangian
+        - exact_rollout_latency_aligned
       simulation.n_search_direction:
         - descending
         - ascending
@@ -69,6 +72,9 @@ decision_grids:
       simulation.convergence_block_objective_mode:
         - unweighted_sum_rate
         - inverse_cnr_weighted_sum_rate
+      simulation.monte_carlo_training_style:
+        - rollout_query_lagrangian
+        - exact_rollout_latency_aligned
       simulation.n_search_direction:
         - descending
         - ascending

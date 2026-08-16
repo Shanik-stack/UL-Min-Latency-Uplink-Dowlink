@@ -1,0 +1,4 @@
+strategy,user,block,action_type,requested_bits,served_bits,n_kl,latency_channel_uses,latency_seconds,cumulative_latency_channel_uses,cumulative_latency_seconds,remaining_bits_after_action,achieved_rate,solve_status
+online,0,0,serve,2,2,2,2,0.00013333333333333334,2,0.00013333333333333334,0,3.0253043174743652,kkt_converged
+online,1,0,stop_no_service,2,0,,0,0.0,0,0.0,2,0.3497476577758789,stationary_infeasible
+exhaustive,0,0,serve,2,2,2,2,0.00013333333333333334,2,0.00013333333333333334,0,3.0253043174743652,kkt_converged

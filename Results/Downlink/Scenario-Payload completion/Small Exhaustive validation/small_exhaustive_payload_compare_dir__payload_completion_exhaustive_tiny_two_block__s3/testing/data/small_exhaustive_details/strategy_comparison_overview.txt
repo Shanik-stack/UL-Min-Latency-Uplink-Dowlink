@@ -1,0 +1,30 @@
+Downlink online vs exhaustive strategy comparison
+Config: C:\All Codes\Taiwan_Internship\UL_UPLINK_DOWNLINK_MONTE_CARLO\Experiment Configs\downlink_payload_completion_exhaustive_tiny_two_block.yaml
+Seed: 3
+
+Online strategy
+  - Per-user final latency (s): [0.000266667, 0.000266667]
+  - Total latency sum (s): 0.000533333
+  - Final asynchronality sum (s): 0.000000000
+  - Per-user served bits: [0, 0]
+  - Per-user remaining bits: [2, 2]
+  - User 0 block plan:
+      block 0: action=skip, bits=0, n_kl=2, latency_s=0.000133333, remaining_bits=2
+      block 1: action=skip, bits=0, n_kl=2, latency_s=0.000133333, remaining_bits=2
+      block 2: action=horizon_exhausted, bits=0, n_kl=None, latency_s=0.000000000, remaining_bits=2
+  - User 1 block plan:
+      block 0: action=skip, bits=0, n_kl=2, latency_s=0.000133333, remaining_bits=2
+      block 1: action=skip, bits=0, n_kl=2, latency_s=0.000133333, remaining_bits=2
+      block 2: action=horizon_exhausted, bits=0, n_kl=None, latency_s=0.000000000, remaining_bits=2
+
+Exhaustive strategy
+  - Per-user final latency (s): [0.000266667, 0.000133333]
+  - Total latency sum (s): 0.000400000
+  - Final asynchronality sum (s): 0.000133333
+  - Per-user served bits: [0, 2]
+  - Per-user remaining bits: [2, 0]
+  - User 0 block plan:
+      block 0: action=skip, bits=0, n_kl=2, latency_s=0.000133333, remaining_bits=2
+      block 1: action=skip, bits=0, n_kl=2, latency_s=0.000133333, remaining_bits=2
+  - User 1 block plan:
+      block 0: action=serve, bits=2, n_kl=2, latency_s=0.000133333, remaining_bits=0
