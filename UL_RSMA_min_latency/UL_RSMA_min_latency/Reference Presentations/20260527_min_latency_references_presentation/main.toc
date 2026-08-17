@@ -1,4 +1,0 @@
-\babel@toc {english}{}\relax 
-\beamer@sectionintoc {1}{Overall Idea of the Paper}{3}{0}{1}
-\beamer@sectionintoc {2}{Layer 1: Main Research Gap}{4}{0}{2}
-\beamer@sectionintoc {3}{Layer 2: Downlink MIMO System Model}{5}{0}{3}

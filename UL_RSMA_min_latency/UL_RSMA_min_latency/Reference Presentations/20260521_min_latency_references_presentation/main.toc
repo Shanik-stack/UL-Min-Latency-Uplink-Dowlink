@@ -1,4 +1,0 @@
-\babel@toc {english}{}\relax 
-\beamer@sectionintoc {1}{Precoding Design for Multi-user MIMO Systems with Delay-Constrained and Delay-Tolerant Users}{4}{0}{1}
-\beamer@sectionintoc {2}{Adaptive Finite Blocklength for Ultra-Low Latency in Wireless Communications}{26}{0}{2}
-\beamer@sectionintoc {3}{Comparison with our method}{54}{0}{3}
