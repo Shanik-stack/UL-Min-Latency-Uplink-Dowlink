@@ -53,6 +53,21 @@ The table below summarizes the saved representative payload-completion runs curr
 | Downlink | Convergence per epoch | `conv_sum_user_net__payload_completion__s3` | `0.305000` | `0.035800` | `88.2623%` |
 | Downlink | Monte Carlo | `mc_user__payload_completion__s3` | `0.305000` | `0.073533` | `75.8907%` |
 
+## Latency Gain Over ZF And RZF
+
+The next table compares the same representative payload-completion method runs against the saved ZF and RZF benchmark runs with the same link, scenario, and test seed. The gain is computed from final total latency as:
+
+`gain = (benchmark_final_latency - method_final_latency) / benchmark_final_latency`
+
+Positive values mean the method achieved lower final latency than the benchmark. Negative values mean the benchmark remained better.
+
+| Link | Method | Method final latency | ZF final latency | Gain vs ZF | RZF final latency | Gain vs RZF |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Uplink | Convergence per epoch | `0.024667` | `0.025600` | `3.64%` | `0.025400` | `2.89%` |
+| Uplink | Monte Carlo | `0.025200` | `0.025600` | `1.56%` | `0.025400` | `0.79%` |
+| Downlink | Convergence per epoch | `0.035800` | `0.042467` | `15.70%` | `0.034200` | `-4.68%` |
+| Downlink | Monte Carlo | `0.073533` | `0.042467` | `-73.15%` | `0.034200` | `-115.01%` |
+
 ## Latency Improvement Figures
 
 ### Uplink
@@ -133,4 +148,5 @@ Monte Carlo runs also save training-side artifacts such as:
 
 - The README figures are copied from saved result folders into `docs/figures/` so they render cleanly on GitHub.
 - The representative numbers above come from the existing saved summaries already present in `Results/`.
+- The ZF and RZF comparison table uses the matching saved payload-completion benchmark runs already present in `Results/`.
 - If you rerun experiments and want the README to reflect a newer benchmark set, update the copied figures and the summary table together.
